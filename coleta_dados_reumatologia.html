@@ -713,8 +713,37 @@ const SIM_NAO = ['Sim','Não'];
 const SIM_NAO_PARC = ['Sim','Não','Parcialmente'];
 
 // ── CQR-19 ──
-// Itens negativos (pontuação invertida): 4,8,9,11,12,19
+// Itens negativos (exibição invertida na interface): 4,8,9,11,12,19
 const CQR_NEG = new Set([4,8,9,11,12,19]);
+
+// Função discriminante canônica — Taking Compliance ≤ 80%
+// Coeficientes derivados da amostra de calibração do autor (van den Bemt et al.)
+const CQR_DISC = {
+  constant: -3.4777269054494035,
+  coefs: [
+    -0.44477276433284296,   // item 1
+    -0.9517389645231992,    // item 2
+     1.675784309611586,     // item 3
+    -0.21007515279754496,   // item 4
+     0.024391234120956798,  // item 5
+    -0.5353316565428011,    // item 6
+     0.0029544189406322916, // item 7
+     0.01351792034638963,   // item 8
+    -0.010590545774048919,  // item 9
+    -0.25455764022117855,   // item 10
+     0.10226435257826295,   // item 11
+     0.11545009043160576,   // item 12
+     0.024759537503381134,  // item 13
+     0.10908547284802167,   // item 14
+     0.4474790434938089,    // item 15
+     0.22838272884627178,   // item 16
+     0.5350275091774594,    // item 17
+    -0.4190977732412856,    // item 18
+     0.6828717614297019,    // item 19
+  ],
+  // Ponto de corte = (Na×Zb + Nb×Za)/(Na+Nb) = (29×0.628 + 56×(-1.213))/85
+  cuttingScore: -0.5848941176,
+};
 const CQR_RESP = ['Não concordo de forma alguma','Não concordo','Concordo','Concordo muito'];
 const CQR_ITENS = [
   'Se o reumatologista me diz para tomar os medicamentos, eu tomo.',
@@ -1514,18 +1543,29 @@ function calcCQR() {
   const r = formData.cqr_respostas;
   const answered = Object.keys(r).length;
   const box = document.getElementById('cqr-score-box');
-  if (answered < 19) { box.style.display = 'none'; return; }
-  const soma = Object.values(r).reduce((a,b) => a+b, 0);
-  const score = Math.round((soma - 19) / 0.57);
-  const aderente = score > 80;
+  if (answered < 19) { box.style.display = 'none'; formData.cqr_score = ''; formData.cqr_aderente = ''; return; }
+
+  // Calcula o score da função discriminante canônica (Taking Compliance ≤ 80%)
+  // Os coeficientes operam sobre as respostas BRUTAS (1–4 como marcado pelo paciente).
+  // Como formData.cqr_respostas armazena valores já invertidos para itens negativos,
+  // revertemos a inversão antes de alimentar os coeficientes.
+  let disc = CQR_DISC.constant;
+  for (let i = 1; i <= 19; i++) {
+    const stored = r[i];
+    const raw = CQR_NEG.has(i) ? (5 - stored) : stored;
+    disc += CQR_DISC.coefs[i - 1] * raw;
+  }
+
+  const aderente = disc >= CQR_DISC.cuttingScore;
   box.style.display = 'block';
   box.className = 'cqr-score-box' + (aderente ? '' : ' nao-aderente');
-  document.getElementById('cqr-score-val').textContent = score;
+  document.getElementById('cqr-score-val').textContent = disc.toFixed(3);
   document.getElementById('cqr-score-lbl').textContent = aderente ? 'ADERENTE' : 'NÃO ADERENTE';
-  document.getElementById('cqr-score-sub').textContent = `Soma bruta: ${soma} · Corte: > 80 = aderente · Itens respondidos: ${answered}/19`;
-  formData.cqr_score = score;
-  formData.cqr_aderente = aderente ? 'Não' : 'Sim';
-  updateTabBadges(); // Sim = Não-aderente conforme protocolo
+  document.getElementById('cqr-score-sub').textContent =
+    `Score discriminante: ${disc.toFixed(4)} · Ponto de corte: ${CQR_DISC.cuttingScore} · Aderente = score ≥ corte (Taking Compliance > 80%)`;
+  formData.cqr_score = parseFloat(disc.toFixed(4));
+  formData.cqr_aderente = aderente ? 'Aderente' : 'Não aderente';
+  updateTabBadges();
 }
 
 function restoreCQR(respostas) {
@@ -2084,8 +2124,8 @@ const SHEET_COLS = [
   ['cqr_17', 'CQR-17: O que o médico diz, presto atenção'],
   ['cqr_18', 'CQR-18: Sem os medicamentos tenho mais queixas'],
   ['cqr_19', 'CQR-19 (NEG): No fim de semana às vezes não tomo'],
-  ['cqr_score',    'CQR-19 Score (%)'],
-  ['cqr_aderente', 'CQR-19 Classificação de Adesão'],
+  ['cqr_score',    'CQR-19 Score Discriminante (Taking Compliance ≤ 80%)'],
+  ['cqr_aderente', 'CQR-19 Classificação de Adesão (Aderente / Não aderente)'],
 ];
 
 function buildSheetValues() {
@@ -2241,8 +2281,8 @@ function setAdherence(a) { currentAdherence = a; renderStats(); }
 
 function getActiveDB() {
   let db = getData();
-  if (currentAdherence === 'Aderentes') db = db.filter(p => p.cqr_aderente === 'Não');
-  else if (currentAdherence === 'Não-aderentes') db = db.filter(p => p.cqr_aderente === 'Sim');
+  if (currentAdherence === 'Aderentes') db = db.filter(p => p.cqr_aderente === 'Aderente');
+  else if (currentAdherence === 'Não-aderentes') db = db.filter(p => p.cqr_aderente === 'Não aderente');
   if (currentDisease) return db.filter(p => p.doenca === currentDisease);
   const diseases = GRUPOS[currentGroup];
   if (!diseases) return db;
@@ -2322,12 +2362,12 @@ function renderStats() {
 
   // Linha 0 — adesão (filtro principal)
   const allWithCQR = getData().filter(p => p.cqr_aderente);
-  const nAder = allWithCQR.filter(p => p.cqr_aderente === 'Não').length;
-  const nNaoAder = allWithCQR.filter(p => p.cqr_aderente === 'Sim').length;
+  const nAder = allWithCQR.filter(p => p.cqr_aderente === 'Aderente').length;
+  const nNaoAder = allWithCQR.filter(p => p.cqr_aderente === 'Não aderente').length;
   const adherOpts = [
     {k:'Todos', lbl:`Todos (${getData().length})`, c:'#1a56a0'},
-    {k:'Aderentes', lbl:`Aderentes CQR > 80 (${nAder})`, c:'#276749'},
-    {k:'Não-aderentes', lbl:`Não-aderentes CQR ≤ 80 (${nNaoAder})`, c:'#c53030'},
+    {k:'Aderentes', lbl:`Aderentes CQR-disc > corte (${nAder})`, c:'#276749'},
+    {k:'Não-aderentes', lbl:`Não-aderentes CQR-disc ≤ corte (${nNaoAder})`, c:'#c53030'},
   ];
   const adherRow = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding:10px 14px;background:#fffff0;border:2px solid #f6e05e;border-radius:10px">'
     + '<span style="font-size:11px;font-weight:700;color:#744210;align-self:center;margin-right:4px">Adesão (CQR-19):</span>'
@@ -2519,22 +2559,23 @@ function renderStats() {
   if (cqrDb.length) {
     const cqrStatGrid = document.createElement('div');
     cqrStatGrid.className = 'stat-grid';
-    const nAderLocal = cqrDb.filter(p=>p.cqr_aderente==='Não').length;
-    const nNaoAderLocal = cqrDb.filter(p=>p.cqr_aderente==='Sim').length;
+    const nAderLocal = cqrDb.filter(p=>p.cqr_aderente==='Aderente').length;
+    const nNaoAderLocal = cqrDb.filter(p=>p.cqr_aderente==='Não aderente').length;
     cqrStatGrid.innerHTML =
-      numericCard('CQR-19 Score', numStat(cqrDb,'cqr_score'), '0–100') +
+      numericCard('CQR-19 Score Discriminante', numStat(cqrDb,'cqr_score'), 'contínuo') +
       `<div class="stat-card" style="border-top:3px solid #276749">
         <div class="val" style="color:#276749">${nAderLocal}</div>
-        <div class="lbl">Aderentes (CQR > 80) · ${Math.round(nAderLocal/cqrDb.length*100)}%</div>
+        <div class="lbl">Aderentes (score ≥ ${CQR_DISC.cuttingScore}) · ${Math.round(nAderLocal/cqrDb.length*100)}%</div>
       </div>
       <div class="stat-card" style="border-top:3px solid #c53030">
         <div class="val" style="color:#c53030">${nNaoAderLocal}</div>
-        <div class="lbl">Não-aderentes (CQR ≤ 80) · ${Math.round(nNaoAderLocal/cqrDb.length*100)}%</div>
+        <div class="lbl">Não aderentes (score < ${CQR_DISC.cuttingScore}) · ${Math.round(nNaoAderLocal/cqrDb.length*100)}%</div>
       </div>`;
     ap(cqrStatGrid);
-    const faixas = [['0–40',0,40],['41–60',41,60],['61–80',61,80],['81–90',81,90],['91–100',91,100]];
+    // Distribuição do score discriminante por faixas
+    const faixas = [['< −2',null,-2],['−2 a −1',-2,-1],['−1 a −0.58',-1,-0.5849],['−0.58 a 0',-0.5849,0],['0 a 1',0,1],['> 1',1,null]];
     const faixaEntries = faixas.map(([lbl,min,max]) =>
-      [lbl, cqrDb.filter(p=>{ const s=parseFloat(p.cqr_score); return s>=min&&s<=max; }).length]
+      [lbl, cqrDb.filter(p=>{ const s=parseFloat(p.cqr_score); return (min===null||s>=min)&&(max===null||s<max); }).length]
     ).filter(([,v])=>v>0);
     ap(barChart('CQR-19 · Distribuição por Faixa de Score', faixaEntries, cqrDb.length));
   } else {
