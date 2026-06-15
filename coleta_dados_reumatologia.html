@@ -1918,31 +1918,184 @@ function exportCSV() {
 // ============================================================
 // GOOGLE SHEETS EXPORT via Apps Script Web App
 // ============================================================
+
+// Mapeamento chave interna → rótulo legível para a planilha
+const SHEET_COLS = [
+  // Identificação
+  ['rghc',            'RGHC'],
+  ['nome',            'Nome Completo'],
+  ['nascimento',      'Data de Nascimento'],
+  ['inicio_seg',      'Início de Seguimento'],
+  ['entrevista',      'Data da Entrevista'],
+  ['idade',           'Idade (anos)'],
+  ['sexo',            'Sexo'],
+  ['etnia',           'Etnia'],
+  // Dados Clínicos
+  ['doenca',          'Doença'],
+  ['tempo_diag',      'Tempo de Diagnóstico'],
+  ['atividade',       'Atividade de Doença'],
+  ['tempo_remissao',  'Tempo em Remissão'],
+  ['vhs',             'VHS (mm/h)'],
+  ['pcr',             'PCR (mg/L)'],
+  ['cpk',             'CPK (U/L)'],
+  ['das28',           'DAS28'],
+  ['asdas',           'ASDAS'],
+  ['sledai',          'SLEDAI'],
+  ['myoact',          'MYOACT'],
+  ['mmt8',            'MMT8'],
+  ['bvas',            'BVAS'],
+  ['itas',            'ITAS'],
+  ['num_med',         'Nº de Medicações'],
+  ['gcs',             'Corticosteroide (dose equiv. prednisona)'],
+  ['csdmard',         'csDMARD em Uso'],
+  ['bdmard',          'bDMARD em Uso'],
+  ['tsdmard',         'tsDMARD em Uso'],
+  ['tempo_dmard',     'Tempo desde Último DMARD Introduzido'],
+  ['csdmard_prev',    'csDMARD Prévios'],
+  ['bdmard_prev',     'bDMARD Prévios'],
+  ['tsdmard_prev',    'tsDMARD Prévios'],
+  ['comorbidades',    'Comorbidades'],
+  ['med_continuas',   'Medicações Contínuas'],
+  ['reacao',          'Histórico de Reação Adversa a DMARD'],
+  ['reacao_quais',    'Reação Adversa – Quais Medicações'],
+  ['intervalo',       'Intervalo Médio entre Consultas'],
+  ['dmard_posologia', 'Posologia dos DMARDs'],
+  // Sociodemográfico
+  ['religiao',        'Religião'],
+  ['estado_civil',    'Estado Civil'],
+  ['filhos',          'Filhos'],
+  ['escolaridade',    'Escolaridade'],
+  ['renda',           'Renda Familiar Mensal'],
+  ['ocupacao',        'Ocupação'],
+  ['carga_horaria',   'Carga Horária Semanal'],
+  ['locomocao',       'Meio de Locomoção'],
+  ['local_residencia','Localização da Residência'],
+  ['num_pessoas',     'Pessoas na Residência'],
+  ['situacao_moradia','Situação de Moradia'],
+  ['tabagismo',       'Tabagismo'],
+  ['etilismo',        'Etilismo'],
+  // Acesso e Percepção
+  ['material_educ',       'Recebe Material Educativo'],
+  ['acompanhamento',      'Acompanhamento Multidisciplinar'],
+  ['dif_doenca',          'Dificuldade de Entender Doença'],
+  ['conhec_complic',      'Conhece Complicações da Doença'],
+  ['dif_trat',            'Dificuldade de Entender Tratamento'],
+  ['facilidade_consulta', 'Facilidade para Marcar Consultas'],
+  ['falta_farm',          'Falta de Medicação na Farmácia'],
+  ['compra_med',          'Consegue Comprar Medicação em Falta'],
+  ['custo_med',           'Custo da Medicação é Problema'],
+  ['deslocamento',        'Deslocamento é Problema'],
+  ['comunic',             'EVA – Clareza de Comunicação Médica (0–100)'],
+  ['confianca',           'EVA – Confiança na Equipe Médica (0–100)'],
+  ['participacao',        'EVA – Participação nas Decisões (0–100)'],
+  ['satisfacao',          'EVA – Satisfação com Tratamento (0–100)'],
+  ['suporte',             'EVA – Suporte Social (0–100)'],
+  ['eva_dor',             'EVA Dor (0–100)'],
+  ['eva_estresse',        'EVA Estresse (0–100)'],
+  ['eva_ptga',            'EVA PtGA – Avaliação Global do Paciente (0–100)'],
+  // BMQ Necessity
+  ['bmqn_1', 'BMQ-N1: Saúde depende dos medicamentos'],
+  ['bmqn_2', 'BMQ-N2: Vida impossível sem os medicamentos'],
+  ['bmqn_3', 'BMQ-N3: Sem medicamentos estaria muito doente'],
+  ['bmqn_4', 'BMQ-N4: Saúde futura depende dos medicamentos'],
+  ['bmqn_5', 'BMQ-N5: Medicamentos protegem de ficar pior'],
+  ['bmq_necessity', 'BMQ Necessity Total (5–25)'],
+  // BMQ Concerns
+  ['bmqc_1', 'BMQ-C1: Preocupa ter de tomar os medicamentos'],
+  ['bmqc_2', 'BMQ-C2: Preocupa efeitos a longo prazo'],
+  ['bmqc_3', 'BMQ-C3: Medicamentos são um mistério'],
+  ['bmqc_4', 'BMQ-C4: Medicamentos perturbam a vida'],
+  ['bmqc_5', 'BMQ-C5: Preocupa dependência dos medicamentos'],
+  ['bmqc_6', 'BMQ-C6: Medicamentos causam efeitos desagradáveis'],
+  ['bmq_concerns', 'BMQ Concerns Total (6–30)'],
+  ['bmq_diff',     'BMQ Diferença Necessity−Concerns'],
+  // SEAMS
+  ['seams_1',  'SEAMS-1: Vários medicamentos por dia'],
+  ['seams_2',  'SEAMS-2: Mais de uma vez ao dia'],
+  ['seams_3',  'SEAMS-3: Fora de casa'],
+  ['seams_4',  'SEAMS-4: Dia agitado'],
+  ['seams_5',  'SEAMS-5: Efeitos colaterais'],
+  ['seams_6',  'SEAMS-6: Ninguém lembra de tomar'],
+  ['seams_7',  'SEAMS-7: Horários inconvenientes'],
+  ['seams_8',  'SEAMS-8: Rotina bagunçada'],
+  ['seams_9',  'SEAMS-9: Incerto de como tomar'],
+  ['seams_10', 'SEAMS-10: Incerto do horário'],
+  ['seams_11', 'SEAMS-11: Sentindo-se doente'],
+  ['seams_12', 'SEAMS-12: Medicamento parece diferente'],
+  ['seams_13', 'SEAMS-13: Médico troca medicamentos'],
+  ['seams_score', 'SEAMS Total (13–39)'],
+  // HADS Ansiedade
+  ['hads_1A', 'HADS-A1: Tenso ou contraído'],
+  ['hads_2A', 'HADS-A2: Medo de coisa ruim acontecer'],
+  ['hads_3A', 'HADS-A3: Cabeça cheia de preocupações'],
+  ['hads_4A', 'HADS-A4: Sentado à vontade / relaxado (inv.)'],
+  ['hads_5A', 'HADS-A5: Sensação ruim de medo'],
+  ['hads_6A', 'HADS-A6: Inquieto / não pode ficar parado'],
+  ['hads_7A', 'HADS-A7: Sensação de entrar em pânico'],
+  ['hads_anx','HADS Ansiedade Total (0–21)'],
+  // HADS Depressão
+  ['hads_1D', 'HADS-D1: Gosta das mesmas coisas de antes (inv.)'],
+  ['hads_2D', 'HADS-D2: Dá risada quando vê coisas engraçadas (inv.)'],
+  ['hads_3D', 'HADS-D3: Sente-se alegre (inv.)'],
+  ['hads_4D', 'HADS-D4: Lento para pensar / fazer coisas'],
+  ['hads_5D', 'HADS-D5: Perdeu interesse na aparência'],
+  ['hads_6D', 'HADS-D6: Espera animado coisas boas (inv.)'],
+  ['hads_7D', 'HADS-D7: Sente prazer em TV / rádio / leitura (inv.)'],
+  ['hads_dep','HADS Depressão Total (0–21)'],
+  // HAQ-DI
+  ['haq_1',  'HAQ-1: Vestir-se / amarrar sapatos / abotoar'],
+  ['haq_2',  'HAQ-2: Lavar a cabeça e os cabelos'],
+  ['haq_3',  'HAQ-3: Levantar-se de cadeira sem braços'],
+  ['haq_4',  'HAQ-4: Deitar e levantar da cama'],
+  ['haq_5',  'HAQ-5: Cortar um pedaço de carne'],
+  ['haq_6',  'HAQ-6: Levar copo/xícara à boca'],
+  ['haq_7',  'HAQ-7: Abrir saco de leite'],
+  ['haq_8',  'HAQ-8: Caminhar em lugares planos'],
+  ['haq_9',  'HAQ-9: Subir cinco degraus'],
+  ['haq_10', 'HAQ-10: Lavar e secar o corpo após banho'],
+  ['haq_11', 'HAQ-11: Tomar banho de chuveiro'],
+  ['haq_12', 'HAQ-12: Sentar e levantar do vaso sanitário'],
+  ['haq_13', 'HAQ-13: Pegar objeto acima da cabeça'],
+  ['haq_14', 'HAQ-14: Curvar-se para pegar roupas no chão'],
+  ['haq_15', 'HAQ-15: Segurar-se em pé no ônibus/metrô'],
+  ['haq_16', 'HAQ-16: Abrir potes previamente abertos'],
+  ['haq_17', 'HAQ-17: Abrir e fechar torneiras'],
+  ['haq_18', 'HAQ-18: Fazer compras na redondeza'],
+  ['haq_19', 'HAQ-19: Entrar e sair de ônibus'],
+  ['haq_20', 'HAQ-20: Varrer / puxar água com rodo'],
+  ['haq_score', 'HAQ-DI (0–3)'],
+  // CQR-19
+  ['cqr_1',  'CQR-1: Médico diz para tomar, eu tomo'],
+  ['cqr_2',  'CQR-2: Tomo para ter menos problemas'],
+  ['cqr_3',  'CQR-3: Não me atrevo a esquecer'],
+  ['cqr_4',  'CQR-4 (NEG): Prefiro terapias alternativas'],
+  ['cqr_5',  'CQR-5: Ficam no mesmo local / não esqueço'],
+  ['cqr_6',  'CQR-6: Confio no reumatologista'],
+  ['cqr_7',  'CQR-7: Ainda posso fazer o que quero'],
+  ['cqr_8',  'CQR-8 (NEG): Não gosto de tomar medicamentos'],
+  ['cqr_9',  'CQR-9 (NEG): Nas férias esqueço de tomar'],
+  ['cqr_10', 'CQR-10: Se não tomarmos, para que consultar?'],
+  ['cqr_11', 'CQR-11 (NEG): Não espero milagres'],
+  ['cqr_12', 'CQR-12 (NEG): Se não aguentar pode jogar fora'],
+  ['cqr_13', 'CQR-13: Sem os medicamentos a inflamação volta'],
+  ['cqr_14', 'CQR-14: Meu corpo me avisa se não tomar'],
+  ['cqr_15', 'CQR-15: Saúde acima de tudo / tomo para ficar bem'],
+  ['cqr_16', 'CQR-16: Uso organizador de comprimidos'],
+  ['cqr_17', 'CQR-17: O que o médico diz, presto atenção'],
+  ['cqr_18', 'CQR-18: Sem os medicamentos tenho mais queixas'],
+  ['cqr_19', 'CQR-19 (NEG): No fim de semana às vezes não tomo'],
+  ['cqr_score',    'CQR-19 Score (%)'],
+  ['cqr_aderente', 'CQR-19 Classificação de Adesão'],
+];
+
 function buildSheetValues() {
   const db = getData();
-  const headers = ['rghc','nome','nascimento','inicio_seg','entrevista','idade','sexo','etnia','doenca',
-    'tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk','das28','asdas','sledai','myoact','mmt8','bvas','itas',
-    'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
-    'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
-    'reacao','reacao_quais','intervalo','dmard_posologia',
-    'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
-    'locomocao','local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
-    'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
-    'facilidade_consulta','falta_farm','compra_med','custo_med','deslocamento',
-    'comunic','confianca','participacao','satisfacao','suporte',
-    'eva_dor','eva_estresse','eva_ptga',
-    'bmqn_1','bmqn_2','bmqn_3','bmqn_4','bmqn_5','bmq_necessity',
-    'bmqc_1','bmqc_2','bmqc_3','bmqc_4','bmqc_5','bmqc_6','bmq_concerns','bmq_diff',
-    'seams_1','seams_2','seams_3','seams_4','seams_5','seams_6','seams_7','seams_8','seams_9','seams_10','seams_11','seams_12','seams_13','seams_score',
-    'hads_1A','hads_2A','hads_3A','hads_4A','hads_5A','hads_6A','hads_7A','hads_anx',
-    'hads_1D','hads_2D','hads_3D','hads_4D','hads_5D','hads_6D','hads_7D','hads_dep',
-    'haq_1','haq_2','haq_3','haq_4','haq_5','haq_6','haq_7','haq_8','haq_9','haq_10',
-    'haq_11','haq_12','haq_13','haq_14','haq_15','haq_16','haq_17','haq_18','haq_19','haq_20','haq_score',
-    'cqr_1','cqr_2','cqr_3','cqr_4','cqr_5','cqr_6','cqr_7','cqr_8','cqr_9','cqr_10',
-    'cqr_11','cqr_12','cqr_13','cqr_14','cqr_15','cqr_16','cqr_17','cqr_18','cqr_19','cqr_score','cqr_aderente'];
-  const rows = db.map(p => headers.map(h => {
+  const keys    = SHEET_COLS.map(c => c[0]);
+  const labels  = SHEET_COLS.map(c => c[1]);
+
+  const rows = db.map(p => keys.map(h => {
     if (h === 'dmard_posologia' && p[h] && typeof p[h] === 'object')
-      return Object.entries(p[h]).map(([drug,d]) => `${drug}:via=${d.via||''},dose=${d.dose||''},freq=${d.freq||''}`).join('|');
+      return Object.entries(p[h]).map(([drug,d]) => `${drug}: via=${d.via||'?'}, dose=${d.dose||'?'}, freq=${d.freq||'?'}`).join(' | ');
     if (/^bmqn_\d+$/.test(h)) return (p.bmq_respostas||{})[`bmqn-${h.split('_')[1]}`] ?? '';
     if (/^bmqc_\d+$/.test(h)) return (p.bmq_respostas||{})[`bmqc-${h.split('_')[1]}`] ?? '';
     if (/^seams_\d+$/.test(h)) return (p.seams_respostas||{})[parseInt(h.split('_')[1])] ?? '';
@@ -1950,10 +2103,10 @@ function buildSheetValues() {
     if (/^haq_\d+$/.test(h)) return (p.haq_respostas||{})[parseInt(h.split('_')[1])] ?? '';
     if (/^cqr_\d+$/.test(h)) return (p.cqr_respostas||{})[parseInt(h.split('_')[1])] ?? '';
     const v = p[h];
-    if (Array.isArray(v)) return v.join('|');
+    if (Array.isArray(v)) return v.join(' | ');
     return v ?? '';
   }));
-  return [headers, ...rows];
+  return [labels, ...rows];
 }
 
 function openSheetsModal() {
@@ -2016,14 +2169,50 @@ async function handleSheetsAction() {
 
   try {
     const values = buildSheetValues();
-    await fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(values) });
+    const resp = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ rows: values }),
+    });
+    let ok = resp.ok;
+    try {
+      const json = await resp.json();
+      ok = json.ok === true;
+      if (!ok) throw new Error(json.error || 'Erro no servidor do Apps Script');
+    } catch (_) { /* resposta não-JSON: assume sucesso se HTTP 200 */ }
     closeSheetsModal();
     alert(`✓ ${db.length} paciente(s) exportados para o Google Sheets!\n\nAbra sua planilha e verifique a aba "Pacientes".`);
   } catch(e) {
-    alert('Erro ao enviar dados: ' + e.message + '\n\nVerifique se a URL do Web App está correta e tente novamente.');
+    alert('Erro ao enviar dados: ' + e.message +
+      '\n\nVerifique:\n• A URL do Web App está correta?\n• O acesso está configurado como "Qualquer pessoa"?\n• Você autorizou o script ao implantar?');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Exportar agora';
+  }
+}
+
+async function testSheetsConnection() {
+  const url = localStorage.getItem('gs_webapp_url') ||
+              document.getElementById('gs-webapp-url')?.value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    alert('Cole a URL do Web App primeiro (passo 5).'); return;
+  }
+  const btn = document.getElementById('sheets-test-btn');
+  btn.disabled = true;
+  btn.textContent = 'Testando...';
+  try {
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.status === 'online') {
+      alert('✓ Conexão OK! O Apps Script está respondendo corretamente.\n\nApp: ' + json.app);
+    } else {
+      alert('Resposta inesperada do servidor:\n' + JSON.stringify(json));
+    }
+  } catch(e) {
+    alert('Falha na conexão: ' + e.message +
+      '\n\nVerifique se a URL está correta e se o acesso foi configurado como "Qualquer pessoa".');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔌 Testar conexão';
   }
 }
 
@@ -2996,12 +3185,16 @@ initForm();
             <p>Apague o código que já existe e cole este (depois pressione Ctrl+S para salvar):</p>
             <div class="gs-code" id="gs-code-display">function doPost(e) {
   try {
-    var values = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var payload = JSON.parse(e.postData.contents);
+    var values  = payload.rows;   // array de arrays (cabeçalho + dados)
+    var ss      = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Aba principal: substitui tudo
     var sheet = ss.getSheetByName('Pacientes');
     if (!sheet) sheet = ss.insertSheet('Pacientes');
     else sheet.clearContents();
-    if (values.length > 0) {
+
+    if (values && values.length > 0) {
       sheet.getRange(1, 1, values.length, values[0].length).setValues(values);
       var header = sheet.getRange(1, 1, 1, values[0].length);
       header.setBackground('#1a56a0');
@@ -3010,8 +3203,31 @@ initForm();
       sheet.setFrozenRows(1);
       sheet.autoResizeColumns(1, values[0].length);
     }
-  } catch(err) { /* silencioso */ }
-  return ContentService.createTextOutput('ok');
+
+    // Aba de log: registra cada exportação
+    var log = ss.getSheetByName('Log de Exportações');
+    if (!log) {
+      log = ss.insertSheet('Log de Exportações');
+      log.appendRow(['Data/Hora', 'Pacientes exportados']);
+    }
+    log.appendRow([new Date(), values.length - 1]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true, rows: values.length - 1 }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// Permite testar se a URL está correta abrindo no navegador
+function doGet() {
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'online', app: 'Dados Reumatologia' }))
+    .setMimeType(ContentService.MimeType.JSON);
 }</div>
             <button class="btn-secondary btn-sm" style="margin-top:6px" onclick="copyGsCode()">&#128203; Copiar código</button>
           </div>
@@ -3043,6 +3259,7 @@ initForm();
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeSheetsModal()">Cancelar</button>
+      <button class="btn-secondary btn-sm" id="sheets-test-btn" onclick="testSheetsConnection()" title="Verifica se a URL está correta antes de exportar">&#128268; Testar conexão</button>
       <button class="btn-green" id="sheets-action-btn" onclick="handleSheetsAction()">Exportar agora</button>
     </div>
   </div>
