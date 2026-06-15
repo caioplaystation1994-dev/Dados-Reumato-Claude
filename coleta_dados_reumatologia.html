@@ -1554,14 +1554,21 @@ function calcCQR() {
     disc += CQR_DISC.coefs[i - 1] * r[i];
   }
 
+  // Variável contínua: soma dos itens (já invertidos) → escala 0–100
+  // Min possível = 19 (todos=1), Max = 76 (todos=4), amplitude = 57
+  const soma = Object.values(r).reduce((a, b) => a + b, 0);
+  const scoreContinuo = Math.round((soma - 19) / 57 * 100);
+
   const aderente = disc >= CQR_DISC.cuttingScore;
   box.style.display = 'block';
   box.className = 'cqr-score-box' + (aderente ? '' : ' nao-aderente');
   document.getElementById('cqr-score-val').textContent = disc.toFixed(3);
   document.getElementById('cqr-score-lbl').textContent = aderente ? 'ADERENTE' : 'NÃO ADERENTE';
   document.getElementById('cqr-score-sub').textContent =
-    `Score discriminante: ${disc.toFixed(4)} · Ponto de corte: ${CQR_DISC.cuttingScore} · Aderente = score ≥ corte (Taking Compliance > 80%)`;
+    `Score discriminante: ${disc.toFixed(4)} · Ponto de corte: ${CQR_DISC.cuttingScore} · Aderente = score ≥ corte (Taking Compliance > 80%)`
+    + `\nScore contínuo (0–100): ${scoreContinuo}`;
   formData.cqr_score = parseFloat(disc.toFixed(4));
+  formData.cqr_score_continuo = scoreContinuo;
   formData.cqr_aderente = aderente ? 'Aderente' : 'Não aderente';
   updateTabBadges();
 }
@@ -1690,6 +1697,7 @@ function savePatient() {
     // CQR-19
     cqr_respostas: {...(formData.cqr_respostas||{})},
     cqr_score: formData.cqr_score ?? '',
+    cqr_score_continuo: formData.cqr_score_continuo ?? '',
     cqr_aderente: formData.cqr_aderente || '',
     ts: new Date().toISOString()
   };
@@ -2122,8 +2130,9 @@ const SHEET_COLS = [
   ['cqr_17', 'CQR-17: O que o médico diz, presto atenção'],
   ['cqr_18', 'CQR-18: Sem os medicamentos tenho mais queixas'],
   ['cqr_19', 'CQR-19 (NEG): No fim de semana às vezes não tomo'],
-  ['cqr_score',    'CQR-19 Score Discriminante (Taking Compliance ≤ 80%)'],
-  ['cqr_aderente', 'CQR-19 Classificação de Adesão (Aderente / Não aderente)'],
+  ['cqr_score',          'CQR-19 Score Discriminante (Taking Compliance ≤ 80%)'],
+  ['cqr_score_continuo', 'CQR-19 Score Contínuo (0–100)'],
+  ['cqr_aderente',       'CQR-19 Classificação de Adesão (Aderente / Não aderente)'],
 ];
 
 function buildSheetValues() {
