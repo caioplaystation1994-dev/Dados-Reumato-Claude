@@ -1,0 +1,3308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coleta de Dados – Adesão em Reumatologia</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a202c;font-size:14px}
+header{background:#1a56a0;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+header h1{font-size:17px;font-weight:600}
+nav button{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 16px;border-radius:6px;cursor:pointer;margin-left:6px;font-size:13px;transition:.2s}
+nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
+.page{display:none;padding:20px 24px;max-width:960px;margin:0 auto}
+.page.active{display:block}
+
+/* Form */
+.section-card{background:#fff;border-radius:10px;padding:20px 24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.section-title{font-size:13px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e8f0fc}
+.field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-group label{font-size:12px;font-weight:600;color:#4a5568}
+.field-group input[type=text],.field-group input[type=date],.field-group input[type=number]{border:1px solid #cbd5e0;border-radius:6px;padding:7px 10px;font-size:13px;width:100%;background:#fafafa}
+.field-group input:focus{outline:none;border-color:#1a56a0;background:#fff}
+
+/* Q label */
+.q-label{font-size:13px;font-weight:600;color:#2d3748;margin-bottom:8px}
+.q-num{display:inline-block;background:#1a56a0;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:11px;margin-right:6px;flex-shrink:0}
+
+/* Radio/Check groups */
+.options-grid{display:flex;flex-wrap:wrap;gap:6px}
+.opt-btn{padding:5px 12px;border:1.5px solid #cbd5e0;border-radius:20px;cursor:pointer;font-size:12px;background:#fafafa;transition:.15s;user-select:none}
+.opt-btn:hover{border-color:#1a56a0;background:#ebf2ff}
+.opt-btn.selected{background:#1a56a0;color:#fff;border-color:#1a56a0}
+.opt-btn.multi.selected{background:#2b6cb0;color:#fff;border-color:#2b6cb0}
+
+/* Sub-question */
+.sub-q{background:#f7faff;border-left:3px solid #90cdf4;padding:10px 14px;border-radius:0 8px 8px 0;margin-top:8px}
+
+/* Numeric inline */
+.numeric-inline{display:flex;align-items:center;gap:8px;margin-top:4px}
+.numeric-inline label{font-size:12px;color:#4a5568;white-space:nowrap}
+.numeric-inline input{width:100px;border:1px solid #cbd5e0;border-radius:6px;padding:5px 8px;font-size:13px}
+
+/* Metrics conditional */
+.metric-block{display:none}
+.metric-block.visible{display:block}
+
+/* Buttons */
+.btn-primary{background:#1a56a0;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
+.btn-primary:hover{background:#1541800;}
+.btn-secondary{background:#fff;color:#1a56a0;border:2px solid #1a56a0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-danger{background:#e53e3e;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn-sm{padding:5px 12px;font-size:12px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* Patient list */
+.search-bar{display:flex;gap:10px;margin-bottom:16px}
+.search-bar input{flex:1;border:1px solid #cbd5e0;border-radius:8px;padding:9px 14px;font-size:13px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+th{background:#1a56a0;color:#fff;padding:10px 14px;text-align:left;font-size:12px;font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid #e8ecf0;font-size:12px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f7faff}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:10px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stat-card .val{font-size:32px;font-weight:700;color:#1a56a0}
+.stat-card .lbl{font-size:12px;color:#718096;margin-top:2px}
+.chart-section{background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px}
+.chart-title{font-size:13px;font-weight:700;color:#2d3748;margin-bottom:12px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.bar-row .bar-label{width:200px;font-size:12px;text-align:right;color:#4a5568;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-row .bar-track{flex:1;background:#e8ecf0;border-radius:4px;height:18px;overflow:hidden}
+.bar-row .bar-fill{height:100%;background:#1a56a0;border-radius:4px;transition:.3s}
+.bar-row .bar-count{width:40px;font-size:12px;color:#4a5568;text-align:right;flex-shrink:0}
+
+/* CQR */
+.cqr-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.cqr-table th{font-size:11px;font-weight:700;color:#fff;background:#1a56a0;padding:6px 10px;text-align:left}
+.cqr-table th.opt-h{text-align:center;width:130px}
+.cqr-table td{padding:7px 10px;border-bottom:1px solid #e8ecf0;vertical-align:middle}
+.cqr-table tr:nth-child(even) td{background:#f7faff}
+.cqr-table .neg-tag{font-size:10px;background:#fed7d7;color:#9b2c2c;border-radius:3px;padding:1px 5px;margin-left:4px;font-weight:700}
+.cqr-opts-cell{display:flex;gap:4px;justify-content:center}
+.cqr-opts-cell .opt-btn{padding:4px 8px;font-size:11px;border-radius:4px}
+.cqr-score-box{margin-top:14px;padding:16px 20px;border-radius:10px;background:#f0fff4;border:2px solid #68d391;text-align:center;display:none}
+.cqr-score-box.nao-aderente{background:#fff5f5;border-color:#fc8181}
+.cqr-score-box .score-val{font-size:36px;font-weight:700;color:#276749}
+.cqr-score-box.nao-aderente .score-val{color:#c53030}
+.cqr-score-box .score-lbl{font-size:13px;font-weight:600;margin-top:4px}
+.cqr-score-box .score-sub{font-size:11px;color:#718096;margin-top:2px}
+
+/* HAQ */
+.haq-block{margin-bottom:14px;background:#f7faff;border-radius:8px;padding:12px 16px;border-left:4px solid #90cdf4}
+.haq-block-title{font-size:11px;font-weight:700;color:#2b6cb0;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.haq-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.haq-item-num{font-size:11px;font-weight:700;color:#1a56a0;min-width:18px;margin-top:2px}
+.haq-item-text{font-size:12px;color:#2d3748;flex:1;line-height:1.45}
+.haq-opts{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;min-width:280px}
+.haq-opts .opt-btn{padding:4px 8px;font-size:10px;border-radius:4px;white-space:nowrap}
+.haq-score-box{margin-top:14px;padding:14px 20px;border-radius:10px;background:#f0fff4;border:2px solid #68d391;text-align:center;display:none}
+.haq-score-box .score-val{font-size:36px;font-weight:700;color:#276749}
+.haq-score-box .score-lbl{font-size:13px;font-weight:600;margin-top:4px;color:#276749}
+.haq-score-box .score-sub{font-size:11px;color:#718096;margin-top:2px}
+.haq-block-score{font-size:11px;color:#2b6cb0;font-weight:700;margin-top:4px}
+
+/* EVA slider */
+.eva-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.eva-row label{font-size:12px;font-weight:600;color:#4a5568;width:260px;flex-shrink:0}
+.eva-row input[type=range]{flex:1;accent-color:#1a56a0}
+.eva-val{width:44px;text-align:right;font-size:13px;font-weight:700;color:#1a56a0}
+
+/* Posologia table */
+.posologia-table{width:100%;border-collapse:collapse;font-size:12px}
+.posologia-table th{font-size:11px;font-weight:700;color:#2b6cb0;text-align:left;padding:4px 6px;border-bottom:1px solid #bee3f8}
+.posologia-table td{padding:4px 6px;vertical-align:middle}
+.posologia-table tr:nth-child(even) td{background:#f0f7ff}
+.posologia-table input[type=text]{border:1px solid #cbd5e0;border-radius:4px;padding:3px 6px;font-size:11px;width:100%;background:#fff}
+.posologia-table input[type=text]:focus{outline:none;border-color:#1a56a0}
+.posologia-title{font-size:12px;font-weight:700;color:#2b6cb0;margin-bottom:6px}
+
+/* HADS */
+.hads-item{margin-bottom:14px;padding:12px 16px;border-radius:8px;background:#fafafa;border:1px solid #e2e8f0}
+.hads-item.anx{border-left:4px solid #9f7aea}
+.hads-item.dep{border-left:4px solid #f6ad55}
+.hads-item-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.hads-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0}
+.hads-badge.A{background:#e9d8fd;color:#553c9a}
+.hads-badge.D{background:#feebc8;color:#7b341e}
+.hads-item-txt{font-size:13px;font-weight:600;color:#2d3748}
+.hads-opts{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.hads-opts .opt-btn{text-align:left;border-radius:6px;padding:6px 12px;font-size:12px}
+.hads-score-row{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
+.hads-score-box{flex:1;min-width:180px;padding:14px 20px;border-radius:10px;text-align:center;display:none}
+.hads-score-box.anx{background:#faf5ff;border:2px solid #9f7aea}
+.hads-score-box.dep{background:#fffaf0;border:2px solid #f6ad55}
+.hads-score-box .score-val{font-size:32px;font-weight:700}
+.hads-score-box.anx .score-val{color:#553c9a}
+.hads-score-box.dep .score-val{color:#c05621}
+.hads-score-box .score-lbl{font-size:12px;font-weight:600;margin-top:4px}
+.hads-score-box .score-sub{font-size:11px;color:#718096;margin-top:2px}
+
+/* Modal Evolução */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:#fff;border-radius:14px;width:100%;max-width:680px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.modal-header{padding:18px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-header h2{font-size:15px;font-weight:700;color:#1a202c}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#718096;line-height:1;padding:2px 6px;border-radius:4px}
+.modal-close:hover{background:#f0f0f0}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-body label{font-size:12px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px}
+.modal-body textarea{width:100%;border:1px solid #cbd5e0;border-radius:8px;padding:10px 12px;font-size:12px;font-family:inherit;resize:vertical;min-height:200px;background:#fafafa;line-height:1.5}
+.modal-body textarea:focus{outline:none;border-color:#1a56a0;background:#fff}
+.modal-apikey{width:100%;border:1px solid #cbd5e0;border-radius:8px;padding:8px 12px;font-size:12px;font-family:monospace;background:#fafafa}
+.modal-apikey:focus{outline:none;border-color:#1a56a0}
+.modal-footer{padding:14px 24px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;flex-wrap:wrap}
+.evo-result{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:12px;line-height:1.6}
+.evo-result.ok{background:#f0fff4;border:1px solid #68d391;color:#276749}
+.evo-result.warn{background:#fffaf0;border:1px solid #f6ad55;color:#744210}
+.evo-result.err{background:#fff5f5;border:1px solid #fc8181;color:#c53030}
+.evo-chip{display:inline-block;background:#ebf8ff;color:#2b6cb0;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;margin:1px}
+.evo-loading{display:none;text-align:center;padding:16px;color:#718096;font-size:13px}
+.evo-spinner{display:inline-block;width:18px;height:18px;border:2px solid #e2e8f0;border-top-color:#1a56a0;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.evo-trigger-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid #9f7aea;background:#faf5ff;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:#553c9a;transition:.2s;white-space:nowrap}
+.evo-trigger-btn:hover{background:#e9d8fd}
+
+/* Form steps */
+.form-steps-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;background:#fff;border-radius:10px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.form-step-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border:2px solid #cbd5e0;background:#fff;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:#4a5568;transition:.2s;white-space:nowrap}
+.form-step-btn:hover{border-color:#1a56a0;color:#1a56a0;background:#f0f7ff}
+.form-step-btn.active{background:#1a56a0;border-color:#1a56a0;color:#fff}
+.step-num{width:22px;height:22px;border-radius:50%;background:#e8ecf0;color:#4a5568;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.form-step-btn.active .step-num{background:rgba(255,255,255,.25);color:#fff}
+.step-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.step-badge.done{background:#c6f6d5;color:#276749}
+.step-badge.partial{background:#fefcbf;color:#744210}
+.step-badge.empty{background:#e2e8f0;color:#718096}
+.form-step-btn.active .step-badge.done{background:rgba(255,255,255,.9);color:#276749}
+.form-step-btn.active .step-badge.partial{background:rgba(255,255,255,.9);color:#744210}
+.form-step-btn.active .step-badge.empty{background:rgba(255,255,255,.3);color:#fff}
+.form-tab-panel{display:none}
+.form-tab-panel.active{display:block}
+.step-nav-btns{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px dashed #e2e8f0}
+.step-progress-bar{flex:1;margin:0 16px;background:#e8ecf0;border-radius:4px;height:6px;overflow:hidden}
+.step-progress-fill{height:100%;background:#1a56a0;border-radius:4px;transition:.4s}
+
+.hidden{display:none}
+.alert{background:#fed7d7;color:#9b2c2c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
+.success{background:#c6f6d5;color:#276749;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
+
+/* Google Sheets modal */
+.gs-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+.gs-step-num{width:26px;height:26px;background:#0f9d58;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
+.gs-step-body{flex:1}
+.gs-step-body strong{font-size:13px;color:#2d3748;display:block;margin-bottom:3px}
+.gs-step-body p{font-size:12px;color:#4a5568;line-height:1.5;margin:0}
+.gs-code{background:#1a202c;color:#a8ff78;font-family:monospace;font-size:11px;border-radius:8px;padding:10px 14px;white-space:pre;overflow-x:auto;margin:8px 0;line-height:1.5}
+.gs-url-field{width:100%;border:1.5px solid #cbd5e0;border-radius:8px;padding:9px 12px;font-size:12px;font-family:monospace;margin-top:6px}
+.gs-url-field:focus{outline:none;border-color:#0f9d58}
+.btn-green{background:#0f9d58;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
+.btn-green:hover{background:#0b7d45}
+.btn-green-sm{background:#0f9d58;color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Coleta de Dados — Adesão à Terapia Medicamentosa em Reumatologia</h1>
+  <nav>
+    <button class="active" onclick="showPage('form')">Novo Paciente</button>
+    <button onclick="showPage('list')">Lista de Pacientes</button>
+    <button onclick="showPage('stats')">Estatísticas</button>
+    <button onclick="fillTestData()" title="Preencher formulário com paciente fictícia para teste" style="background:rgba(255,200,0,.25);border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px">&#9881; Dados Teste</button>
+  </nav>
+</header>
+
+<!-- ===== FORMULÁRIO ===== -->
+<div id="page-form" class="page active">
+  <div id="form-msg"></div>
+
+  <!-- Nav de etapas -->
+  <div class="form-steps-nav" style="align-items:center">
+    <button class="form-step-btn active" id="ftab-btn-0" onclick="showFormTab(0)"><span class="step-num">1</span>Identificação<span class="step-badge empty" id="ftab-badge-0">0/6</span></button>
+    <button class="form-step-btn" id="ftab-btn-1" onclick="showFormTab(1)"><span class="step-num">2</span>Dados Clínicos<span class="step-badge empty" id="ftab-badge-1">0/7</span></button>
+    <button class="form-step-btn" id="ftab-btn-2" onclick="showFormTab(2)"><span class="step-num">3</span>Sociodemográfico<span class="step-badge empty" id="ftab-badge-2">0/13</span></button>
+    <button class="form-step-btn" id="ftab-btn-3" onclick="showFormTab(3)"><span class="step-num">4</span>Acesso e Percepção<span class="step-badge empty" id="ftab-badge-3">0/18</span></button>
+    <button class="form-step-btn" id="ftab-btn-4" onclick="showFormTab(4)"><span class="step-num">5</span>Questionários<span class="step-badge empty" id="ftab-badge-4">0/7</span></button>
+    <button class="evo-trigger-btn" onclick="openEvolucaoModal()" title="Colar evolução do prontuário e preencher automaticamente">&#128203; Importar Evolução</button>
+  </div>
+
+  <!-- ── PAINEL 0: Identificação ── -->
+  <div class="form-tab-panel active" id="form-tab-0">
+
+  <!-- S1: Identificação -->
+  <div class="section-card">
+    <div class="section-title">Identificação do Paciente</div>
+    <div class="field-grid">
+      <div class="field-group" style="grid-column:span 2">
+        <label>1. Nome Completo</label>
+        <input type="text" id="f-nome" placeholder="Nome completo do paciente" oninput="updateTabBadges()">
+      </div>
+      <div class="field-group">
+        <label>2. RGHC</label>
+        <input type="text" id="f-rghc" placeholder="Número de registro" oninput="updateTabBadges()">
+      </div>
+      <div class="field-group">
+        <label>3. Data de Nascimento</label>
+        <input type="date" id="f-nascimento" oninput="updateTabBadges()">
+      </div>
+      <div class="field-group">
+        <label>4. HC Início de Seguimento</label>
+        <input type="date" id="f-inicio-seg">
+      </div>
+      <div class="field-group">
+        <label>5. Data da Entrevista</label>
+        <input type="date" id="f-entrevista" oninput="calcIdade();updateTabBadges()">
+      </div>
+      <div class="field-group">
+        <label>6. Idade Atual (anos)</label>
+        <input type="number" id="f-idade" placeholder="Auto-calculada" readonly style="background:#e8ecf0">
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="q-label" style="margin-bottom:8px">7. Sexo</div>
+      <div class="options-grid" id="q-sexo"></div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="q-label" style="margin-bottom:8px">8. Etnia</div>
+      <div class="options-grid" id="q-etnia"></div>
+    </div>
+  </div>
+
+  <div class="step-nav-btns"><div></div><div class="step-progress-bar"><div class="step-progress-fill" id="spf-0" style="width:0%"></div></div><button class="btn-primary" onclick="showFormTab(1)">Dados Clínicos →</button></div>
+  </div><!-- /painel 0 -->
+
+  <!-- ── PAINEL 1: Dados Clínicos ── -->
+  <div class="form-tab-panel" id="form-tab-1">
+
+  <!-- S2: Doença -->
+  <div class="section-card">
+    <div class="section-title">Dados Clínicos da Doença</div>
+    <div class="q-label">9. Doença em Seguimento</div>
+    <div class="options-grid" id="q-doenca"></div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">10. Tempo de Diagnóstico</div>
+      <div class="options-grid" id="q-tempo-diag"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">11. Atividade de Doença</div>
+      <div class="options-grid" id="q-atividade"></div>
+      <div class="sub-q hidden" id="sub-remissao">
+        <div class="q-label" style="font-size:12px">Há quanto tempo em remissão?</div>
+        <div class="options-grid" id="q-tempo-remissao"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S3: Labs -->
+  <div class="section-card">
+    <div class="section-title">12. Provas Inflamatórias</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px">
+      <div class="numeric-inline"><label>VHS (mm/h):</label><input type="number" id="f-vhs" min="1" max="150" placeholder="1–150"></div>
+      <div class="numeric-inline"><label>PCR (mg/L):</label><input type="number" id="f-pcr" step="0.1" min="0.5" max="50" placeholder="0.5–50"></div>
+      <div class="numeric-inline"><label>CPK (U/L):</label><input type="number" id="f-cpk" min="10" max="50000" placeholder="10–50000"></div>
+    </div>
+  </div>
+
+  <!-- S4: Métricas -->
+  <div class="section-card">
+    <div class="section-title">13. Métricas de Atividade</div>
+    <div id="metrics-hint" style="font-size:12px;color:#718096;margin-bottom:8px">As métricas disponíveis dependem da doença selecionada na questão 9.</div>
+    <div class="metric-block" id="m-das28">
+      <div class="numeric-inline"><label>DAS28 (0–8):</label><input type="number" id="f-das28" step="0.01" min="0" max="8" placeholder="0–8"></div>
+    </div>
+    <div class="metric-block" id="m-asdas">
+      <div class="numeric-inline"><label>ASDAS (0.6–6):</label><input type="number" id="f-asdas" step="0.01" min="0.6" max="6" placeholder="0.6–6"></div>
+    </div>
+    <div class="metric-block" id="m-sledai">
+      <div class="numeric-inline"><label>SLEDAI (0–105):</label><input type="number" id="f-sledai" min="0" max="105" placeholder="0–105"></div>
+    </div>
+    <div class="metric-block" id="m-myoact">
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <div class="numeric-inline"><label>MYOACT (0–70):</label><input type="number" id="f-myoact" min="0" max="70" placeholder="0–70"></div>
+        <div class="numeric-inline"><label>MMT8 (0–80):</label><input type="number" id="f-mmt8" min="0" max="80" placeholder="0–80"></div>
+      </div>
+    </div>
+    <div class="metric-block" id="m-bvas">
+      <div class="numeric-inline"><label>BVAS (0–63):</label><input type="number" id="f-bvas" min="0" max="63" placeholder="0–63"></div>
+    </div>
+    <div class="metric-block" id="m-itas">
+      <div class="numeric-inline"><label>ITAS (0–51):</label><input type="number" id="f-itas" min="0" max="51" placeholder="0–51"></div>
+    </div>
+  </div>
+
+  <!-- S5: Medicações atuais -->
+  <div class="section-card">
+    <div class="section-title">Medicações em Uso</div>
+    <div class="q-label">14. Número de Medicações em Uso</div>
+    <div class="options-grid" id="q-num-med"></div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">15. Uso de Corticosteroides (dose equivalente de prednisona)</div>
+      <div class="options-grid" id="q-gcs"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">16. csDMARD em Uso <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+      <div class="options-grid" id="q-csdmard"></div>
+      <div class="sub-q hidden" id="posologia-csdmard" style="margin-top:10px"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">17. bDMARD em Uso <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+      <div class="options-grid" id="q-bdmard"></div>
+      <div class="sub-q hidden" id="posologia-bdmard" style="margin-top:10px"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">18. tsDMARD em Uso <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+      <div class="options-grid" id="q-tsdmard"></div>
+      <div class="sub-q hidden" id="posologia-tsdmard" style="margin-top:10px"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">19. Tempo desde que o Último DMARD foi Introduzido</div>
+      <div class="options-grid" id="q-tempo-dmard"></div>
+    </div>
+  </div>
+
+  <!-- S6: Medicações prévias -->
+  <div class="section-card">
+    <div class="section-title">DMARDs Utilizados Previamente e Suspensos</div>
+    <div class="q-label">20. csDMARDs Prévios <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+    <div class="options-grid" id="q-csdmard-prev"></div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">21. bDMARDs Prévios <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+      <div class="options-grid" id="q-bdmard-prev"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">22. tsDMARDs Prévios <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+      <div class="options-grid" id="q-tsdmard-prev"></div>
+    </div>
+  </div>
+
+  <!-- S7: Comorbidades -->
+  <div class="section-card">
+    <div class="section-title">23. Comorbidades Associadas <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+    <div class="options-grid" id="q-comorbidades"></div>
+  </div>
+
+  <!-- S8: Medicações contínuas -->
+  <div class="section-card">
+    <div class="section-title">24. Medicações de Uso Contínuo <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+    <div class="options-grid" id="q-med-continuas"></div>
+  </div>
+
+  <!-- S9: Reações adversas -->
+  <div class="section-card">
+    <div class="section-title">25. Histórico de Reação Adversa a DMARDs</div>
+    <div class="options-grid" id="q-reacao"></div>
+    <div class="sub-q hidden" id="sub-reacao">
+      <div class="q-label" style="font-size:12px">Quais medicações? <span style="color:#718096">(múltipla escolha)</span></div>
+      <div class="options-grid" id="q-reacao-quais"></div>
+    </div>
+  </div>
+
+  <!-- S10: Intervalo consultas -->
+  <div class="section-card">
+    <div class="section-title">26. Intervalo Médio entre Consultas Médicas</div>
+    <div class="options-grid" id="q-intervalo"></div>
+  </div>
+
+  <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(0)">← Identificação</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-1" style="width:0%"></div></div><button class="btn-primary" onclick="showFormTab(2)">Sociodemográfico →</button></div>
+  </div><!-- /painel 1 -->
+
+  <!-- ── PAINEL 2: Sociodemográfico ── -->
+  <div class="form-tab-panel" id="form-tab-2">
+
+  <!-- S11: Sociodemográfico -->
+  <div class="section-card">
+    <div class="section-title">Dados Sociodemográficos</div>
+    <div class="q-label">27. Religião</div>
+    <div class="options-grid" id="q-religiao"></div>
+    <div style="margin-top:16px"><div class="q-label">28. Estado Civil</div>
+    <div class="options-grid" id="q-estado-civil"></div></div>
+    <div style="margin-top:16px"><div class="q-label">29. Filhos</div>
+    <div class="options-grid" id="q-filhos"></div></div>
+    <div style="margin-top:16px"><div class="q-label">30. Escolaridade</div>
+    <div class="options-grid" id="q-escolaridade"></div></div>
+    <div style="margin-top:16px"><div class="q-label">31. Renda Familiar Mensal</div>
+    <div class="options-grid" id="q-renda"></div></div>
+    <div style="margin-top:16px"><div class="q-label">32. Ocupação</div>
+    <div class="options-grid" id="q-ocupacao"></div></div>
+    <div style="margin-top:16px"><div class="q-label">33. Carga Horária de Trabalho por Semana</div>
+    <div class="options-grid" id="q-carga-horaria"></div></div>
+  </div>
+
+  <!-- S12: Moradia e Locomoção -->
+  <div class="section-card">
+    <div class="section-title">Moradia e Locomoção</div>
+    <div class="q-label">34. Principal Meio de Locomoção <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+    <div class="options-grid" id="q-locomocao"></div>
+    <div style="margin-top:16px"><div class="q-label">35. Localização da Residência</div>
+    <div class="options-grid" id="q-local-residencia"></div></div>
+    <div style="margin-top:16px"><div class="q-label">36. Número de Pessoas na Residência</div>
+    <div class="options-grid" id="q-num-pessoas"></div></div>
+    <div style="margin-top:16px"><div class="q-label">37. Situação de Moradia</div>
+    <div class="options-grid" id="q-situacao-moradia"></div></div>
+  </div>
+
+  <!-- S13: Hábitos -->
+  <div class="section-card">
+    <div class="section-title">Hábitos</div>
+    <div class="q-label">38. Tabagismo</div>
+    <div class="options-grid" id="q-tabagismo"></div>
+    <div style="margin-top:16px"><div class="q-label">39. Etilismo</div>
+    <div class="options-grid" id="q-etilismo"></div></div>
+  </div>
+
+  <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(1)">← Dados Clínicos</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-2" style="width:0%"></div></div><button class="btn-primary" onclick="showFormTab(3)">Acesso e Percepção →</button></div>
+  </div><!-- /painel 2 -->
+
+  <!-- ── PAINEL 3: Acesso e Percepção ── -->
+  <div class="form-tab-panel" id="form-tab-3">
+
+  <!-- S14: Acesso e Educação em Saúde -->
+  <div class="section-card">
+    <div class="section-title">Acesso e Educação em Saúde</div>
+    <div class="q-label">40. Recebe material educativo sobre o tratamento?</div>
+    <div class="options-grid" id="q-material-educ"></div>
+    <div style="margin-top:14px"><div class="q-label">41. Recebe acompanhamento de enfermeiro, farmacêutico ou agente de saúde?</div>
+    <div class="options-grid" id="q-acompanhamento"></div></div>
+    <div style="margin-top:14px"><div class="q-label">42. Tem dificuldade para entender informações sobre a doença?</div>
+    <div class="options-grid" id="q-dif-doenca"></div></div>
+    <div style="margin-top:14px"><div class="q-label">43. Tem conhecimento das complicações associadas à doença?</div>
+    <div class="options-grid" id="q-conhec-complic"></div></div>
+    <div style="margin-top:14px"><div class="q-label">44. Tem dificuldade para entender informações sobre o tratamento?</div>
+    <div class="options-grid" id="q-dif-trat"></div></div>
+    <div style="margin-top:14px"><div class="q-label">45. Possui facilidade para marcar consultas quando necessário?</div>
+    <div class="options-grid" id="q-facilidade-consulta"></div></div>
+    <div style="margin-top:14px"><div class="q-label">46. Já ocorreu de suas medicações estarem em falta na farmácia do hospital?</div>
+    <div class="options-grid" id="q-falta-farm"></div></div>
+    <div style="margin-top:14px"><div class="q-label">47. Quando faltam medicações na farmácia, consegue comprar?</div>
+    <div class="options-grid" id="q-compra-med"></div></div>
+    <div style="margin-top:14px"><div class="q-label">48. Considera o custo das medicações um problema para continuar o tratamento?</div>
+    <div class="options-grid" id="q-custo-med"></div></div>
+    <div style="margin-top:14px"><div class="q-label">49. O deslocamento até a unidade de saúde/farmácia é um problema?</div>
+    <div class="options-grid" id="q-deslocamento"></div></div>
+  </div>
+
+  <!-- S15: Escalas Subjetivas -->
+  <div class="section-card">
+    <div class="section-title">50. Escalas Subjetivas (0–100)</div>
+    <div style="margin-top:8px">
+      <div class="eva-row"><label>Clareza de comunicação da equipe médica</label><input type="range" id="f-comunic" min="0" max="100" value="" oninput="updEva('f-comunic','v-comunic')"><span class="eva-val" id="v-comunic">—</span></div>
+      <div class="eva-row"><label>Confiança na equipe médica</label><input type="range" id="f-confianca" min="0" max="100" value="" oninput="updEva('f-confianca','v-confianca')"><span class="eva-val" id="v-confianca">—</span></div>
+      <div class="eva-row"><label>Participação nas decisões terapêuticas</label><input type="range" id="f-participacao" min="0" max="100" value="" oninput="updEva('f-participacao','v-participacao')"><span class="eva-val" id="v-participacao">—</span></div>
+      <div class="eva-row"><label>Satisfação com tratamento atual</label><input type="range" id="f-satisfacao" min="0" max="100" value="" oninput="updEva('f-satisfacao','v-satisfacao')"><span class="eva-val" id="v-satisfacao">—</span></div>
+      <div class="eva-row"><label>Suporte social para tomar as medicações</label><input type="range" id="f-suporte" min="0" max="100" value="" oninput="updEva('f-suporte','v-suporte')"><span class="eva-val" id="v-suporte">—</span></div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0">
+      <div class="eva-row"><label>EVA Dor</label><input type="range" id="f-eva-dor" min="0" max="100" value="" oninput="updEva('f-eva-dor','v-eva-dor')"><span class="eva-val" id="v-eva-dor">—</span></div>
+      <div class="eva-row"><label>EVA Estresse</label><input type="range" id="f-eva-estresse" min="0" max="100" value="" oninput="updEva('f-eva-estresse','v-eva-estresse')"><span class="eva-val" id="v-eva-estresse">—</span></div>
+      <div class="eva-row"><label>EVA PtGA (Avaliação Global do Paciente)</label><input type="range" id="f-eva-ptga" min="0" max="100" value="" oninput="updEva('f-eva-ptga','v-eva-ptga')"><span class="eva-val" id="v-eva-ptga">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(2)">← Sociodemográfico</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-3" style="width:0%"></div></div><button class="btn-primary" onclick="showFormTab(4)">Questionários →</button></div>
+  </div><!-- /painel 3 -->
+
+  <!-- ── PAINEL 4: Questionários ── -->
+  <div class="form-tab-panel" id="form-tab-4">
+
+  <!-- S16: HAQ -->
+  <div class="section-card">
+    <div class="section-title">HAQ — Health Assessment Questionnaire</div>
+    <div style="font-size:11px;color:#718096;margin-bottom:12px">Indique o grau de dificuldade para realizar cada atividade <strong>na última semana</strong>. A pontuação final (0–3) é a média dos 8 blocos.</div>
+    <div id="haq-blocks"></div>
+    <div class="haq-score-box" id="haq-score-box">
+      <div class="score-val" id="haq-score-val">—</div>
+      <div class="score-lbl">HAQ-DI</div>
+      <div class="score-sub" id="haq-score-sub"></div>
+    </div>
+  </div>
+
+  <!-- S16: BMQ -->
+  <div class="section-card">
+    <div class="section-title">BMQ — Beliefs about Medicines Questionnaire</div>
+    <div style="font-size:11px;color:#718096;margin-bottom:12px">
+      Subescala <strong>Necessity</strong> (5–25 pts) e <strong>Concerns</strong> (6–30 pts). Diferença Necessity−Concerns orienta a atitude em relação ao tratamento.
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:#1a56a0;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #bee3f8">
+      BMQ Necessity — Necessidade percebida dos medicamentos (5–25)
+    </div>
+    <div id="bmq-necessity-items"></div>
+    <div class="haq-score-box" id="bmq-nec-box" style="border-color:#4299e1;background:#ebf8ff;margin-bottom:16px">
+      <div class="score-val" id="bmq-nec-val" style="color:#2b6cb0">—</div>
+      <div class="score-lbl" style="color:#2b6cb0">BMQ Necessity (5–25)</div>
+      <div class="score-sub" id="bmq-nec-sub"></div>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:#c05621;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #feebc8;margin-top:8px">
+      BMQ Concerns — Preocupações com os medicamentos (6–30)
+    </div>
+    <div id="bmq-concerns-items"></div>
+    <div class="haq-score-box" id="bmq-con-box" style="border-color:#f6ad55;background:#fffaf0">
+      <div class="score-val" id="bmq-con-val" style="color:#c05621">—</div>
+      <div class="score-lbl" style="color:#c05621">BMQ Concerns (6–30)</div>
+      <div class="score-sub" id="bmq-con-sub"></div>
+    </div>
+
+    <div class="haq-score-box" id="bmq-diff-box" style="border-color:#9f7aea;background:#faf5ff;margin-top:10px;display:none">
+      <div class="score-val" id="bmq-diff-val" style="color:#553c9a">—</div>
+      <div class="score-lbl" style="color:#553c9a">Diferença Necessity − Concerns</div>
+      <div class="score-sub" id="bmq-diff-sub"></div>
+    </div>
+  </div>
+
+  <!-- S17: SEAMS -->
+  <div class="section-card">
+    <div class="section-title">SEAMS — Autoeficácia para Adesão à Medicação</div>
+    <div style="font-size:11px;color:#718096;margin-bottom:12px">Para cada situação abaixo, indique o quanto você está confiante de que conseguirá tomar seus medicamentos conforme prescrito. Pontuação total: 13–39 pontos.</div>
+    <div id="seams-items"></div>
+    <div class="haq-score-box" id="seams-score-box" style="border-color:#48bb78;background:#f0fff4">
+      <div class="score-val" id="seams-score-val" style="color:#276749">—</div>
+      <div class="score-lbl" style="color:#276749">SEAMS Total (13–39)</div>
+      <div class="score-sub" id="seams-score-sub"></div>
+    </div>
+  </div>
+
+  <!-- S18: HADS -->
+  <div class="section-card">
+    <div class="section-title">HADS — Escala Hospitalar de Ansiedade e Depressão</div>
+    <div style="font-size:11px;color:#718096;margin-bottom:12px">
+      Itens <span style="background:#e9d8fd;color:#553c9a;font-weight:700;padding:1px 6px;border-radius:10px;font-size:10px">A</span> = Ansiedade &nbsp;|&nbsp;
+      Itens <span style="background:#feebc8;color:#7b341e;font-weight:700;padding:1px 6px;border-radius:10px;font-size:10px">D</span> = Depressão &nbsp;|&nbsp;
+      Pontuação: 0–7 normal · 8–10 limítrofe · 11–21 caso clínico
+    </div>
+    <div id="hads-items"></div>
+    <div class="hads-score-row">
+      <div class="hads-score-box anx" id="hads-anx-box">
+        <div class="score-val" id="hads-anx-val">—</div>
+        <div class="score-lbl">Ansiedade (0–21)</div>
+        <div class="score-sub" id="hads-anx-sub"></div>
+      </div>
+      <div class="hads-score-box dep" id="hads-dep-box">
+        <div class="score-val" id="hads-dep-val">—</div>
+        <div class="score-lbl">Depressão (0–21)</div>
+        <div class="score-sub" id="hads-dep-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S18: CQR-19 -->
+  <div class="section-card">
+    <div class="section-title">CQR-19 — Questionário de Adesão ao Tratamento</div>
+    <div style="font-size:11px;color:#718096;margin-bottom:10px">Itens marcados com <span style="background:#fed7d7;color:#9b2c2c;border-radius:3px;padding:1px 5px;font-weight:700;font-size:10px">NEG</span> têm pontuação invertida (itens 4, 8, 9, 11, 12 e 19). Verifique o texto de cada item contra a versão validada do seu instrumento.</div>
+    <table class="cqr-table">
+      <thead><tr><th>#</th><th>Afirmação</th><th class="opt-h">NC de forma alguma</th><th class="opt-h">Não concordo</th><th class="opt-h">Concordo</th><th class="opt-h">Concordo muito</th></tr></thead>
+      <tbody id="cqr-tbody"></tbody>
+    </table>
+    <div class="cqr-score-box" id="cqr-score-box">
+      <div class="score-val" id="cqr-score-val">—</div>
+      <div class="score-lbl" id="cqr-score-lbl">—</div>
+      <div class="score-sub" id="cqr-score-sub"></div>
+    </div>
+  </div>
+
+  <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(3)">← Acesso e Percepção</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-4" style="width:0%"></div></div><button class="btn-primary" onclick="savePatient()">💾 Salvar Paciente</button></div>
+  </div><!-- /painel 4 -->
+
+  <div class="form-actions">
+    <button class="btn-secondary" onclick="clearForm()">Limpar Formulário</button>
+    <button class="btn-primary" onclick="savePatient()">Salvar Paciente</button>
+  </div>
+</div>
+
+<!-- ===== LISTA ===== -->
+<div id="page-list" class="page">
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Buscar por nome ou RGHC..." oninput="renderList()">
+    <button class="btn-primary btn-sm" onclick="exportCSV()">Exportar CSV</button>
+    <button class="btn-green-sm" onclick="openSheetsModal()" title="Exportar para Google Sheets via Apps Script">&#127347; Google Sheets</button>
+    <button class="btn-secondary btn-sm" onclick="exportJSON()">Backup JSON</button>
+    <label class="btn-secondary btn-sm" style="cursor:pointer;padding:5px 12px;font-size:12px;font-weight:600;border:2px solid #1a56a0;border-radius:8px;color:#1a56a0">
+      Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
+    </label>
+  </div>
+  <div id="list-container"></div>
+</div>
+
+<!-- ===== STATS ===== -->
+<div id="page-stats" class="page">
+  <div id="stat-segments" style="margin-bottom:16px"></div>
+  <div id="stat-cards"></div>
+  <div id="stat-charts"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const SEXO = ['Feminino','Masculino'];
+const ETNIA = ['Amarela','Branca','Parda','Preta'];
+const DOENCAS = [
+  'Arterite de células gigantes','Arterite de Takayasu','Artrite idiopática juvenil',
+  'Artrite psorística','Artrite reumatoide','Dermatomiosite',
+  'Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil','Espondiloartrite',
+  'GEPA','GPA','Lúpus eritematoso sistêmico','Lúpus juvenil',
+  'Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','PAM','PAN',
+  'Policondrite recidivante','Polimiosite','Síndrome antissintetase',
+  'Sobreposição miopatia + outra doença'
+];
+const TEMPO_DIAG = ['< 1 ano','1–3 anos','3–5 anos','5–7 anos','7–9 anos','10–15 anos','> 15 anos'];
+const ATIVIDADE = ['Remissão','Baixa atividade','Moderada atividade','Alta atividade'];
+const TEMPO_REMISSAO = ['< 6 meses','6–12 meses','12–24 meses','24–48 meses','> 48 meses'];
+const NUM_MED = ['1','2','3','4','5','6','7','8','9','10','11 ou mais'];
+const GCS = ['Não','5 mg','6–10 mg','11–20 mg','21–40 mg','41–80 mg'];
+const CS_DMARD = ['Azatioprina','Ciclosporina','Hidroxicloroquina','Leflunomida','Metotrexato','Micofenolato de Mofetila','Sulfassalazina','Tacrolimus'];
+const B_DMARD = ['Abatacept','Adalimumabe','Anifrolumabe','Belimumabe','Certolizumabe','Etanercept','Golimumabe','Guselcumabe','Infliximabe','Ixekizumabe','Mepolizumabe','Risanquizumabe','Rituximabe','Secuquinumabe','Tocilizumabe','Ustekinumabe'];
+const TS_DMARD = ['Baricitinibe','Tofacitinibe','Upadacitinibe'];
+const TEMPO_DMARD = ['< 6 meses','6–12 meses','12–24 meses','24–48 meses','48 meses ou mais'];
+const COMORBIDADES = [
+  'Ansiedade','Artroplastia joelho','Artroplastia quadril','Asma','AVCi','Catarata',
+  'DAC','DAOP','Depressão','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn',
+  'Doença de Sjogren','DPOC','DRC','DRGE','FA','Fibromialgia','HAS',
+  'Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','ICFEP','ICFER','IAM',
+  'Glaucoma','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Obesidade',
+  'Osteoartrite','Osteonecrose','Osteoporose','Retocolite ulcerativa','SAF','TEP','TVP'
+];
+const MED_CONTINUAS = [
+  'AAS','Aciclovir','Ácido fólico','Ácido zoledrônico','Alendronato de sódio',
+  'Amitriptilina','Ambrisentana','Anlodipino','Apixabana','Atenolol','Atorvastatina',
+  'Bactrim','Bisoprolol','Bosentana','Bromoprida','Canaglifozina','Candesartana',
+  'Captopril','Carbonato de cálcio','Carvedilol','Citrato de cálcio','Ciclobenzaprina',
+  'Clonidina','Clopidogrel','Colchicina','Colecalciferol','Clortalidona','Codeína',
+  'Dabigatrana','Dapaglifozina','Dapsona','Denosumabe','Desvenlafaxina','Dipirona',
+  'Domperidona','Doxazosina','Duloxetina','Empaglifozina','Enalapril','Espironolactona',
+  'Escitalopram','Finasterida','Fluoxetina','Gabapentina','Gliclazida','Glibenclamida',
+  'Glimepirida','Hidralazina','Hidroclorotiazida','Indapamida','Insulina','Levotiroxina',
+  'Liraglutida','Losartana','Metformina','Metildopa','Metoclopramida','Metoprolol',
+  'Nebivolol','Nifedipino','Nortriptilina','Omeprazol','Ondansetrona','Pantoprazol',
+  'Paracetamol','Pioglitazona','Pregabalina','Propranolol','Quetiapina','Ramipril',
+  'Risedronato de sódio','Rivaroxabana','Romosozumabe','Rosuvastatina','Semaglutida',
+  'Sertralina','Sildenafil','Sinvastatina','Sulfato ferroso','Tamoxifeno','Tansulosina',
+  'Teriparatida','Ticagrelor','Tramadol','Valsartana','Varfarina','Venlafaxina'
+];
+const REACAO_DMARD = [...CS_DMARD,...B_DMARD,...TS_DMARD].filter((v,i,a)=>a.indexOf(v)===i).sort();
+
+// ── Dados sociodemográficos ──
+const RELIGIAO = ['Sem religião','Budismo','Candomblé','Catolicismo','Espiritismo','Evangélico / Protestante','Judaísmo','Islamismo','Testemunha de Jeová','Umbandismo','Outro'];
+const ESTADO_CIVIL = ['Casado','Divorciado','Solteiro','União estável','Viúvo'];
+const FILHOS = ['Sem filhos','1','2','3','4','5','6 ou mais'];
+const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto','Ensino Fundamental completo','Ensino Médio incompleto','Ensino Médio completo','Ensino Superior incompleto','Ensino Superior completo','Pós-graduação'];
+const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
+const OCUPACAO = ['Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de limpeza','Balconista','Cabeleireiro','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Técnico de enfermagem','Entregador','Faxineiro','Garçom','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Segurança'];
+const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
+const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
+const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
+const NUM_PESSOAS = ['Mora sozinho','2','3','4','5','6','7','8 ou mais'];
+const SITUACAO_MORADIA = ['Própria','Alugada','Cedida','Instituição','Abrigo','Pensão','Situação de rua'];
+const TABAGISMO = ['Sim','Não','Ex-tabagista'];
+const ETILISMO = ['Sim','Não','Ex-etilista'];
+const SIM_NAO = ['Sim','Não'];
+const SIM_NAO_PARC = ['Sim','Não','Parcialmente'];
+
+// ── CQR-19 ──
+// Itens negativos (exibição invertida na interface): 4,8,9,11,12,19
+const CQR_NEG = new Set([4,8,9,11,12,19]);
+
+// Função discriminante canônica — Taking Compliance ≤ 80%
+// Coeficientes derivados da amostra de calibração do autor (van den Bemt et al.)
+const CQR_DISC = {
+  constant: -3.4777269054494035,
+  coefs: [
+    -0.44477276433284296,   // item 1
+    -0.9517389645231992,    // item 2
+     1.675784309611586,     // item 3
+    -0.21007515279754496,   // item 4
+     0.024391234120956798,  // item 5
+    -0.5353316565428011,    // item 6
+     0.0029544189406322916, // item 7
+     0.01351792034638963,   // item 8
+    -0.010590545774048919,  // item 9
+    -0.25455764022117855,   // item 10
+     0.10226435257826295,   // item 11
+     0.11545009043160576,   // item 12
+     0.024759537503381134,  // item 13
+     0.10908547284802167,   // item 14
+     0.4474790434938089,    // item 15
+     0.22838272884627178,   // item 16
+     0.5350275091774594,    // item 17
+    -0.4190977732412856,    // item 18
+     0.6828717614297019,    // item 19
+  ],
+  // Ponto de corte = (Na×Zb + Nb×Za)/(Na+Nb) = (29×0.628 + 56×(-1.213))/85
+  cuttingScore: -0.5848941176,
+};
+const CQR_RESP = ['Não concordo de forma alguma','Não concordo','Concordo','Concordo muito'];
+const CQR_ITENS = [
+  'Se o reumatologista me diz para tomar os medicamentos, eu tomo.',
+  'Eu tomo os meus medicamentos antirreumáticos, pois assim tenho menos problemas.',
+  'Eu definitivamente não me atrevo a me esquecer dos meus medicamentos antirreumáticos.',
+  'Se eu puder ajustar a mim mesmo com terapias alternativas, prefiro isso ao que o meu reumatologista prescreve.',  // negativo
+  'Meus medicamentos ficam sempre guardados no mesmo local e é por isso que eu não me esqueço deles.',
+  'Eu tomo os meus medicamentos, porque tenho total confiança no meu reumatologista.',
+  'O motivo mais importante para tomar meus medicamentos antirreumáticos é que, ainda, posso fazer o que quero.',
+  'Eu não gosto de tomar os medicamentos. Se eu puder não os tomar, eu não tomarei.',  // negativo
+  'Quando estou de férias, às vezes, acontece de não tomar meus medicamentos.',  // negativo
+  'Eu tomo meus medicamentos antirreumáticos, senão, de que adiantaria consultar um reumatologista?',
+  'Eu não espero milagres dos meus medicamentos antirreumáticos.',  // negativo
+  'Se você não aguenta os medicamentos, pode dizer: "jogue fora, não importa o que aconteça".',  // negativo
+  'Se eu não tomar meus medicamentos antirreumáticos regularmente, a inflamação volta.',
+  'Se eu não tomar meus medicamentos antirreumáticos, meu corpo me avisa.',
+  'Minha saúde está acima de tudo e, se eu tiver que tomar medicamentos para ficar bem, eu tomarei.',
+  'Eu uso um organizador de comprimidos para minha medicação.',
+  'O que o médico me diz, eu presto atenção.',
+  'Se eu não tomo os meus medicamentos antirreumáticos, tenho mais queixas.',
+  'Acontece de vez em quando, eu saio no fim de semana e então não tomo os meus medicamentos.',  // negativo
+];
+
+// ── BMQ ──
+const BMQ_RESPS = [
+  { txt:'Concordo totalmente',       pts:5 },
+  { txt:'Concordo',                  pts:4 },
+  { txt:'Nem concordo nem discordo', pts:3 },
+  { txt:'Discordo',                  pts:2 },
+  { txt:'Discordo totalmente',       pts:1 },
+];
+const BMQ_NECESSITY = [
+  'Atualmente, a minha saúde depende destes medicamentos.',
+  'A minha vida seria impossível sem estes medicamentos.',
+  'Sem estes medicamentos, eu estaria muito doente.',
+  'A minha saúde no futuro dependerá destes medicamentos.',
+  'Estes medicamentos protegem-me de ficar pior.',
+];
+const BMQ_CONCERNS = [
+  'Preocupa-me ter de tomar estes medicamentos.',
+  'Às vezes, preocupo-me com os efeitos a longo prazo destes medicamentos.',
+  'Estes medicamentos são um mistério para mim.',
+  'Estes medicamentos perturbam a minha vida.',
+  'Às vezes, preocupo-me em ficar demasiado dependente destes medicamentos.',
+  'Estes medicamentos dão-me desagradáveis efeitos secundários.',
+];
+
+// ── SEAMS ──
+const SEAMS_ITENS = [
+  'Quando você toma vários medicamentos diferentes a cada dia.',
+  'Quando você toma medicamentos mais de uma vez ao dia.',
+  'Quando você está fora de casa.',
+  'Quando você tem um dia agitado.',
+  'Quando os medicamentos causam alguns efeitos colaterais.',
+  'Quando ninguém lembra você de tomar o medicamento.',
+  'Quando os horários de tomar os medicamentos não são convenientes.',
+  'Quando sua rotina fica bagunçada.',
+  'Quando você não tem certeza de como deve tomar o medicamento.',
+  'Quando você não tem certeza em que horário deve tomar seu medicamento.',
+  'Quando você está se sentindo doente (como ter um resfriado ou uma gripe).',
+  'Quando você adquire os medicamentos e alguns deles parecem diferentes do habitual. (Exemplo: com embalagem, cor, formato e tamanho diferente do medicamento que você estava usando)',
+  'Quando o médico troca seus medicamentos.',
+];
+const SEAMS_RESPS = [
+  { txt:'Não estou confiante', pts:1 },
+  { txt:'Pouco confiante',     pts:2 },
+  { txt:'Muito confiante',     pts:3 },
+];
+
+// ── BMQ funções ──
+function renderBMQBlock(containerId, itens, prefix) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  itens.forEach((txt, i) => {
+    const n = i + 1;
+    const div = document.createElement('div');
+    div.className = 'hads-item';
+    div.style.cssText = prefix === 'bmqn' ? 'border-left:4px solid #4299e1' : 'border-left:4px solid #f6ad55';
+    const badge = prefix === 'bmqn'
+      ? `<span class="hads-badge" style="background:#bee3f8;color:#2b6cb0">${n}</span>`
+      : `<span class="hads-badge" style="background:#feebc8;color:#c05621">${n}</span>`;
+    const optsHtml = BMQ_RESPS.map(o =>
+      `<div class="opt-btn" data-bmq="${prefix}-${n}" data-pts="${o.pts}"
+        onclick="selectBMQ('${prefix}-${n}',${o.pts},this)">${o.txt}</div>`
+    ).join('');
+    div.innerHTML = `
+      <div class="hads-item-header">${badge}
+        <span class="hads-item-txt">${txt}</span>
+      </div>
+      <div class="hads-opts">${optsHtml}</div>`;
+    c.appendChild(div);
+  });
+}
+
+function renderBMQ() {
+  if (!formData.bmq_respostas) formData.bmq_respostas = {};
+  renderBMQBlock('bmq-necessity-items', BMQ_NECESSITY, 'bmqn');
+  renderBMQBlock('bmq-concerns-items',  BMQ_CONCERNS,  'bmqc');
+}
+
+function selectBMQ(id, pts, el) {
+  document.querySelectorAll(`.opt-btn[data-bmq="${id}"]`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  formData.bmq_respostas[id] = pts;
+  calcBMQ();
+}
+
+function calcBMQ() {
+  const r = formData.bmq_respostas || {};
+  const necKeys  = BMQ_NECESSITY.map((_,i) => `bmqn-${i+1}`);
+  const conKeys  = BMQ_CONCERNS.map((_,i)  => `bmqc-${i+1}`);
+  const necVals  = necKeys.map(k => r[k]).filter(v => v !== undefined);
+  const conVals  = conKeys.map(k => r[k]).filter(v => v !== undefined);
+
+  const necBox  = document.getElementById('bmq-nec-box');
+  const conBox  = document.getElementById('bmq-con-box');
+  const difBox  = document.getElementById('bmq-diff-box');
+
+  if (necVals.length === BMQ_NECESSITY.length) {
+    const sum = necVals.reduce((a,b) => a+b, 0);
+    formData.bmq_necessity = sum;
+    necBox.style.display = 'block';
+    document.getElementById('bmq-nec-val').textContent = sum;
+    document.getElementById('bmq-nec-sub').textContent = `${necVals.length}/${BMQ_NECESSITY.length} itens respondidos`;
+  } else { necBox.style.display = 'none'; formData.bmq_necessity = ''; }
+
+  if (conVals.length === BMQ_CONCERNS.length) {
+    const sum = conVals.reduce((a,b) => a+b, 0);
+    formData.bmq_concerns = sum;
+    conBox.style.display = 'block';
+    document.getElementById('bmq-con-val').textContent = sum;
+    document.getElementById('bmq-con-sub').textContent = `${conVals.length}/${BMQ_CONCERNS.length} itens respondidos`;
+  } else { conBox.style.display = 'none'; formData.bmq_concerns = ''; }
+
+  updateTabBadges();
+  if (formData.bmq_necessity !== '' && formData.bmq_concerns !== '') {
+    const diff = formData.bmq_necessity - formData.bmq_concerns;
+    formData.bmq_diff = diff;
+    difBox.style.display = 'block';
+    document.getElementById('bmq-diff-val').textContent = (diff > 0 ? '+' : '') + diff;
+    document.getElementById('bmq-diff-sub').textContent =
+      diff > 0 ? 'Crença de necessidade supera preocupações → favorável à adesão'
+      : diff < 0 ? 'Preocupações superam necessidade percebida → risco de não adesão'
+      : 'Necessidade e preocupações equiparadas';
+  } else { difBox.style.display = 'none'; formData.bmq_diff = ''; }
+}
+
+function restoreBMQ(respostas) {
+  formData.bmq_respostas = respostas || {};
+  Object.entries(formData.bmq_respostas).forEach(([id, pts]) => {
+    const el = document.querySelector(`.opt-btn[data-bmq="${id}"][data-pts="${pts}"]`);
+    if (el) el.classList.add('selected');
+  });
+  calcBMQ();
+}
+
+// ── SEAMS funções ──
+function renderSEAMS() {
+  const container = document.getElementById('seams-items');
+  container.innerHTML = '';
+  if (!formData.seams_respostas) formData.seams_respostas = {};
+  SEAMS_ITENS.forEach((txt, i) => {
+    const n = i + 1;
+    const div = document.createElement('div');
+    div.className = 'hads-item';
+    div.style.cssText = 'border-left:4px solid #48bb78';
+    const optsHtml = SEAMS_RESPS.map(o =>
+      `<div class="opt-btn" data-seams="${n}" data-pts="${o.pts}"
+        onclick="selectSEAMS(${n},${o.pts},this)">${o.txt}</div>`
+    ).join('');
+    div.innerHTML = `
+      <div class="hads-item-header">
+        <span class="hads-badge" style="background:#c6f6d5;color:#276749">${n}</span>
+        <span class="hads-item-txt">${txt}</span>
+      </div>
+      <div class="hads-opts">${optsHtml}</div>`;
+    container.appendChild(div);
+  });
+}
+
+function selectSEAMS(n, pts, el) {
+  document.querySelectorAll(`.opt-btn[data-seams="${n}"]`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  formData.seams_respostas[n] = pts;
+  calcSEAMS();
+}
+
+function calcSEAMS() {
+  const r = formData.seams_respostas || {};
+  const answered = Object.keys(r).length;
+  const box = document.getElementById('seams-score-box');
+  if (answered < SEAMS_ITENS.length) { box.style.display = 'none'; formData.seams_score = ''; return; }
+  const total = Object.values(r).reduce((a, b) => a + b, 0);
+  formData.seams_score = total;
+  updateTabBadges();
+  box.style.display = 'block';
+  document.getElementById('seams-score-val').textContent = total;
+  document.getElementById('seams-score-sub').textContent =
+    `Itens respondidos: ${answered}/${SEAMS_ITENS.length} · Mín: ${SEAMS_ITENS.length} · Máx: ${SEAMS_ITENS.length * 3}`;
+}
+
+function restoreSEAMS(respostas) {
+  formData.seams_respostas = respostas || {};
+  Object.entries(formData.seams_respostas).forEach(([n, pts]) => {
+    const el = document.querySelector(`.opt-btn[data-seams="${n}"][data-pts="${pts}"]`);
+    if (el) el.classList.add('selected');
+  });
+  calcSEAMS();
+}
+
+// ── HADS ──
+// Ordem de apresentação interleaved: 1A,1D,2A,2D,...
+const HADS_ITENS = [
+  { id:'1A', tipo:'A', txt:'Eu me sinto tenso ou contraído.',
+    opts:[{txt:'A maior parte do tempo',pts:3},{txt:'Boa parte do tempo',pts:2},{txt:'De vez em quando',pts:1},{txt:'Nunca',pts:0}] },
+  { id:'1D', tipo:'D', txt:'Eu ainda sinto gosto pelas mesmas coisas de antes.',
+    opts:[{txt:'Sim, do mesmo jeito que antes',pts:0},{txt:'Não tanto quanto antes',pts:1},{txt:'Só um pouco',pts:2},{txt:'Já não sinto mais prazer em nada',pts:3}] },
+  { id:'2A', tipo:'A', txt:'Eu sinto uma espécie de medo, como se alguma coisa ruim fosse acontecer.',
+    opts:[{txt:'Sim, e de um jeito muito forte',pts:3},{txt:'Sim, mas não tão forte',pts:2},{txt:'Um pouco, mas isso não me preocupa',pts:1},{txt:'Não sinto nada disso',pts:0}] },
+  { id:'2D', tipo:'D', txt:'Dou risada e me divirto quando vejo coisas engraçadas.',
+    opts:[{txt:'Do mesmo jeito que antes',pts:0},{txt:'Atualmente um pouco menos',pts:1},{txt:'Atualmente bem menos',pts:2},{txt:'Não consigo mais',pts:3}] },
+  { id:'3A', tipo:'A', txt:'Estou com a cabeça cheia de preocupações.',
+    opts:[{txt:'A maior parte do tempo',pts:3},{txt:'Boa parte do tempo',pts:2},{txt:'De vez em quando',pts:1},{txt:'Raramente',pts:0}] },
+  { id:'3D', tipo:'D', txt:'Eu me sinto alegre.',
+    opts:[{txt:'Nunca',pts:3},{txt:'Poucas vezes',pts:2},{txt:'Muitas vezes',pts:1},{txt:'A maior parte do tempo',pts:0}] },
+  { id:'4A', tipo:'A', txt:'Consigo ficar sentado à vontade e me sentir relaxado.',
+    opts:[{txt:'Sim, quase sempre',pts:0},{txt:'Muitas vezes',pts:1},{txt:'Poucas vezes',pts:2},{txt:'Nunca',pts:3}] },
+  { id:'4D', tipo:'D', txt:'Eu estou lento para pensar em fazer as coisas.',
+    opts:[{txt:'Quase sempre',pts:3},{txt:'Muitas vezes',pts:2},{txt:'De vez em quando',pts:1},{txt:'Nunca',pts:0}] },
+  { id:'5A', tipo:'A', txt:'Eu tenho uma sensação ruim de medo, como um frio na barriga ou um aperto no estômago.',
+    opts:[{txt:'Nunca',pts:0},{txt:'De vez em quando',pts:1},{txt:'Muitas vezes',pts:2},{txt:'Quase sempre',pts:3}] },
+  { id:'5D', tipo:'D', txt:'Eu perdi o interesse em cuidar da minha aparência.',
+    opts:[{txt:'Completamente',pts:3},{txt:'Não estou mais me cuidando como deveria',pts:2},{txt:'Talvez não tanto quanto antes',pts:1},{txt:'Me cuido do mesmo jeito que antes',pts:0}] },
+  { id:'6A', tipo:'A', txt:'Eu me sinto inquieto, como se não pudesse ficar parado em lugar nenhum.',
+    opts:[{txt:'Sim, demais',pts:3},{txt:'Bastante',pts:2},{txt:'Um pouco',pts:1},{txt:'Não me sinto assim',pts:0}] },
+  { id:'6D', tipo:'D', txt:'Fico esperando animado coisas boas que estão por vir.',
+    opts:[{txt:'Do mesmo jeito que antes',pts:0},{txt:'Um pouco menos do que antes',pts:1},{txt:'Bem menos do que antes',pts:2},{txt:'Quase nunca',pts:3}] },
+  { id:'7A', tipo:'A', txt:'De repente, tenho a sensação de entrar em pânico.',
+    opts:[{txt:'A quase todo momento',pts:3},{txt:'Várias vezes',pts:2},{txt:'De vez em quando',pts:1},{txt:'Não sinto isso',pts:0}] },
+  { id:'7D', tipo:'D', txt:'Consigo sentir prazer quando assisto um bom programa de televisão, de rádio, ou quando leio alguma coisa.',
+    opts:[{txt:'Quase sempre',pts:0},{txt:'Várias vezes',pts:1},{txt:'Poucas vezes',pts:2},{txt:'Quase nunca',pts:3}] },
+];
+
+// ── HAQ-DI ──
+const HAQ_RESPS = ['Sem qualquer dificuldade','Com alguma dificuldade','Com muita dificuldade','Incapaz de realizar'];
+const HAQ_BLOCOS = [
+  { titulo: 'Bloco 1 — Vestir-se e Arrumar-se', itens: [
+    { n:1,  txt:'Vestir-se, inclusive amarrar os cordões dos seus sapatos, abotoar as suas roupas.' },
+    { n:2,  txt:'Lavar sua cabeça e seus cabelos.' },
+  ]},
+  { titulo: 'Bloco 2 — Levantar-se', itens: [
+    { n:3,  txt:'Levantar-se de uma maneira ereta de uma cadeira de encosto reto e sem braços.' },
+    { n:4,  txt:'Deitar-se e levantar-se da cama.' },
+  ]},
+  { titulo: 'Bloco 3 — Comer', itens: [
+    { n:5,  txt:'Cortar um pedaço de carne.' },
+    { n:6,  txt:'Levar à boca um copo ou uma xícara cheia de café, leite ou água.' },
+    { n:7,  txt:'Abrir um saco de leite comum.' },
+  ]},
+  { titulo: 'Bloco 4 — Caminhar', itens: [
+    { n:8,  txt:'Caminhar em lugares planos.' },
+    { n:9,  txt:'Subir cinco degraus.' },
+  ]},
+  { titulo: 'Bloco 5 — Higiene', itens: [
+    { n:10, txt:'Lavar seu corpo inteiro e secá-lo após o banho.' },
+    { n:11, txt:'Tomar um banho de chuveiro.' },
+    { n:12, txt:'Sentar-se e levantar-se de um vaso sanitário.' },
+  ]},
+  { titulo: 'Bloco 6 — Alcançar', itens: [
+    { n:13, txt:'Levantar os braços e pegar um objeto de mais ou menos 2,5 quilos que está posicionado um pouco acima de sua cabeça.' },
+    { n:14, txt:'Curvar-se para pegar suas roupas no chão.' },
+  ]},
+  { titulo: 'Bloco 7 — Preensão', itens: [
+    { n:15, txt:'Segurar-se em pé no ônibus ou no metrô.' },
+    { n:16, txt:'Abrir potes ou vidros de conserva que tenham sido previamente abertos.' },
+    { n:17, txt:'Abrir e fechar torneiras.' },
+  ]},
+  { titulo: 'Bloco 8 — Atividades', itens: [
+    { n:18, txt:'Fazer compras na redondeza onde mora.' },
+    { n:19, txt:'Entrar e sair de um ônibus.' },
+    { n:20, txt:'Realizar tarefas tais como usar a vassoura para varrer e o rodo para puxar água.' },
+  ]},
+];
+
+// Standard dosing per literature (rheumatology systemic diseases)
+const DMARD_INFO = {
+  // csDMARDs
+  'Azatioprina':               { via:'Oral',    dose:'1–3 mg/kg/dia',              freq:'1x ao dia' },
+  'Ciclosporina':              { via:'Oral',    dose:'2,5–5 mg/kg/dia',            freq:'2x ao dia' },
+  'Hidroxicloroquina':         { via:'Oral',    dose:'200–400 mg/dia',             freq:'1x ao dia' },
+  'Leflunomida':               { via:'Oral',    dose:'20 mg/dia',                  freq:'1x ao dia' },
+  'Metotrexato':               { via:'Oral/SC', dose:'7,5–25 mg/semana',           freq:'1x por semana' },
+  'Micofenolato de Mofetila':  { via:'Oral',    dose:'1–3 g/dia',                  freq:'2x ao dia' },
+  'Sulfassalazina':            { via:'Oral',    dose:'500–3000 mg/dia',            freq:'2–3x ao dia' },
+  'Tacrolimus':                { via:'Oral',    dose:'1–4 mg/dia',                 freq:'2x ao dia' },
+  // bDMARDs
+  'Abatacept':                 { via:'SC/IV',   dose:'SC 125 mg / IV 500–1000 mg', freq:'SC: semanal; IV: mensal' },
+  'Adalimumabe':               { via:'SC',      dose:'40 mg',                      freq:'A cada 2 semanas' },
+  'Anifrolumabe':              { via:'IV',      dose:'300 mg',                     freq:'A cada 4 semanas' },
+  'Belimumabe':                { via:'SC/IV',   dose:'SC 200 mg / IV 10 mg/kg',    freq:'SC: semanal; IV: mensal' },
+  'Certolizumabe':             { via:'SC',      dose:'200 mg',                     freq:'A cada 2 semanas' },
+  'Etanercept':                { via:'SC',      dose:'25–50 mg',                   freq:'25 mg 2x/sem ou 50 mg/sem' },
+  'Golimumabe':                { via:'SC/IV',   dose:'SC 50 mg / IV 2 mg/kg',      freq:'SC: mensal; IV: a cada 8 sem' },
+  'Guselcumabe':               { via:'SC',      dose:'100 mg',                     freq:'Mensal' },
+  'Infliximabe':               { via:'IV',      dose:'3–10 mg/kg',                 freq:'A cada 4–8 semanas' },
+  'Ixekizumabe':               { via:'SC',      dose:'80 mg',                      freq:'Mensal' },
+  'Mepolizumabe':              { via:'SC',      dose:'300 mg',                     freq:'Mensal' },
+  'Risanquizumabe':            { via:'SC',      dose:'150 mg',                     freq:'A cada 12 semanas' },
+  'Rituximabe':                { via:'IV',      dose:'500–1000 mg',                freq:'A cada 6 meses (2 doses)' },
+  'Secuquinumabe':             { via:'SC',      dose:'150–300 mg',                 freq:'Mensal' },
+  'Tocilizumabe':              { via:'SC/IV',   dose:'SC 162 mg / IV 4–8 mg/kg',   freq:'SC: semanal; IV: mensal' },
+  'Ustekinumabe':              { via:'SC',      dose:'90 mg',                      freq:'A cada 12 semanas' },
+  // tsDMARDs
+  'Baricitinibe':              { via:'Oral',    dose:'2–4 mg/dia',                 freq:'1x ao dia' },
+  'Tofacitinibe':              { via:'Oral',    dose:'5–10 mg',                    freq:'2x ao dia' },
+  'Upadacitinibe':             { via:'Oral',    dose:'15–30 mg/dia',               freq:'1x ao dia' },
+};
+const INTERVALO = ['< 3 meses','3 a 6 meses','> 6 meses'];
+
+// Disease → metric mapping
+const DOENCA_METRICAS = {
+  'Artrite reumatoide': ['das28'],
+  'Artrite idiopática juvenil': ['das28','asdas'],
+  'Espondiloartrite': ['asdas'],
+  'Artrite psorística': ['asdas'],
+  'Lúpus eritematoso sistêmico': ['sledai'],
+  'Lúpus juvenil': ['sledai'],
+  'Dermatomiosite': ['myoact'],
+  'Dermatomiosite clinicamente amiopática': ['myoact'],
+  'Dermatomiosite juvenil': ['myoact'],
+  'Polimiosite': ['myoact'],
+  'Miopatia Necrotizante Imunomediada': ['myoact'],
+  'Miosite por corpos de inclusão': ['myoact'],
+  'Síndrome antissintetase': ['myoact'],
+  'Sobreposição miopatia + outra doença': ['myoact'],
+  'GPA': ['bvas'],
+  'GEPA': ['bvas'],
+  'PAM': ['bvas'],
+  'PAN': ['bvas'],
+  'Arterite de células gigantes': ['bvas'],
+  'Policondrite recidivante': ['bvas'],
+  'Arterite de Takayasu': ['bvas','itas'],
+};
+
+// ============================================================
+// FORM TABS
+// ============================================================
+let currentFormTab = 0;
+
+function showFormTab(idx) {
+  currentFormTab = idx;
+  document.querySelectorAll('.form-tab-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+  document.querySelectorAll('.form-step-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  document.getElementById('page-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  updateTabBadges();
+}
+
+function calcTabProgress(tab) {
+  const r = formData;
+  const gv = id => document.getElementById(id) ? document.getElementById(id).value : '';
+  switch (tab) {
+    case 0: {
+      const f = [gv('f-nome'), gv('f-rghc'), gv('f-nascimento'), gv('f-entrevista'), r.sexo, r.etnia];
+      return { done: f.filter(Boolean).length, total: 6 };
+    }
+    case 1: {
+      const f = [r.doenca, r.tempo_diag, r.atividade, r.num_med, r.gcs, r.reacao, r.intervalo];
+      return { done: f.filter(Boolean).length, total: 7 };
+    }
+    case 2: {
+      const f = [r.religiao, r.estado_civil, r.filhos, r.escolaridade, r.renda, r.ocupacao,
+                 r.carga_horaria, r.local_residencia, r.num_pessoas, r.situacao_moradia,
+                 r.tabagismo, r.etilismo, (r.locomocao||[]).length > 0 ? 'ok' : ''];
+      return { done: f.filter(Boolean).length, total: 13 };
+    }
+    case 3: {
+      const f = [r.material_educ, r.acompanhamento, r.dif_doenca, r.conhec_complic, r.dif_trat,
+                 r.facilidade_consulta, r.falta_farm, r.compra_med, r.custo_med, r.deslocamento];
+      const evas = ['f-comunic','f-confianca','f-participacao','f-satisfacao','f-suporte',
+                    'f-eva-dor','f-eva-estresse','f-eva-ptga'].filter(id => gv(id) !== '').length;
+      return { done: f.filter(Boolean).length + evas, total: 18 };
+    }
+    case 4: {
+      const scores = [r.bmq_necessity, r.bmq_concerns, r.seams_score, r.hads_anx, r.hads_dep, r.haq_score, r.cqr_score];
+      return { done: scores.filter(v => v !== '' && v !== undefined && v !== null).length, total: 7 };
+    }
+  }
+  return { done: 0, total: 0 };
+}
+
+function updateTabBadges() {
+  for (let i = 0; i < 5; i++) {
+    const { done, total } = calcTabProgress(i);
+    const badge = document.getElementById(`ftab-badge-${i}`);
+    const bar   = document.getElementById(`spf-${i}`);
+    if (badge) {
+      badge.textContent = `${done}/${total}`;
+      badge.className = 'step-badge ' + (done === total ? 'done' : done > 0 ? 'partial' : 'empty');
+    }
+    if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+  }
+}
+
+// ============================================================
+// JSON BACKUP / RESTORE
+// ============================================================
+function exportJSON() {
+  const db = getData();
+  if (!db.length) { alert('Nenhum dado para exportar.'); return; }
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'backup_reumatologia_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+}
+
+function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error();
+      if (!confirm(`Importar ${data.length} paciente(s)?\n\nATENÇÃO: isto substituirá todos os dados atuais.`)) return;
+      setData(data);
+      renderList();
+      alert(`✓ ${data.length} paciente(s) importados com sucesso.`);
+    } catch {
+      alert('Erro: arquivo inválido ou corrompido.');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let formData = {};
+let editingRghc = null;
+
+function getData() {
+  return JSON.parse(localStorage.getItem('reumatologia_db') || '[]');
+}
+function setData(arr) {
+  localStorage.setItem('reumatologia_db', JSON.stringify(arr));
+}
+
+// ============================================================
+// RENDER OPTION BUTTONS
+// ============================================================
+function renderRadio(containerId, options, field) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  options.forEach(opt => {
+    const b = document.createElement('div');
+    b.className = 'opt-btn';
+    b.textContent = opt;
+    b.onclick = () => {
+      c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      formData[field] = opt;
+      if (field === 'atividade') toggleRemissao(opt);
+      if (field === 'doenca') updateMetrics(opt);
+      if (field === 'reacao') toggleReacao(opt);
+      updateTabBadges();
+    };
+    c.appendChild(b);
+  });
+}
+
+function renderCheck(containerId, options, field, posologiaId) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  if (!formData[field]) formData[field] = [];
+  options.forEach(opt => {
+    const b = document.createElement('div');
+    b.className = 'opt-btn multi';
+    b.textContent = opt;
+    b.onclick = () => {
+      const arr = formData[field];
+      const idx = arr.indexOf(opt);
+      if (idx === -1) { arr.push(opt); b.classList.add('selected'); }
+      else { arr.splice(idx,1); b.classList.remove('selected'); }
+      if (posologiaId) renderPosologia(field, posologiaId);
+      updateTabBadges();
+    };
+    c.appendChild(b);
+  });
+}
+
+// ============================================================
+// POSOLOGIA
+// ============================================================
+function setPosologia(drug, prop, value) {
+  if (!formData.dmard_posologia) formData.dmard_posologia = {};
+  if (!formData.dmard_posologia[drug]) formData.dmard_posologia[drug] = {};
+  formData.dmard_posologia[drug][prop] = value;
+}
+
+function renderPosologia(field, containerId) {
+  const selected = formData[field] || [];
+  const c = document.getElementById(containerId);
+  if (!selected.length) { c.innerHTML = ''; c.classList.add('hidden'); return; }
+  c.classList.remove('hidden');
+  if (!formData.dmard_posologia) formData.dmard_posologia = {};
+
+  const rows = selected.map(drug => {
+    const info = DMARD_INFO[drug] || { via:'', dose:'', freq:'' };
+    if (!formData.dmard_posologia[drug]) {
+      formData.dmard_posologia[drug] = { via: info.via, dose: info.dose, freq: info.freq };
+    }
+    const p = formData.dmard_posologia[drug];
+    const esc = s => (s||'').replace(/'/g,"&#39;");
+    return `<tr>
+      <td style="font-weight:600;white-space:nowrap">${drug}</td>
+      <td><input type="text" value="${esc(p.via)}" oninput="setPosologia('${esc(drug)}','via',this.value)" placeholder="Oral/SC/IV/IM"></td>
+      <td><input type="text" value="${esc(p.dose)}" oninput="setPosologia('${esc(drug)}','dose',this.value)" placeholder="ex: 20 mg/dia"></td>
+      <td><input type="text" value="${esc(p.freq)}" oninput="setPosologia('${esc(drug)}','freq',this.value)" placeholder="ex: 1x ao dia"></td>
+    </tr>`;
+  }).join('');
+
+  c.innerHTML = `
+    <div class="posologia-title">Via de administração e posologia das medicações selecionadas <span style="font-size:11px;font-weight:400;color:#718096">(pré-preenchido conforme literatura; ajuste se necessário)</span></div>
+    <table class="posologia-table">
+      <thead><tr><th>Medicação</th><th>Via</th><th>Dose</th><th>Frequência</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function toggleRemissao(val) {
+  document.getElementById('sub-remissao').classList.toggle('hidden', val !== 'Remissão');
+}
+function toggleReacao(val) {
+  document.getElementById('sub-reacao').classList.toggle('hidden', val !== 'Sim');
+}
+
+function updateMetrics(doenca) {
+  const all = ['das28','asdas','sledai','myoact','bvas','itas'];
+  all.forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
+  const metrics = DOENCA_METRICAS[doenca] || [];
+  metrics.forEach(m => document.getElementById('m-'+m).classList.add('visible'));
+  document.getElementById('metrics-hint').style.display = metrics.length ? 'none' : 'block';
+}
+
+// ============================================================
+// INIT FORM
+// ============================================================
+function initForm() {
+  formData = {
+    csdmard:[], bdmard:[], tsdmard:[],
+    csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
+    comorbidades:[], med_continuas:[], reacao_quais:[],
+    dmard_posologia:{}, locomocao:[], cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
+  };
+  renderRadio('q-sexo', SEXO, 'sexo');
+  renderRadio('q-etnia', ETNIA, 'etnia');
+  renderRadio('q-doenca', DOENCAS, 'doenca');
+  renderRadio('q-tempo-diag', TEMPO_DIAG, 'tempo_diag');
+  renderRadio('q-atividade', ATIVIDADE, 'atividade');
+  renderRadio('q-tempo-remissao', TEMPO_REMISSAO, 'tempo_remissao');
+  renderRadio('q-num-med', NUM_MED, 'num_med');
+  renderRadio('q-gcs', GCS, 'gcs');
+  renderCheck('q-csdmard', CS_DMARD, 'csdmard', 'posologia-csdmard');
+  renderCheck('q-bdmard', B_DMARD, 'bdmard', 'posologia-bdmard');
+  renderCheck('q-tsdmard', TS_DMARD, 'tsdmard', 'posologia-tsdmard');
+  renderRadio('q-tempo-dmard', TEMPO_DMARD, 'tempo_dmard');
+  renderCheck('q-csdmard-prev', CS_DMARD, 'csdmard_prev');
+  renderCheck('q-bdmard-prev', B_DMARD, 'bdmard_prev');
+  renderCheck('q-tsdmard-prev', TS_DMARD, 'tsdmard_prev');
+  renderCheck('q-comorbidades', COMORBIDADES, 'comorbidades');
+  renderCheck('q-med-continuas', MED_CONTINUAS, 'med_continuas');
+  renderRadio('q-reacao', ['Sim','Não'], 'reacao');
+  renderCheck('q-reacao-quais', REACAO_DMARD, 'reacao_quais');
+  renderRadio('q-intervalo', INTERVALO, 'intervalo');
+  // Sociodemográfico
+  renderRadio('q-religiao', RELIGIAO, 'religiao');
+  renderRadio('q-estado-civil', ESTADO_CIVIL, 'estado_civil');
+  renderRadio('q-filhos', FILHOS, 'filhos');
+  renderRadio('q-escolaridade', ESCOLARIDADE, 'escolaridade');
+  renderRadio('q-renda', RENDA, 'renda');
+  renderRadio('q-ocupacao', OCUPACAO, 'ocupacao');
+  renderRadio('q-carga-horaria', CARGA_HORARIA, 'carga_horaria');
+  renderCheck('q-locomocao', LOCOMOCAO, 'locomocao');
+  renderRadio('q-local-residencia', LOCAL_RESIDENCIA, 'local_residencia');
+  renderRadio('q-num-pessoas', NUM_PESSOAS, 'num_pessoas');
+  renderRadio('q-situacao-moradia', SITUACAO_MORADIA, 'situacao_moradia');
+  renderRadio('q-tabagismo', TABAGISMO, 'tabagismo');
+  renderRadio('q-etilismo', ETILISMO, 'etilismo');
+  // Acesso e educação
+  renderRadio('q-material-educ', SIM_NAO, 'material_educ');
+  renderRadio('q-acompanhamento', SIM_NAO, 'acompanhamento');
+  renderRadio('q-dif-doenca', SIM_NAO_PARC, 'dif_doenca');
+  renderRadio('q-conhec-complic', SIM_NAO_PARC, 'conhec_complic');
+  renderRadio('q-dif-trat', SIM_NAO_PARC, 'dif_trat');
+  renderRadio('q-facilidade-consulta', SIM_NAO, 'facilidade_consulta');
+  renderRadio('q-falta-farm', SIM_NAO, 'falta_farm');
+  renderRadio('q-compra-med', SIM_NAO, 'compra_med');
+  renderRadio('q-custo-med', SIM_NAO, 'custo_med');
+  renderRadio('q-deslocamento', SIM_NAO, 'deslocamento');
+  // BMQ
+  renderBMQ();
+  // SEAMS
+  renderSEAMS();
+  // HADS
+  renderHADS();
+  // HAQ
+  renderHAQ();
+  // CQR-19
+  renderCQR();
+  // Badges
+  updateTabBadges();
+}
+
+// ── HADS ──
+function renderHADS() {
+  const container = document.getElementById('hads-items');
+  container.innerHTML = '';
+  if (!formData.hads_respostas) formData.hads_respostas = {};
+  HADS_ITENS.forEach(item => {
+    const div = document.createElement('div');
+    div.className = `hads-item ${item.tipo === 'A' ? 'anx' : 'dep'}`;
+    const optsHtml = item.opts.map(o =>
+      `<div class="opt-btn" data-hads="${item.id}" data-pts="${o.pts}"
+        onclick="selectHADS('${item.id}',${o.pts},this)">${o.txt}</div>`
+    ).join('');
+    div.innerHTML = `
+      <div class="hads-item-header">
+        <span class="hads-badge ${item.tipo}">${item.id}</span>
+        <span class="hads-item-txt">${item.txt}</span>
+      </div>
+      <div class="hads-opts">${optsHtml}</div>`;
+    container.appendChild(div);
+  });
+}
+
+function selectHADS(id, pts, el) {
+  document.querySelectorAll(`.opt-btn[data-hads="${id}"]`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  formData.hads_respostas[id] = pts;
+  calcHADS();
+}
+
+function calcHADS() {
+  const r = formData.hads_respostas || {};
+  const ansiedadeIds = HADS_ITENS.filter(i => i.tipo === 'A').map(i => i.id);
+  const depressaoIds  = HADS_ITENS.filter(i => i.tipo === 'D').map(i => i.id);
+
+  const somaA = ansiedadeIds.reduce((s, id) => s + (r[id] ?? -1), 0);
+  const somaD = depressaoIds.reduce((s,  id) => s + (r[id] ?? -1), 0);
+  const nA = ansiedadeIds.filter(id => r[id] !== undefined).length;
+  const nD = depressaoIds.filter(id => r[id] !== undefined).length;
+
+  const classify = score => score <= 7 ? 'Normal' : score <= 10 ? 'Limítrofe' : 'Caso clínico';
+
+  const anxBox = document.getElementById('hads-anx-box');
+  if (nA === 7) {
+    formData.hads_anx = somaA;
+    updateTabBadges();
+    anxBox.style.display = 'block';
+    document.getElementById('hads-anx-val').textContent = somaA;
+    document.getElementById('hads-anx-sub').textContent = classify(somaA) + ' · ' + nA + '/7 itens';
+  } else { anxBox.style.display = 'none'; formData.hads_anx = ''; }
+
+  const depBox = document.getElementById('hads-dep-box');
+  if (nD === 7) {
+    formData.hads_dep = somaD;
+    depBox.style.display = 'block';
+    document.getElementById('hads-dep-val').textContent = somaD;
+    document.getElementById('hads-dep-sub').textContent = classify(somaD) + ' · ' + nD + '/7 itens';
+  } else { depBox.style.display = 'none'; formData.hads_dep = ''; }
+}
+
+function restoreHADS(respostas) {
+  formData.hads_respostas = respostas || {};
+  Object.entries(formData.hads_respostas).forEach(([id, pts]) => {
+    const el = document.querySelector(`.opt-btn[data-hads="${id}"][data-pts="${pts}"]`);
+    if (el) el.classList.add('selected');
+  });
+  calcHADS();
+}
+
+// ── HAQ ──
+function renderHAQ() {
+  const container = document.getElementById('haq-blocks');
+  container.innerHTML = '';
+  if (!formData.haq_respostas) formData.haq_respostas = {};
+  HAQ_BLOCOS.forEach((bloco, bi) => {
+    const div = document.createElement('div');
+    div.className = 'haq-block';
+    const scoreId = `haq-bloco-score-${bi}`;
+    div.innerHTML = `<div class="haq-block-title">${bloco.titulo} <span class="haq-block-score" id="${scoreId}"></span></div>`;
+    bloco.itens.forEach(item => {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'haq-item';
+      const optsHtml = HAQ_RESPS.map((r, ri) =>
+        `<div class="opt-btn" data-haq="${item.n}" data-pts="${ri}"
+          onclick="selectHAQ(${item.n},${ri},this)">${ri} – ${r}</div>`
+      ).join('');
+      itemDiv.innerHTML = `
+        <div class="haq-item-num">${item.n}.</div>
+        <div class="haq-item-text">${item.txt}</div>
+        <div class="haq-opts" id="haq-opts-${item.n}">${optsHtml}</div>`;
+      div.appendChild(itemDiv);
+    });
+    container.appendChild(div);
+  });
+}
+
+function selectHAQ(itemNum, pts, el) {
+  document.querySelectorAll(`.opt-btn[data-haq="${itemNum}"]`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  formData.haq_respostas[itemNum] = pts;
+  calcHAQ();
+}
+
+function calcHAQ() {
+  const r = formData.haq_respostas || {};
+  const blocoScores = HAQ_BLOCOS.map((bloco, bi) => {
+    const vals = bloco.itens.map(it => r[it.n]).filter(v => v !== undefined);
+    if (!vals.length) return null;
+    const score = Math.max(...vals);
+    const scoreEl = document.getElementById(`haq-bloco-score-${bi}`);
+    if (scoreEl) scoreEl.textContent = `[bloco: ${score}]`;
+    return score;
+  });
+  const answered = blocoScores.filter(v => v !== null).length;
+  const box = document.getElementById('haq-score-box');
+  if (answered < 8) { box.style.display = 'none'; formData.haq_score = ''; return; }
+  const total = blocoScores.reduce((a, b) => a + b, 0);
+  const haq = (total / 8).toFixed(2);
+  formData.haq_score = haq;
+  updateTabBadges();
+  box.style.display = 'block';
+  document.getElementById('haq-score-val').textContent = haq;
+  document.getElementById('haq-score-sub').textContent =
+    `Soma dos blocos: ${total} ÷ 8 = ${haq} · Blocos respondidos: ${answered}/8`;
+}
+
+function restoreHAQ(respostas) {
+  formData.haq_respostas = respostas || {};
+  Object.entries(formData.haq_respostas).forEach(([item, pts]) => {
+    const el = document.querySelector(`.opt-btn[data-haq="${item}"][data-pts="${pts}"]`);
+    if (el) el.classList.add('selected');
+  });
+  calcHAQ();
+}
+
+// ── EVA sliders ──
+const EVA_FIELDS = ['comunic','confianca','participacao','satisfacao','suporte','eva-dor','eva-estresse','eva-ptga'];
+function updEva(inputId, valId) {
+  document.getElementById(valId).textContent = document.getElementById(inputId).value;
+}
+function resetEvas() {
+  EVA_FIELDS.forEach(f => {
+    const el = document.getElementById('f-'+f);
+    if (el) { el.value = ''; document.getElementById('v-'+f).textContent = '—'; }
+  });
+}
+function setEva(f, val) {
+  const el = document.getElementById('f-'+f);
+  if (el && val !== '') { el.value = val; document.getElementById('v-'+f).textContent = val; }
+}
+
+// ── CQR-19 ──
+function renderCQR() {
+  const tbody = document.getElementById('cqr-tbody');
+  tbody.innerHTML = '';
+  CQR_ITENS.forEach((txt, i) => {
+    const num = i + 1;
+    const isNeg = CQR_NEG.has(num);
+    const tr = document.createElement('tr');
+    const opts = CQR_RESP.map((r, ri) => {
+      const pts = isNeg ? (4 - ri) : (ri + 1);
+      return `<td style="text-align:center">
+        <div class="opt-btn cqr-opt" data-item="${num}" data-pts="${pts}"
+          onclick="selectCQR(${num},${pts},this)"
+          style="display:inline-block;padding:4px 10px;font-size:11px">${r}</div>
+      </td>`;
+    }).join('');
+    tr.innerHTML = `<td style="font-weight:700;color:#1a56a0;text-align:center">${num}${isNeg?'<br><span class="neg-tag">NEG</span>':''}</td>
+      <td>${txt}</td>${opts}`;
+    tbody.appendChild(tr);
+  });
+}
+
+function selectCQR(item, pts, el) {
+  // deselect siblings
+  document.querySelectorAll(`.cqr-opt[data-item="${item}"]`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  formData.cqr_respostas[item] = pts;
+  calcCQR();
+}
+
+function calcCQR() {
+  const r = formData.cqr_respostas;
+  const answered = Object.keys(r).length;
+  const box = document.getElementById('cqr-score-box');
+  if (answered < 19) { box.style.display = 'none'; formData.cqr_score = ''; formData.cqr_aderente = ''; return; }
+
+  // Calcula o score da função discriminante canônica (Taking Compliance ≤ 80%)
+  // Os coeficientes foram derivados pelo autor com itens negativos já invertidos
+  // (NC de forma alguma = 4, CM = 1 para esses itens), que é exatamente o valor
+  // que formData.cqr_respostas armazena — usamos diretamente, sem re-inversão.
+  let disc = CQR_DISC.constant;
+  for (let i = 1; i <= 19; i++) {
+    disc += CQR_DISC.coefs[i - 1] * r[i];
+  }
+
+  const aderente = disc >= CQR_DISC.cuttingScore;
+  box.style.display = 'block';
+  box.className = 'cqr-score-box' + (aderente ? '' : ' nao-aderente');
+  document.getElementById('cqr-score-val').textContent = disc.toFixed(3);
+  document.getElementById('cqr-score-lbl').textContent = aderente ? 'ADERENTE' : 'NÃO ADERENTE';
+  document.getElementById('cqr-score-sub').textContent =
+    `Score discriminante: ${disc.toFixed(4)} · Ponto de corte: ${CQR_DISC.cuttingScore} · Aderente = score ≥ corte (Taking Compliance > 80%)`;
+  formData.cqr_score = parseFloat(disc.toFixed(4));
+  formData.cqr_aderente = aderente ? 'Aderente' : 'Não aderente';
+  updateTabBadges();
+}
+
+function restoreCQR(respostas) {
+  formData.cqr_respostas = respostas || {};
+  Object.entries(formData.cqr_respostas).forEach(([item, pts]) => {
+    const el = document.querySelector(`.cqr-opt[data-item="${item}"][data-pts="${pts}"]`);
+    if (el) el.classList.add('selected');
+  });
+  calcCQR();
+}
+
+// ============================================================
+// CALCULATIONS
+// ============================================================
+function calcIdade() {
+  const nasc = document.getElementById('f-nascimento').value;
+  const entrev = document.getElementById('f-entrevista').value;
+  if (nasc && entrev) {
+    const d1 = new Date(nasc), d2 = new Date(entrev);
+    let age = d2.getFullYear() - d1.getFullYear();
+    const m = d2.getMonth() - d1.getMonth();
+    if (m < 0 || (m === 0 && d2.getDate() < d1.getDate())) age--;
+    document.getElementById('f-idade').value = age >= 0 ? age : '';
+  }
+}
+
+// ============================================================
+// SAVE
+// ============================================================
+function savePatient() {
+  const msg = document.getElementById('form-msg');
+  const nome = document.getElementById('f-nome').value.trim();
+  const rghc = document.getElementById('f-rghc').value.trim();
+  if (!nome || !rghc) {
+    showFormTab(0);
+    msg.innerHTML = '<div class="alert">&#9888; Nome e RGHC são obrigatórios (Aba 1 — Identificação).</div>';
+    window.scrollTo(0,0); return;
+  }
+
+  try {
+
+  const record = {
+    rghc, nome,
+    nascimento: document.getElementById('f-nascimento').value,
+    inicio_seg: document.getElementById('f-inicio-seg').value,
+    entrevista: document.getElementById('f-entrevista').value,
+    idade: document.getElementById('f-idade').value,
+    sexo: formData.sexo || '',
+    etnia: formData.etnia || '',
+    doenca: formData.doenca || '',
+    tempo_diag: formData.tempo_diag || '',
+    atividade: formData.atividade || '',
+    tempo_remissao: formData.tempo_remissao || '',
+    vhs: document.getElementById('f-vhs').value,
+    pcr: document.getElementById('f-pcr').value,
+    cpk: document.getElementById('f-cpk').value,
+    das28: document.getElementById('f-das28').value,
+    asdas: document.getElementById('f-asdas').value,
+    sledai: document.getElementById('f-sledai').value,
+    myoact: document.getElementById('f-myoact').value,
+    mmt8: document.getElementById('f-mmt8').value,
+    bvas: document.getElementById('f-bvas').value,
+    itas: document.getElementById('f-itas').value,
+    num_med: formData.num_med || '',
+    gcs: formData.gcs || '',
+    csdmard: [...(formData.csdmard||[])],
+    bdmard: [...(formData.bdmard||[])],
+    tsdmard: [...(formData.tsdmard||[])],
+    tempo_dmard: formData.tempo_dmard || '',
+    csdmard_prev: [...(formData.csdmard_prev||[])],
+    bdmard_prev: [...(formData.bdmard_prev||[])],
+    tsdmard_prev: [...(formData.tsdmard_prev||[])],
+    comorbidades: [...(formData.comorbidades||[])],
+    med_continuas: [...(formData.med_continuas||[])],
+    reacao: formData.reacao || '',
+    reacao_quais: [...(formData.reacao_quais||[])],
+    intervalo: formData.intervalo || '',
+    dmard_posologia: {...(formData.dmard_posologia||{})},
+    // Sociodemográfico
+    religiao: formData.religiao||'', estado_civil: formData.estado_civil||'',
+    filhos: formData.filhos||'', escolaridade: formData.escolaridade||'',
+    renda: formData.renda||'', ocupacao: formData.ocupacao||'',
+    carga_horaria: formData.carga_horaria||'',
+    locomocao: [...(formData.locomocao||[])],
+    local_residencia: formData.local_residencia||'',
+    num_pessoas: formData.num_pessoas||'',
+    situacao_moradia: formData.situacao_moradia||'',
+    tabagismo: formData.tabagismo||'', etilismo: formData.etilismo||'',
+    // Acesso e educação
+    material_educ: formData.material_educ||'',
+    acompanhamento: formData.acompanhamento||'',
+    dif_doenca: formData.dif_doenca||'',
+    conhec_complic: formData.conhec_complic||'',
+    dif_trat: formData.dif_trat||'',
+    facilidade_consulta: formData.facilidade_consulta||'',
+    falta_farm: formData.falta_farm||'',
+    compra_med: formData.compra_med||'',
+    custo_med: formData.custo_med||'',
+    deslocamento: formData.deslocamento||'',
+    // Escalas
+    comunic: document.getElementById('f-comunic').value,
+    confianca: document.getElementById('f-confianca').value,
+    participacao: document.getElementById('f-participacao').value,
+    satisfacao: document.getElementById('f-satisfacao').value,
+    suporte: document.getElementById('f-suporte').value,
+    eva_dor: document.getElementById('f-eva-dor').value,
+    eva_estresse: document.getElementById('f-eva-estresse').value,
+    eva_ptga: document.getElementById('f-eva-ptga').value,
+    // BMQ
+    bmq_respostas:  {...(formData.bmq_respostas||{})},
+    bmq_necessity:  formData.bmq_necessity ?? '',
+    bmq_concerns:   formData.bmq_concerns  ?? '',
+    bmq_diff:       formData.bmq_diff      ?? '',
+    // SEAMS
+    seams_respostas: {...(formData.seams_respostas||{})},
+    seams_score: formData.seams_score ?? '',
+    // HADS
+    hads_respostas: {...(formData.hads_respostas||{})},
+    hads_anx: formData.hads_anx ?? '',
+    hads_dep: formData.hads_dep ?? '',
+    // HAQ
+    haq_respostas: {...(formData.haq_respostas||{})},
+    haq_score: formData.haq_score ?? '',
+    // CQR-19
+    cqr_respostas: {...(formData.cqr_respostas||{})},
+    cqr_score: formData.cqr_score ?? '',
+    cqr_aderente: formData.cqr_aderente || '',
+    ts: new Date().toISOString()
+  };
+
+  const db = getData();
+  const idx = db.findIndex(p => p.rghc === rghc);
+  if (idx !== -1) {
+    if (!confirm(`Paciente com RGHC ${rghc} já existe. Deseja sobrescrever os dados?`)) return;
+    db[idx] = record;
+  } else {
+    db.push(record);
+  }
+  setData(db);
+  msg.innerHTML = '<div class="success">Paciente salvo com sucesso! Total: ' + db.length + ' paciente(s).</div>';
+  window.scrollTo(0,0);
+  clearForm();
+
+  } catch(err) {
+    alert('Erro ao salvar: ' + err.message + '\n\nAbra o console (F12) para mais detalhes.');
+    console.error('savePatient error:', err);
+  }
+}
+
+function clearForm() {
+  document.getElementById('f-nome').value = '';
+  document.getElementById('f-rghc').value = '';
+  document.getElementById('f-nascimento').value = '';
+  document.getElementById('f-inicio-seg').value = '';
+  document.getElementById('f-entrevista').value = '';
+  document.getElementById('f-idade').value = '';
+  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('sub-remissao').classList.add('hidden');
+  document.getElementById('sub-reacao').classList.add('hidden');
+  ['das28','asdas','sledai','myoact','bvas','itas'].forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
+  document.getElementById('metrics-hint').style.display = 'block';
+  document.getElementById('bmq-nec-box').style.display = 'none';
+  document.getElementById('bmq-con-box').style.display = 'none';
+  document.getElementById('bmq-diff-box').style.display = 'none';
+  document.getElementById('seams-score-box').style.display = 'none';
+  document.getElementById('hads-anx-box').style.display = 'none';
+  document.getElementById('hads-dep-box').style.display = 'none';
+  document.getElementById('haq-score-box').style.display = 'none';
+  document.getElementById('cqr-score-box').style.display = 'none';
+  resetEvas();
+  initForm();
+  showFormTab(0);
+}
+
+// ============================================================
+// LIST PAGE
+// ============================================================
+function renderList() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const db = getData().filter(p =>
+    p.nome.toLowerCase().includes(q) || p.rghc.toLowerCase().includes(q)
+  );
+  const c = document.getElementById('list-container');
+  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; return; }
+  c.innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Ações</th></tr></thead>
+      <tbody>${db.map((p,i) => `
+        <tr>
+          <td>${i+1}</td>
+          <td>${p.nome}</td>
+          <td>${p.rghc}</td>
+          <td>${p.doenca || '—'}</td>
+          <td>${p.entrevista || '—'}</td>
+          <td>${p.atividade || '—'}</td>
+          <td>
+            <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
+            <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <p style="margin-top:10px;font-size:12px;color:#718096">${db.length} paciente(s) no total</p>`;
+}
+
+function deletePatient(rghc) {
+  if (!confirm('Excluir este paciente?')) return;
+  setData(getData().filter(p => p.rghc !== rghc));
+  renderList();
+}
+
+function editPatient(rghc) {
+  const p = getData().find(x => x.rghc === rghc);
+  if (!p) return;
+  showPage('form');
+  clearForm();
+  setTimeout(() => {
+    document.getElementById('f-nome').value = p.nome;
+    document.getElementById('f-rghc').value = p.rghc;
+    document.getElementById('f-nascimento').value = p.nascimento || '';
+    document.getElementById('f-inicio-seg').value = p.inicio_seg || '';
+    document.getElementById('f-entrevista').value = p.entrevista || '';
+    document.getElementById('f-idade').value = p.idade || '';
+    document.getElementById('f-vhs').value = p.vhs || '';
+    document.getElementById('f-pcr').value = p.pcr || '';
+    document.getElementById('f-cpk').value = p.cpk || '';
+    document.getElementById('f-das28').value = p.das28 || '';
+    document.getElementById('f-asdas').value = p.asdas || '';
+    document.getElementById('f-sledai').value = p.sledai || '';
+    document.getElementById('f-myoact').value = p.myoact || '';
+    document.getElementById('f-mmt8').value = p.mmt8 || '';
+    document.getElementById('f-bvas').value = p.bvas || '';
+    document.getElementById('f-itas').value = p.itas || '';
+
+    const restore = (containerId, field, val) => {
+      formData[field] = val;
+      document.querySelectorAll(`#${containerId} .opt-btn`).forEach(b => {
+        if (b.textContent === val) b.classList.add('selected');
+      });
+    };
+    const restoreCheck = (containerId, field, vals) => {
+      formData[field] = vals || [];
+      document.querySelectorAll(`#${containerId} .opt-btn`).forEach(b => {
+        if ((vals||[]).includes(b.textContent)) b.classList.add('selected');
+      });
+    };
+
+    restore('q-sexo','sexo',p.sexo);
+    restore('q-etnia','etnia',p.etnia);
+    restore('q-doenca','doenca',p.doenca);
+    if (p.doenca) updateMetrics(p.doenca);
+    restore('q-tempo-diag','tempo_diag',p.tempo_diag);
+    restore('q-atividade','atividade',p.atividade);
+    if (p.atividade === 'Remissão') { document.getElementById('sub-remissao').classList.remove('hidden'); restore('q-tempo-remissao','tempo_remissao',p.tempo_remissao); }
+    restore('q-num-med','num_med',p.num_med);
+    restore('q-gcs','gcs',p.gcs);
+    restoreCheck('q-csdmard','csdmard',p.csdmard);
+    formData.dmard_posologia = p.dmard_posologia ? {...p.dmard_posologia} : {};
+    if (p.csdmard?.length) renderPosologia('csdmard','posologia-csdmard');
+    restoreCheck('q-bdmard','bdmard',p.bdmard);
+    if (p.bdmard?.length) renderPosologia('bdmard','posologia-bdmard');
+    restoreCheck('q-tsdmard','tsdmard',p.tsdmard);
+    if (p.tsdmard?.length) renderPosologia('tsdmard','posologia-tsdmard');
+    restore('q-tempo-dmard','tempo_dmard',p.tempo_dmard);
+    restoreCheck('q-csdmard-prev','csdmard_prev',p.csdmard_prev);
+    restoreCheck('q-bdmard-prev','bdmard_prev',p.bdmard_prev);
+    restoreCheck('q-tsdmard-prev','tsdmard_prev',p.tsdmard_prev);
+    restoreCheck('q-comorbidades','comorbidades',p.comorbidades);
+    restoreCheck('q-med-continuas','med_continuas',p.med_continuas);
+    restore('q-reacao','reacao',p.reacao);
+    if (p.reacao === 'Sim') { document.getElementById('sub-reacao').classList.remove('hidden'); restoreCheck('q-reacao-quais','reacao_quais',p.reacao_quais); }
+    restore('q-intervalo','intervalo',p.intervalo);
+    // Sociodemográfico
+    restore('q-religiao','religiao',p.religiao);
+    restore('q-estado-civil','estado_civil',p.estado_civil);
+    restore('q-filhos','filhos',p.filhos);
+    restore('q-escolaridade','escolaridade',p.escolaridade);
+    restore('q-renda','renda',p.renda);
+    restore('q-ocupacao','ocupacao',p.ocupacao);
+    restore('q-carga-horaria','carga_horaria',p.carga_horaria);
+    restoreCheck('q-locomocao','locomocao',p.locomocao);
+    restore('q-local-residencia','local_residencia',p.local_residencia);
+    restore('q-num-pessoas','num_pessoas',p.num_pessoas);
+    restore('q-situacao-moradia','situacao_moradia',p.situacao_moradia);
+    restore('q-tabagismo','tabagismo',p.tabagismo);
+    restore('q-etilismo','etilismo',p.etilismo);
+    // Acesso e educação
+    restore('q-material-educ','material_educ',p.material_educ);
+    restore('q-acompanhamento','acompanhamento',p.acompanhamento);
+    restore('q-dif-doenca','dif_doenca',p.dif_doenca);
+    restore('q-conhec-complic','conhec_complic',p.conhec_complic);
+    restore('q-dif-trat','dif_trat',p.dif_trat);
+    restore('q-facilidade-consulta','facilidade_consulta',p.facilidade_consulta);
+    restore('q-falta-farm','falta_farm',p.falta_farm);
+    restore('q-compra-med','compra_med',p.compra_med);
+    restore('q-custo-med','custo_med',p.custo_med);
+    restore('q-deslocamento','deslocamento',p.deslocamento);
+    // Escalas
+    [['comunic',p.comunic],['confianca',p.confianca],['participacao',p.participacao],
+     ['satisfacao',p.satisfacao],['suporte',p.suporte],
+     ['eva-dor',p.eva_dor],['eva-estresse',p.eva_estresse],['eva-ptga',p.eva_ptga]
+    ].forEach(([f,v]) => setEva(f, v||''));
+    // BMQ
+    restoreBMQ(p.bmq_respostas);
+    // SEAMS
+    restoreSEAMS(p.seams_respostas);
+    // HADS
+    restoreHADS(p.hads_respostas);
+    // HAQ
+    restoreHAQ(p.haq_respostas);
+    // CQR-19
+    restoreCQR(p.cqr_respostas);
+  }, 50);
+}
+
+// ============================================================
+// EXPORT CSV
+// ============================================================
+function exportCSV() {
+  const db = getData();
+  if (!db.length) { alert('Nenhum dado para exportar.'); return; }
+  const headers = ['rghc','nome','nascimento','inicio_seg','entrevista','idade','sexo','etnia','doenca',
+    'tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk','das28','asdas','sledai','myoact','mmt8','bvas','itas',
+    'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
+    'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
+    'reacao','reacao_quais','intervalo','dmard_posologia',
+    'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
+    'locomocao','local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
+    'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
+    'facilidade_consulta','falta_farm','compra_med','custo_med','deslocamento',
+    'comunic','confianca','participacao','satisfacao','suporte',
+    'eva_dor','eva_estresse','eva_ptga',
+    'bmqn_1','bmqn_2','bmqn_3','bmqn_4','bmqn_5','bmq_necessity',
+    'bmqc_1','bmqc_2','bmqc_3','bmqc_4','bmqc_5','bmqc_6','bmq_concerns','bmq_diff',
+    'seams_1','seams_2','seams_3','seams_4','seams_5','seams_6','seams_7','seams_8','seams_9','seams_10','seams_11','seams_12','seams_13','seams_score',
+    'hads_1A','hads_2A','hads_3A','hads_4A','hads_5A','hads_6A','hads_7A','hads_anx',
+    'hads_1D','hads_2D','hads_3D','hads_4D','hads_5D','hads_6D','hads_7D','hads_dep',
+    'haq_1','haq_2','haq_3','haq_4','haq_5','haq_6','haq_7','haq_8','haq_9','haq_10',
+    'haq_11','haq_12','haq_13','haq_14','haq_15','haq_16','haq_17','haq_18','haq_19','haq_20',
+    'haq_score',
+    'cqr_1','cqr_2','cqr_3','cqr_4','cqr_5','cqr_6','cqr_7','cqr_8','cqr_9','cqr_10',
+    'cqr_11','cqr_12','cqr_13','cqr_14','cqr_15','cqr_16','cqr_17','cqr_18','cqr_19',
+    'cqr_score','cqr_aderente'];
+  const rows = [headers.join(';')];
+  db.forEach(p => {
+    rows.push(headers.map(h => {
+      if (h === 'dmard_posologia' && p[h] && typeof p[h] === 'object') {
+        const txt = Object.entries(p[h]).map(([drug,d]) =>
+          `${drug}:via=${d.via||''},dose=${d.dose||''},freq=${d.freq||''}`).join('|');
+        return '"' + txt + '"';
+      }
+      if (/^bmqn_\d+$/.test(h)) {
+        const n = h.split('_')[1];
+        return '"' + ((p.bmq_respostas||{})[`bmqn-${n}`] ?? '') + '"';
+      }
+      if (/^bmqc_\d+$/.test(h)) {
+        const n = h.split('_')[1];
+        return '"' + ((p.bmq_respostas||{})[`bmqc-${n}`] ?? '') + '"';
+      }
+      if (h.startsWith('seams_') && /^seams_\d+$/.test(h)) {
+        const num = parseInt(h.split('_')[1]);
+        return '"' + ((p.seams_respostas||{})[num] ?? '') + '"';
+      }
+      if (h.startsWith('hads_') && /^hads_\d+[AD]$/.test(h)) {
+        const id = h.replace('hads_','');
+        return '"' + ((p.hads_respostas||{})[id] ?? '') + '"';
+      }
+      if (h.startsWith('haq_') && /^haq_\d+$/.test(h)) {
+        const num = parseInt(h.split('_')[1]);
+        return '"' + ((p.haq_respostas||{})[num] ?? '') + '"';
+      }
+      if (h.startsWith('cqr_') && /^cqr_\d+$/.test(h)) {
+        const num = parseInt(h.split('_')[1]);
+        return '"' + ((p.cqr_respostas||{})[num] ?? '') + '"';
+      }
+      const v = p[h];
+      if (Array.isArray(v)) return '"' + v.join('|') + '"';
+      return '"' + (v||'') + '"';
+    }).join(';'));
+  });
+  const blob = new Blob(['﻿' + rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dados_reumatologia_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ============================================================
+// GOOGLE SHEETS EXPORT via Apps Script Web App
+// ============================================================
+
+// Mapeamento chave interna → rótulo legível para a planilha
+const SHEET_COLS = [
+  // Identificação
+  ['rghc',            'RGHC'],
+  ['nome',            'Nome Completo'],
+  ['nascimento',      'Data de Nascimento'],
+  ['inicio_seg',      'Início de Seguimento'],
+  ['entrevista',      'Data da Entrevista'],
+  ['idade',           'Idade (anos)'],
+  ['sexo',            'Sexo'],
+  ['etnia',           'Etnia'],
+  // Dados Clínicos
+  ['doenca',          'Doença'],
+  ['tempo_diag',      'Tempo de Diagnóstico'],
+  ['atividade',       'Atividade de Doença'],
+  ['tempo_remissao',  'Tempo em Remissão'],
+  ['vhs',             'VHS (mm/h)'],
+  ['pcr',             'PCR (mg/L)'],
+  ['cpk',             'CPK (U/L)'],
+  ['das28',           'DAS28'],
+  ['asdas',           'ASDAS'],
+  ['sledai',          'SLEDAI'],
+  ['myoact',          'MYOACT'],
+  ['mmt8',            'MMT8'],
+  ['bvas',            'BVAS'],
+  ['itas',            'ITAS'],
+  ['num_med',         'Nº de Medicações'],
+  ['gcs',             'Corticosteroide (dose equiv. prednisona)'],
+  ['csdmard',         'csDMARD em Uso'],
+  ['bdmard',          'bDMARD em Uso'],
+  ['tsdmard',         'tsDMARD em Uso'],
+  ['tempo_dmard',     'Tempo desde Último DMARD Introduzido'],
+  ['csdmard_prev',    'csDMARD Prévios'],
+  ['bdmard_prev',     'bDMARD Prévios'],
+  ['tsdmard_prev',    'tsDMARD Prévios'],
+  ['comorbidades',    'Comorbidades'],
+  ['med_continuas',   'Medicações Contínuas'],
+  ['reacao',          'Histórico de Reação Adversa a DMARD'],
+  ['reacao_quais',    'Reação Adversa – Quais Medicações'],
+  ['intervalo',       'Intervalo Médio entre Consultas'],
+  ['dmard_posologia', 'Posologia dos DMARDs'],
+  // Sociodemográfico
+  ['religiao',        'Religião'],
+  ['estado_civil',    'Estado Civil'],
+  ['filhos',          'Filhos'],
+  ['escolaridade',    'Escolaridade'],
+  ['renda',           'Renda Familiar Mensal'],
+  ['ocupacao',        'Ocupação'],
+  ['carga_horaria',   'Carga Horária Semanal'],
+  ['locomocao',       'Meio de Locomoção'],
+  ['local_residencia','Localização da Residência'],
+  ['num_pessoas',     'Pessoas na Residência'],
+  ['situacao_moradia','Situação de Moradia'],
+  ['tabagismo',       'Tabagismo'],
+  ['etilismo',        'Etilismo'],
+  // Acesso e Percepção
+  ['material_educ',       'Recebe Material Educativo'],
+  ['acompanhamento',      'Acompanhamento Multidisciplinar'],
+  ['dif_doenca',          'Dificuldade de Entender Doença'],
+  ['conhec_complic',      'Conhece Complicações da Doença'],
+  ['dif_trat',            'Dificuldade de Entender Tratamento'],
+  ['facilidade_consulta', 'Facilidade para Marcar Consultas'],
+  ['falta_farm',          'Falta de Medicação na Farmácia'],
+  ['compra_med',          'Consegue Comprar Medicação em Falta'],
+  ['custo_med',           'Custo da Medicação é Problema'],
+  ['deslocamento',        'Deslocamento é Problema'],
+  ['comunic',             'EVA – Clareza de Comunicação Médica (0–100)'],
+  ['confianca',           'EVA – Confiança na Equipe Médica (0–100)'],
+  ['participacao',        'EVA – Participação nas Decisões (0–100)'],
+  ['satisfacao',          'EVA – Satisfação com Tratamento (0–100)'],
+  ['suporte',             'EVA – Suporte Social (0–100)'],
+  ['eva_dor',             'EVA Dor (0–100)'],
+  ['eva_estresse',        'EVA Estresse (0–100)'],
+  ['eva_ptga',            'EVA PtGA – Avaliação Global do Paciente (0–100)'],
+  // BMQ Necessity
+  ['bmqn_1', 'BMQ-N1: Saúde depende dos medicamentos'],
+  ['bmqn_2', 'BMQ-N2: Vida impossível sem os medicamentos'],
+  ['bmqn_3', 'BMQ-N3: Sem medicamentos estaria muito doente'],
+  ['bmqn_4', 'BMQ-N4: Saúde futura depende dos medicamentos'],
+  ['bmqn_5', 'BMQ-N5: Medicamentos protegem de ficar pior'],
+  ['bmq_necessity', 'BMQ Necessity Total (5–25)'],
+  // BMQ Concerns
+  ['bmqc_1', 'BMQ-C1: Preocupa ter de tomar os medicamentos'],
+  ['bmqc_2', 'BMQ-C2: Preocupa efeitos a longo prazo'],
+  ['bmqc_3', 'BMQ-C3: Medicamentos são um mistério'],
+  ['bmqc_4', 'BMQ-C4: Medicamentos perturbam a vida'],
+  ['bmqc_5', 'BMQ-C5: Preocupa dependência dos medicamentos'],
+  ['bmqc_6', 'BMQ-C6: Medicamentos causam efeitos desagradáveis'],
+  ['bmq_concerns', 'BMQ Concerns Total (6–30)'],
+  ['bmq_diff',     'BMQ Diferença Necessity−Concerns'],
+  // SEAMS
+  ['seams_1',  'SEAMS-1: Vários medicamentos por dia'],
+  ['seams_2',  'SEAMS-2: Mais de uma vez ao dia'],
+  ['seams_3',  'SEAMS-3: Fora de casa'],
+  ['seams_4',  'SEAMS-4: Dia agitado'],
+  ['seams_5',  'SEAMS-5: Efeitos colaterais'],
+  ['seams_6',  'SEAMS-6: Ninguém lembra de tomar'],
+  ['seams_7',  'SEAMS-7: Horários inconvenientes'],
+  ['seams_8',  'SEAMS-8: Rotina bagunçada'],
+  ['seams_9',  'SEAMS-9: Incerto de como tomar'],
+  ['seams_10', 'SEAMS-10: Incerto do horário'],
+  ['seams_11', 'SEAMS-11: Sentindo-se doente'],
+  ['seams_12', 'SEAMS-12: Medicamento parece diferente'],
+  ['seams_13', 'SEAMS-13: Médico troca medicamentos'],
+  ['seams_score', 'SEAMS Total (13–39)'],
+  // HADS Ansiedade
+  ['hads_1A', 'HADS-A1: Tenso ou contraído'],
+  ['hads_2A', 'HADS-A2: Medo de coisa ruim acontecer'],
+  ['hads_3A', 'HADS-A3: Cabeça cheia de preocupações'],
+  ['hads_4A', 'HADS-A4: Sentado à vontade / relaxado (inv.)'],
+  ['hads_5A', 'HADS-A5: Sensação ruim de medo'],
+  ['hads_6A', 'HADS-A6: Inquieto / não pode ficar parado'],
+  ['hads_7A', 'HADS-A7: Sensação de entrar em pânico'],
+  ['hads_anx','HADS Ansiedade Total (0–21)'],
+  // HADS Depressão
+  ['hads_1D', 'HADS-D1: Gosta das mesmas coisas de antes (inv.)'],
+  ['hads_2D', 'HADS-D2: Dá risada quando vê coisas engraçadas (inv.)'],
+  ['hads_3D', 'HADS-D3: Sente-se alegre (inv.)'],
+  ['hads_4D', 'HADS-D4: Lento para pensar / fazer coisas'],
+  ['hads_5D', 'HADS-D5: Perdeu interesse na aparência'],
+  ['hads_6D', 'HADS-D6: Espera animado coisas boas (inv.)'],
+  ['hads_7D', 'HADS-D7: Sente prazer em TV / rádio / leitura (inv.)'],
+  ['hads_dep','HADS Depressão Total (0–21)'],
+  // HAQ-DI
+  ['haq_1',  'HAQ-1: Vestir-se / amarrar sapatos / abotoar'],
+  ['haq_2',  'HAQ-2: Lavar a cabeça e os cabelos'],
+  ['haq_3',  'HAQ-3: Levantar-se de cadeira sem braços'],
+  ['haq_4',  'HAQ-4: Deitar e levantar da cama'],
+  ['haq_5',  'HAQ-5: Cortar um pedaço de carne'],
+  ['haq_6',  'HAQ-6: Levar copo/xícara à boca'],
+  ['haq_7',  'HAQ-7: Abrir saco de leite'],
+  ['haq_8',  'HAQ-8: Caminhar em lugares planos'],
+  ['haq_9',  'HAQ-9: Subir cinco degraus'],
+  ['haq_10', 'HAQ-10: Lavar e secar o corpo após banho'],
+  ['haq_11', 'HAQ-11: Tomar banho de chuveiro'],
+  ['haq_12', 'HAQ-12: Sentar e levantar do vaso sanitário'],
+  ['haq_13', 'HAQ-13: Pegar objeto acima da cabeça'],
+  ['haq_14', 'HAQ-14: Curvar-se para pegar roupas no chão'],
+  ['haq_15', 'HAQ-15: Segurar-se em pé no ônibus/metrô'],
+  ['haq_16', 'HAQ-16: Abrir potes previamente abertos'],
+  ['haq_17', 'HAQ-17: Abrir e fechar torneiras'],
+  ['haq_18', 'HAQ-18: Fazer compras na redondeza'],
+  ['haq_19', 'HAQ-19: Entrar e sair de ônibus'],
+  ['haq_20', 'HAQ-20: Varrer / puxar água com rodo'],
+  ['haq_score', 'HAQ-DI (0–3)'],
+  // CQR-19
+  ['cqr_1',  'CQR-1: Médico diz para tomar, eu tomo'],
+  ['cqr_2',  'CQR-2: Tomo para ter menos problemas'],
+  ['cqr_3',  'CQR-3: Não me atrevo a esquecer'],
+  ['cqr_4',  'CQR-4 (NEG): Prefiro terapias alternativas'],
+  ['cqr_5',  'CQR-5: Ficam no mesmo local / não esqueço'],
+  ['cqr_6',  'CQR-6: Confio no reumatologista'],
+  ['cqr_7',  'CQR-7: Ainda posso fazer o que quero'],
+  ['cqr_8',  'CQR-8 (NEG): Não gosto de tomar medicamentos'],
+  ['cqr_9',  'CQR-9 (NEG): Nas férias esqueço de tomar'],
+  ['cqr_10', 'CQR-10: Se não tomarmos, para que consultar?'],
+  ['cqr_11', 'CQR-11 (NEG): Não espero milagres'],
+  ['cqr_12', 'CQR-12 (NEG): Se não aguentar pode jogar fora'],
+  ['cqr_13', 'CQR-13: Sem os medicamentos a inflamação volta'],
+  ['cqr_14', 'CQR-14: Meu corpo me avisa se não tomar'],
+  ['cqr_15', 'CQR-15: Saúde acima de tudo / tomo para ficar bem'],
+  ['cqr_16', 'CQR-16: Uso organizador de comprimidos'],
+  ['cqr_17', 'CQR-17: O que o médico diz, presto atenção'],
+  ['cqr_18', 'CQR-18: Sem os medicamentos tenho mais queixas'],
+  ['cqr_19', 'CQR-19 (NEG): No fim de semana às vezes não tomo'],
+  ['cqr_score',    'CQR-19 Score Discriminante (Taking Compliance ≤ 80%)'],
+  ['cqr_aderente', 'CQR-19 Classificação de Adesão (Aderente / Não aderente)'],
+];
+
+function buildSheetValues() {
+  const db = getData();
+  const keys    = SHEET_COLS.map(c => c[0]);
+  const labels  = SHEET_COLS.map(c => c[1]);
+
+  const rows = db.map(p => keys.map(h => {
+    if (h === 'dmard_posologia' && p[h] && typeof p[h] === 'object')
+      return Object.entries(p[h]).map(([drug,d]) => `${drug}: via=${d.via||'?'}, dose=${d.dose||'?'}, freq=${d.freq||'?'}`).join(' | ');
+    if (/^bmqn_\d+$/.test(h)) return (p.bmq_respostas||{})[`bmqn-${h.split('_')[1]}`] ?? '';
+    if (/^bmqc_\d+$/.test(h)) return (p.bmq_respostas||{})[`bmqc-${h.split('_')[1]}`] ?? '';
+    if (/^seams_\d+$/.test(h)) return (p.seams_respostas||{})[parseInt(h.split('_')[1])] ?? '';
+    if (/^hads_\d+[AD]$/.test(h)) return (p.hads_respostas||{})[h.replace('hads_','')] ?? '';
+    if (/^haq_\d+$/.test(h)) return (p.haq_respostas||{})[parseInt(h.split('_')[1])] ?? '';
+    if (/^cqr_\d+$/.test(h)) return (p.cqr_respostas||{})[parseInt(h.split('_')[1])] ?? '';
+    const v = p[h];
+    if (Array.isArray(v)) return v.join(' | ');
+    return v ?? '';
+  }));
+  return [labels, ...rows];
+}
+
+function openSheetsModal() {
+  const url = localStorage.getItem('gs_webapp_url') || '';
+  document.getElementById('sheets-panel-setup').style.display = url ? 'none' : 'block';
+  document.getElementById('sheets-panel-ready').style.display = url ? 'block' : 'none';
+  if (url) document.getElementById('sheets-url-display').textContent = url;
+  document.getElementById('sheets-action-btn').textContent = url ? 'Exportar agora' : 'Salvar URL e Exportar';
+  document.getElementById('modal-sheets').style.display = 'flex';
+}
+
+function closeSheetsModal() {
+  document.getElementById('modal-sheets').style.display = 'none';
+}
+
+function resetSheetsUrl() {
+  localStorage.removeItem('gs_webapp_url');
+  document.getElementById('sheets-panel-setup').style.display = 'block';
+  document.getElementById('sheets-panel-ready').style.display = 'none';
+  document.getElementById('sheets-action-btn').textContent = 'Salvar URL e Exportar';
+}
+
+function copyGsCode() {
+  const code = document.getElementById('gs-code-display').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => btn.textContent = '📋 Copiar código', 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = event.target;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => btn.textContent = '📋 Copiar código', 2000);
+  });
+}
+
+async function handleSheetsAction() {
+  const db = getData();
+  if (!db.length) { alert('Nenhum dado para exportar.'); return; }
+
+  let url = localStorage.getItem('gs_webapp_url');
+  if (!url) {
+    const input = document.getElementById('gs-webapp-url').value.trim();
+    if (!input || !input.startsWith('https://script.google.com')) {
+      alert('Cole a URL do Web App do Apps Script antes de exportar.\nEla deve começar com https://script.google.com/macros/s/...');
+      return;
+    }
+    url = input;
+    localStorage.setItem('gs_webapp_url', url);
+  }
+
+  const btn = document.getElementById('sheets-action-btn');
+  btn.disabled = true;
+  btn.textContent = 'Exportando...';
+
+  try {
+    const values = buildSheetValues();
+    const resp = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ rows: values }),
+    });
+    let ok = resp.ok;
+    try {
+      const json = await resp.json();
+      ok = json.ok === true;
+      if (!ok) throw new Error(json.error || 'Erro no servidor do Apps Script');
+    } catch (_) { /* resposta não-JSON: assume sucesso se HTTP 200 */ }
+    closeSheetsModal();
+    alert(`✓ ${db.length} paciente(s) exportados para o Google Sheets!\n\nAbra sua planilha e verifique a aba "Pacientes".`);
+  } catch(e) {
+    alert('Erro ao enviar dados: ' + e.message +
+      '\n\nVerifique:\n• A URL do Web App está correta?\n• O acesso está configurado como "Qualquer pessoa"?\n• Você autorizou o script ao implantar?');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Exportar agora';
+  }
+}
+
+async function testSheetsConnection() {
+  const url = localStorage.getItem('gs_webapp_url') ||
+              document.getElementById('gs-webapp-url')?.value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    alert('Cole a URL do Web App primeiro (passo 5).'); return;
+  }
+  const btn = document.getElementById('sheets-test-btn');
+  btn.disabled = true;
+  btn.textContent = 'Testando...';
+  try {
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.status === 'online') {
+      alert('✓ Conexão OK! O Apps Script está respondendo corretamente.\n\nApp: ' + json.app);
+    } else {
+      alert('Resposta inesperada do servidor:\n' + JSON.stringify(json));
+    }
+  } catch(e) {
+    alert('Falha na conexão: ' + e.message +
+      '\n\nVerifique se a URL está correta e se o acesso foi configurado como "Qualquer pessoa".');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔌 Testar conexão';
+  }
+}
+
+// ============================================================
+// STATS — grupos de doença
+// ============================================================
+const GRUPOS = {
+  'Todos': null,
+  'Vasculites': ['GPA','GEPA','PAM','PAN','Arterite de células gigantes','Arterite de Takayasu','Policondrite recidivante'],
+  'Artrites inflamatórias': ['Artrite psorística','Artrite reumatoide','Espondiloartrite'],
+  'Miopatias': ['Dermatomiosite','Dermatomiosite clinicamente amiopática','Polimiosite','Síndrome antissintetase','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','Sobreposição miopatia + outra doença'],
+  'Doenças juvenis': ['Lúpus juvenil','Artrite idiopática juvenil','Dermatomiosite juvenil'],
+  'LES': ['Lúpus eritematoso sistêmico'],
+};
+const GRUPO_CORES = {
+  'Todos':'#1a56a0','Vasculites':'#6b46c1','Artrites inflamatórias':'#2f855a',
+  'Miopatias':'#c05621','Doenças juvenis':'#2b6cb0','LES':'#b7236a'
+};
+let currentGroup = 'Todos';
+let currentDisease = null;
+let currentAdherence = 'Todos';
+
+function setGroup(g) { currentGroup = g; currentDisease = null; renderStats(); }
+function setDisease(d) { currentDisease = (currentDisease === d) ? null : d; renderStats(); }
+function setAdherence(a) { currentAdherence = a; renderStats(); }
+
+function getActiveDB() {
+  let db = getData();
+  if (currentAdherence === 'Aderentes') db = db.filter(p => p.cqr_aderente === 'Aderente');
+  else if (currentAdherence === 'Não-aderentes') db = db.filter(p => p.cqr_aderente === 'Não aderente');
+  if (currentDisease) return db.filter(p => p.doenca === currentDisease);
+  const diseases = GRUPOS[currentGroup];
+  if (!diseases) return db;
+  return db.filter(p => diseases.includes(p.doenca));
+}
+
+function filterByGroup(db, g) {
+  const diseases = GRUPOS[g];
+  if (!diseases) return db;
+  return db.filter(p => diseases.includes(p.doenca));
+}
+
+function numStat(db, field) {
+  const vals = db.map(p => parseFloat(p[field])).filter(v => !isNaN(v) && v > 0);
+  if (!vals.length) return null;
+  const n = vals.length;
+  const mean = vals.reduce((a,b) => a+b, 0) / n;
+  const sd = Math.sqrt(vals.reduce((a,b) => a + Math.pow(b-mean,2), 0) / n);
+  return { n, mean: mean.toFixed(1), sd: sd.toFixed(1), min: Math.min(...vals).toFixed(1), max: Math.max(...vals).toFixed(1) };
+}
+
+function numericCard(label, stat, unit) {
+  if (!stat) return `<div class="stat-card"><div class="val" style="font-size:20px;color:#a0aec0">—</div><div class="lbl">${label}${unit?' ('+unit+')':''}</div><div style="font-size:11px;color:#cbd5e0">sem dados</div></div>`;
+  return `<div class="stat-card">
+    <div class="val" style="font-size:22px">${stat.mean} <span style="font-size:13px;font-weight:400;color:#4a5568">± ${stat.sd}</span></div>
+    <div class="lbl">${label}${unit?' ('+unit+')':''} · média ± DP</div>
+    <div style="font-size:11px;color:#a0aec0;margin-top:3px">n=${stat.n} · mín ${stat.min} · máx ${stat.max}</div>
+  </div>`;
+}
+
+function secHeader(title, sub) {
+  const d = document.createElement('div');
+  d.style.cssText = 'margin:22px 0 10px;padding-bottom:6px;border-bottom:2px solid #bee3f8';
+  d.innerHTML = `<span style="font-size:14px;font-weight:700;color:${GRUPO_CORES[currentGroup]||'#1a56a0'}">${title}</span>`
+    + (sub ? `<span style="font-size:11px;color:#718096;margin-left:8px">${sub}</span>` : '');
+  return d;
+}
+
+function countBy(db, field) {
+  const m = {};
+  db.forEach(p => { const v = p[field]; if (v) m[v] = (m[v]||0)+1; });
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+}
+function countMulti(db, field) {
+  const m = {};
+  db.forEach(p => { (p[field]||[]).forEach(v => { m[v] = (m[v]||0)+1; }); });
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+}
+
+function barChart(title, entries, total) {
+  if (!entries.length) return document.createTextNode('');
+  const d = document.createElement('div');
+  d.className = 'chart-section';
+  const max = entries[0]?.[1] || 1;
+  const cor = GRUPO_CORES[currentGroup] || '#1a56a0';
+  d.innerHTML = `<div class="chart-title">${title} <span style="font-size:11px;font-weight:400;color:#718096">(n=${total})</span></div>` +
+    entries.map(([k,v]) => `
+      <div class="bar-row">
+        <div class="bar-label" title="${k}">${k}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/max*100)}%;background:${cor}"></div></div>
+        <div class="bar-count">${v} (${Math.round(v/total*100)}%)</div>
+      </div>`).join('');
+  return d;
+}
+function barChartMulti(title, entries, total, limit) {
+  return barChart(title, limit ? entries.slice(0,limit) : entries, total);
+}
+
+function renderStats() {
+  const allDb = getData();
+  const db = getActiveDB();
+  const n = db.length;
+  const cor = GRUPO_CORES[currentGroup] || '#1a56a0';
+  const segEl = document.getElementById('stat-segments');
+  const cardsEl = document.getElementById('stat-cards');
+  const chartsEl = document.getElementById('stat-charts');
+
+  // Linha 0 — adesão (filtro principal)
+  const allWithCQR = getData().filter(p => p.cqr_aderente);
+  const nAder = allWithCQR.filter(p => p.cqr_aderente === 'Aderente').length;
+  const nNaoAder = allWithCQR.filter(p => p.cqr_aderente === 'Não aderente').length;
+  const adherOpts = [
+    {k:'Todos', lbl:`Todos (${getData().length})`, c:'#1a56a0'},
+    {k:'Aderentes', lbl:`Aderentes CQR-disc > corte (${nAder})`, c:'#276749'},
+    {k:'Não-aderentes', lbl:`Não-aderentes CQR-disc ≤ corte (${nNaoAder})`, c:'#c53030'},
+  ];
+  const adherRow = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding:10px 14px;background:#fffff0;border:2px solid #f6e05e;border-radius:10px">'
+    + '<span style="font-size:11px;font-weight:700;color:#744210;align-self:center;margin-right:4px">Adesão (CQR-19):</span>'
+    + adherOpts.map(o => {
+        const isCur = currentAdherence === o.k;
+        return `<button onclick="setAdherence('${o.k}')"
+          style="padding:6px 14px;border:2px solid ${o.c};border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;background:${isCur?o.c:'#fff'};color:${isCur?'#fff':o.c};transition:.15s">${o.lbl}</button>`;
+      }).join('') + '</div>';
+
+  // Linha 1 — grupos
+  const grupoRow = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">' +
+    Object.keys(GRUPOS).map(g => {
+      const cnt = filterByGroup(allDb, g).length;
+      const isCur = g === currentGroup;
+      const c = GRUPO_CORES[g] || '#1a56a0';
+      const bg = isCur ? c : '#fff';
+      const col = isCur ? '#fff' : c;
+      return `<button onclick="setGroup('${g.replace(/'/g,"\\'")}')"
+        style="padding:7px 16px;border:2px solid ${c};border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;background:${bg};color:${col};transition:.15s">
+        ${g} <span style="opacity:.7;font-weight:400">(${cnt})</span></button>`;
+    }).join('') + '</div>';
+
+  // Linha 2 — diagnósticos do grupo selecionado
+  let diagRow = '';
+  if (currentGroup !== 'Todos') {
+    const diseases = GRUPOS[currentGroup] || [];
+    diagRow = `<div style="display:flex;flex-wrap:wrap;gap:5px;padding:10px 14px;background:#f7faff;border-radius:8px;border:1px solid #bee3f8;margin-bottom:8px">
+      <span style="font-size:11px;font-weight:700;color:${cor};align-self:center;margin-right:4px;white-space:nowrap">Diagnóstico:</span>` +
+      diseases.map(d => {
+        const cnt = allDb.filter(p => p.doenca === d).length;
+        const isSel = currentDisease === d;
+        const bg = isSel ? cor : '#fff';
+        const col = isSel ? '#fff' : cor;
+        return `<button onclick="setDisease('${d.replace(/'/g,"\\'")}')"
+          style="padding:4px 12px;border:1.5px solid ${cor};border-radius:16px;cursor:pointer;font-size:11px;font-weight:600;background:${bg};color:${col};transition:.15s">
+          ${d} <span style="opacity:.7;font-weight:400">(${cnt})</span></button>`;
+      }).join('') +
+      (currentDisease ? `<button onclick="setDisease(null)"
+        style="padding:4px 10px;border:1.5px solid #a0aec0;border-radius:16px;cursor:pointer;font-size:11px;background:#fff;color:#718096">
+        ✕ limpar</button>` : '') +
+      '</div>';
+  }
+
+  segEl.innerHTML = adherRow + grupoRow + diagRow;
+
+  // Cards resumo
+  const idadeStat = numStat(db, 'idade');
+  cardsEl.className = 'stat-grid';
+  cardsEl.innerHTML = `
+    <div class="stat-card" style="border-top:3px solid ${cor}">
+      <div class="val">${n}</div>
+      <div class="lbl">Pacientes · ${currentDisease || currentGroup}</div>
+    </div>
+    <div class="stat-card" style="border-top:3px solid ${cor}">
+      <div class="val">${db.filter(p=>p.sexo==='Feminino').length}</div>
+      <div class="lbl">Sexo feminino (${n?Math.round(db.filter(p=>p.sexo==='Feminino').length/n*100):0}%)</div>
+    </div>
+    <div class="stat-card" style="border-top:3px solid ${cor}">
+      <div class="val">${db.filter(p=>p.atividade==='Remissão').length}</div>
+      <div class="lbl">Em remissão (${n?Math.round(db.filter(p=>p.atividade==='Remissão').length/n*100):0}%)</div>
+    </div>
+    <div class="stat-card" style="border-top:3px solid ${cor}">
+      <div class="val">${db.filter(p=>p.reacao==='Sim').length}</div>
+      <div class="lbl">Reação adversa a DMARD (${n?Math.round(db.filter(p=>p.reacao==='Sim').length/n*100):0}%)</div>
+    </div>
+    ${idadeStat ? `<div class="stat-card" style="border-top:3px solid ${cor}">
+      <div class="val" style="font-size:26px">${idadeStat.mean} <span style="font-size:14px;font-weight:400">± ${idadeStat.sd}</span></div>
+      <div class="lbl">Idade média (anos) · n=${idadeStat.n}</div>
+    </div>` : ''}
+    <div class="stat-card" style="border-top:3px solid ${cor}">
+      <div class="val">${db.filter(p=>p.gcs&&p.gcs!=='Não').length}</div>
+      <div class="lbl">Em uso de corticosteroide (${n?Math.round(db.filter(p=>p.gcs&&p.gcs!=='Não').length/n*100):0}%)</div>
+    </div>`;
+
+  chartsEl.innerHTML = '';
+  if (!n) {
+    chartsEl.innerHTML = '<p style="color:#718096;padding:20px">Nenhum dado para o grupo selecionado.</p>';
+    return;
+  }
+
+  const ap = el => { if (el) chartsEl.appendChild(el); };
+
+  // ── SEÇÃO 1: DEMOGRÁFICO ──
+  ap(secHeader('Perfil Demográfico', 'Q7–Q8'));
+  const demoGrid = document.createElement('div');
+  demoGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px';
+  demoGrid.appendChild(barChart('Q7 · Sexo', countBy(db,'sexo'), n));
+  demoGrid.appendChild(barChart('Q8 · Etnia', countBy(db,'etnia'), n));
+  ap(demoGrid);
+
+  // ── SEÇÃO 2: CLÍNICO ──
+  ap(secHeader('Dados Clínicos da Doença', 'Q9–Q11'));
+  if (!currentDisease && currentGroup === 'Todos')
+    ap(barChart('Q9 · Doença em Seguimento', countBy(db,'doenca'), n));
+  else if (!currentDisease) {
+    const grpGrid = document.createElement('div');
+    grpGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px';
+    grpGrid.appendChild(barChart('Q9 · Doenças no grupo · ' + currentGroup, countBy(db,'doenca'), n));
+    grpGrid.appendChild(barChart('Q10 · Tempo de Diagnóstico', countBy(db,'tempo_diag'), n));
+    ap(grpGrid);
+  }
+  if (!currentDisease && currentGroup === 'Todos')
+    ap(barChart('Q10 · Tempo de Diagnóstico', countBy(db,'tempo_diag'), n));
+  if (currentDisease)
+    ap(barChart('Q10 · Tempo de Diagnóstico', countBy(db,'tempo_diag'), n));
+
+  const atGrid = document.createElement('div');
+  atGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+  atGrid.appendChild(barChart('Q11 · Atividade de Doença', countBy(db,'atividade'), n));
+  const remDb = db.filter(p=>p.atividade==='Remissão');
+  atGrid.appendChild(barChart('Q11b · Tempo em Remissão' + (remDb.length ? '' : ' (sem dados)'), countBy(remDb,'tempo_remissao'), remDb.length||1));
+  ap(atGrid);
+
+  // ── SEÇÃO 3: LABS ──
+  ap(secHeader('Provas Inflamatórias', 'Q12'));
+  const labGrid = document.createElement('div');
+  labGrid.className = 'stat-grid';
+  labGrid.innerHTML = numericCard('Q12 · VHS', numStat(db,'vhs'), 'mm/h')
+    + numericCard('Q12 · PCR', numStat(db,'pcr'), 'mg/L')
+    + numericCard('Q12 · CPK', numStat(db,'cpk'), 'U/L');
+  ap(labGrid);
+
+  // ── SEÇÃO 4: MÉTRICAS ──
+  ap(secHeader('Métricas de Atividade de Doença', 'Q13'));
+  const metGrid = document.createElement('div');
+  metGrid.className = 'stat-grid';
+  metGrid.innerHTML = [
+    ['DAS28 (0–8)','das28'],['ASDAS (0,6–6)','asdas'],
+    ['SLEDAI (0–105)','sledai'],['MYOACT (0–70)','myoact'],
+    ['MMT8 (0–80)','mmt8'],['BVAS (0–63)','bvas'],['ITAS (0–51)','itas']
+  ].map(([l,f]) => numericCard('Q13 · '+l, numStat(db,f))).join('');
+  ap(metGrid);
+
+  // ── SEÇÃO 5: MEDICAÇÕES ATUAIS ──
+  ap(secHeader('Medicações em Uso', 'Q14–Q19'));
+  ap(barChart('Q14 · Número de Medicações em Uso', countBy(db,'num_med'), n));
+
+  const gcsGrid = document.createElement('div');
+  gcsGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+  gcsGrid.appendChild(barChart('Q15 · Corticosteroide (dose equiv. prednisona)', countBy(db,'gcs'), n));
+  gcsGrid.appendChild(barChart('Q19 · Tempo desde Último DMARD Introduzido', countBy(db,'tempo_dmard'), n));
+  ap(gcsGrid);
+
+  ap(barChartMulti('Q16 · csDMARDs em Uso', countMulti(db,'csdmard'), n));
+  ap(barChartMulti('Q17 · bDMARDs em Uso', countMulti(db,'bdmard'), n));
+  ap(barChartMulti('Q18 · tsDMARDs em Uso', countMulti(db,'tsdmard'), n));
+
+  // Posologia — via de administração
+  const viaCount = {};
+  db.forEach(p => {
+    if (p.dmard_posologia) Object.values(p.dmard_posologia).forEach(d => {
+      const v = (d.via||'').trim();
+      if (v) viaCount[v] = (viaCount[v]||0)+1;
+    });
+  });
+  const viaEntries = Object.entries(viaCount).sort((a,b)=>b[1]-a[1]);
+  if (viaEntries.length) {
+    const totalDmards = viaEntries.reduce((s,[,v])=>s+v,0);
+    ap(barChart('Q16–18 · Via de Administração dos DMARDs', viaEntries, totalDmards));
+  }
+
+  // ── SEÇÃO 6: DMARDS PRÉVIOS ──
+  ap(secHeader('DMARDs Utilizados Previamente e Suspensos', 'Q20–Q22'));
+  const prevGrid = document.createElement('div');
+  prevGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px';
+  prevGrid.appendChild(barChartMulti('Q20 · csDMARDs Prévios', countMulti(db,'csdmard_prev'), n));
+  prevGrid.appendChild(barChartMulti('Q21 · bDMARDs Prévios', countMulti(db,'bdmard_prev'), n));
+  ap(prevGrid);
+  ap(barChartMulti('Q22 · tsDMARDs Prévios', countMulti(db,'tsdmard_prev'), n));
+
+  // ── SEÇÃO 7: COMORBIDADES E MED CONTÍNUAS ──
+  ap(secHeader('Comorbidades e Medicações Contínuas', 'Q23–Q24'));
+  ap(barChartMulti('Q23 · Comorbidades Associadas (Top 15)', countMulti(db,'comorbidades'), n, 15));
+  ap(barChartMulti('Q24 · Medicações de Uso Contínuo (Top 15)', countMulti(db,'med_continuas'), n, 15));
+
+  // ── SEÇÃO 8: REAÇÕES E SEGUIMENTO ──
+  ap(secHeader('Reações Adversas e Seguimento', 'Q25–Q26'));
+  const reacGrid = document.createElement('div');
+  reacGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px';
+  reacGrid.appendChild(barChart('Q25 · Histórico de Reação Adversa a DMARD', countBy(db,'reacao'), n));
+  reacGrid.appendChild(barChart('Q26 · Intervalo Médio entre Consultas', countBy(db,'intervalo'), n));
+  ap(reacGrid);
+  const reacDb = db.filter(p=>p.reacao==='Sim');
+  if (reacDb.length) ap(barChartMulti('Q25b · DMARDs que Causaram Reação Adversa', countMulti(reacDb,'reacao_quais'), reacDb.length));
+
+  // ── SEÇÃO 9: CQR-19 ──
+  ap(secHeader('CQR-19 — Adesão ao Tratamento', 'Q51'));
+  const cqrDb = db.filter(p => p.cqr_score !== '' && p.cqr_score !== undefined);
+  if (cqrDb.length) {
+    const cqrStatGrid = document.createElement('div');
+    cqrStatGrid.className = 'stat-grid';
+    const nAderLocal = cqrDb.filter(p=>p.cqr_aderente==='Aderente').length;
+    const nNaoAderLocal = cqrDb.filter(p=>p.cqr_aderente==='Não aderente').length;
+    cqrStatGrid.innerHTML =
+      numericCard('CQR-19 Score Discriminante', numStat(cqrDb,'cqr_score'), 'contínuo') +
+      `<div class="stat-card" style="border-top:3px solid #276749">
+        <div class="val" style="color:#276749">${nAderLocal}</div>
+        <div class="lbl">Aderentes (score ≥ ${CQR_DISC.cuttingScore}) · ${Math.round(nAderLocal/cqrDb.length*100)}%</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid #c53030">
+        <div class="val" style="color:#c53030">${nNaoAderLocal}</div>
+        <div class="lbl">Não aderentes (score < ${CQR_DISC.cuttingScore}) · ${Math.round(nNaoAderLocal/cqrDb.length*100)}%</div>
+      </div>`;
+    ap(cqrStatGrid);
+    // Distribuição do score discriminante por faixas
+    const faixas = [['< −2',null,-2],['−2 a −1',-2,-1],['−1 a −0.58',-1,-0.5849],['−0.58 a 0',-0.5849,0],['0 a 1',0,1],['> 1',1,null]];
+    const faixaEntries = faixas.map(([lbl,min,max]) =>
+      [lbl, cqrDb.filter(p=>{ const s=parseFloat(p.cqr_score); return (min===null||s>=min)&&(max===null||s<max); }).length]
+    ).filter(([,v])=>v>0);
+    ap(barChart('CQR-19 · Distribuição por Faixa de Score', faixaEntries, cqrDb.length));
+  } else {
+    const noData = document.createElement('p');
+    noData.style.cssText = 'color:#718096;font-size:12px;padding:8px 0';
+    noData.textContent = 'Nenhum paciente com CQR-19 preenchido neste grupo.';
+    ap(noData);
+  }
+
+  // ── SEÇÃO 10: SOCIODEMOGRÁFICO ──
+  ap(secHeader('Dados Sociodemográficos', 'Q27–Q39'));
+  const s10a = document.createElement('div');
+  s10a.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px';
+  s10a.appendChild(barChart('Q27 · Religião', countBy(db,'religiao'), n));
+  s10a.appendChild(barChart('Q28 · Estado Civil', countBy(db,'estado_civil'), n));
+  ap(s10a);
+  const s10b = document.createElement('div');
+  s10b.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+  s10b.appendChild(barChart('Q29 · Filhos', countBy(db,'filhos'), n));
+  s10b.appendChild(barChart('Q31 · Renda Familiar', countBy(db,'renda'), n));
+  ap(s10b);
+  ap(barChart('Q30 · Escolaridade', countBy(db,'escolaridade'), n));
+  ap(barChart('Q32 · Ocupação', countBy(db,'ocupacao'), n));
+  const s10c = document.createElement('div');
+  s10c.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+  s10c.appendChild(barChart('Q33 · Carga Horária de Trabalho', countBy(db,'carga_horaria'), n));
+  s10c.appendChild(barChart('Q35 · Localização da Residência', countBy(db,'local_residencia'), n));
+  ap(s10c);
+  const s10d = document.createElement('div');
+  s10d.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+  s10d.appendChild(barChart('Q36 · Pessoas na Residência', countBy(db,'num_pessoas'), n));
+  s10d.appendChild(barChart('Q37 · Situação de Moradia', countBy(db,'situacao_moradia'), n));
+  ap(s10d);
+  const s10e = document.createElement('div');
+  s10e.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+  s10e.appendChild(barChart('Q38 · Tabagismo', countBy(db,'tabagismo'), n));
+  s10e.appendChild(barChart('Q39 · Etilismo', countBy(db,'etilismo'), n));
+  ap(s10e);
+  ap(barChartMulti('Q34 · Meio de Locomoção', countMulti(db,'locomocao'), n));
+
+  // ── SEÇÃO 11: ACESSO E EDUCAÇÃO ──
+  ap(secHeader('Acesso e Educação em Saúde', 'Q40–Q49'));
+  const acessoFields = [
+    ['Q40 · Material educativo sobre tratamento','material_educ'],
+    ['Q41 · Acompanhamento por enfermeiro/farmacêutico/agente','acompanhamento'],
+    ['Q42 · Dificuldade para entender informações sobre doença','dif_doenca'],
+    ['Q43 · Conhecimento das complicações da doença','conhec_complic'],
+    ['Q44 · Dificuldade para entender informações sobre tratamento','dif_trat'],
+    ['Q45 · Facilidade para marcar consultas','facilidade_consulta'],
+    ['Q46 · Medicações em falta na farmácia','falta_farm'],
+    ['Q47 · Consegue comprar quando faltam medicações','compra_med'],
+    ['Q48 · Custo das medicações é problema','custo_med'],
+    ['Q49 · Deslocamento até unidade/farmácia é problema','deslocamento'],
+  ];
+  for (let i = 0; i < acessoFields.length; i += 2) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+    row.appendChild(barChart(acessoFields[i][0], countBy(db,acessoFields[i][1]), n));
+    if (acessoFields[i+1]) row.appendChild(barChart(acessoFields[i+1][0], countBy(db,acessoFields[i+1][1]), n));
+    ap(row);
+  }
+
+  // ── SEÇÃO 12: BMQ ──
+  ap(secHeader('BMQ — Beliefs about Medicines Questionnaire', 'Q51'));
+  const bmqDb = db.filter(p => p.bmq_necessity !== '' && p.bmq_necessity !== undefined);
+  if (bmqDb.length) {
+    const bmqStatGrid = document.createElement('div');
+    bmqStatGrid.className = 'stat-grid';
+    bmqStatGrid.innerHTML =
+      numericCard('BMQ Necessity (5–25)', numStat(bmqDb, 'bmq_necessity')) +
+      numericCard('BMQ Concerns (6–30)',  numStat(bmqDb, 'bmq_concerns')) +
+      numericCard('Diferença Necessity−Concerns', numStat(bmqDb, 'bmq_diff'));
+    ap(bmqStatGrid);
+    const bmqDiffDb = bmqDb.filter(p => p.bmq_diff !== '' && p.bmq_diff !== undefined);
+    if (bmqDiffDb.length) {
+      const faixasBMQ = [
+        ['Necessity > Concerns (pró-adesão)', bmqDiffDb.filter(p => parseFloat(p.bmq_diff) > 0).length],
+        ['Necessity = Concerns', bmqDiffDb.filter(p => parseFloat(p.bmq_diff) === 0).length],
+        ['Concerns > Necessity (risco)', bmqDiffDb.filter(p => parseFloat(p.bmq_diff) < 0).length],
+      ].filter(([,v]) => v > 0);
+      ap(barChart('BMQ · Perfil Necessity vs Concerns', faixasBMQ, bmqDiffDb.length));
+    }
+  } else {
+    const noBmq = document.createElement('p');
+    noBmq.style.cssText = 'color:#718096;font-size:12px;padding:8px 0';
+    noBmq.textContent = 'Nenhum paciente com BMQ preenchido neste grupo.';
+    ap(noBmq);
+  }
+
+  // ── SEÇÃO 13: SEAMS ──
+  ap(secHeader('SEAMS — Autoeficácia para Adesão à Medicação', 'Q51'));
+  const seamsDb = db.filter(p => p.seams_score !== '' && p.seams_score !== undefined);
+  if (seamsDb.length) {
+    const seamsGrid = document.createElement('div');
+    seamsGrid.className = 'stat-grid';
+    seamsGrid.innerHTML = numericCard('SEAMS Total (13–39)', numStat(seamsDb, 'seams_score'));
+    ap(seamsGrid);
+    const faixasSEAMS = [['13–19 (Baixa)',13,19],['20–32 (Moderada)',20,32],['33–39 (Alta)',33,39]];
+    const seamsEntries = faixasSEAMS.map(([lbl,min,max]) =>
+      [lbl, seamsDb.filter(p=>{ const s=parseFloat(p.seams_score); return s>=min&&s<=max; }).length]
+    ).filter(([,v])=>v>0);
+    ap(barChart('SEAMS · Distribuição por Faixa de Autoeficácia', seamsEntries, seamsDb.length));
+  } else {
+    const noSeams = document.createElement('p');
+    noSeams.style.cssText = 'color:#718096;font-size:12px;padding:8px 0';
+    noSeams.textContent = 'Nenhum paciente com SEAMS preenchido neste grupo.';
+    ap(noSeams);
+  }
+
+  // ── SEÇÃO 13: HADS ──
+  ap(secHeader('HADS — Ansiedade e Depressão', 'Q52'));
+  const hadsDb = db.filter(p => p.hads_anx !== '' && p.hads_anx !== undefined);
+  if (hadsDb.length) {
+    const hadsStatGrid = document.createElement('div');
+    hadsStatGrid.className = 'stat-grid';
+    const classify = score => parseFloat(score) <= 7 ? 'Normal' : parseFloat(score) <= 10 ? 'Limítrofe' : 'Caso clínico';
+    const faixasHADS = [['0–7 (Normal)',0,7],['8–10 (Limítrofe)',8,10],['11–21 (Caso clínico)',11,21]];
+    hadsStatGrid.innerHTML =
+      numericCard('HADS Ansiedade (0–21)', numStat(hadsDb,'hads_anx')) +
+      numericCard('HADS Depressão (0–21)', numStat(hadsDb,'hads_dep'));
+    ap(hadsStatGrid);
+    const hadsGrid2 = document.createElement('div');
+    hadsGrid2.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+    const anxEntries = faixasHADS.map(([lbl,min,max]) =>
+      [lbl, hadsDb.filter(p=>{ const s=parseFloat(p.hads_anx); return s>=min&&s<=max; }).length]
+    ).filter(([,v])=>v>0);
+    const depEntries = faixasHADS.map(([lbl,min,max]) =>
+      [lbl, hadsDb.filter(p=>{ const s=parseFloat(p.hads_dep); return s>=min&&s<=max; }).length]
+    ).filter(([,v])=>v>0);
+    hadsGrid2.appendChild(barChart('HADS · Ansiedade por Faixa', anxEntries, hadsDb.length));
+    hadsGrid2.appendChild(barChart('HADS · Depressão por Faixa', depEntries, hadsDb.length));
+    ap(hadsGrid2);
+  } else {
+    const noHads = document.createElement('p');
+    noHads.style.cssText = 'color:#718096;font-size:12px;padding:8px 0';
+    noHads.textContent = 'Nenhum paciente com HADS preenchido neste grupo.';
+    ap(noHads);
+  }
+
+  // ── SEÇÃO 13: HAQ ──
+  ap(secHeader('HAQ — Health Assessment Questionnaire', 'Q51'));
+  const haqDb = db.filter(p => p.haq_score !== '' && p.haq_score !== undefined);
+  if (haqDb.length) {
+    const haqStatGrid = document.createElement('div');
+    haqStatGrid.className = 'stat-grid';
+    haqStatGrid.innerHTML = numericCard('HAQ-DI (0–3)', numStat(haqDb, 'haq_score'), '0–3');
+    ap(haqStatGrid);
+    const faixasHAQ = [['0,00–0,25 (sem incap.)',0,0.25],['0,26–0,50',0.26,0.50],['0,51–1,00',0.51,1.00],['1,01–2,00',1.01,2.00],['2,01–3,00',2.01,3.00]];
+    const faixaHAQEntries = faixasHAQ.map(([lbl,min,max]) =>
+      [lbl, haqDb.filter(p=>{ const s=parseFloat(p.haq_score); return s>=min&&s<=max; }).length]
+    ).filter(([,v])=>v>0);
+    ap(barChart('HAQ-DI · Distribuição por Faixa de Score', faixaHAQEntries, haqDb.length));
+  } else {
+    const noHaq = document.createElement('p');
+    noHaq.style.cssText = 'color:#718096;font-size:12px;padding:8px 0';
+    noHaq.textContent = 'Nenhum paciente com HAQ preenchido neste grupo.';
+    ap(noHaq);
+  }
+
+  // ── SEÇÃO 13: ESCALAS ──
+  ap(secHeader('Escalas Subjetivas (0–100)', 'Q50'));
+  const escGrid = document.createElement('div');
+  escGrid.className = 'stat-grid';
+  escGrid.innerHTML = [
+    ['Q50 · Clareza comunicação médica','comunic'],
+    ['Q50 · Confiança na equipe médica','confianca'],
+    ['Q50 · Participação nas decisões','participacao'],
+    ['Q50 · Satisfação com tratamento','satisfacao'],
+    ['Q50 · Suporte social','suporte'],
+    ['Q50 · EVA Dor','eva_dor'],
+    ['Q50 · EVA Estresse','eva_estresse'],
+    ['Q50 · EVA PtGA','eva_ptga'],
+  ].map(([l,f]) => numericCard(l, numStat(db,f))).join('');
+  ap(escGrid);
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach((b,i) => {
+    b.classList.toggle('active', ['form','list','stats'][i] === id);
+  });
+  document.getElementById('page-'+id).classList.add('active');
+  if (id === 'list') renderList();
+  if (id === 'stats') renderStats();
+  if (id === 'form') document.getElementById('form-msg').innerHTML = '';
+}
+
+// ============================================================
+// IMPORTAR EVOLUÇÃO DO PRONTUÁRIO
+// ============================================================
+function openEvolucaoModal() {
+  const saved = localStorage.getItem('anthropic_key') || '';
+  document.getElementById('evo-apikey').value = saved;
+  document.getElementById('evo-result').style.display = 'none';
+  document.getElementById('evo-loading').style.display = 'none';
+  document.getElementById('evo-modal').style.display = 'flex';
+}
+function closeEvolucaoModal() {
+  document.getElementById('evo-modal').style.display = 'none';
+}
+
+async function extractFromEvolucao() {
+  const text   = document.getElementById('evo-textarea').value.trim();
+  const apiKey = document.getElementById('evo-apikey').value.trim();
+  const resEl  = document.getElementById('evo-result');
+  const btn    = document.getElementById('evo-extract-btn');
+  const load   = document.getElementById('evo-loading');
+
+  if (!text)   { resEl.className='evo-result err'; resEl.style.display='block'; resEl.textContent='Cole o texto da evolução antes de extrair.'; return; }
+  if (!apiKey) { resEl.className='evo-result err'; resEl.style.display='block'; resEl.textContent='Informe a chave de API Anthropic.'; return; }
+
+  localStorage.setItem('anthropic_key', apiKey);
+  btn.disabled = true;
+  load.style.display = 'block';
+  resEl.style.display = 'none';
+
+  const doencasStr    = DOENCAS.join(' | ');
+  const csdmardStr    = CS_DMARD.join(', ');
+  const bdmardStr     = B_DMARD.join(', ');
+  const tsdmardStr    = TS_DMARD.join(', ');
+
+  const prompt = `Você é um assistente de pesquisa clínica especializado em reumatologia. Analise a evolução de prontuário médico abaixo (em português brasileiro) e extraia os dados disponíveis. Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois.
+
+Estrutura do JSON (use null para campos não encontrados):
+{
+  "nome": string,
+  "rghc": string,
+  "nascimento": "YYYY-MM-DD",
+  "sexo": "Feminino" | "Masculino",
+  "etnia": "Amarela" | "Branca" | "Parda" | "Preta",
+  "doenca": use exatamente um destes valores se identificado: ${doencasStr},
+  "tempo_diag": "< 1 ano" | "1–3 anos" | "3–5 anos" | "5–7 anos" | "7–9 anos" | "10–15 anos" | "> 15 anos",
+  "atividade": "Remissão" | "Baixa atividade" | "Moderada atividade" | "Alta atividade",
+  "tempo_remissao": "< 6 meses" | "6–12 meses" | "12–24 meses" | "24–48 meses" | "> 48 meses",
+  "vhs": number,
+  "pcr": number,
+  "cpk": number,
+  "das28": number,
+  "asdas": number,
+  "sledai": number,
+  "myoact": number,
+  "mmt8": number,
+  "bvas": number,
+  "itas": number,
+  "gcs": "Não" | "5 mg" | "6–10 mg" | "11–20 mg" | "21–40 mg" | "41–80 mg",
+  "num_med": "1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"10"|"11 ou mais",
+  "csdmard": [subconjunto de: ${csdmardStr}],
+  "bdmard":  [subconjunto de: ${bdmardStr}],
+  "tsdmard": [subconjunto de: ${tsdmardStr}],
+  "tempo_dmard": "< 6 meses" | "6–12 meses" | "12–24 meses" | "24–48 meses" | "48 meses ou mais",
+  "reacao": "Sim" | "Não",
+  "intervalo": "< 3 meses" | "3 a 6 meses" | "> 6 meses"
+}
+
+Instruções:
+- Para gcs: calcule a dose equivalente de prednisona e classifique na faixa correta (ex: prednisona 5mg → "5 mg", prednisolona 10mg → "6–10 mg").
+- Para num_med: conte todos os medicamentos mencionados em uso (não apenas DMARDs).
+- Para atividade: interprete termos clínicos (ex: "sem sinais de atividade" → "Remissão", "doença ativa" → analise o contexto).
+- Para csdmard/bdmard/tsdmard: use EXATAMENTE os nomes das listas fornecidas.
+- Inclua apenas campos que você encontrou na evolução; os demais devem ser null.
+
+Texto da evolução:
+${text}`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}));
+      throw new Error(e.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const raw  = await resp.json();
+    const txt  = raw.content[0].text.trim();
+    const data = JSON.parse(txt);
+
+    const filled = fillFromExtracted(data);
+
+    resEl.className = 'evo-result ok';
+    resEl.style.display = 'block';
+    resEl.innerHTML = `<strong>✓ ${filled.length} campo(s) preenchido(s):</strong><br>` +
+      filled.map(f => `<span class="evo-chip">${f}</span>`).join(' ') +
+      `<br><br><span style="color:#718096;font-size:11px">Os campos não identificados na evolução precisarão ser preenchidos manualmente.</span>`;
+
+    // Navega para aba 1 (Dados Clínicos) para revisão
+    showFormTab(1);
+    closeEvolucaoModal();
+
+  } catch(e) {
+    resEl.className = 'evo-result err';
+    resEl.style.display = 'block';
+    resEl.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    load.style.display = 'none';
+  }
+}
+
+function fillFromExtracted(data) {
+  const filled = [];
+
+  // Helper: seleciona botão de rádio por valor
+  const selectRadio = (containerId, field, value) => {
+    if (!value) return;
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    c.querySelectorAll('.opt-btn').forEach(b => {
+      if (b.textContent.trim() === value) {
+        c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
+        b.classList.add('selected');
+        formData[field] = value;
+        filled.push(field);
+      }
+    });
+  };
+
+  // Helper: seleciona checkboxes por array de valores
+  const selectCheck = (containerId, field, values) => {
+    if (!values || !values.length) return;
+    formData[field] = [];
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    c.querySelectorAll('.opt-btn').forEach(b => {
+      if (values.includes(b.textContent.trim())) {
+        b.classList.add('selected');
+        formData[field].push(b.textContent.trim());
+      }
+    });
+    if (formData[field].length) filled.push(field);
+  };
+
+  // Helper: preenche input numérico/texto
+  const setInput = (id, value, label) => {
+    if (value === null || value === undefined || value === '') return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = value;
+    filled.push(label || id);
+  };
+
+  // Identificação
+  setInput('f-nome',       data.nome,       'nome');
+  setInput('f-rghc',       data.rghc,       'rghc');
+  setInput('f-nascimento', data.nascimento,  'nascimento');
+
+  // Demográfico
+  selectRadio('q-sexo',  'sexo',  data.sexo);
+  selectRadio('q-etnia', 'etnia', data.etnia);
+
+  // Doença
+  selectRadio('q-doenca',     'doenca',     data.doenca);
+  selectRadio('q-tempo-diag', 'tempo_diag', data.tempo_diag);
+  selectRadio('q-atividade',  'atividade',  data.atividade);
+  if (data.doenca)    updateMetrics(data.doenca);
+  if (data.atividade) toggleRemissao(data.atividade);
+  selectRadio('q-tempo-remissao', 'tempo_remissao', data.tempo_remissao);
+
+  // Labs
+  setInput('f-vhs', data.vhs, 'VHS');
+  setInput('f-pcr', data.pcr, 'PCR');
+  setInput('f-cpk', data.cpk, 'CPK');
+
+  // Métricas
+  setInput('f-das28',  data.das28,  'DAS28');
+  setInput('f-asdas',  data.asdas,  'ASDAS');
+  setInput('f-sledai', data.sledai, 'SLEDAI');
+  setInput('f-myoact', data.myoact, 'MYOACT');
+  setInput('f-mmt8',   data.mmt8,   'MMT8');
+  setInput('f-bvas',   data.bvas,   'BVAS');
+  setInput('f-itas',   data.itas,   'ITAS');
+
+  // Medicações
+  selectRadio('q-num-med', 'num_med', data.num_med);
+  selectRadio('q-gcs',     'gcs',     data.gcs);
+
+  selectCheck('q-csdmard', 'csdmard', data.csdmard);
+  if ((data.csdmard||[]).length) renderPosologia('csdmard', 'posologia-csdmard');
+
+  selectCheck('q-bdmard', 'bdmard', data.bdmard);
+  if ((data.bdmard||[]).length) renderPosologia('bdmard', 'posologia-bdmard');
+
+  selectCheck('q-tsdmard', 'tsdmard', data.tsdmard);
+  if ((data.tsdmard||[]).length) renderPosologia('tsdmard', 'posologia-tsdmard');
+
+  selectRadio('q-tempo-dmard', 'tempo_dmard', data.tempo_dmard);
+
+  // Reação e intervalo
+  selectRadio('q-reacao',   'reacao',   data.reacao);
+  if (data.reacao) toggleReacao(data.reacao);
+  selectRadio('q-intervalo', 'intervalo', data.intervalo);
+
+  // Recalcula idade se tiver nascimento e entrevista
+  if (data.nascimento) calcIdade();
+
+  updateTabBadges();
+  return filled;
+}
+
+// ============================================================
+// FILL TEST DATA — paciente fictícia para demonstração/debug
+// ============================================================
+function fillTestData() {
+  clearForm();
+
+  // Helper: click an opt-btn inside a container by its text label
+  function clickOpt(containerId, text) {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    const btn = [...c.querySelectorAll('.opt-btn')].find(b => b.textContent.trim() === text);
+    if (btn) btn.click();
+  }
+
+  // Helper: click questionnaire button by data-attr + score
+  function clickQ(attr, attrVal, pts) {
+    const el = document.querySelector(`.opt-btn[${attr}="${attrVal}"][data-pts="${pts}"]`);
+    if (el) el.click();
+  }
+
+  // Helper: click CQR button
+  function clickCQR(item, pts) {
+    const el = document.querySelector(`.cqr-opt[data-item="${item}"][data-pts="${pts}"]`);
+    if (el) el.click();
+  }
+
+  // Helper: set EVA slider
+  function setSlider(id, val) {
+    const el = document.getElementById(id);
+    if (el) { el.value = val; el.dispatchEvent(new Event('input')); }
+  }
+
+  // ── Identificação ──
+  document.getElementById('f-nome').value = 'Maria das Graças Ferreira Santos';
+  document.getElementById('f-rghc').value = '9987654';
+  document.getElementById('f-nascimento').value = '1965-03-15';
+  document.getElementById('f-inicio-seg').value = '2018-06-10';
+  document.getElementById('f-entrevista').value = '2026-06-15';
+  calcIdade();
+  clickOpt('q-sexo',  'Feminino');
+  clickOpt('q-etnia', 'Parda');
+
+  // ── Dados Clínicos ──
+  clickOpt('q-doenca',     'Artrite reumatoide');
+  updateMetrics();
+  clickOpt('q-tempo-diag', '7–9 anos');
+  clickOpt('q-atividade',  'Baixa atividade');
+
+  // Labs
+  document.getElementById('f-vhs').value   = '32';
+  document.getElementById('f-pcr').value   = '6.8';
+  document.getElementById('f-das28').value = '2.7';
+
+  // Medicações
+  clickOpt('q-num-med',    '3');
+  clickOpt('q-gcs',        '5 mg');
+  clickOpt('q-csdmard',    'Metotrexato');
+  setTimeout(() => {          // aguarda renderPosologia
+    const posCS = document.querySelector('#posologia-csdmard tr td input[placeholder="Dose"]');
+    if (posCS) posCS.value = '15mg/sem';
+    clickOpt('q-bdmard', 'Adalimumabe');
+    setTimeout(() => {
+      const posB = document.querySelector('#posologia-bdmard tr td input[placeholder="Dose"]');
+      if (posB) posB.value = '40mg/14d';
+      clickOpt('q-tempo-dmard', '24–48 meses');
+      clickOpt('q-reacao',      'Não');
+      clickOpt('q-intervalo',   '3 a 6 meses');
+
+      // DMARDs prévios
+      clickOpt('q-csdmard-prev', 'Leflunomida');
+
+      // Comorbidades
+      clickOpt('q-comorbidades', 'Hipertensão arterial sistêmica');
+      clickOpt('q-comorbidades', 'Hipotireoidismo');
+
+      // Medicações contínuas
+      clickOpt('q-med-continuas', 'Anti-hipertensivos');
+      clickOpt('q-med-continuas', 'Levotiroxina');
+
+      // ── Sociodemográfico ──
+      clickOpt('q-religiao',          'Catolicismo');
+      clickOpt('q-estado-civil',      'Casado');
+      clickOpt('q-filhos',            '2');
+      clickOpt('q-escolaridade',      'Ensino Médio completo');
+      clickOpt('q-renda',             '1 a 3 salários mínimos');
+      clickOpt('q-ocupacao',          'Aposentado');
+      clickOpt('q-carga-horaria',     '< 14 horas');
+      clickOpt('q-locomocao',         'Ônibus');
+      clickOpt('q-locomocao',         'Táxi/aplicativo');
+      clickOpt('q-local-residencia',  'Área urbana');
+      clickOpt('q-num-pessoas',       '3');
+      clickOpt('q-situacao-moradia',  'Própria');
+      clickOpt('q-tabagismo',         'Não');
+      clickOpt('q-etilismo',          'Não');
+
+      // ── Acesso e Percepção ──
+      clickOpt('q-material-educ',       'Sim');
+      clickOpt('q-acompanhamento',      'Sim');
+      clickOpt('q-dif-doenca',          'Parcialmente');
+      clickOpt('q-conhec-complic',      'Sim');
+      clickOpt('q-dif-trat',            'Não');
+      clickOpt('q-facilidade-consulta', 'Sim');
+      clickOpt('q-falta-farm',          'Não');
+      clickOpt('q-compra-med',          'Não');
+      clickOpt('q-custo-med',           'Não');
+      clickOpt('q-deslocamento',        'Sim');
+
+      // EVA sliders (0–100)
+      setSlider('f-comunic',      82);
+      setSlider('f-confianca',    90);
+      setSlider('f-participacao', 74);
+      setSlider('f-satisfacao',   85);
+      setSlider('f-suporte',      70);
+      setSlider('f-eva-dor',      28);
+      setSlider('f-eva-estresse', 42);
+      setSlider('f-eva-ptga',     32);
+
+      // ── BMQ (1–5): Necessity alta, Concerns moderada ──
+      // bmqn-1..5 → pts 4,5,4,4,4 = 21
+      [4,5,4,4,4].forEach((v,i) => clickQ('data-bmq', `bmqn-${i+1}`, v));
+      // bmqc-1..6 → pts 3,2,2,3,2,2 = 14
+      [3,2,2,3,2,2].forEach((v,i) => clickQ('data-bmq', `bmqc-${i+1}`, v));
+
+      // ── SEAMS (1–3): boa adesão (score 36) ──
+      [3,3,3,3,3,3,3,2,2,2,3,3,3].forEach((v,i) => clickQ('data-seams', i+1, v));
+
+      // ── HADS (0–3): Ansiedade=6 (normal), Depressão=4 (normal) ──
+      const hadsA = {'1A':0,'2A':1,'3A':1,'4A':1,'5A':1,'6A':1,'7A':1}; // =6
+      const hadsD = {'1D':1,'2D':0,'3D':1,'4D':1,'5D':0,'6D':0,'7D':1}; // =4
+      Object.entries({...hadsA,...hadsD}).forEach(([id,v]) => clickQ('data-hads', id, v));
+
+      // ── HAQ (0–3, 20 itens): score ≈ 0.5 ──
+      // Bloco1(1-2)=0, Bloco2(3-4)=1, Bloco3(5-7)=0, Bloco4(8-9)=1,
+      // Bloco5(10-12)=1, Bloco6(13-14)=0, Bloco7(15-17)=1, Bloco8(18-20)=0
+      const haqVals = {1:0,2:0,3:1,4:1,5:0,6:0,7:0,8:1,9:0,10:1,
+                       11:0,12:0,13:0,14:0,15:1,16:1,17:0,18:0,19:0,20:0};
+      Object.entries(haqVals).forEach(([n,v]) => clickQ('data-haq', n, v));
+
+      // ── CQR-19 (1–5): score ≈ 93, aderente ──
+      // Todos os 19 itens em 4 → sum=76 → score=round((76-19)/0.57)=100
+      for (let i = 1; i <= 19; i++) clickCQR(String(i), 4);
+
+      updateTabBadges();
+      showFormTab(0);
+      document.getElementById('form-msg').innerHTML =
+        '<div class="success">&#128101; Paciente fictícia <strong>Maria das Graças</strong> preenchida para teste. Revise e clique em Salvar.</div>';
+      window.scrollTo(0,0);
+    }, 100);
+  }, 100);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+initForm();
+</script>
+<!-- ===== MODAL EVOLUÇÃO ===== -->
+<div class="modal-overlay" id="evo-modal" style="display:none" onclick="if(event.target===this)closeEvolucaoModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>&#128203; Importar dados da Evolução do Prontuário</h2>
+      <button class="modal-close" onclick="closeEvolucaoModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#fffaf0;border:1px solid #f6ad55;border-radius:8px;padding:10px 14px;font-size:11px;color:#744210;margin-bottom:14px">
+        <strong>Como funciona:</strong> cole o texto da evolução mais recente do prontuário. O app usa a API do Claude para identificar dados clínicos (doença, medicações, exames laboratoriais, atividade de doença) e preenche o formulário automaticamente. Os dados de identificação e questionários precisarão ser preenchidos manualmente.
+      </div>
+      <div style="margin-bottom:12px">
+        <label for="evo-apikey">Chave de API Anthropic <span style="font-weight:400;color:#718096">(salva localmente no navegador)</span></label>
+        <input type="password" id="evo-apikey" class="modal-apikey" placeholder="sk-ant-api03-...">
+        <div style="font-size:11px;color:#a0aec0;margin-top:4px">Obtenha sua chave em <strong>console.anthropic.com</strong> → API Keys</div>
+      </div>
+      <div>
+        <label for="evo-textarea">Texto da Evolução</label>
+        <textarea id="evo-textarea" placeholder="Cole aqui o texto completo da evolução do prontuário..."></textarea>
+      </div>
+      <div class="evo-loading" id="evo-loading">
+        <span class="evo-spinner"></span>Analisando evolução com Claude...
+      </div>
+      <div class="evo-result" id="evo-result" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeEvolucaoModal()">Cancelar</button>
+      <button class="btn-primary" id="evo-extract-btn" onclick="extractFromEvolucao()">&#10024; Extrair e Preencher</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL GOOGLE SHEETS ===== -->
+<div id="modal-sheets" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeSheetsModal()">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-header">
+      <h2>&#127347; Exportar para Google Sheets</h2>
+      <button class="modal-close" onclick="closeSheetsModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="sheets-modal-body">
+
+      <!-- Se URL já configurada: mostra painel de exportar -->
+      <div id="sheets-panel-ready" style="display:none">
+        <div style="background:#f0fff4;border:1px solid #68d391;border-radius:8px;padding:12px 16px;font-size:13px;color:#276749;margin-bottom:14px">
+          &#10003; Integração configurada! Clique em <strong>Exportar agora</strong> para enviar os dados para a planilha.
+        </div>
+        <div style="font-size:12px;color:#4a5568;margin-bottom:6px">URL do Web App:</div>
+        <div style="font-size:11px;font-family:monospace;word-break:break-all;background:#f7faff;border:1px solid #bee3f8;border-radius:6px;padding:8px 12px;margin-bottom:14px" id="sheets-url-display"></div>
+        <button class="btn-secondary btn-sm" onclick="resetSheetsUrl()">Alterar URL</button>
+      </div>
+
+      <!-- Se URL não configurada: mostra configuração passo a passo -->
+      <div id="sheets-panel-setup">
+        <div style="background:#ebf8ff;border:1px solid #90cdf4;border-radius:8px;padding:10px 14px;font-size:12px;color:#2b6cb0;margin-bottom:16px">
+          Esta integração usa o <strong>Google Apps Script</strong> — funciona diretamente do arquivo HTML, sem servidor. Siga os 5 passos abaixo uma única vez.
+        </div>
+
+        <div class="gs-step">
+          <div class="gs-step-num">1</div>
+          <div class="gs-step-body">
+            <strong>Criar a planilha</strong>
+            <p>Acesse <a href="https://sheets.google.com" target="_blank" style="color:#0f9d58">sheets.google.com</a> e crie uma nova planilha em branco. Dê o nome que preferir (ex: "Dados Reumatologia").</p>
+          </div>
+        </div>
+
+        <div class="gs-step">
+          <div class="gs-step-num">2</div>
+          <div class="gs-step-body">
+            <strong>Abrir o editor de script</strong>
+            <p>Dentro da planilha, clique em <strong>Extensões → Apps Script</strong>. Uma nova aba abrirá com o editor de código.</p>
+          </div>
+        </div>
+
+        <div class="gs-step">
+          <div class="gs-step-num">3</div>
+          <div class="gs-step-body">
+            <strong>Colar o código abaixo e salvar</strong>
+            <p>Apague o código que já existe e cole este (depois pressione Ctrl+S para salvar):</p>
+            <div class="gs-code" id="gs-code-display">function doPost(e) {
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    var values  = payload.rows;   // array de arrays (cabeçalho + dados)
+    var ss      = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Aba principal: substitui tudo
+    var sheet = ss.getSheetByName('Pacientes');
+    if (!sheet) sheet = ss.insertSheet('Pacientes');
+    else sheet.clearContents();
+
+    if (values && values.length > 0) {
+      sheet.getRange(1, 1, values.length, values[0].length).setValues(values);
+      var header = sheet.getRange(1, 1, 1, values[0].length);
+      header.setBackground('#1a56a0');
+      header.setFontColor('#ffffff');
+      header.setFontWeight('bold');
+      sheet.setFrozenRows(1);
+      sheet.autoResizeColumns(1, values[0].length);
+    }
+
+    // Aba de log: registra cada exportação
+    var log = ss.getSheetByName('Log de Exportações');
+    if (!log) {
+      log = ss.insertSheet('Log de Exportações');
+      log.appendRow(['Data/Hora', 'Pacientes exportados']);
+    }
+    log.appendRow([new Date(), values.length - 1]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true, rows: values.length - 1 }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// Permite testar se a URL está correta abrindo no navegador
+function doGet() {
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'online', app: 'Dados Reumatologia' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+            <button class="btn-secondary btn-sm" style="margin-top:6px" onclick="copyGsCode()">&#128203; Copiar código</button>
+          </div>
+        </div>
+
+        <div class="gs-step">
+          <div class="gs-step-num">4</div>
+          <div class="gs-step-body">
+            <strong>Implantar como Web App</strong>
+            <p>No editor, clique em <strong>Implantar → Nova implantação</strong>. Em "Tipo", selecione <strong>App da Web</strong>. Configure:</p>
+            <ul style="font-size:12px;color:#4a5568;margin:6px 0 0 16px;line-height:1.8">
+              <li><strong>Executar como:</strong> Eu (sua conta Google)</li>
+              <li><strong>Quem pode acessar:</strong> Qualquer pessoa</li>
+            </ul>
+            <p style="margin-top:6px">Clique em <strong>Implantar</strong> e autorize o acesso à planilha quando solicitado.</p>
+          </div>
+        </div>
+
+        <div class="gs-step">
+          <div class="gs-step-num">5</div>
+          <div class="gs-step-body">
+            <strong>Copiar a URL e colar abaixo</strong>
+            <p>Após a implantação, uma URL do tipo <code style="font-size:11px;background:#f0f0f0;padding:1px 5px;border-radius:3px">https://script.google.com/macros/s/XXXX/exec</code> será exibida. Cole-a aqui:</p>
+            <input type="url" id="gs-webapp-url" class="gs-url-field" placeholder="https://script.google.com/macros/s/...../exec">
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeSheetsModal()">Cancelar</button>
+      <button class="btn-secondary btn-sm" id="sheets-test-btn" onclick="testSheetsConnection()" title="Verifica se a URL está correta antes de exportar">&#128268; Testar conexão</button>
+      <button class="btn-green" id="sheets-action-btn" onclick="handleSheetsAction()">Exportar agora</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
