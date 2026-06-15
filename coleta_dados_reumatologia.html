@@ -2781,6 +2781,9 @@ function openEvolucaoModal() {
   document.getElementById('evo-apikey').value = saved;
   document.getElementById('evo-result').style.display = 'none';
   document.getElementById('evo-loading').style.display = 'none';
+  // Pré-preenche data da consulta com a data da entrevista se já informada
+  const dataEntrevista = document.getElementById('f-entrevista').value;
+  if (dataEntrevista) document.getElementById('evo-data-consulta').value = dataEntrevista;
   document.getElementById('evo-modal').style.display = 'flex';
 }
 function closeEvolucaoModal() {
@@ -2802,52 +2805,85 @@ async function extractFromEvolucao() {
   load.style.display = 'block';
   resEl.style.display = 'none';
 
+  const dataConsulta  = document.getElementById('evo-data-consulta').value;
+  const dataRef       = dataConsulta
+    ? new Date(dataConsulta).toLocaleDateString('pt-BR')
+    : 'não informada (use a última consulta registrada)';
+
   const doencasStr    = DOENCAS.join(' | ');
   const csdmardStr    = CS_DMARD.join(', ');
   const bdmardStr     = B_DMARD.join(', ');
   const tsdmardStr    = TS_DMARD.join(', ');
+  const comorbStr     = COMORBIDADES.join(', ');
+  const medContStr    = MED_CONTINUAS.join(', ');
+  const reacaoStr     = REACAO_DMARD.join(', ');
 
-  const prompt = `Você é um assistente de pesquisa clínica especializado em reumatologia. Analise a evolução de prontuário médico abaixo (em português brasileiro) e extraia os dados disponíveis. Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois.
+  const systemPrompt = `Você é um extrator especializado de dados clínicos de prontuários médicos em reumatologia. Sua tarefa é identificar e extrair dados de uma consulta específica dentro de um texto que pode conter várias consultas de datas diferentes, cabeçalhos, histórico de medicações e resultados de exames de múltiplas datas. Você retorna SOMENTE JSON válido, sem markdown e sem texto adicional.`;
 
-Estrutura do JSON (use null para campos não encontrados):
+  const userPrompt = `DATA-ALVO DA CONSULTA: ${dataRef}
+
+TAREFA: Analise o texto do prontuário abaixo e extraia dados EXCLUSIVAMENTE da consulta cuja data seja igual ou mais próxima da DATA-ALVO. Ignore dados de consultas anteriores a essa, exceto para identificar DMARDs suspensos (campos _prev).
+
+Para cada campo extraído, registre também a data de origem no campo correspondente com sufixo "_data" (formato "YYYY-MM-DD"). Se não conseguir identificar a data exata de um dado, use null para "_data".
+
+Retorne SOMENTE um objeto JSON válido com esta estrutura (null para campos não encontrados):
 {
-  "nome": string,
-  "rghc": string,
+  "consulta_data_extraida": "YYYY-MM-DD ou null — data da consulta de onde você extraiu os dados",
+
+  "nome": string,          "nome_data": string,
+  "rghc": string,          "rghc_data": null,
   "nascimento": "YYYY-MM-DD",
   "sexo": "Feminino" | "Masculino",
   "etnia": "Amarela" | "Branca" | "Parda" | "Preta",
-  "doenca": use exatamente um destes valores se identificado: ${doencasStr},
+
+  "doenca": um destes exatamente: ${doencasStr},
   "tempo_diag": "< 1 ano" | "1–3 anos" | "3–5 anos" | "5–7 anos" | "7–9 anos" | "10–15 anos" | "> 15 anos",
-  "atividade": "Remissão" | "Baixa atividade" | "Moderada atividade" | "Alta atividade",
+  "atividade": "Remissão" | "Baixa atividade" | "Moderada atividade" | "Alta atividade",   "atividade_data": string,
   "tempo_remissao": "< 6 meses" | "6–12 meses" | "12–24 meses" | "24–48 meses" | "> 48 meses",
-  "vhs": number,
-  "pcr": number,
-  "cpk": number,
-  "das28": number,
-  "asdas": number,
-  "sledai": number,
-  "myoact": number,
-  "mmt8": number,
-  "bvas": number,
-  "itas": number,
+
+  "vhs": number,   "vhs_data": string,
+  "pcr": number,   "pcr_data": string,
+  "cpk": number,   "cpk_data": string,
+
+  "das28": number,   "das28_data": string,
+  "asdas": number,   "asdas_data": string,
+  "sledai": number,  "sledai_data": string,
+  "myoact": number,  "myoact_data": string,
+  "mmt8": number,    "mmt8_data": string,
+  "bvas": number,    "bvas_data": string,
+  "itas": number,    "itas_data": string,
+
   "gcs": "Não" | "5 mg" | "6–10 mg" | "11–20 mg" | "21–40 mg" | "41–80 mg",
   "num_med": "1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"10"|"11 ou mais",
-  "csdmard": [subconjunto de: ${csdmardStr}],
-  "bdmard":  [subconjunto de: ${bdmardStr}],
-  "tsdmard": [subconjunto de: ${tsdmardStr}],
+
+  "csdmard":  [subconjunto de: ${csdmardStr}],
+  "bdmard":   [subconjunto de: ${bdmardStr}],
+  "tsdmard":  [subconjunto de: ${tsdmardStr}],
+  "csdmard_prev": [subconjunto de: ${csdmardStr}],
+  "bdmard_prev":  [subconjunto de: ${bdmardStr}],
+  "tsdmard_prev": [subconjunto de: ${tsdmardStr}],
   "tempo_dmard": "< 6 meses" | "6–12 meses" | "12–24 meses" | "24–48 meses" | "48 meses ou mais",
+
+  "comorbidades": [subconjunto de: ${comorbStr}],
+  "med_continuas": [subconjunto de: ${medContStr}],
+
   "reacao": "Sim" | "Não",
+  "reacao_quais": [subconjunto de: ${reacaoStr}],
+
   "intervalo": "< 3 meses" | "3 a 6 meses" | "> 6 meses"
 }
 
-Instruções:
-- Para gcs: calcule a dose equivalente de prednisona e classifique na faixa correta (ex: prednisona 5mg → "5 mg", prednisolona 10mg → "6–10 mg").
-- Para num_med: conte todos os medicamentos mencionados em uso (não apenas DMARDs).
-- Para atividade: interprete termos clínicos (ex: "sem sinais de atividade" → "Remissão", "doença ativa" → analise o contexto).
-- Para csdmard/bdmard/tsdmard: use EXATAMENTE os nomes das listas fornecidas.
-- Inclua apenas campos que você encontrou na evolução; os demais devem ser null.
+REGRAS CRÍTICAS:
+1. ANCORAGEM TEMPORAL: Identifique a consulta-alvo pela DATA-ALVO. Se houver múltiplas entradas de datas distintas, extraia medicações, atividade e métricas APENAS da entrada correspondente à DATA-ALVO ou mais próxima anterior.
+2. MEDICAÇÕES ATUAIS vs. PRÉVIAS: Inclua em csdmard/bdmard/tsdmard apenas o que está prescrito na conduta/plano da consulta-alvo. Coloque em _prev medicações descritas como "suspensas", "trocadas", "descontinuadas" ou "usadas anteriormente".
+3. EXAMES LABORATORIAIS: Prefira exames coletados próximos à DATA-ALVO (≤ 30 dias antes). Se o exame mais recente for de data muito anterior, registre o valor mas coloque a data real em _data para que o usuário possa avaliar.
+4. CORTICOSTEROIDES (gcs): Calcule dose equivalente de prednisona: prednisona 1:1, prednisolona 1:1, metilprednisolona ×1.25, dexametasona ×7. Classifique na faixa correta.
+5. NÚMERO DE MEDICAÇÕES (num_med): Conte TODOS os medicamentos em uso na consulta-alvo (DMARDs + contínuos + corticoide). Use "11 ou mais" se ≥ 11.
+6. ATIVIDADE: Interprete termos clínicos: "sem atividade"/"remissão"/"DAS28<2.6" → "Remissão"; "baixa atividade"/"doença controlada" → "Baixa atividade"; "moderada atividade" → "Moderada atividade"; "alta atividade"/"doença ativa" → "Alta atividade".
+7. Use EXATAMENTE os nomes das listas fornecidas para doença, DMARDs, comorbidades e medicações contínuas.
+8. Não invente dados. Retorne null para campos não encontrados no texto.
 
-Texto da evolução:
+TEXTO DO PRONTUÁRIO:
 ${text}`;
 
   try {
@@ -2860,9 +2896,11 @@ ${text}`;
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }]
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        temperature: 0,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
       })
     });
 
@@ -2872,18 +2910,33 @@ ${text}`;
     }
 
     const raw  = await resp.json();
-    const txt  = raw.content[0].text.trim();
+    let txt = raw.content[0].text.trim();
+    // Remove blocos markdown caso o modelo os inclua
+    txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     const data = JSON.parse(txt);
 
-    const filled = fillFromExtracted(data);
+    const dataAlvo = dataConsulta ? new Date(dataConsulta) : null;
+    const { filled, suspicious } = fillFromExtracted(data, dataAlvo);
+
+    const consultaExtraida = data.consulta_data_extraida
+      ? `<div style="font-size:11px;color:#2b6cb0;margin-bottom:8px">📅 Dados extraídos da consulta: <strong>${new Date(data.consulta_data_extraida + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></div>`
+      : '';
+
+    const suspWarn = suspicious.length
+      ? `<div style="margin-top:8px;padding:8px 10px;background:#fffbeb;border:1px solid #f6ad55;border-radius:6px;font-size:11px;color:#744210">
+           ⚠️ <strong>Campos com data suspeita</strong> (extraídos de data diferente da consulta-alvo — revise antes de salvar):<br>
+           ${suspicious.map(s => `<span class="evo-chip" style="background:#fef3c7;color:#92400e">${s}</span>`).join(' ')}
+         </div>`
+      : '';
 
     resEl.className = 'evo-result ok';
     resEl.style.display = 'block';
-    resEl.innerHTML = `<strong>✓ ${filled.length} campo(s) preenchido(s):</strong><br>` +
+    resEl.innerHTML = consultaExtraida +
+      `<strong>✓ ${filled.length} campo(s) preenchido(s):</strong><br>` +
       filled.map(f => `<span class="evo-chip">${f}</span>`).join(' ') +
-      `<br><br><span style="color:#718096;font-size:11px">Os campos não identificados na evolução precisarão ser preenchidos manualmente.</span>`;
+      suspWarn +
+      `<br><span style="color:#718096;font-size:11px">Os campos não identificados na evolução precisarão ser preenchidos manualmente.</span>`;
 
-    // Navega para aba 1 (Dados Clínicos) para revisão
     showFormTab(1);
     closeEvolucaoModal();
 
@@ -2897,11 +2950,24 @@ ${text}`;
   }
 }
 
-function fillFromExtracted(data) {
-  const filled = [];
+function fillFromExtracted(data, dataAlvo) {
+  const filled    = [];
+  const suspicious = [];
+
+  // Retorna true se a data do campo está mais de 45 dias antes da data-alvo
+  const isSuspicious = (dateStr) => {
+    if (!dataAlvo || !dateStr) return false;
+    const d = new Date(dateStr + 'T00:00:00');
+    return (dataAlvo - d) > 45 * 86400000;
+  };
+
+  const trackField = (label, dateStr) => {
+    filled.push(label);
+    if (isSuspicious(dateStr)) suspicious.push(label);
+  };
 
   // Helper: seleciona botão de rádio por valor
-  const selectRadio = (containerId, field, value) => {
+  const selectRadio = (containerId, field, value, dateStr, label) => {
     if (!value) return;
     const c = document.getElementById(containerId);
     if (!c) return;
@@ -2910,13 +2976,13 @@ function fillFromExtracted(data) {
         c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
         b.classList.add('selected');
         formData[field] = value;
-        filled.push(field);
+        trackField(label || field, dateStr);
       }
     });
   };
 
   // Helper: seleciona checkboxes por array de valores
-  const selectCheck = (containerId, field, values) => {
+  const selectCheck = (containerId, field, values, label) => {
     if (!values || !values.length) return;
     formData[field] = [];
     const c = document.getElementById(containerId);
@@ -2927,74 +2993,84 @@ function fillFromExtracted(data) {
         formData[field].push(b.textContent.trim());
       }
     });
-    if (formData[field].length) filled.push(field);
+    if (formData[field].length) filled.push(label || field);
   };
 
   // Helper: preenche input numérico/texto
-  const setInput = (id, value, label) => {
+  const setInput = (id, value, label, dateStr) => {
     if (value === null || value === undefined || value === '') return;
     const el = document.getElementById(id);
     if (!el) return;
     el.value = value;
-    filled.push(label || id);
+    trackField(label || id, dateStr);
   };
 
   // Identificação
-  setInput('f-nome',       data.nome,       'nome');
-  setInput('f-rghc',       data.rghc,       'rghc');
-  setInput('f-nascimento', data.nascimento,  'nascimento');
+  setInput('f-nome',       data.nome,      'nome');
+  setInput('f-rghc',       data.rghc,      'rghc');
+  setInput('f-nascimento', data.nascimento, 'nascimento');
 
   // Demográfico
-  selectRadio('q-sexo',  'sexo',  data.sexo);
-  selectRadio('q-etnia', 'etnia', data.etnia);
+  selectRadio('q-sexo',  'sexo',  data.sexo,  null, 'sexo');
+  selectRadio('q-etnia', 'etnia', data.etnia, null, 'etnia');
 
   // Doença
-  selectRadio('q-doenca',     'doenca',     data.doenca);
-  selectRadio('q-tempo-diag', 'tempo_diag', data.tempo_diag);
-  selectRadio('q-atividade',  'atividade',  data.atividade);
+  selectRadio('q-doenca',     'doenca',     data.doenca,     null, 'doença');
+  selectRadio('q-tempo-diag', 'tempo_diag', data.tempo_diag, null, 'tempo_diag');
+  selectRadio('q-atividade',  'atividade',  data.atividade,  data.atividade_data, 'atividade');
   if (data.doenca)    updateMetrics(data.doenca);
   if (data.atividade) toggleRemissao(data.atividade);
-  selectRadio('q-tempo-remissao', 'tempo_remissao', data.tempo_remissao);
+  selectRadio('q-tempo-remissao', 'tempo_remissao', data.tempo_remissao, null, 'tempo_remissao');
 
   // Labs
-  setInput('f-vhs', data.vhs, 'VHS');
-  setInput('f-pcr', data.pcr, 'PCR');
-  setInput('f-cpk', data.cpk, 'CPK');
+  setInput('f-vhs', data.vhs, 'VHS', data.vhs_data);
+  setInput('f-pcr', data.pcr, 'PCR', data.pcr_data);
+  setInput('f-cpk', data.cpk, 'CPK', data.cpk_data);
 
   // Métricas
-  setInput('f-das28',  data.das28,  'DAS28');
-  setInput('f-asdas',  data.asdas,  'ASDAS');
-  setInput('f-sledai', data.sledai, 'SLEDAI');
-  setInput('f-myoact', data.myoact, 'MYOACT');
-  setInput('f-mmt8',   data.mmt8,   'MMT8');
-  setInput('f-bvas',   data.bvas,   'BVAS');
-  setInput('f-itas',   data.itas,   'ITAS');
+  setInput('f-das28',  data.das28,  'DAS28',  data.das28_data);
+  setInput('f-asdas',  data.asdas,  'ASDAS',  data.asdas_data);
+  setInput('f-sledai', data.sledai, 'SLEDAI', data.sledai_data);
+  setInput('f-myoact', data.myoact, 'MYOACT', data.myoact_data);
+  setInput('f-mmt8',   data.mmt8,   'MMT8',   data.mmt8_data);
+  setInput('f-bvas',   data.bvas,   'BVAS',   data.bvas_data);
+  setInput('f-itas',   data.itas,   'ITAS',   data.itas_data);
 
   // Medicações
-  selectRadio('q-num-med', 'num_med', data.num_med);
-  selectRadio('q-gcs',     'gcs',     data.gcs);
+  selectRadio('q-num-med', 'num_med', data.num_med, null, 'num_med');
+  selectRadio('q-gcs',     'gcs',     data.gcs,     null, 'corticoide');
 
-  selectCheck('q-csdmard', 'csdmard', data.csdmard);
+  selectCheck('q-csdmard', 'csdmard', data.csdmard, 'csDMARDs atuais');
   if ((data.csdmard||[]).length) renderPosologia('csdmard', 'posologia-csdmard');
 
-  selectCheck('q-bdmard', 'bdmard', data.bdmard);
+  selectCheck('q-bdmard', 'bdmard', data.bdmard, 'bDMARDs atuais');
   if ((data.bdmard||[]).length) renderPosologia('bdmard', 'posologia-bdmard');
 
-  selectCheck('q-tsdmard', 'tsdmard', data.tsdmard);
+  selectCheck('q-tsdmard', 'tsdmard', data.tsdmard, 'tsDMARDs atuais');
   if ((data.tsdmard||[]).length) renderPosologia('tsdmard', 'posologia-tsdmard');
 
-  selectRadio('q-tempo-dmard', 'tempo_dmard', data.tempo_dmard);
+  // DMARDs prévios
+  selectCheck('q-csdmard-prev', 'csdmard_prev', data.csdmard_prev, 'csDMARDs prévios');
+  selectCheck('q-bdmard-prev',  'bdmard_prev',  data.bdmard_prev,  'bDMARDs prévios');
+  selectCheck('q-tsdmard-prev', 'tsdmard_prev', data.tsdmard_prev, 'tsDMARDs prévios');
 
-  // Reação e intervalo
-  selectRadio('q-reacao',   'reacao',   data.reacao);
+  selectRadio('q-tempo-dmard', 'tempo_dmard', data.tempo_dmard, null, 'tempo_dmard');
+
+  // Comorbidades e medicações contínuas
+  selectCheck('q-comorbidades',  'comorbidades',  data.comorbidades,  'comorbidades');
+  selectCheck('q-med-continuas', 'med_continuas', data.med_continuas, 'med_continuas');
+
+  // Reação
+  selectRadio('q-reacao', 'reacao', data.reacao, null, 'reação_adv');
   if (data.reacao) toggleReacao(data.reacao);
-  selectRadio('q-intervalo', 'intervalo', data.intervalo);
+  if (data.reacao === 'Sim') selectCheck('q-reacao-quais', 'reacao_quais', data.reacao_quais, 'reacao_quais');
 
-  // Recalcula idade se tiver nascimento e entrevista
+  selectRadio('q-intervalo', 'intervalo', data.intervalo, null, 'intervalo_consultas');
+
   if (data.nascimento) calcIdade();
 
   updateTabBadges();
-  return filled;
+  return { filled, suspicious };
 }
 
 // ============================================================
@@ -3162,16 +3238,23 @@ initForm();
     </div>
     <div class="modal-body">
       <div style="background:#fffaf0;border:1px solid #f6ad55;border-radius:8px;padding:10px 14px;font-size:11px;color:#744210;margin-bottom:14px">
-        <strong>Como funciona:</strong> cole o texto da evolução mais recente do prontuário. O app usa a API do Claude para identificar dados clínicos (doença, medicações, exames laboratoriais, atividade de doença) e preenche o formulário automaticamente. Os dados de identificação e questionários precisarão ser preenchidos manualmente.
+        <strong>Como funciona:</strong> informe a data da consulta e cole o texto completo da evolução do prontuário (pode incluir consultas anteriores, cabeçalho e exames de várias datas). O Claude identificará a consulta-alvo e extrairá dados clínicos apenas dessa data — medicações atuais, prévias, comorbidades e exames. Questionários precisarão ser preenchidos manualmente.
       </div>
-      <div style="margin-bottom:12px">
-        <label for="evo-apikey">Chave de API Anthropic <span style="font-weight:400;color:#718096">(salva localmente no navegador)</span></label>
-        <input type="password" id="evo-apikey" class="modal-apikey" placeholder="sk-ant-api03-...">
-        <div style="font-size:11px;color:#a0aec0;margin-top:4px">Obtenha sua chave em <strong>console.anthropic.com</strong> → API Keys</div>
+      <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <label for="evo-apikey">Chave de API Anthropic <span style="font-weight:400;color:#718096">(salva localmente)</span></label>
+          <input type="password" id="evo-apikey" class="modal-apikey" placeholder="sk-ant-api03-...">
+          <div style="font-size:11px;color:#a0aec0;margin-top:4px">Obtenha em <strong>console.anthropic.com</strong> → API Keys</div>
+        </div>
+        <div style="min-width:180px">
+          <label for="evo-data-consulta">Data da Consulta a Extrair</label>
+          <input type="date" id="evo-data-consulta" style="border:1px solid #cbd5e0;border-radius:6px;padding:7px 10px;font-size:13px;width:100%;background:#fafafa">
+          <div style="font-size:11px;color:#a0aec0;margin-top:4px">Pré-preenchida pela data da entrevista</div>
+        </div>
       </div>
       <div>
-        <label for="evo-textarea">Texto da Evolução</label>
-        <textarea id="evo-textarea" placeholder="Cole aqui o texto completo da evolução do prontuário..."></textarea>
+        <label for="evo-textarea">Texto Completo da Evolução do Prontuário</label>
+        <textarea id="evo-textarea" placeholder="Cole aqui o texto completo da evolução (pode incluir múltiplas consultas, cabeçalho, exames históricos etc.)..."></textarea>
       </div>
       <div class="evo-loading" id="evo-loading">
         <span class="evo-spinner"></span>Analisando evolução com Claude...
