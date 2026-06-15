@@ -1546,14 +1546,12 @@ function calcCQR() {
   if (answered < 19) { box.style.display = 'none'; formData.cqr_score = ''; formData.cqr_aderente = ''; return; }
 
   // Calcula o score da função discriminante canônica (Taking Compliance ≤ 80%)
-  // Os coeficientes operam sobre as respostas BRUTAS (1–4 como marcado pelo paciente).
-  // Como formData.cqr_respostas armazena valores já invertidos para itens negativos,
-  // revertemos a inversão antes de alimentar os coeficientes.
+  // Os coeficientes foram derivados pelo autor com itens negativos já invertidos
+  // (NC de forma alguma = 4, CM = 1 para esses itens), que é exatamente o valor
+  // que formData.cqr_respostas armazena — usamos diretamente, sem re-inversão.
   let disc = CQR_DISC.constant;
   for (let i = 1; i <= 19; i++) {
-    const stored = r[i];
-    const raw = CQR_NEG.has(i) ? (5 - stored) : stored;
-    disc += CQR_DISC.coefs[i - 1] * raw;
+    disc += CQR_DISC.coefs[i - 1] * r[i];
   }
 
   const aderente = disc >= CQR_DISC.cuttingScore;
