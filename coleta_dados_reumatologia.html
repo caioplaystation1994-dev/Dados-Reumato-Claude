@@ -2230,8 +2230,9 @@ function renderList() {
   populateMedFilter();
   const q   = document.getElementById('search-input').value.toLowerCase();
   const med = (document.getElementById('flt-med')?.value || '').trim().toLowerCase();
-  const all = getData().filter(p => {
-    if (q && !p.nome.toLowerCase().includes(q) && !p.rghc.toLowerCase().includes(q)) return false;
+  const fullDb = getData();
+  const all = fullDb.map((p, realIdx) => ({ p, realIdx })).filter(({ p }) => {
+    if (q && !(p.nome||'').toLowerCase().includes(q) && !(p.rghc||'').toLowerCase().includes(q)) return false;
     if (med) {
       const allMeds = [...(p.csdmard||[]), ...(p.bdmard||[]), ...(p.tsdmard||[])];
       if (!allMeds.some(m => m.toLowerCase().includes(med))) return false;
@@ -2253,8 +2254,8 @@ function renderList() {
         </th>
         <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Adesão CQR-19</th><th>Completude</th><th>Ações</th>
       </tr></thead>
-      <tbody>${db.map((p,i) => `
-        <tr id="row-${p.rghc}">
+      <tbody>${db.map(({ p, realIdx }, i) => `
+        <tr id="row-${realIdx}">
           <td style="text-align:center">
             <input type="checkbox" class="row-chk" data-rghc="${p.rghc}" onchange="onRowCheck()"
               style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
@@ -2268,7 +2269,7 @@ function renderList() {
           <td>${adesaoChip(p)}</td>
           <td style="white-space:nowrap">${missingBadges(p)}</td>
           <td>
-            <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
+            <button class="btn-secondary btn-sm" onclick="editPatient(${realIdx})">Editar</button>
             <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
           </td>
         </tr>`).join('')}
@@ -2348,11 +2349,12 @@ function deletePatient(rghc) {
   renderList();
 }
 
-function editPatient(rghc) {
+function editPatient(realIdx) {
   const db = getData();
-  const p = db.find(x => x.rghc === rghc);
+  const p = db[realIdx];
   if (!p) return;
-  const _rghcToRestore = p.rghc;
+  // Usa índice real como chave de edição para evitar colisão entre pacientes sem RGHC
+  const _rghcToRestore = '__idx__' + realIdx;
   showPage('form');
   clearForm(); // reseta editingRghc para null
   editingRghc = _rghcToRestore; // define APÓS o clearForm
