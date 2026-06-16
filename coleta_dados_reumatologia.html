@@ -203,6 +203,16 @@ tr:hover td{background:#f7faff}
 .btn-green{background:#0f9d58;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
 .btn-green:hover{background:#0b7d45}
 .btn-green-sm{background:#0f9d58;color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+
+/* === BADGE ADESÃO CQR-19 (Melhoria 19) === */
+.adesao-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap;cursor:default}
+.adesao-badge.aderente{background:#c6f6d5;color:#276749}
+.adesao-badge.nao-aderente{background:#fed7d7;color:#9b2c2c}
+.adesao-badge.sem-cqr{background:#e2e8f0;color:#718096;font-weight:400;font-style:italic}
+.adesao-badge .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.adesao-badge.aderente .dot{background:#276749}
+.adesao-badge.nao-aderente .dot{background:#9b2c2c}
+.adesao-badge.sem-cqr .dot{background:#a0aec0}
 </style>
 </head>
 <body>
@@ -1751,6 +1761,19 @@ function clearForm() {
 // ============================================================
 // LIST PAGE
 // ============================================================
+function adesaoChip(p) {
+  if (!p.cqr_aderente) {
+    return `<span class="adesao-badge sem-cqr" title="CQR-19 não aplicado"><span class="dot"></span>Sem CQR-19</span>`;
+  }
+  const aderente = p.cqr_aderente === 'Aderente';
+  const cls = aderente ? 'aderente' : 'nao-aderente';
+  const icon = aderente ? '✓' : '✗';
+  const scoreHint = p.cqr_score !== '' && p.cqr_score !== undefined
+    ? ` · score: ${parseFloat(p.cqr_score).toFixed(3)}`
+    : '';
+  return `<span class="adesao-badge ${cls}" title="CQR-19: ${p.cqr_aderente}${scoreHint}"><span class="dot"></span>${icon} ${p.cqr_aderente}</span>`;
+}
+
 function renderList() {
   const q = document.getElementById('search-input').value.toLowerCase();
   const db = getData().filter(p =>
@@ -1760,7 +1783,7 @@ function renderList() {
   if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; return; }
   c.innerHTML = `
     <table>
-      <thead><tr><th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Ações</th></tr></thead>
+      <thead><tr><th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Adesão CQR-19</th><th>Ações</th></tr></thead>
       <tbody>${db.map((p,i) => `
         <tr>
           <td>${i+1}</td>
@@ -1769,6 +1792,7 @@ function renderList() {
           <td>${p.doenca || '—'}</td>
           <td>${p.entrevista || '—'}</td>
           <td>${p.atividade || '—'}</td>
+          <td>${adesaoChip(p)}</td>
           <td>
             <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
             <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
