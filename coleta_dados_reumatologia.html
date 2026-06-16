@@ -667,6 +667,7 @@ tr:hover td{background:#f7faff}
 <div id="page-list" class="page">
   <div class="search-bar">
     <input type="text" id="search-input" placeholder="Buscar por nome ou RGHC..." oninput="renderList()">
+    <button class="btn-danger btn-sm" id="btn-delete-selected" onclick="deleteSelected()" style="display:none">&#128465; Excluir selecionados</button>
     <button class="btn-primary btn-sm" onclick="exportCSV()">Exportar CSV</button>
     <button class="btn-primary btn-sm" onclick="exportXLSX()" style="background:#217346" title="Exportar planilha Excel com múltiplas abas">&#128202; Excel (.xlsx)</button>
     <button class="btn-green-sm" onclick="openSheetsModal()" title="Exportar para Google Sheets via Apps Script">&#127347; Google Sheets</button>
@@ -1803,12 +1804,16 @@ function renderList() {
     p.nome.toLowerCase().includes(q) || p.rghc.toLowerCase().includes(q)
   );
   const c = document.getElementById('list-container');
-  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; return; }
+  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; updateDeleteSelectedBtn(); return; }
   c.innerHTML = `
     <table>
-      <thead><tr><th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Ações</th></tr></thead>
+      <thead><tr>
+        <th style="width:36px;text-align:center"><input type="checkbox" id="list-check-all" title="Selecionar todos" onchange="toggleAllListChecks(this.checked)" style="width:15px;height:15px;cursor:pointer"></th>
+        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Ações</th>
+      </tr></thead>
       <tbody>${db.map((p,i) => `
         <tr>
+          <td style="text-align:center"><input type="checkbox" class="list-row-check" data-rghc="${p.rghc}" onchange="updateDeleteSelectedBtn()" style="width:15px;height:15px;cursor:pointer"></td>
           <td>${i+1}</td>
           <td>${p.nome}</td>
           <td>${p.rghc}</td>
@@ -1824,6 +1829,29 @@ function renderList() {
       </tbody>
     </table>
     <p style="margin-top:10px;font-size:12px;color:#718096">${db.length} paciente(s) no total</p>`;
+  updateDeleteSelectedBtn();
+}
+
+function toggleAllListChecks(checked) {
+  document.querySelectorAll('.list-row-check').forEach(cb => { cb.checked = checked; });
+  updateDeleteSelectedBtn();
+}
+
+function updateDeleteSelectedBtn() {
+  const selected = document.querySelectorAll('.list-row-check:checked').length;
+  const btn = document.getElementById('btn-delete-selected');
+  if (!btn) return;
+  btn.style.display = selected > 0 ? 'inline-block' : 'none';
+  btn.textContent = `🗑 Excluir selecionados (${selected})`;
+}
+
+function deleteSelected() {
+  const checks = [...document.querySelectorAll('.list-row-check:checked')];
+  if (!checks.length) return;
+  const rghcs = checks.map(cb => cb.dataset.rghc);
+  if (!confirm(`Excluir ${rghcs.length} paciente(s) selecionado(s)?\n\nEsta ação não pode ser desfeita.`)) return;
+  setData(getData().filter(p => !rghcs.includes(p.rghc)));
+  renderList();
 }
 
 function deletePatient(rghc) {
