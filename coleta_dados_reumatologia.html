@@ -3106,7 +3106,9 @@ ${text}`;
     }
 
     const raw  = await resp.json();
-    const txt  = raw.content[0].text.trim();
+    let txt    = raw.content[0].text.trim();
+    // remove markdown code fences if present (```json ... ``` or ``` ... ```)
+    txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const data = JSON.parse(txt);
 
     const filled = fillFromExtracted(data);
