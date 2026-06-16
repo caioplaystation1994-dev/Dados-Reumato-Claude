@@ -1263,37 +1263,78 @@ function showFormTab(idx) {
   applyMissingFilter();
 }
 
-function calcTabProgress(tab) {
+function getTabFields(tab) {
   const r = formData;
-  const gv = id => document.getElementById(id) ? document.getElementById(id).value : '';
-  switch (tab) {
-    case 0: {
-      const f = [gv('f-nome'), gv('f-rghc'), gv('f-nascimento'), gv('f-entrevista'), r.sexo, r.etnia];
-      return { done: f.filter(Boolean).length, total: 6 };
-    }
-    case 1: {
-      const f = [r.doenca, r.tempo_diag, r.atividade, r.num_med, r.gcs, r.reacao, r.intervalo];
-      return { done: f.filter(Boolean).length, total: 7 };
-    }
-    case 2: {
-      const f = [r.religiao, r.estado_civil, r.filhos, r.escolaridade, r.renda, r.ocupacao,
-                 r.carga_horaria, r.local_residencia, r.num_pessoas, r.situacao_moradia,
-                 r.tabagismo, r.etilismo];
-      return { done: f.filter(Boolean).length, total: 12 };
-    }
-    case 3: {
-      const f = [r.material_educ, r.acompanhamento, r.dif_doenca, r.conhec_complic, r.dif_trat,
-                 r.facilidade_consulta, r.falta_farm, r.compra_med, r.custo_med, r.deslocamento];
-      const evas = ['f-comunic','f-confianca','f-participacao','f-satisfacao','f-suporte',
-                    'f-eva-dor','f-eva-estresse','f-eva-ptga'].filter(id => gv(id) !== '').length;
-      return { done: f.filter(Boolean).length + evas, total: 18 };
-    }
-    case 4: {
-      const scores = [r.bmq_necessity, r.bmq_concerns, r.seams_score, r.hads_anx, r.hads_dep, r.haq_score, r.cqr_score];
-      return { done: scores.filter(v => v !== '' && v !== undefined && v !== null).length, total: 7 };
-    }
-  }
-  return { done: 0, total: 0 };
+  const gv = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const evaVal = spanId => { const el = document.getElementById(spanId); return el && el.textContent !== '—' ? '1' : ''; };
+  const atividadeVisible = () => { const el = document.getElementById('sec-atividade'); return !el || el.style.display !== 'none'; };
+  const byTab = {
+    0: [
+      {label:'Nome',             val:gv('f-nome'),          cid:'f-nome'},
+      {label:'RGHC',             val:gv('f-rghc'),          cid:'f-rghc'},
+      {label:'Nascimento',       val:gv('f-nascimento'),    cid:'f-nascimento'},
+      {label:'Data entrevista',  val:gv('f-entrevista'),    cid:'f-entrevista'},
+      {label:'Sexo',             val:r.sexo,                cid:'q-sexo'},
+      {label:'Etnia',            val:r.etnia,               cid:'q-etnia'},
+    ],
+    1: [
+      {label:'Doença',                    val:r.doenca,        cid:'q-doenca'},
+      {label:'Tempo de diagnóstico',      val:r.tempo_diag,    cid:'q-tempo-diag'},
+      ...(atividadeVisible() ? [{label:'Atividade de doença', val:r.atividade, cid:'q-atividade'}] : []),
+      {label:'Nº de medicações',          val:r.num_med,       cid:'q-num-med'},
+      {label:'Corticosteroides',          val:r.gcs,           cid:'q-gcs'},
+      {label:'Reação adversa',            val:r.reacao,        cid:'q-reacao'},
+      {label:'Intervalo entre consultas', val:r.intervalo,     cid:'q-intervalo'},
+    ],
+    2: [
+      {label:'Religião',             val:r.religiao,          cid:'q-religiao'},
+      {label:'Estado civil',         val:r.estado_civil,      cid:'q-estado-civil'},
+      {label:'Filhos',               val:r.filhos,            cid:'q-filhos'},
+      {label:'Escolaridade',         val:r.escolaridade,      cid:'q-escolaridade'},
+      {label:'Renda familiar',       val:r.renda,             cid:'q-renda'},
+      {label:'Ocupação',             val:r.ocupacao,          cid:'q-ocupacao'},
+      {label:'Carga horária',        val:r.carga_horaria,     cid:'q-carga-horaria'},
+      {label:'Local de residência',  val:r.local_residencia,  cid:'q-local-residencia'},
+      {label:'Pessoas na residência',val:r.num_pessoas,       cid:'q-num-pessoas'},
+      {label:'Situação de moradia',  val:r.situacao_moradia,  cid:'q-situacao-moradia'},
+      {label:'Tabagismo',            val:r.tabagismo,         cid:'q-tabagismo'},
+      {label:'Etilismo',             val:r.etilismo,          cid:'q-etilismo'},
+    ],
+    3: [
+      {label:'Material educativo',   val:r.material_educ,       cid:'q-material-educ'},
+      {label:'Acompanhamento saúde', val:r.acompanhamento,      cid:'q-acompanhamento'},
+      {label:'Dif. entender doença', val:r.dif_doenca,          cid:'q-dif-doenca'},
+      {label:'Conhec. complicações', val:r.conhec_complic,      cid:'q-conhec-complic'},
+      {label:'Dif. entender trat.',  val:r.dif_trat,            cid:'q-dif-trat'},
+      {label:'Facilidade consultas', val:r.facilidade_consulta, cid:'q-facilidade-consulta'},
+      {label:'Falta na farmácia',    val:r.falta_farm,          cid:'q-falta-farm'},
+      {label:'Compra medicações',    val:r.compra_med,          cid:'q-compra-med'},
+      {label:'Custo medicações',     val:r.custo_med,           cid:'q-custo-med'},
+      {label:'Deslocamento',         val:r.deslocamento,        cid:'q-deslocamento'},
+      {label:'EVA: Comunicação',     val:evaVal('v-comunic'),    cid:'f-comunic'},
+      {label:'EVA: Confiança',       val:evaVal('v-confianca'),  cid:'f-confianca'},
+      {label:'EVA: Participação',    val:evaVal('v-participacao'),cid:'f-participacao'},
+      {label:'EVA: Satisfação',      val:evaVal('v-satisfacao'), cid:'f-satisfacao'},
+      {label:'EVA: Suporte social',  val:evaVal('v-suporte'),    cid:'f-suporte'},
+      {label:'EVA: Dor',             val:evaVal('v-eva-dor'),    cid:'f-eva-dor'},
+      {label:'EVA: Estresse',        val:evaVal('v-eva-estresse'),cid:'f-eva-estresse'},
+      {label:'EVA: PtGA',            val:evaVal('v-eva-ptga'),   cid:'f-eva-ptga'},
+    ],
+    4: [
+      {label:'HAQ',          val:r.haq_score,     cid:'haq-blocks'},
+      {label:'BMQ Necessity',val:r.bmq_necessity, cid:'bmq-necessity-items'},
+      {label:'BMQ Concerns', val:r.bmq_concerns,  cid:'bmq-concerns-items'},
+      {label:'SEAMS',        val:r.seams_score,   cid:'seams-items'},
+      {label:'HADS',         val:r.hads_anx,      cid:'hads-items'},
+      {label:'CQR-19',       val:r.cqr_score,     cid:'cqr-tbody'},
+    ],
+  };
+  return (byTab[tab] || []).map(f => ({...f, filled: f.val !== '' && f.val !== undefined && f.val !== null}));
+}
+
+function calcTabProgress(tab) {
+  const fields = getTabFields(tab);
+  return { done: fields.filter(f => f.filled).length, total: fields.length };
 }
 
 function updateTabBadges() {
@@ -1304,6 +1345,8 @@ function updateTabBadges() {
     if (badge) {
       badge.textContent = `${done}/${total}`;
       badge.className = 'step-badge ' + (done === total ? 'done' : done > 0 ? 'partial' : 'empty');
+      const missing = getTabFields(i).filter(f => !f.filled).map(f => f.label);
+      badge.title = missing.length ? 'Faltando: ' + missing.join(', ') : '✓ Completo!';
     }
     if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
   }
@@ -1317,38 +1360,38 @@ function toggleMissingMode() {
   if (btn) {
     btn.style.background = showMissingOnly ? '#d69e2e' : '#fffff0';
     btn.style.color = showMissingOnly ? '#fff' : '#744210';
+    btn.style.borderColor = showMissingOnly ? '#d69e2e' : '#d69e2e';
   }
   applyMissingFilter();
-}
-
-function sectionHasMissing(card) {
-  // Check opt-btn groups (excluindo sub-posologias e grupos ocultos)
-  const grids = card.querySelectorAll('.options-grid');
-  for (const grid of grids) {
-    if (!grid.id) continue;
-    if (grid.id.startsWith('posologia') || grid.id.startsWith('flt-')) continue;
-    const parent = grid.closest('.hidden, [style*="display: none"], [style*="display:none"]');
-    if (parent) continue;
-    if (!grid.querySelector('.opt-btn.selected')) return true;
-  }
-  // Check text/date inputs (not readonly, not number)
-  const inputs = card.querySelectorAll('input[type=text]:not([readonly]), input[type=date]:not([readonly])');
-  for (const inp of inputs) {
-    if (!inp.value.trim()) return true;
-  }
-  return false;
 }
 
 function applyMissingFilter() {
   const panel = document.getElementById(`form-tab-${currentFormTab}`);
   if (!panel) return;
+  // Remove highlights
+  panel.querySelectorAll('[data-missing]').forEach(el => { el.removeAttribute('data-missing'); el.style.outline = ''; });
+  if (!showMissingOnly) {
+    panel.querySelectorAll('.section-card').forEach(c => c.style.display = '');
+    return;
+  }
+  const missing = getTabFields(currentFormTab).filter(f => !f.filled);
+  const missingCids = new Set(missing.map(f => f.cid));
   panel.querySelectorAll('.section-card').forEach(card => {
-    if (!showMissingOnly) {
-      card.style.display = '';
-      card.style.outline = '';
-    } else {
-      const missing = sectionHasMissing(card);
-      card.style.display = missing ? '' : 'none';
+    let hasMissing = false;
+    for (const cid of missingCids) {
+      const el = document.getElementById(cid);
+      if (el && card.contains(el)) { hasMissing = true; break; }
+    }
+    card.style.display = hasMissing ? '' : 'none';
+    if (hasMissing) {
+      // Highlight each missing field within this card
+      for (const cid of missingCids) {
+        const el = document.getElementById(cid);
+        if (el && card.contains(el)) {
+          const wrap = el.closest('.field-group') || el.parentElement;
+          if (wrap) { wrap.style.outline = '2px solid #f6ad55'; wrap.setAttribute('data-missing','1'); }
+        }
+      }
     }
   });
 }
