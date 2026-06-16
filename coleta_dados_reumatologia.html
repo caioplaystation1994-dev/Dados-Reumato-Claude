@@ -311,7 +311,7 @@ tr:hover td{background:#f7faff}
       <div class="options-grid" id="q-tempo-diag"></div>
     </div>
 
-    <div style="margin-top:16px">
+    <div style="margin-top:16px" id="sec-atividade">
       <div class="q-label">11. Atividade de Doença</div>
       <div class="options-grid" id="q-atividade"></div>
       <div class="sub-q hidden" id="sub-remissao">
@@ -774,6 +774,38 @@ const DOENCAS = [
 const TEMPO_DIAG = ['< 1 ano','1–3 anos','3–5 anos','5–7 anos','7–9 anos','10–15 anos','> 15 anos'];
 const ATIVIDADE = ['Remissão','Baixa atividade','Moderada atividade','Alta atividade'];
 const TEMPO_REMISSAO = ['< 6 meses','6–12 meses','12–24 meses','24–48 meses','> 48 meses'];
+
+// Opções de atividade por grupo de doença
+const ATIVIDADE_GRUPOS = {
+  padrao:    ['Remissão','Baixa atividade','Moderada atividade','Alta atividade'],
+  lupus:     ['Remissão (DORIS)','LLDAS','Baixa atividade','Moderada atividade','Alta atividade'],
+  vasculite: ['Remissão (BVAS=0)','Atividade (BVAS≥1)'],
+  binario:   ['Remissão','Atividade'],
+  miopatia:  null,
+};
+const DOENCA_ATIVIDADE_GRUPO = {
+  'Artrite reumatoide':                   'padrao',
+  'Artrite psorística':                   'padrao',
+  'Espondiloartrite':                     'padrao',
+  'Lúpus eritematoso sistêmico':          'lupus',
+  'Lúpus juvenil':                        'lupus',
+  'Artrite idiopática juvenil':           'binario',
+  'GPA':                                  'vasculite',
+  'GEPA':                                 'vasculite',
+  'PAM':                                  'vasculite',
+  'PAN':                                  'vasculite',
+  'Arterite de células gigantes':         'vasculite',
+  'Arterite de Takayasu':                 'vasculite',
+  'Policondrite recidivante':             'vasculite',
+  'Dermatomiosite':                       'miopatia',
+  'Dermatomiosite clinicamente amiopática':'miopatia',
+  'Dermatomiosite juvenil':               'miopatia',
+  'Polimiosite':                          'miopatia',
+  'Miopatia Necrotizante Imunomediada':   'miopatia',
+  'Miosite por corpos de inclusão':       'miopatia',
+  'Síndrome antissintetase':              'miopatia',
+  'Sobreposição miopatia + outra doença': 'miopatia',
+};
 const NUM_MED = ['1','2','3','4','5','6','7','8','9','10','11 ou mais'];
 const GCS = ['Não','5 mg','6–10 mg','11–20 mg','21–40 mg','41–80 mg'];
 const CS_DMARD = ['Azatioprina','Ciclosporina','Hidroxicloroquina','Leflunomida','Metotrexato','Micofenolato de Mofetila','Sulfassalazina','Tacrolimus'];
@@ -1397,8 +1429,11 @@ function renderPosologia(field, containerId) {
     </table>`;
 }
 
+function isRemissao(val) {
+  return val && (val === 'Remissão' || val.startsWith('Remissão ('));
+}
 function toggleRemissao(val) {
-  document.getElementById('sub-remissao').classList.toggle('hidden', val !== 'Remissão');
+  document.getElementById('sub-remissao').classList.toggle('hidden', !isRemissao(val));
 }
 function toggleReacao(val) {
   document.getElementById('sub-reacao').classList.toggle('hidden', val !== 'Sim');
@@ -1450,6 +1485,51 @@ function updateMetrics(doenca) {
   const metrics = DOENCA_METRICAS[doenca] || [];
   metrics.forEach(m => document.getElementById('m-'+m).classList.add('visible'));
   document.getElementById('metrics-hint').style.display = metrics.length ? 'none' : 'block';
+  updateAtividade(doenca);
+}
+
+function updateAtividade(doenca) {
+  const grupo = DOENCA_ATIVIDADE_GRUPO[doenca];
+  const opcoes = grupo ? ATIVIDADE_GRUPOS[grupo] : null;
+  const secAtiv = document.getElementById('sec-atividade');
+  const subRem  = document.getElementById('sub-remissao');
+  if (!opcoes) {
+    // Miopatias: oculta toda a seção de atividade
+    if (secAtiv) secAtiv.style.display = 'none';
+    subRem.classList.add('hidden');
+    formData.atividade = '';
+    formData.tempo_remissao = '';
+    return;
+  }
+  if (secAtiv) secAtiv.style.display = '';
+  // Re-renderiza opções mantendo seleção anterior se ainda válida
+  const prevVal = formData.atividade;
+  renderRadio('q-atividade', opcoes, 'atividade');
+  if (prevVal && opcoes.includes(prevVal)) {
+    document.querySelectorAll('#q-atividade .opt-btn').forEach(b => {
+      if (b.textContent.trim() === prevVal) b.classList.add('selected');
+    });
+    toggleRemissao(prevVal);
+  } else {
+    formData.atividade = '';
+    subRem.classList.add('hidden');
+  }
+
+  // Nota contextual abaixo das opções
+  const hints = {
+    padrao:    '',
+    lupus:     'LLDAS = Lupus Low Disease Activity State · DORIS = Definition Of Remission In SLE',
+    vasculite: 'BVAS = Birmingham Vasculitis Activity Score',
+    binario:   '',
+  };
+  let noteEl = document.getElementById('atividade-hint-note');
+  if (!noteEl) {
+    noteEl = document.createElement('div');
+    noteEl.id = 'atividade-hint-note';
+    noteEl.style.cssText = 'font-size:11px;color:#718096;margin-top:6px';
+    document.getElementById('q-atividade').after(noteEl);
+  }
+  noteEl.textContent = hints[grupo] || '';
 }
 
 // ============================================================
@@ -2113,7 +2193,7 @@ function editPatient(rghc) {
     if (p.doenca) updateMetrics(p.doenca);
     restore('q-tempo-diag','tempo_diag',p.tempo_diag);
     restore('q-atividade','atividade',p.atividade);
-    if (p.atividade === 'Remissão') { document.getElementById('sub-remissao').classList.remove('hidden'); restore('q-tempo-remissao','tempo_remissao',p.tempo_remissao); }
+    if (isRemissao(p.atividade)) { document.getElementById('sub-remissao').classList.remove('hidden'); restore('q-tempo-remissao','tempo_remissao',p.tempo_remissao); }
     restore('q-num-med','num_med',p.num_med);
     restore('q-gcs','gcs',p.gcs);
     if (p.sem_imunossupressao) {
@@ -3368,7 +3448,7 @@ function fillTestData() {
 
   // ── Dados Clínicos ──
   clickOpt('q-doenca',     'Artrite reumatoide');
-  updateMetrics();
+  updateMetrics('Artrite reumatoide');
   clickOpt('q-tempo-diag', '7–9 anos');
   clickOpt('q-atividade',  'Baixa atividade');
 
