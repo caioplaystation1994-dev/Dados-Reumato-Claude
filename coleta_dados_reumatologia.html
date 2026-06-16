@@ -246,7 +246,7 @@ tr:hover td{background:#f7faff}
   <div class="form-steps-nav" style="align-items:center">
     <button class="form-step-btn active" id="ftab-btn-0" onclick="showFormTab(0)"><span class="step-num">1</span>Identificação<span class="step-badge empty" id="ftab-badge-0">0/6</span></button>
     <button class="form-step-btn" id="ftab-btn-1" onclick="showFormTab(1)"><span class="step-num">2</span>Dados Clínicos<span class="step-badge empty" id="ftab-badge-1">0/7</span></button>
-    <button class="form-step-btn" id="ftab-btn-2" onclick="showFormTab(2)"><span class="step-num">3</span>Sociodemográfico<span class="step-badge empty" id="ftab-badge-2">0/13</span></button>
+    <button class="form-step-btn" id="ftab-btn-2" onclick="showFormTab(2)"><span class="step-num">3</span>Sociodemográfico<span class="step-badge empty" id="ftab-badge-2">0/12</span></button>
     <button class="form-step-btn" id="ftab-btn-3" onclick="showFormTab(3)"><span class="step-num">4</span>Acesso e Percepção<span class="step-badge empty" id="ftab-badge-3">0/18</span></button>
     <button class="form-step-btn" id="ftab-btn-4" onclick="showFormTab(4)"><span class="step-num">5</span>Questionários<span class="step-badge empty" id="ftab-badge-4">0/7</span></button>
     <button class="evo-trigger-btn" onclick="openEvolucaoModal()" title="Colar evolução do prontuário e preencher automaticamente">&#128203; Importar Evolução</button>
@@ -495,12 +495,10 @@ tr:hover td{background:#f7faff}
 
   <!-- S12: Moradia e Locomoção -->
   <div class="section-card">
-    <div class="section-title">Moradia e Locomoção</div>
-    <div class="q-label">34. Principal Meio de Locomoção <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
-    <div class="options-grid" id="q-locomocao"></div>
-    <div style="margin-top:16px"><div class="q-label">35. Localização da Residência</div>
-    <div class="options-grid" id="q-local-residencia"></div></div>
-    <div style="margin-top:16px"><div class="q-label">36. Número de Pessoas na Residência</div>
+    <div class="section-title">Moradia</div>
+    <div class="q-label">34. Localização da Residência</div>
+    <div class="options-grid" id="q-local-residencia"></div>
+    <div style="margin-top:16px"><div class="q-label">35. Número de Pessoas na Residência</div>
     <div class="options-grid" id="q-num-pessoas"></div></div>
     <div style="margin-top:16px"><div class="q-label">37. Situação de Moradia</div>
     <div class="options-grid" id="q-situacao-moradia"></div></div>
@@ -821,7 +819,6 @@ const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto'
 const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
 const OCUPACAO = ['Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de limpeza','Balconista','Cabeleireiro','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Técnico de enfermagem','Entregador','Faxineiro','Garçom','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Segurança'];
 const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
-const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
 const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
 const NUM_PESSOAS = ['Mora sozinho','2','3','4','5','6','7','8 ou mais'];
 const SITUACAO_MORADIA = ['Própria','Alugada','Cedida','Instituição','Abrigo','Pensão','Situação de rua'];
@@ -1236,8 +1233,8 @@ function calcTabProgress(tab) {
     case 2: {
       const f = [r.religiao, r.estado_civil, r.filhos, r.escolaridade, r.renda, r.ocupacao,
                  r.carga_horaria, r.local_residencia, r.num_pessoas, r.situacao_moradia,
-                 r.tabagismo, r.etilismo, (r.locomocao||[]).length > 0 ? 'ok' : ''];
-      return { done: f.filter(Boolean).length, total: 13 };
+                 r.tabagismo, r.etilismo];
+      return { done: f.filter(Boolean).length, total: 12 };
     }
     case 3: {
       const f = [r.material_educ, r.acompanhamento, r.dif_doenca, r.conhec_complic, r.dif_trat,
@@ -1467,7 +1464,7 @@ function initForm() {
     csdmard:[], bdmard:[], tsdmard:[],
     csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
     comorbidades:[], med_continuas:[], reacao_quais:[],
-    dmard_posologia:{}, locomocao:[], cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
+    dmard_posologia:{}, cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
   };
   renderRadio('q-sexo', SEXO, 'sexo');
   renderRadio('q-etnia', ETNIA, 'etnia');
@@ -1497,7 +1494,6 @@ function initForm() {
   renderRadio('q-renda', RENDA, 'renda');
   renderRadio('q-ocupacao', OCUPACAO, 'ocupacao');
   renderRadio('q-carga-horaria', CARGA_HORARIA, 'carga_horaria');
-  renderCheck('q-locomocao', LOCOMOCAO, 'locomocao');
   renderRadio('q-local-residencia', LOCAL_RESIDENCIA, 'local_residencia');
   renderRadio('q-num-pessoas', NUM_PESSOAS, 'num_pessoas');
   renderRadio('q-situacao-moradia', SITUACAO_MORADIA, 'situacao_moradia');
@@ -1828,7 +1824,6 @@ function savePatient() {
     filhos: formData.filhos||'', escolaridade: formData.escolaridade||'',
     renda: formData.renda||'', ocupacao: formData.ocupacao||'',
     carga_horaria: formData.carga_horaria||'',
-    locomocao: [...(formData.locomocao||[])],
     local_residencia: formData.local_residencia||'',
     num_pessoas: formData.num_pessoas||'',
     situacao_moradia: formData.situacao_moradia||'',
@@ -2155,7 +2150,6 @@ function editPatient(rghc) {
     restore('q-renda','renda',p.renda);
     restore('q-ocupacao','ocupacao',p.ocupacao);
     restore('q-carga-horaria','carga_horaria',p.carga_horaria);
-    restoreCheck('q-locomocao','locomocao',p.locomocao);
     restore('q-local-residencia','local_residencia',p.local_residencia);
     restore('q-num-pessoas','num_pessoas',p.num_pessoas);
     restore('q-situacao-moradia','situacao_moradia',p.situacao_moradia);
@@ -2202,7 +2196,7 @@ function exportCSV() {
     'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
     'reacao','reacao_quais','intervalo','hospitalizacoes','ps_visitas','dmard_posologia',
     'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
-    'locomocao','local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
+    'local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
     'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
     'facilidade_consulta','falta_farm','compra_med','custo_med','deslocamento',
     'comunic','confianca','participacao','satisfacao','suporte',
@@ -2317,7 +2311,6 @@ const SHEET_COLS = [
   ['renda',           'Renda Familiar Mensal'],
   ['ocupacao',        'Ocupação'],
   ['carga_horaria',   'Carga Horária Semanal'],
-  ['locomocao',       'Meio de Locomoção'],
   ['local_residencia','Localização da Residência'],
   ['num_pessoas',     'Pessoas na Residência'],
   ['situacao_moradia','Situação de Moradia'],
@@ -2962,8 +2955,6 @@ function renderStats() {
   s10e.appendChild(barChart('Q38 · Tabagismo', countBy(db,'tabagismo'), n));
   s10e.appendChild(barChart('Q39 · Etilismo', countBy(db,'etilismo'), n));
   ap(s10e);
-  ap(barChartMulti('Q34 · Meio de Locomoção', countMulti(db,'locomocao'), n));
-
   // ── SEÇÃO 11: ACESSO E EDUCAÇÃO ──
   ap(secHeader('Acesso e Educação em Saúde', 'Q40–Q49'));
   const acessoFields = [
@@ -3427,8 +3418,6 @@ function fillTestData() {
       clickOpt('q-renda',             '1 a 3 salários mínimos');
       clickOpt('q-ocupacao',          'Aposentado');
       clickOpt('q-carga-horaria',     '< 14 horas');
-      clickOpt('q-locomocao',         'Ônibus');
-      clickOpt('q-locomocao',         'Táxi/aplicativo');
       clickOpt('q-local-residencia',  'Área urbana');
       clickOpt('q-num-pessoas',       '3');
       clickOpt('q-situacao-moradia',  'Própria');
@@ -3964,7 +3953,7 @@ function buildRecordFromRow(headers, row, doencaOverride) {
     csdmard:[], bdmard:[], tsdmard:[], tempo_dmard:'',
     csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
     comorbidades:[], med_continuas:[], reacao: normAlergia(g('alergias')) || '', reacao_quais:[],
-    intervalo:'', dmard_posologia:{}, locomocao:[],
+    intervalo:'', dmard_posologia:{},
     religiao:    normImport(g('religião','religiao')||'', IMPORT_NORM.religiao) || matchList(g('religião','religiao'), RELIGIAO) || '',
     estado_civil: normImport(g('estado civil')||'', IMPORT_NORM.estado_civil) || matchList(g('estado civil'), ESTADO_CIVIL) || '',
     filhos:      (() => { const f=g('filhos'); return normImport(String(f||''),IMPORT_NORM.filhos)||(f&&!isNaN(parseInt(f))?String(parseInt(f)):'')||''; })(),
