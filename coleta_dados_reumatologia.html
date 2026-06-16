@@ -670,6 +670,13 @@ tr:hover td{background:#f7faff}
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
   </div>
+  <!-- Barra de ações em lote (seleção múltipla) -->
+  <div id="bulk-bar" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;background:#ebf8ff;border:2px solid #90cdf4;border-radius:10px;padding:10px 16px;margin-bottom:10px">
+    <span id="bulk-count" style="font-size:13px;font-weight:700;color:#2b6cb0;flex:1"></span>
+    <button class="btn-danger btn-sm" onclick="deleteSelected()">&#128465; Excluir selecionados</button>
+    <button class="btn-secondary btn-sm" onclick="exportSelectedCSV()" style="border-color:#217346;color:#217346">&#128202; Exportar CSV</button>
+    <button class="btn-secondary btn-sm" onclick="toggleAllChecks(false);renderList()" style="border-color:#718096;color:#718096">&#10005; Desmarcar todos</button>
+  </div>
   <!-- Filtro por medicação em uso (Melhoria 9) -->
   <div class="med-filter-bar">
     <label>&#128138; Medicação em uso:</label>
@@ -1851,12 +1858,22 @@ function renderList() {
   const cnt = document.getElementById('flt-med-count');
   if (cnt) cnt.textContent = med ? `${db.length} paciente(s) com este DMARD` : '';
   const c = document.getElementById('list-container');
-  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; return; }
+  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; updateBulkBar(); return; }
   c.innerHTML = `
     <table>
-      <thead><tr><th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Adesão CQR-19</th><th>Ações</th></tr></thead>
+      <thead><tr>
+        <th style="width:36px;text-align:center">
+          <input type="checkbox" id="chk-all" title="Selecionar / desmarcar todos" onchange="toggleAllChecks(this.checked)"
+            style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
+        </th>
+        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Adesão CQR-19</th><th>Ações</th>
+      </tr></thead>
       <tbody>${db.map((p,i) => `
-        <tr>
+        <tr id="row-${p.rghc}">
+          <td style="text-align:center">
+            <input type="checkbox" class="row-chk" data-rghc="${p.rghc}" onchange="onRowCheck()"
+              style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
+          </td>
           <td>${i+1}</td>
           <td>${p.nome}</td>
           <td>${p.rghc}</td>
@@ -1872,6 +1889,71 @@ function renderList() {
       </tbody>
     </table>
     <p style="margin-top:10px;font-size:12px;color:#718096">${db.length} paciente(s) no total</p>`;
+  updateBulkBar();
+}
+
+// ── Seleção múltipla ──
+function getSelectedRghcs() {
+  return [...document.querySelectorAll('.row-chk:checked')].map(cb => cb.dataset.rghc);
+}
+
+function onRowCheck() {
+  const all  = document.querySelectorAll('.row-chk');
+  const chkd = document.querySelectorAll('.row-chk:checked');
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) {
+    chkAll.indeterminate = chkd.length > 0 && chkd.length < all.length;
+    chkAll.checked = chkd.length === all.length && all.length > 0;
+  }
+  updateBulkBar();
+}
+
+function toggleAllChecks(checked) {
+  document.querySelectorAll('.row-chk').forEach(cb => { cb.checked = checked; });
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) { chkAll.checked = checked; chkAll.indeterminate = false; }
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const rghcs = getSelectedRghcs();
+  const bar   = document.getElementById('bulk-bar');
+  const cnt   = document.getElementById('bulk-count');
+  if (!bar) return;
+  if (rghcs.length > 0) {
+    bar.style.display = 'flex';
+    cnt.textContent   = `${rghcs.length} paciente(s) selecionado(s)`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function deleteSelected() {
+  const rghcs = getSelectedRghcs();
+  if (!rghcs.length) return;
+  if (!confirm(`Excluir ${rghcs.length} paciente(s) selecionado(s)?\n\nEsta ação não pode ser desfeita.`)) return;
+  setData(getData().filter(p => !rghcs.includes(p.rghc)));
+  renderList();
+}
+
+function exportSelectedCSV() {
+  const rghcs = getSelectedRghcs();
+  if (!rghcs.length) return;
+  const selected = getData().filter(p => rghcs.includes(p.rghc));
+  if (!selected.length) return;
+  const headers = Object.keys(selected[0]).filter(k => k !== 'cqr_respostas' && k !== 'haq_respostas' && k !== 'hads_respostas' && k !== 'seams_respostas' && k !== 'bmq_respostas');
+  const rows = [headers.join(';')];
+  selected.forEach(p => {
+    rows.push(headers.map(h => {
+      const v = p[h];
+      if (Array.isArray(v)) return '"' + v.join(', ') + '"';
+      if (typeof v === 'object' && v !== null) return '"' + JSON.stringify(v) + '"';
+      return v ?? '';
+    }).join(';'));
+  });
+  const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `pacientes_selecionados_${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
 function deletePatient(rghc) {
