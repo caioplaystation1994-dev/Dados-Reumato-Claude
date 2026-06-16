@@ -2888,6 +2888,44 @@ function renderStats() {
       [lbl, cqrDb.filter(p=>{ const s=parseFloat(p.cqr_score); return (min===null||s>=min)&&(max===null||s<max); }).length]
     ).filter(([,v])=>v>0);
     ap(barChart('CQR-19 · Distribuição por Faixa de Score', faixaEntries, cqrDb.length));
+
+    // Adesão por doença
+    const doencasComCQR = [...new Set(cqrDb.map(p => p.doenca).filter(Boolean))].sort();
+    if (doencasComCQR.length > 1 || (doencasComCQR.length === 1 && cqrDb.length > 1)) {
+      const sectionDiv = document.createElement('div');
+      sectionDiv.className = 'chart-section';
+      sectionDiv.innerHTML = `<div class="chart-title">CQR-19 · Adesão por Diagnóstico</div>
+        <div style="font-size:11px;color:#718096;margin-bottom:10px">
+          Pacientes com CQR-19 preenchido. Verde = Aderentes · Vermelho = Não aderentes · Cinza = %
+        </div>`;
+      doencasComCQR.forEach(doenca => {
+        const dPac = cqrDb.filter(p => p.doenca === doenca);
+        const total = dPac.length;
+        const nA  = dPac.filter(p => p.cqr_aderente === 'Aderente').length;
+        const nNA = dPac.filter(p => p.cqr_aderente === 'Não aderente').length;
+        const pA  = Math.round(nA / total * 100);
+        const pNA = Math.round(nNA / total * 100);
+        const row = document.createElement('div');
+        row.style.cssText = 'margin-bottom:10px';
+        row.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-size:12px;font-weight:600;color:#2d3748;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${doenca}">${doenca}</span>
+            <span style="font-size:11px;color:#718096;white-space:nowrap">${total} pac.</span>
+          </div>
+          <div style="display:flex;border-radius:6px;overflow:hidden;height:22px;background:#e8ecf0">
+            ${nA  ? `<div style="width:${pA}%;background:#276749;display:flex;align-items:center;justify-content:center;min-width:${pA>8?'0':'28px'}">
+                       <span style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;padding:0 4px">${pA>8?pA+'%':''}</span></div>` : ''}
+            ${nNA ? `<div style="width:${pNA}%;background:#c53030;display:flex;align-items:center;justify-content:center;min-width:${pNA>8?'0':'28px'}">
+                       <span style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;padding:0 4px">${pNA>8?pNA+'%':''}</span></div>` : ''}
+          </div>
+          <div style="display:flex;gap:14px;margin-top:3px">
+            <span style="font-size:11px;color:#276749;font-weight:600">✓ Aderente: ${nA} (${pA}%)</span>
+            <span style="font-size:11px;color:#c53030;font-weight:600">✗ Não aderente: ${nNA} (${pNA}%)</span>
+          </div>`;
+        sectionDiv.appendChild(row);
+      });
+      ap(sectionDiv);
+    }
   } else {
     const noData = document.createElement('p');
     noData.style.cssText = 'color:#718096;font-size:12px;padding:8px 0';
