@@ -349,7 +349,7 @@ tr:hover td{background:#f7faff}
     </div>
     <div class="metric-block" id="m-myoact">
       <div style="display:flex;flex-wrap:wrap;gap:16px">
-        <div class="numeric-inline"><label>MYOACT (0–70):</label><input type="number" id="f-myoact" min="0" max="70" placeholder="0–70"></div>
+        <div class="numeric-inline"><label>MYOACT (0–60):</label><input type="number" id="f-myoact" min="0" max="60" placeholder="0–60"></div>
         <div class="numeric-inline"><label>MMT8 (0–80):</label><input type="number" id="f-mmt8" min="0" max="80" placeholder="0–80"></div>
       </div>
     </div>
@@ -2884,7 +2884,7 @@ function renderStats() {
   metGrid.className = 'stat-grid';
   metGrid.innerHTML = [
     ['DAS28 (0–8)','das28'],['ASDAS (0,6–6)','asdas'],
-    ['SLEDAI (0–105)','sledai'],['MYOACT (0–70)','myoact'],
+    ['SLEDAI (0–105)','sledai'],['MYOACT (0–60)','myoact'],
     ['MMT8 (0–80)','mmt8'],['BVAS (0–63)','bvas'],['ITAS (0–51)','itas']
   ].map(([l,f]) => numericCard('Q13 · '+l, numStat(db,f))).join('');
   ap(metGrid);
