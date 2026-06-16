@@ -3921,10 +3921,12 @@ function importSelectedToList() {
       const idx = db.findIndex(p => record.rghc && p.rghc === record.rghc);
       if (idx !== -1) {
         // Atualiza apenas campos vazios no registro existente
+        const isEmptyVal = x => x === '' || x === null || x === undefined ||
+          (Array.isArray(x) && !x.length) ||
+          (typeof x === 'object' && !Array.isArray(x) && !Object.keys(x||{}).length);
         Object.keys(record).forEach(k => {
           const v = record[k];
-          const isEmpty = v === '' || v === null || v === undefined || (Array.isArray(v) && !v.length) || (typeof v === 'object' && !Array.isArray(v) && !Object.keys(v||{}).length);
-          if (!isEmpty && (db[idx][k] === '' || db[idx][k] === null || db[idx][k] === undefined)) {
+          if (!isEmptyVal(v) && isEmptyVal(db[idx][k])) {
             db[idx][k] = v;
           }
         });
