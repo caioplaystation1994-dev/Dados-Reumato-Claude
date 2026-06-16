@@ -460,10 +460,6 @@ tr:hover td{background:#f7faff}
         <label>Hospitalizações (internações):</label>
         <input type="number" id="f-hospitalizacoes" min="0" max="50" placeholder="0" style="width:80px">
       </div>
-      <div class="numeric-inline">
-        <label>Visitas ao pronto-socorro:</label>
-        <input type="number" id="f-ps-visitas" min="0" max="99" placeholder="0" style="width:80px">
-      </div>
     </div>
     <div style="margin-top:8px;font-size:11px;color:#718096">Considerar os 12 meses anteriores à data da entrevista. Registrar 0 se não houve.</div>
   </div>
@@ -1817,7 +1813,6 @@ function savePatient() {
     reacao_quais: [...(formData.reacao_quais||[])],
     intervalo: formData.intervalo || '',
     hospitalizacoes: document.getElementById('f-hospitalizacoes').value,
-    ps_visitas: document.getElementById('f-ps-visitas').value,
     dmard_posologia: {...(formData.dmard_posologia||{})},
     // Sociodemográfico
     religiao: formData.religiao||'', estado_civil: formData.estado_civil||'',
@@ -1897,7 +1892,7 @@ function clearForm() {
   document.getElementById('f-inicio-seg').value = '';
   document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
-  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-hospitalizacoes','f-ps-visitas'].forEach(id => {
+  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-hospitalizacoes'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('sub-remissao').classList.add('hidden');
@@ -2098,7 +2093,6 @@ function editPatient(rghc) {
     document.getElementById('f-bvas').value = p.bvas || '';
     document.getElementById('f-itas').value = p.itas || '';
     document.getElementById('f-hospitalizacoes').value = p.hospitalizacoes || '';
-    document.getElementById('f-ps-visitas').value = p.ps_visitas || '';
 
     const restore = (containerId, field, val) => {
       formData[field] = val;
@@ -2194,7 +2188,7 @@ function exportCSV() {
     'tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk','das28','asdas','sledai','myoact','mmt8','bvas','itas',
     'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
     'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
-    'reacao','reacao_quais','intervalo','hospitalizacoes','ps_visitas','dmard_posologia',
+    'reacao','reacao_quais','intervalo','hospitalizacoes','dmard_posologia',
     'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
     'local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
     'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
@@ -2301,7 +2295,6 @@ const SHEET_COLS = [
   ['reacao_quais',    'Reação Adversa – Quais Medicações'],
   ['intervalo',       'Intervalo Médio entre Consultas'],
   ['hospitalizacoes', 'Hospitalizações no Último Ano (nº)'],
-  ['ps_visitas',      'Visitas ao Pronto-Socorro no Último Ano (nº)'],
   ['dmard_posologia', 'Posologia dos DMARDs'],
   // Sociodemográfico
   ['religiao',        'Religião'],
