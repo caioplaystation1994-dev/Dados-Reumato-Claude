@@ -1798,6 +1798,47 @@ function clearForm() {
 // ============================================================
 // LIST PAGE
 // ============================================================
+// COMPLETUDE POR PACIENTE (Feature 2)
+// ============================================================
+function calcPatientCompleteness(p) {
+  const has = v => v !== '' && v !== null && v !== undefined;
+  const hasArr = v => Array.isArray(v) && v.length > 0;
+  const fields = [
+    // Identificação (6)
+    has(p.nome), has(p.rghc), has(p.nascimento), has(p.entrevista), has(p.sexo), has(p.etnia),
+    // Clínico (7)
+    has(p.doenca), has(p.tempo_diag), has(p.atividade), has(p.num_med), has(p.gcs), has(p.reacao), has(p.intervalo),
+    // Sociodemográfico (13)
+    has(p.religiao), has(p.estado_civil), has(p.filhos), has(p.escolaridade), has(p.renda),
+    has(p.ocupacao), has(p.carga_horaria), hasArr(p.locomocao), has(p.local_residencia),
+    has(p.num_pessoas), has(p.situacao_moradia), has(p.tabagismo), has(p.etilismo),
+    // Acesso e percepção (18)
+    has(p.material_educ), has(p.acompanhamento), has(p.dif_doenca), has(p.conhec_complic),
+    has(p.dif_trat), has(p.facilidade_consulta), has(p.falta_farm), has(p.compra_med),
+    has(p.custo_med), has(p.deslocamento),
+    has(p.comunic), has(p.confianca), has(p.participacao), has(p.satisfacao), has(p.suporte),
+    has(p.eva_dor), has(p.eva_estresse), has(p.eva_ptga),
+    // Questionários (7)
+    has(p.bmq_necessity), has(p.bmq_concerns), has(p.seams_score),
+    has(p.hads_anx), has(p.hads_dep), has(p.haq_score), has(p.cqr_score),
+  ];
+  const done = fields.filter(Boolean).length;
+  const total = fields.length;
+  return { done, total, pct: Math.round(done / total * 100) };
+}
+
+function completenessChip(p) {
+  const { done, total, pct } = calcPatientCompleteness(p);
+  const color = pct >= 80 ? '#276749' : pct >= 40 ? '#744210' : '#9b2c2c';
+  const bg    = pct >= 80 ? '#c6f6d5' : pct >= 40 ? '#fefcbf' : '#fed7d7';
+  const missing = total - done;
+  const tip = missing === 0 ? 'Completo' : `${missing} campo(s) faltando`;
+  return `<span title="${tip}" style="display:inline-flex;align-items:center;gap:5px;background:${bg};color:${color};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap;cursor:default">
+    <span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>${pct}% <span style="font-weight:400;opacity:.75">${done}/${total}</span>
+  </span>`;
+}
+
+// ============================================================
 function renderList() {
   const q = document.getElementById('search-input').value.toLowerCase();
   const db = getData().filter(p =>
@@ -1809,7 +1850,7 @@ function renderList() {
     <table>
       <thead><tr>
         <th style="width:36px;text-align:center"><input type="checkbox" id="list-check-all" title="Selecionar todos" onchange="toggleAllListChecks(this.checked)" style="width:15px;height:15px;cursor:pointer"></th>
-        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Ações</th>
+        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Completude</th><th>Ações</th>
       </tr></thead>
       <tbody>${db.map((p,i) => `
         <tr>
@@ -1820,6 +1861,7 @@ function renderList() {
           <td>${p.doenca || '—'}</td>
           <td>${p.entrevista || '—'}</td>
           <td>${p.atividade || '—'}</td>
+          <td>${completenessChip(p)}</td>
           <td>
             <button class="btn-secondary btn-sm" onclick="openResumoModal('${p.rghc}')" style="border-color:#9f7aea;color:#9f7aea">&#128269; Ver</button>
             <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
@@ -1828,7 +1870,19 @@ function renderList() {
         </tr>`).join('')}
       </tbody>
     </table>
-    <p style="margin-top:10px;font-size:12px;color:#718096">${db.length} paciente(s) no total</p>`;
+    <div style="margin-top:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;color:#718096">${db.length} paciente(s)</span>
+      ${(() => {
+        const completos   = db.filter(p => calcPatientCompleteness(p).pct === 100).length;
+        const parciais    = db.filter(p => { const {pct} = calcPatientCompleteness(p); return pct >= 40 && pct < 100; }).length;
+        const incompletos = db.filter(p => calcPatientCompleteness(p).pct < 40).length;
+        const semCQR      = db.filter(p => !p.cqr_score && p.cqr_score !== 0).length;
+        return `<span style="font-size:11px;background:#c6f6d5;color:#276749;border-radius:10px;padding:2px 10px;font-weight:700">✓ ${completos} completos</span>
+                <span style="font-size:11px;background:#fefcbf;color:#744210;border-radius:10px;padding:2px 10px;font-weight:700">◑ ${parciais} parciais</span>
+                <span style="font-size:11px;background:#fed7d7;color:#9b2c2c;border-radius:10px;padding:2px 10px;font-weight:700">✗ ${incompletos} incompletos</span>
+                <span style="font-size:11px;background:#e9d8fd;color:#553c9a;border-radius:10px;padding:2px 10px;font-weight:700">⊘ ${semCQR} sem CQR-19</span>`;
+      })()}
+    </div>`;
   updateDeleteSelectedBtn();
 }
 
