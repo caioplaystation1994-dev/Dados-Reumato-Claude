@@ -203,7 +203,28 @@ tr:hover td{background:#f7faff}
 .btn-green{background:#0f9d58;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
 .btn-green:hover{background:#0b7d45}
 .btn-green-sm{background:#0f9d58;color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+
+/* === BADGE ADESÃO CQR-19 (Melhoria 19) === */
+.adesao-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap;cursor:default}
+.adesao-badge.aderente{background:#c6f6d5;color:#276749}
+.adesao-badge.nao-aderente{background:#fed7d7;color:#9b2c2c}
+.adesao-badge.sem-cqr{background:#e2e8f0;color:#718096;font-weight:400;font-style:italic}
+.adesao-badge .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.adesao-badge.aderente .dot{background:#276749}
+.adesao-badge.nao-aderente .dot{background:#9b2c2c}
+.adesao-badge.sem-cqr .dot{background:#a0aec0}
+
+/* === TECLADO: foco nos opt-btn (Melhoria 44) === */
+.opt-btn:focus{outline:2px solid #1a56a0;outline-offset:2px;box-shadow:0 0 0 3px rgba(26,86,160,.22)}
+.opt-btn:focus:not(.selected){border-color:#1a56a0}
+
+/* === FILTRO DE MEDICAÇÃO (Melhoria 9) === */
+.med-filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border-radius:10px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:10px}
+.med-filter-bar label{font-size:11px;font-weight:700;color:#4a5568;white-space:nowrap}
+.med-filter-bar input{border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;background:#fafafa;min-width:220px}
+.med-filter-bar input:focus{outline:none;border-color:#1a56a0}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -415,6 +436,22 @@ tr:hover td{background:#f7faff}
   <div class="section-card">
     <div class="section-title">26. Intervalo Médio entre Consultas Médicas</div>
     <div class="options-grid" id="q-intervalo"></div>
+  </div>
+
+  <!-- S11: Hospitalizações (Melhoria 15) -->
+  <div class="section-card">
+    <div class="section-title">27. Internações e Urgências no Último Ano</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+      <div class="numeric-inline">
+        <label>Hospitalizações (internações):</label>
+        <input type="number" id="f-hospitalizacoes" min="0" max="50" placeholder="0" style="width:80px">
+      </div>
+      <div class="numeric-inline">
+        <label>Visitas ao pronto-socorro:</label>
+        <input type="number" id="f-ps-visitas" min="0" max="99" placeholder="0" style="width:80px">
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#718096">Considerar os 12 meses anteriores à data da entrevista. Registrar 0 se não houve.</div>
   </div>
 
   <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(0)">← Identificação</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-1" style="width:0%"></div></div><button class="btn-primary" onclick="showFormTab(2)">Sociodemográfico →</button></div>
@@ -630,9 +667,25 @@ tr:hover td{background:#f7faff}
     <button class="btn-primary btn-sm" onclick="exportCSV()">Exportar CSV</button>
     <button class="btn-green-sm" onclick="openSheetsModal()" title="Exportar para Google Sheets via Apps Script">&#127347; Google Sheets</button>
     <button class="btn-secondary btn-sm" onclick="exportJSON()">Backup JSON</button>
+    <button class="btn-secondary btn-sm" onclick="openImportModal()" style="border-color:#805ad5;color:#805ad5" title="Importar pacientes de planilha Excel/CSV">&#128229; Importar Planilha</button>
     <label class="btn-secondary btn-sm" style="cursor:pointer;padding:5px 12px;font-size:12px;font-weight:600;border:2px solid #1a56a0;border-radius:8px;color:#1a56a0">
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
+  </div>
+  <!-- Barra de ações em lote (seleção múltipla) -->
+  <div id="bulk-bar" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;background:#ebf8ff;border:2px solid #90cdf4;border-radius:10px;padding:10px 16px;margin-bottom:10px">
+    <span id="bulk-count" style="font-size:13px;font-weight:700;color:#2b6cb0;flex:1"></span>
+    <button class="btn-danger btn-sm" onclick="deleteSelected()">&#128465; Excluir selecionados</button>
+    <button class="btn-secondary btn-sm" onclick="exportSelectedCSV()" style="border-color:#217346;color:#217346">&#128202; Exportar CSV</button>
+    <button class="btn-secondary btn-sm" onclick="toggleAllChecks(false);renderList()" style="border-color:#718096;color:#718096">&#10005; Desmarcar todos</button>
+  </div>
+  <!-- Filtro por medicação em uso (Melhoria 9) -->
+  <div class="med-filter-bar">
+    <label>&#128138; Medicação em uso:</label>
+    <input type="text" id="flt-med" list="flt-med-list" placeholder="Filtrar por DMARD (ex: Metotrexato)..." oninput="renderList()" autocomplete="off">
+    <datalist id="flt-med-list"></datalist>
+    <button class="btn-secondary btn-sm" onclick="document.getElementById('flt-med').value='';renderList()" title="Limpar filtro de medicação">&#10005; Limpar</button>
+    <span id="flt-med-count" style="font-size:11px;color:#718096;margin-left:4px"></span>
   </div>
   <div id="list-container"></div>
 </div>
@@ -642,6 +695,57 @@ tr:hover td{background:#f7faff}
   <div id="stat-segments" style="margin-bottom:16px"></div>
   <div id="stat-cards"></div>
   <div id="stat-charts"></div>
+</div>
+
+<!-- ===== MODAL IMPORTAR PLANILHA ===== -->
+<div class="modal-overlay" id="import-modal" style="display:none" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal-box" style="max-width:900px">
+    <div class="modal-header">
+      <h2>&#128229; Importar Pacientes da Planilha</h2>
+      <button class="modal-close" onclick="closeImportModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#faf5ff;border:1px solid #9f7aea;border-radius:8px;padding:10px 14px;font-size:11px;color:#553c9a;margin-bottom:14px">
+        <strong>Formatos aceitos:</strong> Excel (.xlsx, .xls) e CSV (.csv). A planilha deve seguir o formato padrão desta pesquisa (cabeçalho na linha 1, um paciente por linha). Após carregar, selecione o paciente para preencher o formulário.
+      </div>
+      <div id="import-eva-warn" style="display:none;background:#fffbeb;border:1px solid #f6ad55;border-radius:8px;padding:10px 14px;font-size:11px;color:#744210;margin-bottom:14px">
+        ⚠️ <strong>Atenção — EVA fora de escala:</strong> as colunas de EVA (Clareza, Confiança, Participação, Suporte Social, Satisfação) desta planilha contêm valores fora da escala esperada de 0–100. Os valores serão importados como estão — verifique e corrija manualmente no formulário se necessário.
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px">
+          &#128196; Selecionar arquivo
+          <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(this)">
+        </label>
+        <span id="import-filename" style="font-size:12px;color:#718096;margin-left:10px"></span>
+      </div>
+      <div id="import-preview" style="display:none">
+        <div style="font-size:12px;font-weight:600;color:#2d3748;margin-bottom:8px" id="import-count"></div>
+        <div style="overflow-x:auto">
+          <table id="import-table" style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+            <thead>
+              <tr>
+                <th style="background:#805ad5;color:#fff;padding:8px 10px"><input type="checkbox" id="import-check-all" title="Selecionar todos" onchange="toggleAllImportChecks(this.checked)"></th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Nome</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">RGHC</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Data Entrevista</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Doença</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Detalhe Doença</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Questionários</th>
+              </tr>
+            </thead>
+            <tbody id="import-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:10px">
+      <button class="btn-secondary" onclick="closeImportModal()">Fechar</button>
+      <div id="import-result" style="display:none;font-size:12px;align-self:center"></div>
+      <button class="btn-primary" id="import-btn" onclick="importSelectedToList()" style="background:#805ad5;display:none">
+        &#128229; Importar Selecionados para a Lista
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -826,8 +930,9 @@ function renderBMQBlock(containerId, itens, prefix) {
       ? `<span class="hads-badge" style="background:#bee3f8;color:#2b6cb0">${n}</span>`
       : `<span class="hads-badge" style="background:#feebc8;color:#c05621">${n}</span>`;
     const optsHtml = BMQ_RESPS.map(o =>
-      `<div class="opt-btn" data-bmq="${prefix}-${n}" data-pts="${o.pts}"
-        onclick="selectBMQ('${prefix}-${n}',${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-bmq="${prefix}-${n}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectBMQ('${prefix}-${n}',${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">${badge}
@@ -911,8 +1016,9 @@ function renderSEAMS() {
     div.className = 'hads-item';
     div.style.cssText = 'border-left:4px solid #48bb78';
     const optsHtml = SEAMS_RESPS.map(o =>
-      `<div class="opt-btn" data-seams="${n}" data-pts="${o.pts}"
-        onclick="selectSEAMS(${n},${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-seams="${n}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectSEAMS(${n},${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">
@@ -1196,6 +1302,11 @@ function setData(arr) {
 // ============================================================
 // RENDER OPTION BUTTONS
 // ============================================================
+// Melhoria 44: helper para ativar opt-btn pelo teclado
+function optKeydown(e, el) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+}
+
 function renderRadio(containerId, options, field) {
   const c = document.getElementById(containerId);
   c.innerHTML = '';
@@ -1203,6 +1314,8 @@ function renderRadio(containerId, options, field) {
     const b = document.createElement('div');
     b.className = 'opt-btn';
     b.textContent = opt;
+    b.tabIndex = 0;
+    b.onkeydown = e => optKeydown(e, b);
     b.onclick = () => {
       c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
       b.classList.add('selected');
@@ -1224,6 +1337,8 @@ function renderCheck(containerId, options, field, posologiaId) {
     const b = document.createElement('div');
     b.className = 'opt-btn multi';
     b.textContent = opt;
+    b.tabIndex = 0;
+    b.onkeydown = e => optKeydown(e, b);
     b.onclick = () => {
       const arr = formData[field];
       const idx = arr.indexOf(opt);
@@ -1368,8 +1483,9 @@ function renderHADS() {
     const div = document.createElement('div');
     div.className = `hads-item ${item.tipo === 'A' ? 'anx' : 'dep'}`;
     const optsHtml = item.opts.map(o =>
-      `<div class="opt-btn" data-hads="${item.id}" data-pts="${o.pts}"
-        onclick="selectHADS('${item.id}',${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-hads="${item.id}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectHADS('${item.id}',${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">
@@ -1441,8 +1557,9 @@ function renderHAQ() {
       const itemDiv = document.createElement('div');
       itemDiv.className = 'haq-item';
       const optsHtml = HAQ_RESPS.map((r, ri) =>
-        `<div class="opt-btn" data-haq="${item.n}" data-pts="${ri}"
-          onclick="selectHAQ(${item.n},${ri},this)">${ri} – ${r}</div>`
+        `<div class="opt-btn" data-haq="${item.n}" data-pts="${ri}" tabindex="0"
+          onclick="selectHAQ(${item.n},${ri},this)"
+          onkeydown="optKeydown(event,this)">${ri} – ${r}</div>`
       ).join('');
       itemDiv.innerHTML = `
         <div class="haq-item-num">${item.n}.</div>
@@ -1520,8 +1637,9 @@ function renderCQR() {
     const opts = CQR_RESP.map((r, ri) => {
       const pts = isNeg ? (4 - ri) : (ri + 1);
       return `<td style="text-align:center">
-        <div class="opt-btn cqr-opt" data-item="${num}" data-pts="${pts}"
+        <div class="opt-btn cqr-opt" data-item="${num}" data-pts="${pts}" tabindex="0"
           onclick="selectCQR(${num},${pts},this)"
+          onkeydown="optKeydown(event,this)"
           style="display:inline-block;padding:4px 10px;font-size:11px">${r}</div>
       </td>`;
     }).join('');
@@ -1648,6 +1766,8 @@ function savePatient() {
     reacao: formData.reacao || '',
     reacao_quais: [...(formData.reacao_quais||[])],
     intervalo: formData.intervalo || '',
+    hospitalizacoes: document.getElementById('f-hospitalizacoes').value,
+    ps_visitas: document.getElementById('f-ps-visitas').value,
     dmard_posologia: {...(formData.dmard_posologia||{})},
     // Sociodemográfico
     religiao: formData.religiao||'', estado_civil: formData.estado_civil||'',
@@ -1728,7 +1848,7 @@ function clearForm() {
   document.getElementById('f-inicio-seg').value = '';
   document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
-  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
+  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-hospitalizacoes','f-ps-visitas'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('sub-remissao').classList.add('hidden');
@@ -1751,24 +1871,69 @@ function clearForm() {
 // ============================================================
 // LIST PAGE
 // ============================================================
+function adesaoChip(p) {
+  if (!p.cqr_aderente) {
+    return `<span class="adesao-badge sem-cqr" title="CQR-19 não aplicado"><span class="dot"></span>Sem CQR-19</span>`;
+  }
+  const aderente = p.cqr_aderente === 'Aderente';
+  const cls = aderente ? 'aderente' : 'nao-aderente';
+  const icon = aderente ? '✓' : '✗';
+  const scoreHint = p.cqr_score !== '' && p.cqr_score !== undefined
+    ? ` · score: ${parseFloat(p.cqr_score).toFixed(3)}`
+    : '';
+  return `<span class="adesao-badge ${cls}" title="CQR-19: ${p.cqr_aderente}${scoreHint}"><span class="dot"></span>${icon} ${p.cqr_aderente}</span>`;
+}
+
+function populateMedFilter() {
+  const dl = document.getElementById('flt-med-list');
+  if (!dl || dl.children.length > 0) return;
+  [...CS_DMARD, ...B_DMARD, ...TS_DMARD].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    dl.appendChild(opt);
+  });
+}
+
 function renderList() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const db = getData().filter(p =>
-    p.nome.toLowerCase().includes(q) || p.rghc.toLowerCase().includes(q)
-  );
+  populateMedFilter();
+  const q   = document.getElementById('search-input').value.toLowerCase();
+  const med = (document.getElementById('flt-med')?.value || '').trim().toLowerCase();
+  const all = getData().filter(p => {
+    if (q && !p.nome.toLowerCase().includes(q) && !p.rghc.toLowerCase().includes(q)) return false;
+    if (med) {
+      const allMeds = [...(p.csdmard||[]), ...(p.bdmard||[]), ...(p.tsdmard||[])];
+      if (!allMeds.some(m => m.toLowerCase().includes(med))) return false;
+    }
+    return true;
+  });
+  const db = all;
+  // Atualiza contador do filtro de medicação
+  const cnt = document.getElementById('flt-med-count');
+  if (cnt) cnt.textContent = med ? `${db.length} paciente(s) com este DMARD` : '';
   const c = document.getElementById('list-container');
-  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; return; }
+  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; updateBulkBar(); return; }
   c.innerHTML = `
     <table>
-      <thead><tr><th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Ações</th></tr></thead>
+      <thead><tr>
+        <th style="width:36px;text-align:center">
+          <input type="checkbox" id="chk-all" title="Selecionar / desmarcar todos" onchange="toggleAllChecks(this.checked)"
+            style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
+        </th>
+        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Adesão CQR-19</th><th>Ações</th>
+      </tr></thead>
       <tbody>${db.map((p,i) => `
-        <tr>
+        <tr id="row-${p.rghc}">
+          <td style="text-align:center">
+            <input type="checkbox" class="row-chk" data-rghc="${p.rghc}" onchange="onRowCheck()"
+              style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
+          </td>
           <td>${i+1}</td>
           <td>${p.nome}</td>
           <td>${p.rghc}</td>
           <td>${p.doenca || '—'}</td>
           <td>${p.entrevista || '—'}</td>
           <td>${p.atividade || '—'}</td>
+          <td>${adesaoChip(p)}</td>
           <td>
             <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
             <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
@@ -1777,6 +1942,71 @@ function renderList() {
       </tbody>
     </table>
     <p style="margin-top:10px;font-size:12px;color:#718096">${db.length} paciente(s) no total</p>`;
+  updateBulkBar();
+}
+
+// ── Seleção múltipla ──
+function getSelectedRghcs() {
+  return [...document.querySelectorAll('.row-chk:checked')].map(cb => cb.dataset.rghc);
+}
+
+function onRowCheck() {
+  const all  = document.querySelectorAll('.row-chk');
+  const chkd = document.querySelectorAll('.row-chk:checked');
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) {
+    chkAll.indeterminate = chkd.length > 0 && chkd.length < all.length;
+    chkAll.checked = chkd.length === all.length && all.length > 0;
+  }
+  updateBulkBar();
+}
+
+function toggleAllChecks(checked) {
+  document.querySelectorAll('.row-chk').forEach(cb => { cb.checked = checked; });
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) { chkAll.checked = checked; chkAll.indeterminate = false; }
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const rghcs = getSelectedRghcs();
+  const bar   = document.getElementById('bulk-bar');
+  const cnt   = document.getElementById('bulk-count');
+  if (!bar) return;
+  if (rghcs.length > 0) {
+    bar.style.display = 'flex';
+    cnt.textContent   = `${rghcs.length} paciente(s) selecionado(s)`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function deleteSelected() {
+  const rghcs = getSelectedRghcs();
+  if (!rghcs.length) return;
+  if (!confirm(`Excluir ${rghcs.length} paciente(s) selecionado(s)?\n\nEsta ação não pode ser desfeita.`)) return;
+  setData(getData().filter(p => !rghcs.includes(p.rghc)));
+  renderList();
+}
+
+function exportSelectedCSV() {
+  const rghcs = getSelectedRghcs();
+  if (!rghcs.length) return;
+  const selected = getData().filter(p => rghcs.includes(p.rghc));
+  if (!selected.length) return;
+  const headers = Object.keys(selected[0]).filter(k => k !== 'cqr_respostas' && k !== 'haq_respostas' && k !== 'hads_respostas' && k !== 'seams_respostas' && k !== 'bmq_respostas');
+  const rows = [headers.join(';')];
+  selected.forEach(p => {
+    rows.push(headers.map(h => {
+      const v = p[h];
+      if (Array.isArray(v)) return '"' + v.join(', ') + '"';
+      if (typeof v === 'object' && v !== null) return '"' + JSON.stringify(v) + '"';
+      return v ?? '';
+    }).join(';'));
+  });
+  const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `pacientes_selecionados_${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
 function deletePatient(rghc) {
@@ -1807,6 +2037,8 @@ function editPatient(rghc) {
     document.getElementById('f-mmt8').value = p.mmt8 || '';
     document.getElementById('f-bvas').value = p.bvas || '';
     document.getElementById('f-itas').value = p.itas || '';
+    document.getElementById('f-hospitalizacoes').value = p.hospitalizacoes || '';
+    document.getElementById('f-ps-visitas').value = p.ps_visitas || '';
 
     const restore = (containerId, field, val) => {
       formData[field] = val;
@@ -1899,7 +2131,7 @@ function exportCSV() {
     'tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk','das28','asdas','sledai','myoact','mmt8','bvas','itas',
     'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
     'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
-    'reacao','reacao_quais','intervalo','dmard_posologia',
+    'reacao','reacao_quais','intervalo','hospitalizacoes','ps_visitas','dmard_posologia',
     'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
     'locomocao','local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
     'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
@@ -2005,6 +2237,8 @@ const SHEET_COLS = [
   ['reacao',          'Histórico de Reação Adversa a DMARD'],
   ['reacao_quais',    'Reação Adversa – Quais Medicações'],
   ['intervalo',       'Intervalo Médio entre Consultas'],
+  ['hospitalizacoes', 'Hospitalizações no Último Ano (nº)'],
+  ['ps_visitas',      'Visitas ao Pronto-Socorro no Último Ano (nº)'],
   ['dmard_posologia', 'Posologia dos DMARDs'],
   // Sociodemográfico
   ['religiao',        'Religião'],
@@ -3146,6 +3380,585 @@ function fillTestData() {
       window.scrollTo(0,0);
     }, 100);
   }, 100);
+}
+
+// ============================================================
+// IMPORTAR PLANILHA
+// ============================================================
+const IMPORT_NORM = {
+  estado_civil: {
+    'solteiro (a)':'Solteiro','solteiro(a)':'Solteiro','solteiro':'Solteiro',
+    'casado (a)':'Casado','casado(a)':'Casado','casado':'Casado',
+    'viúvo (a)':'Viúvo','viúvo(a)':'Viúvo','viúvo':'Viúvo',
+    'divorciado (a)':'Divorciado','divorciado(a)':'Divorciado','divorciado':'Divorciado',
+    'união estável':'União estável','uniao estavel':'União estável',
+  },
+  religiao: {
+    'protestantismo / evangélico':'Evangélico / Protestante',
+    'protestantismo/evangélico':'Evangélico / Protestante',
+    'protestante':'Evangélico / Protestante','evangélico':'Evangélico / Protestante',
+    'catolicismo':'Catolicismo','espiritismo':'Espiritismo','budismo':'Budismo',
+    'judaísmo':'Judaísmo','islamismo':'Islamismo',
+    'testemunha de jeová':'Testemunha de Jeová','umbandismo':'Umbandismo',
+    'candomblé':'Candomblé','sem religião':'Sem religião','outro':'Outro',
+  },
+  escolaridade: {
+    'superior incompleto':'Ensino Superior incompleto',
+    'superior completo':'Ensino Superior completo',
+    'médio completo':'Ensino Médio completo','medio completo':'Ensino Médio completo',
+    'médio incompleto':'Ensino Médio incompleto','medio incompleto':'Ensino Médio incompleto',
+    'fundamental completo':'Ensino Fundamental completo',
+    'fundamental incompleto':'Ensino Fundamental incompleto',
+    'pós-graduado':'Pós-graduação','pos-graduado':'Pós-graduação',
+    'pós graduado':'Pós-graduação','pós-graduação':'Pós-graduação',
+    'menos de 1 ano':'Menos de 1 ano de estudo','menos de 1 ano de estudo':'Menos de 1 ano de estudo',
+  },
+  renda: {
+    'até 1 salário mínimo':'Até 1 salário mínimo','até 1 sm':'Até 1 salário mínimo',
+    '1 a 3 salários mínimos':'1 a 3 salários mínimos','1 a 3 sm':'1 a 3 salários mínimos',
+    '3 a 5 salários mínimos':'3 a 5 salários mínimos','3 a 5 sm':'3 a 5 salários mínimos',
+    'mais de 5 salários mínimos':'Mais de 5 salários mínimos','mais de 5 sm':'Mais de 5 salários mínimos',
+  },
+  carga_horaria: {
+    '< 14 horas':'< 14 horas','menos de 14 horas':'< 14 horas',
+    '15 a 39 horas':'15–39 horas','15–39 horas':'15–39 horas',
+    '40 a 48 horas':'40 a 48 horas','40–48 horas':'40 a 48 horas',
+    '49 a 60 horas':'49 a 60 horas','49–60 horas':'49 a 60 horas',
+    '> 60 horas':'> 60 horas','mais de 60 horas':'> 60 horas',
+  },
+  num_pessoas: {
+    'mora sozinho (a)':'Mora sozinho','mora sozinho(a)':'Mora sozinho','mora sozinho':'Mora sozinho',
+    '1':'Mora sozinho','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7',
+  },
+  filhos: {
+    'sem filhos':'Sem filhos','nenhum':'Sem filhos','0':'Sem filhos',
+    '1':'1','2':'2','3':'3','4':'4','5':'5',
+  },
+  // Doenças que mapeiam diretamente
+  doenca_direta: {
+    'aij':'Artrite idiopática juvenil','artrite idiopática juvenil':'Artrite idiopática juvenil',
+    'les juvenil':'Lúpus juvenil','lúpus juvenil':'Lúpus juvenil',
+    'les':'Lúpus eritematoso sistêmico','lúpus eritematoso sistêmico':'Lúpus eritematoso sistêmico',
+    'artrite reumatoide':'Artrite reumatoide','ar':'Artrite reumatoide',
+    'espondiloartrite':'Espondiloartrite','ea':'Espondiloartrite',
+    'artrite psorística':'Artrite psorística','artrite psorítica':'Artrite psorística',
+    'dermatomiosite':'Dermatomiosite','polimiosite':'Polimiosite','gpa':'GPA',
+    'gepa':'GEPA','pam':'PAM','pan':'PAN',
+    'arterite de takayasu':'Arterite de Takayasu',
+    'arterite de células gigantes':'Arterite de células gigantes',
+  },
+  // Doenças ambíguas → lista de opções para o usuário escolher
+  doenca_ambigua: {
+    'vasculite':['GPA','GEPA','PAM','PAN','Arterite de células gigantes','Arterite de Takayasu','Policondrite recidivante'],
+    'miopatia':['Dermatomiosite','Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil','Polimiosite','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','Síndrome antissintetase','Sobreposição miopatia + outra doença'],
+  },
+};
+
+// Mapeia texto de resposta para pts (usando as listas já definidas no app)
+function importTextToPts(txt, type) {
+  const t = String(txt||'').trim().toLowerCase();
+  if (type === 'cqr') {
+    const m = {'não concordo de forma alguma':1,'não concordo':2,'concordo':3,'concordo muito':4};
+    return m[t] ?? null;
+  }
+  if (type === 'haq') {
+    const m = {'sem qualquer dificuldade':0,'com alguma dificuldade':1,'com muita dificuldade':2,'incapaz de realizar':3};
+    return m[t] ?? null;
+  }
+  if (type === 'seams') {
+    const m = {'muito confiante':3,'pouco confiante':2,'não estou confiante':1,'não confiante':1};
+    return m[t] ?? null;
+  }
+  if (type === 'bmq') {
+    const m = {'concordo totalmente':5,'concordo':4,'nem concordo nem discordo':3,'discordo':2,'discordo totalmente':1};
+    return m[t] ?? null;
+  }
+  return null;
+}
+
+// Pts HADS por item (baseado em HADS_ITENS definidos acima)
+function getHadsPts(itemId, txt) {
+  const item = HADS_ITENS.find(i => i.id === itemId);
+  if (!item) return null;
+  const t = String(txt||'').trim().toLowerCase();
+  const match = item.opts.find(o => o.txt.toLowerCase() === t);
+  return match ? match.pts : null;
+}
+
+function normImport(val, map) {
+  if (val === null || val === undefined) return null;
+  const k = String(val).trim().toLowerCase();
+  return map[k] !== undefined ? map[k] : null;
+}
+
+function matchList(val, list) {
+  if (!val) return null;
+  const t = String(val).trim();
+  const exact = list.find(o => o.toLowerCase() === t.toLowerCase());
+  if (exact) return exact;
+  const partial = list.find(o => o.toLowerCase().includes(t.toLowerCase()) || t.toLowerCase().includes(o.toLowerCase()));
+  return partial || null;
+}
+
+function normAlergia(val) {
+  if (!val) return null;
+  const t = String(val).trim().toLowerCase();
+  if (['n','não','nao','nega','nenhuma','nenhhuma'].includes(t) || t.startsWith('neg')) return 'Não';
+  if (t !== '') return 'Sim';
+  return null;
+}
+
+let importedRows = [];
+
+function openImportModal() {
+  document.getElementById('import-modal').style.display = 'flex';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-eva-warn').style.display = 'none';
+  document.getElementById('import-filename').textContent = '';
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').style.display = 'none';
+}
+
+function handleImportFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('import-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let rows;
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        const text = e.target.result;
+        rows = text.split('\n').map(l => l.split(',').map(c => c.replace(/^"|"$/g,'')));
+      } else {
+        const wb = XLSX.read(e.target.result, { type:'array', cellDates:true, dateNF:'yyyy-mm-dd' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'yyyy-mm-dd' });
+      }
+      processImportFile(rows);
+    } catch(err) {
+      alert('Erro ao ler arquivo: ' + err.message);
+    }
+  };
+  if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file,'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function processImportFile(rawRows) {
+  if (!rawRows || rawRows.length < 2) { alert('Arquivo vazio ou sem dados.'); return; }
+  const headers = rawRows[0].map(h => String(h||'').trim());
+  importedRows = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+
+  // Detecta colunas por nome (normalizado)
+  const hIdx = {};
+  headers.forEach((h, i) => { hIdx[h.trim().toLowerCase()] = i; });
+
+  // Helper pega valor da linha pelo nome aproximado do header
+  const get = (row, ...keys) => {
+    for (const key of keys) {
+      const k = key.toLowerCase();
+      // Exact
+      for (const [hk, hi] of Object.entries(hIdx)) {
+        if (hk === k || hk.includes(k) || k.includes(hk.replace(/[^a-záéíóúãõâêîôûçàü]+/g,''))) {
+          const v = row[hi];
+          if (v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== 'nan') return String(v).trim();
+        }
+      }
+    }
+    return null;
+  };
+
+  // Verifica se EVA de comunicação parece fora de escala (valores ≤ 2 indicam problema)
+  const evaWarn = importedRows.some(row => {
+    const communIdx = hIdx[Object.keys(hIdx).find(k => k.includes('clareza')) || ''];
+    const v = communIdx !== undefined ? row[communIdx] : null;
+    return v !== null && v !== undefined && parseFloat(v) <= 2;
+  });
+  document.getElementById('import-eva-warn').style.display = evaWarn ? 'block' : 'none';
+
+  // Renderiza tabela de preview
+  renderImportTable(headers, hIdx, importedRows, get);
+  document.getElementById('import-count').textContent = `${importedRows.length} paciente(s) encontrado(s)`;
+  document.getElementById('import-preview').style.display = 'block';
+}
+
+function renderImportTable(headers, hIdx, rows, get) {
+  const tbody = document.getElementById('import-tbody');
+  tbody.innerHTML = '';
+
+  rows.forEach((row, ri) => {
+    const nome = get(row,'nome') || '(sem nome)';
+    const rghc = get(row,'rghc') || '';
+    const data = get(row,'data da entrevista','data entrevista') || '';
+    const doencaRaw = get(row,'doença em seguimento','doenca em seguimento','doença','doenca') || '';
+    const doencaKey = doencaRaw.toLowerCase();
+
+    const needsDisambig = !!IMPORT_NORM.doenca_ambigua[doencaKey];
+    const disambigOptions = IMPORT_NORM.doenca_ambigua[doencaKey] || [];
+
+    const qScores = [];
+    if (get(row,'reumatologista me diz para tomar','se o reumatologista')) qScores.push('CQR');
+    if (get(row,'vestir-se, inclusive amarrar','1.1 vestir')) qScores.push('HAQ');
+    if (get(row,'eu me sinto tenso','1a eu me sinto')) qScores.push('HADS');
+    if (get(row,'quando você toma vários medicamentos diferentes')) qScores.push('SEAMS');
+    if (get(row,'atualmente, a minha saúde depende')) qScores.push('BMQ');
+
+    const dataFormatted = data ? (() => {
+      try { return new Date(data+'T00:00:00').toLocaleDateString('pt-BR'); } catch { return data; }
+    })() : '—';
+
+    const disambigHtml = needsDisambig
+      ? `<select id="dis-${ri}" style="font-size:11px;border:1px solid #cbd5e0;border-radius:4px;padding:3px 6px;width:100%;max-width:220px" onchange="updateImportBtn()">
+           <option value="">— selecione o subtipo —</option>
+           ${disambigOptions.map(d => `<option value="${d}">${d}</option>`).join('')}
+         </select>`
+      : `<span style="color:#718096;font-size:11px">—</span>`;
+
+    const tr = document.createElement('tr');
+    tr.dataset.ri = ri;
+    tr.dataset.needsDisambig = needsDisambig ? '1' : '0';
+    tr.style.cssText = 'border-bottom:1px solid #e8ecf0';
+    tr.innerHTML = `
+      <td style="padding:8px 10px;text-align:center">
+        <input type="checkbox" class="import-row-check" data-ri="${ri}" onchange="updateImportBtn()">
+      </td>
+      <td style="padding:8px 10px;font-weight:600">${nome}</td>
+      <td style="padding:8px 10px;font-family:monospace;font-size:11px">${rghc}</td>
+      <td style="padding:8px 10px;white-space:nowrap">${dataFormatted}</td>
+      <td style="padding:8px 10px">${doencaRaw || '<span style="color:#a0aec0">—</span>'}</td>
+      <td style="padding:8px 10px">${disambigHtml}</td>
+      <td style="padding:8px 10px">
+        ${qScores.length ? qScores.map(q => `<span style="background:#ebf8ff;color:#2b6cb0;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:2px">${q}</span>`).join('') : '<span style="color:#a0aec0;font-size:11px">nenhum</span>'}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('import-btn').style.display = 'none';
+  document.getElementById('import-result').style.display = 'none';
+}
+
+function toggleAllImportChecks(checked) {
+  document.querySelectorAll('.import-row-check').forEach(cb => { cb.checked = checked; });
+  updateImportBtn();
+}
+
+function updateImportBtn() {
+  const selected = document.querySelectorAll('.import-row-check:checked').length;
+  const btn = document.getElementById('import-btn');
+  btn.style.display = selected > 0 ? 'inline-block' : 'none';
+  btn.textContent = `📥 Importar ${selected} paciente(s) para a Lista`;
+}
+
+// ── Cálculo de scores sem DOM ──
+function calcCQRPure(r) {
+  if (Object.keys(r).length < 19) return { score:'', continuo:'', aderente:'' };
+  let disc = CQR_DISC.constant;
+  for (let i = 1; i <= 19; i++) { if (r[i] === undefined) return { score:'', continuo:'', aderente:'' }; disc += CQR_DISC.coefs[i-1] * r[i]; }
+  const soma = Object.values(r).reduce((a,b)=>a+b,0);
+  const continuo = Math.round((soma-19)/57*100);
+  const aderente = disc >= CQR_DISC.cuttingScore;
+  return { score: parseFloat(disc.toFixed(4)), continuo, aderente: aderente ? 'Aderente' : 'Não aderente' };
+}
+function calcHAQPure(r) {
+  const blocos = HAQ_BLOCOS.map(b => { const v = b.itens.map(it=>r[it.n]).filter(x=>x!==undefined); return v.length ? Math.max(...v) : null; });
+  if (blocos.some(v=>v===null)) return '';
+  return Math.round(blocos.reduce((a,b)=>a+b,0)/8*100)/100;
+}
+function calcHADSPure(r) {
+  const aIds = HADS_ITENS.filter(i=>i.tipo==='A').map(i=>i.id);
+  const dIds = HADS_ITENS.filter(i=>i.tipo==='D').map(i=>i.id);
+  const aV = aIds.map(id=>r[id]).filter(v=>v!==undefined);
+  const dV = dIds.map(id=>r[id]).filter(v=>v!==undefined);
+  return { anx: aV.length===7 ? aV.reduce((a,b)=>a+b,0) : '', dep: dV.length===7 ? dV.reduce((a,b)=>a+b,0) : '' };
+}
+function calcSEAMSPure(r) {
+  const v = Object.values(r); return v.length < SEAMS_ITENS.length ? '' : v.reduce((a,b)=>a+b,0);
+}
+function calcBMQPure(r) {
+  const nV = BMQ_NECESSITY.map((_,i)=>r[`bmqn-${i+1}`]).filter(v=>v!==undefined);
+  const cV = BMQ_CONCERNS.map((_,i)=>r[`bmqc-${i+1}`]).filter(v=>v!==undefined);
+  const nec = nV.length===BMQ_NECESSITY.length ? nV.reduce((a,b)=>a+b,0) : '';
+  const con = cV.length===BMQ_CONCERNS.length  ? cV.reduce((a,b)=>a+b,0) : '';
+  const diff = (nec!==''&&con!=='') ? nec-con : '';
+  return { nec, con, diff };
+}
+
+// ── Keywords para busca nas colunas ──
+const CQR_KEYWORDS = [
+  'reumatologista me diz para tomar',
+  'tomo os meus medicamentos antirreumáticos, pois assim',
+  'definitivamente não me atrevo',
+  'terapias alternativas, prefiro',
+  'ficam sempre guardados no mesmo local',
+  'total confiança no meu reumatologista',
+  'motivo mais importante para tomar',
+  'não gosto de tomar medicamentos',
+  'de férias, às vezes, acontece',
+  'de que adiantaria consultar',
+  'não espero milagres',
+  'não aguenta os medicamentos, pode dizer',
+  'regularmente, a inflamação volta',
+  'meu corpo me avisa',
+  'saúde está acima de tudo',
+  'organizador de comprimidos',
+  'o que o médico me diz',
+  'não tomo os meus medicamentos antirreumáticos, tenho mais queixas',
+  'no fim de semana e então não tomo',
+];
+const HAQ_KEYWORDS = [
+  'vestir-se, inclusive amarrar','lavar sua cabeça e seus cabelos',
+  'levantar-se de uma maneira ereta','deitar-se e levantar-se da cama',
+  'cortar um pedaço de carne','levar à boca um copo',
+  'abrir um saco de leite','caminhar em lugares planos',
+  'subir cinco degraus','lavar seu corpo inteiro',
+  'tomar um banho de chuveiro','sentar-se e levantar-se de um vaso',
+  'levantar os braços e pegar um objeto','curvar-se para pegar suas roupas',
+  'segurar-se em pé no ônibus','abrir potes ou vidros de conserva',
+  'abrir e fechar torneiras','fazer compras na redondeza',
+  'entrar e sair de um ônibus','realizar tarefas tais como usar a vassoura',
+];
+const HADS_KW = [
+  ['1A','eu me sinto tenso ou contraído'],
+  ['1D','eu ainda sinto gosto pelas mesmas coisas de antes'],
+  ['2A','eu sinto uma espécie de medo, como se algum'],
+  ['2D','dou risada e me divirto quando vejo coisas engraçadas'],
+  ['3A','estou com a cabeça cheia de preocupações'],
+  ['3D','eu me sinto alegre'],
+  ['4A','consigo ficar sentado à vontade e me sentir relaxado'],
+  ['4D','eu estou lento para pensar'],
+  ['5A','eu tenho uma sensação ruim de medo, como um frio'],
+  ['5D','eu perdi o interesse em cuidar da minha aparência'],
+  ['6A','eu me sinto inquieto, como se não pudesse ficar parado'],
+  ['6D','fico esperando animado'],
+  ['7A','de repente, tenho a sensação de entrar em pânico'],
+  ['7D','consigo sentir prazer quando assisto um bom programa'],
+];
+const SEAMS_KW = [
+  'quando você toma vários medicamentos diferentes',
+  'quando você toma medicamentos mais de uma vez ao dia',
+  'quando você está fora de casa',
+  'quando você tem um dia agitado',
+  'quando os medicamentos causam alguns efeitos colaterais',
+  'quando ninguém lembra você de tomar o medicamento',
+  'quando os horários de tomar os medicamentos não são convenientes',
+  'quando sua rotina fica bagunçada',
+  'quando você não tem certeza de como deve tomar o medicamento',
+  'quando você não tem certeza em que horário deve tomar',
+  'quando você está se sentindo doente (como ter um resfriado',
+  'quando você adquire os medicamentos e alguns deles parecem diferentes',
+  'quando o médico troca seus medicamentos',
+];
+const BMQ_NEC_KW = [
+  'atualmente, a minha saúde depende destes medicamentos',
+  'a minha vida seria impossível sem estes medicamentos',
+  'sem estes medicamentos, eu estaria muito doente',
+  'a minha saúde no futuro dependerá destes medicamentos',
+  'estes medicamentos protegem-me de ficar pior',
+];
+const BMQ_CON_KW = [
+  'preocupa-me ter de tomar estes medicamentos',
+  'às vezes, preocupo-me com os efeitos a longo prazo',
+  'estes medicamentos são um mistério para mim',
+  'estes medicamentos perturbam a minha vida',
+  'às vezes, preocupo-me em ficar demasiado dependente',
+  'estes medicamentos dão-me desagradáveis efeitos secundários',
+];
+
+// ── Constrói objeto de paciente a partir de uma linha da planilha ──
+function buildRecordFromRow(headers, row, doencaOverride) {
+  const hi = {};
+  headers.forEach((h,i) => { hi[h.trim().toLowerCase()] = i; });
+
+  const g = (...keys) => {
+    for (const key of keys) {
+      const k = key.trim().toLowerCase();
+      for (const [hk, idx] of Object.entries(hi)) {
+        const hkn = hk.replace(/\s+/g,' ');
+        if (hkn === k || hkn.includes(k) || k.includes(hkn)) {
+          const v = row[idx];
+          if (v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'nan') return String(v).trim();
+        }
+      }
+    }
+    return null;
+  };
+
+  // Data
+  let dataE = g('data da entrevista','data entrevista') || '';
+  if (dataE.includes('/')) { const [d,m,y] = dataE.split('/'); dataE = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`; }
+
+  // Doença
+  const doencaRaw = g('doença em seguimento','doenca em seguimento','doença','doenca') || '';
+  const doencaKey = doencaRaw.toLowerCase();
+  const doencaFinal = doencaOverride
+    || normImport(doencaKey, IMPORT_NORM.doenca_direta)
+    || matchList(doencaRaw, DOENCAS)
+    || '';
+
+  // Campos simples
+  const sn = v => matchList(v, SIM_NAO) || matchList(v, SIM_NAO_PARC) || '';
+
+  // CQR
+  const cqrR = {};
+  CQR_KEYWORDS.forEach((kw,i) => { const p=importTextToPts(g(kw),'cqr'); if(p!==null) cqrR[i+1]=p; });
+  const cqr = calcCQRPure(cqrR);
+
+  // HAQ
+  const haqR = {};
+  HAQ_KEYWORDS.forEach((kw,i) => { const p=importTextToPts(g(kw),'haq'); if(p!==null) haqR[i+1]=p; });
+  const haqScore = calcHAQPure(haqR);
+
+  // HADS
+  const hadsR = {};
+  HADS_KW.forEach(([id,kw]) => { const p=getHadsPts(id,g(kw)); if(p!==null) hadsR[id]=p; });
+  const hads = calcHADSPure(hadsR);
+
+  // SEAMS
+  const seamsR = {};
+  SEAMS_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'seams'); if(p!==null) seamsR[i+1]=p; });
+  const seamsScore = calcSEAMSPure(seamsR);
+
+  // BMQ
+  const bmqR = {};
+  BMQ_NEC_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'bmq'); if(p!==null) bmqR[`bmqn-${i+1}`]=p; });
+  BMQ_CON_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'bmq'); if(p!==null) bmqR[`bmqc-${i+1}`]=p; });
+  const bmq = calcBMQPure(bmqR);
+
+  // Escala EVA helper
+  const eva = (...keys) => { const v=g(...keys); return (v!==null&&v!==undefined&&!isNaN(parseFloat(v))) ? String(parseFloat(v)) : ''; };
+
+  return {
+    rghc:  g('rghc') || '',
+    nome:  g('nome') || '',
+    nascimento: '',
+    inicio_seg: '',
+    entrevista: dataE,
+    idade: '',
+    sexo: '', etnia: '',
+    doenca: doencaFinal,
+    tempo_diag:'', atividade:'', tempo_remissao:'',
+    vhs:'', pcr:'', cpk:'', das28:'', asdas:'', sledai:'', myoact:'', mmt8:'', bvas:'', itas:'',
+    num_med: '', gcs: '',
+    csdmard:[], bdmard:[], tsdmard:[], tempo_dmard:'',
+    csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
+    comorbidades:[], med_continuas:[], reacao: normAlergia(g('alergias')) || '', reacao_quais:[],
+    intervalo:'', dmard_posologia:{}, locomocao:[],
+    religiao:    normImport(g('religião','religiao')||'', IMPORT_NORM.religiao) || matchList(g('religião','religiao'), RELIGIAO) || '',
+    estado_civil: normImport(g('estado civil')||'', IMPORT_NORM.estado_civil) || matchList(g('estado civil'), ESTADO_CIVIL) || '',
+    filhos:      (() => { const f=g('filhos'); return normImport(String(f||''),IMPORT_NORM.filhos)||(f&&!isNaN(parseInt(f))?String(parseInt(f)):'')||''; })(),
+    escolaridade: normImport(g('escolaridade')||'', IMPORT_NORM.escolaridade) || matchList(g('escolaridade'), ESCOLARIDADE) || '',
+    renda:        normImport(g('renda familiar mensal','renda familiar','renda')||'', IMPORT_NORM.renda) || matchList(g('renda familiar mensal','renda'), RENDA) || '',
+    ocupacao:     matchList(g('ocupação','ocupacao'), OCUPACAO) || '',
+    carga_horaria: normImport(g('carga horário','carga horaria')||'', IMPORT_NORM.carga_horaria) || matchList(g('carga horário','carga horaria'), CARGA_HORARIA) || '',
+    local_residencia: matchList(g('localização da residência','localizacao'), LOCAL_RESIDENCIA) || '',
+    num_pessoas:  (() => { const n=g('número de pessoas','numero de pessoas'); return normImport(String(n||''),IMPORT_NORM.num_pessoas)||matchList(n,NUM_PESSOAS)||''; })(),
+    situacao_moradia: matchList(g('situação de moradia','situacao de moradia'), SITUACAO_MORADIA) || '',
+    tabagismo:    matchList(g('tabagismo'), TABAGISMO) || '',
+    etilismo:     matchList(g('etilismo'),  ETILISMO)  || '',
+    material_educ:       sn(g('recebe material educativo','material educativo')),
+    acompanhamento:      sn(g('recebe acompanhamento','acompanhamento de enfermeiro')),
+    dif_doenca:          sn(g('tem dificuldade para entender informações sobre a doença','dificuldade para entender informações sobre a doença')),
+    conhec_complic:      sn(g('tem conhecimento das complicações','conhecimento das complicações')),
+    dif_trat:            sn(g('tem dificuldade para entender informações sobre o tratamento','dificuldade para entender informações sobre o tratamento')),
+    facilidade_consulta: sn(g('possui facilidade para marcar','facilidade para marcar consultas')),
+    falta_farm:          sn(g('já ocorreu das suas medicações estarem em falta','medicações estarem em falta')),
+    compra_med:          sn(g('se / quando falta medicamento na farmácia, consegue','consegue comprar')),
+    custo_med:           sn(g('você acha que o custo das medicações','custo das medicações é um problema')),
+    deslocamento:        sn(g('o deslocamento até a unidade','deslocamento até a unidade')),
+    comunic:      eva('clareza de comunicação da equipe médica','clareza de comunicação'),
+    confianca:    eva('confiança na equipe médica','confiança na equipe'),
+    participacao: eva('participação nas decisões terapêuticas','participação nas decisões'),
+    satisfacao:   eva('satisfação com tratamento atual','satisfação com tratamento'),
+    suporte:      eva('suporte social para tomar as medicações','suporte social'),
+    eva_dor:      eva('eva dor'),
+    eva_estresse: eva('eva estresse'),
+    eva_ptga:     eva('eva ptga'),
+    bmq_respostas: {...bmqR}, bmq_necessity: bmq.nec, bmq_concerns: bmq.con, bmq_diff: bmq.diff,
+    seams_respostas: {...seamsR}, seams_score: seamsScore,
+    hads_respostas: {...hadsR}, hads_anx: hads.anx, hads_dep: hads.dep,
+    haq_respostas: {...haqR}, haq_score: haqScore,
+    cqr_respostas: {...cqrR}, cqr_score: cqr.score, cqr_score_continuo: cqr.continuo, cqr_aderente: cqr.aderente,
+    ts: new Date().toISOString(),
+    _importado: true
+  };
+}
+
+function importSelectedToList() {
+  const checks = [...document.querySelectorAll('.import-row-check:checked')];
+  if (!checks.length) return;
+
+  const fileInput = document.getElementById('import-file-input');
+  if (!fileInput.files[0]) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    let rawRows;
+    const fname = fileInput.files[0].name.toLowerCase();
+    if (fname.endsWith('.csv')) {
+      rawRows = e.target.result.split('\n').map(l => l.split(',').map(c => c.replace(/^"|"$/g,'')));
+    } else {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true, dateNF:'yyyy-mm-dd'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'yyyy-mm-dd'});
+    }
+    const headers = rawRows[0].map(h => String(h||'').trim());
+    const dataRows = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+
+    const db = getData();
+    let imported = 0, skipped = 0, updated = 0;
+
+    checks.forEach(cb => {
+      const ri = parseInt(cb.dataset.ri);
+      const row = dataRows[ri];
+      if (!row) return;
+      const disEl = document.getElementById(`dis-${ri}`);
+      const doencaOverride = disEl ? (disEl.value || null) : null;
+      const record = buildRecordFromRow(headers, row, doencaOverride);
+      if (!record.rghc && !record.nome) { skipped++; return; }
+
+      const idx = db.findIndex(p => record.rghc && p.rghc === record.rghc);
+      if (idx !== -1) {
+        // Atualiza apenas campos vazios no registro existente
+        Object.keys(record).forEach(k => {
+          const v = record[k];
+          const isEmpty = v === '' || v === null || v === undefined || (Array.isArray(v) && !v.length) || (typeof v === 'object' && !Array.isArray(v) && !Object.keys(v||{}).length);
+          if (!isEmpty && (db[idx][k] === '' || db[idx][k] === null || db[idx][k] === undefined)) {
+            db[idx][k] = v;
+          }
+        });
+        updated++;
+      } else {
+        db.push(record);
+        imported++;
+      }
+    });
+
+    setData(db);
+    renderList();
+
+    const resEl = document.getElementById('import-result');
+    resEl.style.display = 'inline';
+    resEl.innerHTML = `<span style="color:#276749;font-weight:600">✓ ${imported} importado(s)</span>`
+      + (updated ? ` <span style="color:#2b6cb0">· ${updated} atualizado(s)</span>` : '')
+      + (skipped ? ` <span style="color:#c05621">· ${skipped} ignorado(s) (sem RGHC/nome)</span>` : '');
+
+    document.getElementById('import-btn').textContent = 'Importar Selecionados para a Lista';
+    document.getElementById('import-btn').disabled = false;
+
+    // Fecha o modal após 1.5s e vai para a lista
+    setTimeout(() => {
+      closeImportModal();
+      showPage('list');
+    }, 1500);
+  };
+
+  document.getElementById('import-btn').textContent = 'Importando...';
+  document.getElementById('import-btn').disabled = true;
+
+  if (fileInput.files[0].name.toLowerCase().endsWith('.csv')) reader.readAsText(fileInput.files[0],'UTF-8');
+  else reader.readAsArrayBuffer(fileInput.files[0]);
 }
 
 // ============================================================
