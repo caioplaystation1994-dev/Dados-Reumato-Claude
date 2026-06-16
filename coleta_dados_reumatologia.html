@@ -361,6 +361,19 @@ tr:hover td{background:#f7faff}
   <!-- S5: Medicações atuais -->
   <div class="section-card">
     <div class="section-title">Medicações em Uso</div>
+
+    <!-- Sem imunossupressão -->
+    <div style="margin-bottom:16px;padding:10px 14px;background:#fff5f5;border:2px solid #fc8181;border-radius:8px;display:flex;align-items:center;gap:12px">
+      <div id="btn-sem-imuno" class="opt-btn" tabindex="0"
+           style="border-color:#e53e3e;color:#e53e3e;font-weight:700;white-space:nowrap"
+           onclick="toggleSemImunossupressao()"
+           onkeydown="optKeydown(event,this)">
+        ⛔ Sem imunossupressão
+      </div>
+      <span style="font-size:11px;color:#718096">Marque se o paciente não usa nenhum DMARD nem corticosteroide no momento.</span>
+    </div>
+
+    <div id="bloco-imuno">
     <div class="q-label">14. Número de Medicações em Uso</div>
     <div class="options-grid" id="q-num-med"></div>
 
@@ -391,6 +404,7 @@ tr:hover td{background:#f7faff}
       <div class="q-label">19. Tempo desde que o Último DMARD foi Introduzido</div>
       <div class="options-grid" id="q-tempo-dmard"></div>
     </div>
+    </div><!-- /bloco-imuno -->
   </div>
 
   <!-- S6: Medicações prévias -->
@@ -1397,6 +1411,46 @@ function toggleReacao(val) {
   document.getElementById('sub-reacao').classList.toggle('hidden', val !== 'Sim');
 }
 
+function toggleSemImunossupressao() {
+  const btn   = document.getElementById('btn-sem-imuno');
+  const bloco = document.getElementById('bloco-imuno');
+  const ativo = btn.classList.toggle('selected');
+  formData.sem_imunossupressao = ativo;
+
+  if (ativo) {
+    // Limpa GCS → "Não"
+    document.querySelectorAll('#q-gcs .opt-btn').forEach(b => {
+      b.classList.toggle('selected', b.textContent.trim() === 'Não');
+    });
+    formData.gcs = 'Não';
+
+    // Limpa todos os DMARDs
+    ['csdmard','bdmard','tsdmard'].forEach(field => {
+      formData[field] = [];
+      document.querySelectorAll(`#q-${field} .opt-btn`).forEach(b => b.classList.remove('selected'));
+      const pos = document.getElementById(`posologia-${field}`);
+      if (pos) { pos.innerHTML = ''; pos.classList.add('hidden'); }
+    });
+    formData.tempo_dmard = '';
+    document.querySelectorAll('#q-tempo-dmard .opt-btn').forEach(b => b.classList.remove('selected'));
+    formData.num_med = '0';
+
+    bloco.style.opacity = '0.4';
+    bloco.style.pointerEvents = 'none';
+    btn.style.background = '#e53e3e';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#e53e3e';
+  } else {
+    formData.sem_imunossupressao = false;
+    bloco.style.opacity = '';
+    bloco.style.pointerEvents = '';
+    btn.style.background = '';
+    btn.style.color = '#e53e3e';
+    btn.style.borderColor = '#e53e3e';
+  }
+  updateTabBadges();
+}
+
 function updateMetrics(doenca) {
   const all = ['das28','asdas','sledai','myoact','bvas','itas'];
   all.forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
@@ -1864,6 +1918,17 @@ function clearForm() {
   document.getElementById('haq-score-box').style.display = 'none';
   document.getElementById('cqr-score-box').style.display = 'none';
   resetEvas();
+  // reset "sem imunossupressão"
+  const btnImuno = document.getElementById('btn-sem-imuno');
+  const blocoImuno = document.getElementById('bloco-imuno');
+  if (btnImuno && btnImuno.classList.contains('selected')) {
+    btnImuno.classList.remove('selected');
+    btnImuno.style.background = '';
+    btnImuno.style.color = '#e53e3e';
+    btnImuno.style.borderColor = '#e53e3e';
+    blocoImuno.style.opacity = '';
+    blocoImuno.style.pointerEvents = '';
+  }
   initForm();
   showFormTab(0);
 }
@@ -2062,6 +2127,10 @@ function editPatient(rghc) {
     if (p.atividade === 'Remissão') { document.getElementById('sub-remissao').classList.remove('hidden'); restore('q-tempo-remissao','tempo_remissao',p.tempo_remissao); }
     restore('q-num-med','num_med',p.num_med);
     restore('q-gcs','gcs',p.gcs);
+    if (p.sem_imunossupressao) {
+      formData.sem_imunossupressao = false; // força toggle
+      toggleSemImunossupressao();
+    }
     restoreCheck('q-csdmard','csdmard',p.csdmard);
     formData.dmard_posologia = p.dmard_posologia ? {...p.dmard_posologia} : {};
     if (p.csdmard?.length) renderPosologia('csdmard','posologia-csdmard');
