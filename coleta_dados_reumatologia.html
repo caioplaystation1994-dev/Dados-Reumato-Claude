@@ -404,7 +404,8 @@ tr:hover td{background:#f7faff}
     </div>
 
     <div style="margin-top:16px">
-      <div class="q-label">19. Tempo desde que o Último DMARD foi Introduzido</div>
+      <div class="q-label">19. Tempo desde a Última Mudança do Tratamento</div>
+      <div style="font-size:11px;color:#718096;margin-bottom:6px">Considerar: troca ou introdução de DMARD, aumento de dose de DMARD ou de prednisona, pulsoterapia.</div>
       <div class="options-grid" id="q-tempo-dmard"></div>
     </div>
     </div><!-- /bloco-imuno -->
@@ -780,10 +781,10 @@ const TEMPO_REMISSAO = ['< 6 meses','6–12 meses','12–24 meses','24–48 mese
 
 // Opções de atividade por grupo de doença
 const ATIVIDADE_GRUPOS = {
-  ar:        ['Remissão (DAS28 < 2,6)','Baixa atividade (DAS28 2,6–3,2)','Moderada atividade (DAS28 3,2–5,1)','Alta atividade (DAS28 > 5,1)'],
-  psa:       ['Remissão (DAPSA ≤ 4)','Baixa atividade (DAPSA 4–14)','Moderada atividade (DAPSA 14–28)','Alta atividade (DAPSA > 28)'],
-  spa:       ['Remissão (ASDAS < 1,3)','Baixa atividade (ASDAS 1,3–2,1)','Moderada atividade (ASDAS 2,1–3,5)','Alta atividade (ASDAS > 3,5)'],
-  lupus:     ['Remissão (DORIS)','LLDAS','Baixa atividade','Moderada atividade','Alta atividade'],
+  ar:        ['Remissão (DAS28 < 2,6)','Baixa atividade (DAS28 2,6–3,2)','Moderada atividade (DAS28 3,2–5,1)','Alta atividade (DAS28 > 5,1)','Sem métrica disponível'],
+  psa:       ['Remissão (DAPSA ≤ 4)','Baixa atividade (DAPSA 4–14)','Moderada atividade (DAPSA 14–28)','Alta atividade (DAPSA > 28)','Sem métrica disponível'],
+  spa:       ['Remissão (ASDAS < 1,3)','Baixa atividade (ASDAS 1,3–2,1)','Moderada atividade (ASDAS 2,1–3,5)','Alta atividade (ASDAS > 3,5)','Sem métrica disponível'],
+  lupus:     ['Remissão (DORIS)','LLDAS','Baixa atividade','Moderada atividade','Alta atividade','Sem métrica disponível'],
   vasculite: ['Remissão (BVAS=0)','Atividade (BVAS≥1)'],
   binario:   ['Remissão','Atividade'],
   miopatia:  null,
@@ -2376,7 +2377,7 @@ const SHEET_COLS = [
   ['csdmard',         'csDMARD em Uso'],
   ['bdmard',          'bDMARD em Uso'],
   ['tsdmard',         'tsDMARD em Uso'],
-  ['tempo_dmard',     'Tempo desde Último DMARD Introduzido'],
+  ['tempo_dmard',     'Tempo desde Última Mudança do Tratamento'],
   ['csdmard_prev',    'csDMARD Prévios'],
   ['bdmard_prev',     'bDMARD Prévios'],
   ['tsdmard_prev',    'tsDMARD Prévios'],
