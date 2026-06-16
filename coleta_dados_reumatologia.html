@@ -59,10 +59,25 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
 .search-bar{display:flex;gap:10px;margin-bottom:16px}
 .search-bar input{flex:1;border:1px solid #cbd5e0;border-radius:8px;padding:9px 14px;font-size:13px}
 table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-th{background:#1a56a0;color:#fff;padding:10px 14px;text-align:left;font-size:12px;font-weight:600}
+th{background:#1a56a0;color:#fff;padding:10px 14px;text-align:left;font-size:12px;font-weight:600;position:sticky;top:0;z-index:2}
 td{padding:9px 14px;border-bottom:1px solid #e8ecf0;font-size:12px}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#f7faff}
+/* === STICKY HEADER + SCROLLABLE TABLE (Feature 23) === */
+.table-scroll-wrap{max-height:65vh;overflow-y:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.table-scroll-wrap table{border-radius:0;box-shadow:none}
+/* === FILTER BAR (Feature 2) === */
+.filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;background:#fff;border-radius:10px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);align-items:center}
+.filter-bar label{font-size:11px;font-weight:700;color:#4a5568;white-space:nowrap}
+.filter-bar select{border:1px solid #cbd5e0;border-radius:6px;padding:5px 8px;font-size:12px;background:#fafafa;cursor:pointer}
+.filter-bar select:focus{outline:none;border-color:#1a56a0}
+.filter-bar .filter-group{display:flex;align-items:center;gap:5px}
+/* === PAGINATION (Feature 24) === */
+.pagination{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+.pagination button{padding:5px 12px;border:1.5px solid #cbd5e0;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:#4a5568;transition:.15s}
+.pagination button:hover:not(:disabled){border-color:#1a56a0;color:#1a56a0;background:#f0f7ff}
+.pagination button:disabled{opacity:.4;cursor:default}
+.pagination .pg-info{font-size:12px;color:#718096;flex:1;text-align:center}
 
 /* Stats */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:20px}
@@ -677,6 +692,46 @@ tr:hover td{background:#f7faff}
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
   </div>
+  <!-- Filtros combinados (Feature 2) -->
+  <div class="filter-bar" id="list-filter-bar">
+    <div class="filter-group">
+      <label>Doença:</label>
+      <select id="flt-doenca" onchange="listPage=0;renderList()">
+        <option value="">Todas</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Atividade:</label>
+      <select id="flt-atividade" onchange="listPage=0;renderList()">
+        <option value="">Todas</option>
+        <option>Remissão</option>
+        <option>Baixa atividade</option>
+        <option>Moderada atividade</option>
+        <option>Alta atividade</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Adesão CQR:</label>
+      <select id="flt-adesao" onchange="listPage=0;renderList()">
+        <option value="">Todas</option>
+        <option>Aderente</option>
+        <option>Não aderente</option>
+        <option value="sem">Sem CQR-19</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Completude:</label>
+      <select id="flt-completude" onchange="listPage=0;renderList()">
+        <option value="">Todas</option>
+        <option value="100">Completos (100%)</option>
+        <option value="80">≥ 80%</option>
+        <option value="40">Parciais (40–79%)</option>
+        <option value="0">Incompletos (&lt;40%)</option>
+      </select>
+    </div>
+    <button class="btn-secondary btn-sm" onclick="clearListFilters()" style="margin-left:auto">✕ Limpar filtros</button>
+  </div>
+
   <div id="list-container"></div>
 </div>
 
@@ -1654,6 +1709,13 @@ function savePatient() {
     msg.innerHTML = '<div class="alert">&#9888; Nome e RGHC são obrigatórios (Aba 1 — Identificação).</div>';
     window.scrollTo(0,0); return;
   }
+  // Validação de RGHC (Feature 30): deve conter apenas dígitos, entre 4 e 12 caracteres
+  if (!/^\d{4,12}$/.test(rghc)) {
+    showFormTab(0);
+    msg.innerHTML = '<div class="alert">&#9888; RGHC inválido — deve conter apenas números (4 a 12 dígitos). Verifique o número de registro.</div>';
+    document.getElementById('f-rghc').focus();
+    window.scrollTo(0,0); return;
+  }
 
   try {
 
@@ -1839,49 +1901,115 @@ function completenessChip(p) {
 }
 
 // ============================================================
+const PAGE_SIZE = 50;
+let listPage = 0;
+
+function getListFiltered() {
+  const q   = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const fD  = document.getElementById('flt-doenca')?.value    || '';
+  const fA  = document.getElementById('flt-atividade')?.value || '';
+  const fAd = document.getElementById('flt-adesao')?.value    || '';
+  const fC  = document.getElementById('flt-completude')?.value|| '';
+  return getData().filter(p => {
+    if (q && !p.nome.toLowerCase().includes(q) && !p.rghc.toLowerCase().includes(q)) return false;
+    if (fD && p.doenca !== fD) return false;
+    if (fA && p.atividade !== fA) return false;
+    if (fAd === 'sem' && (p.cqr_aderente === 'Aderente' || p.cqr_aderente === 'Não aderente')) return false;
+    if (fAd && fAd !== 'sem' && p.cqr_aderente !== fAd) return false;
+    if (fC) {
+      const pct = calcPatientCompleteness(p).pct;
+      if (fC === '100' && pct !== 100) return false;
+      if (fC === '80'  && pct < 80)   return false;
+      if (fC === '40'  && (pct < 40 || pct >= 80)) return false;
+      if (fC === '0'   && pct >= 40)  return false;
+    }
+    return true;
+  });
+}
+
+function populateDiseaseFilter() {
+  const sel = document.getElementById('flt-doenca');
+  if (!sel || sel.options.length > 1) return;
+  const diseases = [...new Set(getData().map(p=>p.doenca).filter(Boolean))].sort();
+  diseases.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
+}
+
+function clearListFilters() {
+  ['flt-doenca','flt-atividade','flt-adesao','flt-completude'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('search-input').value = '';
+  listPage = 0;
+  renderList();
+}
+
 function renderList() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const db = getData().filter(p =>
-    p.nome.toLowerCase().includes(q) || p.rghc.toLowerCase().includes(q)
-  );
+  populateDiseaseFilter();
+  const all = getListFiltered();
+  const totalPages = Math.ceil(all.length / PAGE_SIZE) || 1;
+  if (listPage >= totalPages) listPage = totalPages - 1;
+  const db = all.slice(listPage * PAGE_SIZE, (listPage + 1) * PAGE_SIZE);
+  const globalOffset = listPage * PAGE_SIZE;
+
   const c = document.getElementById('list-container');
-  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; updateDeleteSelectedBtn(); return; }
+
+  if (!all.length) {
+    c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado com os filtros aplicados.</p>';
+    updateDeleteSelectedBtn();
+    return;
+  }
+
+  const completos   = all.filter(p => calcPatientCompleteness(p).pct === 100).length;
+  const parciais    = all.filter(p => { const {pct} = calcPatientCompleteness(p); return pct >= 40 && pct < 100; }).length;
+  const incompletos = all.filter(p => calcPatientCompleteness(p).pct < 40).length;
+  const semCQR      = all.filter(p => !p.cqr_score && p.cqr_score !== 0).length;
+
+  const rows = db.map((p, i) => `
+    <tr>
+      <td style="text-align:center"><input type="checkbox" class="list-row-check" data-rghc="${p.rghc}" onchange="updateDeleteSelectedBtn()" style="width:15px;height:15px;cursor:pointer"></td>
+      <td>${globalOffset + i + 1}</td>
+      <td>${p.nome}</td>
+      <td>${p.rghc}</td>
+      <td>${p.doenca || '—'}</td>
+      <td>${p.entrevista || '—'}</td>
+      <td>${p.atividade || '—'}</td>
+      <td>${completenessChip(p)}</td>
+      <td>
+        <button class="btn-secondary btn-sm" onclick="openResumoModal('${p.rghc}')" style="border-color:#9f7aea;color:#9f7aea">&#128269; Ver</button>
+        <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
+        <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
+      </td>
+    </tr>`).join('');
+
+  const pagination = totalPages > 1 ? `
+    <div class="pagination">
+      <button onclick="listPage=0;renderList()" ${listPage===0?'disabled':''}>&#171; Início</button>
+      <button onclick="listPage--;renderList()" ${listPage===0?'disabled':''}>&#8249; Anterior</button>
+      <span class="pg-info">Página ${listPage+1} de ${totalPages} &nbsp;·&nbsp; ${all.length} paciente(s)</span>
+      <button onclick="listPage++;renderList()" ${listPage>=totalPages-1?'disabled':''}>Próxima &#8250;</button>
+      <button onclick="listPage=${totalPages-1};renderList()" ${listPage>=totalPages-1?'disabled':''}>Fim &#187;</button>
+      <select style="border:1px solid #cbd5e0;border-radius:6px;padding:4px 8px;font-size:11px" onchange="listPage=parseInt(this.value);renderList()">
+        ${Array.from({length:totalPages},(_,i)=>`<option value="${i}" ${i===listPage?'selected':''}>${i+1}</option>`).join('')}
+      </select>
+    </div>` : '';
+
   c.innerHTML = `
-    <table>
-      <thead><tr>
-        <th style="width:36px;text-align:center"><input type="checkbox" id="list-check-all" title="Selecionar todos" onchange="toggleAllListChecks(this.checked)" style="width:15px;height:15px;cursor:pointer"></th>
-        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Completude</th><th>Ações</th>
-      </tr></thead>
-      <tbody>${db.map((p,i) => `
-        <tr>
-          <td style="text-align:center"><input type="checkbox" class="list-row-check" data-rghc="${p.rghc}" onchange="updateDeleteSelectedBtn()" style="width:15px;height:15px;cursor:pointer"></td>
-          <td>${i+1}</td>
-          <td>${p.nome}</td>
-          <td>${p.rghc}</td>
-          <td>${p.doenca || '—'}</td>
-          <td>${p.entrevista || '—'}</td>
-          <td>${p.atividade || '—'}</td>
-          <td>${completenessChip(p)}</td>
-          <td>
-            <button class="btn-secondary btn-sm" onclick="openResumoModal('${p.rghc}')" style="border-color:#9f7aea;color:#9f7aea">&#128269; Ver</button>
-            <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
-            <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
-          </td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-    <div style="margin-top:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:12px;color:#718096">${db.length} paciente(s)</span>
-      ${(() => {
-        const completos   = db.filter(p => calcPatientCompleteness(p).pct === 100).length;
-        const parciais    = db.filter(p => { const {pct} = calcPatientCompleteness(p); return pct >= 40 && pct < 100; }).length;
-        const incompletos = db.filter(p => calcPatientCompleteness(p).pct < 40).length;
-        const semCQR      = db.filter(p => !p.cqr_score && p.cqr_score !== 0).length;
-        return `<span style="font-size:11px;background:#c6f6d5;color:#276749;border-radius:10px;padding:2px 10px;font-weight:700">✓ ${completos} completos</span>
-                <span style="font-size:11px;background:#fefcbf;color:#744210;border-radius:10px;padding:2px 10px;font-weight:700">◑ ${parciais} parciais</span>
-                <span style="font-size:11px;background:#fed7d7;color:#9b2c2c;border-radius:10px;padding:2px 10px;font-weight:700">✗ ${incompletos} incompletos</span>
-                <span style="font-size:11px;background:#e9d8fd;color:#553c9a;border-radius:10px;padding:2px 10px;font-weight:700">⊘ ${semCQR} sem CQR-19</span>`;
-      })()}
+    <div class="table-scroll-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:36px;text-align:center"><input type="checkbox" id="list-check-all" title="Selecionar todos da página" onchange="toggleAllListChecks(this.checked)" style="width:15px;height:15px;cursor:pointer"></th>
+          <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Completude</th><th>Ações</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${pagination}
+    <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;color:#718096">Total filtrado: ${all.length} paciente(s)</span>
+      <span style="font-size:11px;background:#c6f6d5;color:#276749;border-radius:10px;padding:2px 10px;font-weight:700">&#10003; ${completos} completos</span>
+      <span style="font-size:11px;background:#fefcbf;color:#744210;border-radius:10px;padding:2px 10px;font-weight:700">&#9680; ${parciais} parciais</span>
+      <span style="font-size:11px;background:#fed7d7;color:#9b2c2c;border-radius:10px;padding:2px 10px;font-weight:700">&#10005; ${incompletos} incompletos</span>
+      <span style="font-size:11px;background:#e9d8fd;color:#553c9a;border-radius:10px;padding:2px 10px;font-weight:700">&#8856; ${semCQR} sem CQR-19</span>
     </div>`;
   updateDeleteSelectedBtn();
 }
@@ -2960,6 +3088,61 @@ function renderStats() {
     if (escAderE.length || escNAderE.length) ap(escCross);
   }
 
+  // ── SEÇÃO 6: COMPARATIVO POR DIAGNÓSTICO (Feature 6) ──
+  const allDiseases = [...new Set(getData().map(p=>p.doenca).filter(Boolean))].sort();
+  if (allDiseases.length >= 2 && !currentDisease) {
+    ap(secHeader('Comparativo por Diagnóstico', 'scores médios · grupo ' + (currentGroup === 'Todos' ? 'geral' : currentGroup)));
+    const diagCompGrid = document.createElement('div');
+    diagCompGrid.className = 'chart-section';
+    const diagsToShow = currentGroup !== 'Todos'
+      ? (GRUPOS[currentGroup] || []).filter(d => getData().some(p=>p.doenca===d))
+      : allDiseases.slice(0, 20);
+
+    const numM = (arr, f) => {
+      const v = arr.map(p=>parseFloat(p[f])).filter(v=>!isNaN(v));
+      return v.length ? (v.reduce((a,b)=>a+b,0)/v.length).toFixed(2) : '—';
+    };
+    const compFields = [
+      ['CQR contínuo (0–100)', 'cqr_score_continuo'],
+      ['HAQ-DI (0–3)',         'haq_score'],
+      ['HADS Ansiedade',       'hads_anx'],
+      ['HADS Depressão',       'hads_dep'],
+      ['SEAMS (13–39)',        'seams_score'],
+      ['BMQ Necessity',        'bmq_necessity'],
+      ['BMQ Concerns',         'bmq_concerns'],
+      ['EVA Dor',              'eva_dor'],
+    ];
+
+    const dbAll = getActiveDB();
+    diagCompGrid.innerHTML = `
+      <div class="chart-title">Scores Médios por Diagnóstico <span style="font-size:11px;font-weight:400;color:#718096">(apenas pacientes com o campo preenchido)</span></div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:600px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 10px;background:#1a56a0;color:#fff;position:sticky;left:0;z-index:3;min-width:160px">Diagnóstico (n)</th>
+            ${compFields.map(([l])=>`<th style="text-align:center;padding:6px 8px;background:#1a56a0;color:#fff;white-space:nowrap">${l}</th>`).join('')}
+            <th style="text-align:center;padding:6px 8px;background:#1a56a0;color:#fff">Aderentes %</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${diagsToShow.map((d, ri) => {
+            const dDb = dbAll.filter(p=>p.doenca===d);
+            if (!dDb.length) return '';
+            const cqrDb2 = dDb.filter(p=>p.cqr_aderente==='Aderente'||p.cqr_aderente==='Não aderente');
+            const aderPct = cqrDb2.length ? Math.round(dDb.filter(p=>p.cqr_aderente==='Aderente').length/cqrDb2.length*100)+'%' : '—';
+            return `<tr style="background:${ri%2===0?'#fff':'#f7faff'}">
+              <td style="padding:6px 10px;font-weight:600;position:sticky;left:0;background:${ri%2===0?'#fff':'#f7faff'};z-index:1">${d} <span style="font-weight:400;color:#718096">(${dDb.length})</span></td>
+              ${compFields.map(([,f])=>`<td style="padding:6px 8px;text-align:center">${numM(dDb,f)}</td>`).join('')}
+              <td style="padding:6px 8px;text-align:center;font-weight:700;color:${aderPct!=='—'&&parseInt(aderPct)>=50?'#276749':'#c53030'}">${aderPct}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>`;
+    ap(diagCompGrid);
+  }
+
   // ── SEÇÃO 13: ESCALAS ──
   ap(secHeader('Escalas Subjetivas (0–100)', 'Q50'));
   const escGrid = document.createElement('div');
@@ -2986,7 +3169,7 @@ function showPage(id) {
     b.classList.toggle('active', ['form','list','stats'][i] === id);
   });
   document.getElementById('page-'+id).classList.add('active');
-  if (id === 'list') renderList();
+  if (id === 'list') { listPage = 0; renderList(); }
   if (id === 'stats') renderStats();
   if (id === 'form') document.getElementById('form-msg').innerHTML = '';
 }
