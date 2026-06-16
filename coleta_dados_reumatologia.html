@@ -689,6 +689,7 @@ tr:hover td{background:#f7faff}
     <label class="btn-secondary btn-sm" style="cursor:pointer;padding:5px 12px;font-size:12px;font-weight:600;border:2px solid #1a56a0;border-radius:8px;color:#1a56a0">
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
+    <button class="btn-secondary btn-sm" onclick="openRestoreModal()" style="border-color:#c05621;color:#c05621" title="Restaurar pacientes faltantes a partir do backup Excel">&#128257; Restaurar Faltantes</button>
   </div>
   <!-- Barra de ações em lote (seleção múltipla) -->
   <div id="bulk-bar" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;background:#ebf8ff;border:2px solid #90cdf4;border-radius:10px;padding:10px 16px;margin-bottom:10px">
@@ -2257,7 +2258,7 @@ function renderList() {
       <tbody>${db.map(({ p, realIdx }, i) => `
         <tr id="row-${realIdx}">
           <td style="text-align:center">
-            <input type="checkbox" class="row-chk" data-rghc="${p.rghc}" onchange="onRowCheck()"
+            <input type="checkbox" class="row-chk" data-rghc="${p.rghc}" data-real-idx="${realIdx}" onchange="onRowCheck()"
               style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
           </td>
           <td>${i+1}</td>
@@ -2270,7 +2271,7 @@ function renderList() {
           <td style="white-space:nowrap">${missingBadges(p)}</td>
           <td>
             <button class="btn-secondary btn-sm" onclick="editPatient(${realIdx})">Editar</button>
-            <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
+            <button class="btn-danger btn-sm" onclick="deletePatient(${realIdx})">Excluir</button>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -2282,6 +2283,9 @@ function renderList() {
 // ── Seleção múltipla ──
 function getSelectedRghcs() {
   return [...document.querySelectorAll('.row-chk:checked')].map(cb => cb.dataset.rghc);
+}
+function getSelectedIdxs() {
+  return [...document.querySelectorAll('.row-chk:checked')].map(cb => parseInt(cb.dataset.realIdx));
 }
 
 function onRowCheck() {
@@ -2316,10 +2320,13 @@ function updateBulkBar() {
 }
 
 function deleteSelected() {
-  const rghcs = getSelectedRghcs();
-  if (!rghcs.length) return;
-  if (!confirm(`Excluir ${rghcs.length} paciente(s) selecionado(s)?\n\nEsta ação não pode ser desfeita.`)) return;
-  setData(getData().filter(p => !rghcs.includes(p.rghc)));
+  const idxs = getSelectedIdxs();
+  if (!idxs.length) return;
+  if (!confirm(`Excluir ${idxs.length} paciente(s) selecionado(s)?\n\nEsta ação não pode ser desfeita.`)) return;
+  const db = getData();
+  // Remove do maior para o menor para não deslocar índices
+  idxs.sort((a,b) => b - a).forEach(i => db.splice(i, 1));
+  setData(db);
   renderList();
 }
 
@@ -2343,9 +2350,11 @@ function exportSelectedCSV() {
   a.download = `pacientes_selecionados_${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
-function deletePatient(rghc) {
+function deletePatient(realIdx) {
   if (!confirm('Excluir este paciente?')) return;
-  setData(getData().filter(p => p.rghc !== rghc));
+  const db = getData();
+  db.splice(realIdx, 1);
+  setData(db);
   renderList();
 }
 
@@ -4655,6 +4664,145 @@ function doGet() {
     </div>
   </div>
 </div>
+
+<!-- ===== MODAL RESTAURAR FALTANTES ===== -->
+<div class="modal-overlay" id="restore-modal" style="display:none" onclick="if(event.target===this)closeRestoreModal()">
+  <div class="modal-box" style="max-width:760px">
+    <div class="modal-header">
+      <h2>&#128257; Restaurar Pacientes Faltantes do Backup Excel</h2>
+      <button class="modal-close" onclick="closeRestoreModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#fff5f0;border:1px solid #c05621;border-radius:8px;padding:10px 14px;font-size:11px;color:#7b341e;margin-bottom:14px">
+        <strong>Como funciona:</strong> Carregue o arquivo <strong>backup_excel.json</strong> gerado a partir da planilha original.
+        O sistema compara com os pacientes já existentes (por RGHC e nome) e lista apenas os <strong>ausentes</strong>.
+        Dados de pacientes já presentes <strong>não serão alterados</strong>.
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px;background:#c05621">
+          &#128196; Selecionar backup_excel.json
+          <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="handleRestoreFile(this)">
+        </label>
+        <span id="restore-filename" style="font-size:12px;color:#718096;margin-left:10px"></span>
+      </div>
+      <div id="restore-preview" style="display:none">
+        <div style="font-size:13px;font-weight:700;color:#c05621;margin-bottom:10px" id="restore-summary"></div>
+        <div style="max-height:380px;overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+            <thead>
+              <tr>
+                <th style="background:#c05621;color:#fff;padding:7px 10px"><input type="checkbox" id="restore-chk-all" onchange="toggleAllRestoreChecks(this.checked)"></th>
+                <th style="background:#c05621;color:#fff;padding:7px 12px;text-align:left">#</th>
+                <th style="background:#c05621;color:#fff;padding:7px 12px;text-align:left">Nome</th>
+                <th style="background:#c05621;color:#fff;padding:7px 12px;text-align:left">RGHC</th>
+                <th style="background:#c05621;color:#fff;padding:7px 12px;text-align:left">Doença</th>
+              </tr>
+            </thead>
+            <tbody id="restore-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="restore-result" style="display:none;margin-top:12px;font-size:13px;padding:10px 14px;border-radius:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeRestoreModal()">Fechar</button>
+      <button id="restore-btn" class="btn-primary" style="background:#c05621;display:none" onclick="doRestore()">
+        &#128257; Restaurar Selecionados
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Restore modal ──
+let _restoreCandidates = [];
+
+function openRestoreModal() {
+  document.getElementById('restore-modal').style.display = 'flex';
+  document.getElementById('restore-preview').style.display = 'none';
+  document.getElementById('restore-result').style.display = 'none';
+  document.getElementById('restore-btn').style.display = 'none';
+  document.getElementById('restore-filename').textContent = '';
+  document.getElementById('restore-file-input').value = '';
+  _restoreCandidates = [];
+}
+
+function closeRestoreModal() {
+  document.getElementById('restore-modal').style.display = 'none';
+}
+
+function handleRestoreFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('restore-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!Array.isArray(backup)) { alert('Arquivo inválido.'); return; }
+      const current = getData();
+      // Conjuntos de RGHC e nomes normalizados para comparar
+      const currentRghcs = new Set(current.map(p => (p.rghc||'').trim().toLowerCase()).filter(Boolean));
+      const currentNomes = new Set(current.map(p => (p.nome||'').trim().toLowerCase()).filter(Boolean));
+      // Faltantes: não têm RGHC na lista atual E o nome também não bate
+      _restoreCandidates = backup.filter(p => {
+        const rghc = (p.rghc||'').trim().toLowerCase();
+        const nome = (p.nome||'').trim().toLowerCase();
+        if (rghc && currentRghcs.has(rghc)) return false; // RGHC já existe
+        if (nome && currentNomes.has(nome)) return false;  // nome já existe
+        return true;
+      });
+      renderRestoreTable();
+    } catch(err) {
+      alert('Erro ao ler arquivo: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function renderRestoreTable() {
+  const tbody = document.getElementById('restore-tbody');
+  const summary = document.getElementById('restore-summary');
+  const preview = document.getElementById('restore-preview');
+  const btn = document.getElementById('restore-btn');
+  summary.textContent = `${_restoreCandidates.length} paciente(s) faltantes encontrados`;
+  if (!_restoreCandidates.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:16px;text-align:center;color:#276749;font-weight:600">✓ Nenhum paciente faltante — todos do backup já estão na lista!</td></tr>';
+    btn.style.display = 'none';
+  } else {
+    tbody.innerHTML = _restoreCandidates.map((p, i) => `
+      <tr style="background:${i%2?'#fff5f0':'#fff'}">
+        <td style="padding:6px 10px;text-align:center">
+          <input type="checkbox" class="restore-chk" data-idx="${i}" checked style="width:15px;height:15px;cursor:pointer">
+        </td>
+        <td style="padding:6px 10px">${i+1}</td>
+        <td style="padding:6px 10px;font-weight:600">${p.nome}</td>
+        <td style="padding:6px 10px;color:#718096">${p.rghc||'—'}</td>
+        <td style="padding:6px 10px">${p.doenca||'—'}</td>
+      </tr>`).join('');
+    btn.style.display = 'inline-block';
+  }
+  preview.style.display = 'block';
+}
+
+function toggleAllRestoreChecks(checked) {
+  document.querySelectorAll('.restore-chk').forEach(cb => cb.checked = checked);
+}
+
+function doRestore() {
+  const selected = [...document.querySelectorAll('.restore-chk:checked')].map(cb => _restoreCandidates[parseInt(cb.dataset.idx)]);
+  if (!selected.length) { alert('Nenhum paciente selecionado.'); return; }
+  const db = getData();
+  selected.forEach(p => { const {_from_excel, ...clean} = p; db.push(clean); });
+  setData(db);
+  const res = document.getElementById('restore-result');
+  res.style.display = 'block';
+  res.style.cssText = 'display:block;margin-top:12px;font-size:13px;padding:10px 14px;border-radius:8px;background:#f0fff4;border:1px solid #68d391;color:#276749';
+  res.textContent = `✓ ${selected.length} paciente(s) restaurados com sucesso! Total agora: ${db.length} pacientes.`;
+  document.getElementById('restore-btn').style.display = 'none';
+  renderRestoreTable();
+}
+</script>
 
 </body>
 </html>
