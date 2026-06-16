@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coleta de Dados – Adesão em Reumatologia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a202c;font-size:14px}
@@ -203,6 +204,27 @@ tr:hover td{background:#f7faff}
 .btn-green{background:#0f9d58;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
 .btn-green:hover{background:#0b7d45}
 .btn-green-sm{background:#0f9d58;color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+
+/* === GLOBAL PROGRESS BAR (Feature 7) === */
+.global-progress-wrap{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:10px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:12px}
+.global-progress-label{font-size:12px;font-weight:700;color:#4a5568;white-space:nowrap}
+.global-progress-track{flex:1;background:#e8ecf0;border-radius:6px;height:10px;overflow:hidden}
+.global-progress-fill{height:100%;background:linear-gradient(90deg,#1a56a0,#4299e1);border-radius:6px;transition:.4s}
+.global-progress-pct{font-size:13px;font-weight:700;color:#1a56a0;width:38px;text-align:right;flex-shrink:0}
+
+/* === DRAFT BANNER (Feature 1) === */
+.draft-banner{background:#fefcbf;border:2px solid #f6e05e;border-radius:10px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.draft-banner .draft-msg{font-size:13px;font-weight:600;color:#744210;flex:1}
+.draft-banner .draft-sub{font-size:11px;color:#92400e;margin-top:2px}
+
+/* === RESUMO MODAL (Feature 3) === */
+.resumo-score-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.resumo-score-card{border-radius:10px;padding:12px 16px;text-align:center}
+.resumo-score-card .rv{font-size:28px;font-weight:700;line-height:1}
+.resumo-score-card .rl{font-size:11px;font-weight:600;margin-top:4px}
+.resumo-score-card .rs{font-size:10px;color:#718096;margin-top:2px}
+.resumo-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin:2px}
+.resumo-section-title{font-size:12px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px;padding-bottom:4px;border-bottom:2px solid #e8f0fc}
 </style>
 </head>
 <body>
@@ -220,6 +242,24 @@ tr:hover td{background:#f7faff}
 <!-- ===== FORMULÁRIO ===== -->
 <div id="page-form" class="page active">
   <div id="form-msg"></div>
+
+  <!-- Banner de rascunho (Feature 1) -->
+  <div class="draft-banner" id="draft-banner" style="display:none">
+    <div>
+      <div class="draft-msg">&#128221; Rascunho recuperado</div>
+      <div class="draft-sub" id="draft-banner-sub"></div>
+    </div>
+    <button class="btn-secondary btn-sm" onclick="restoreDraft()" style="white-space:nowrap">&#9850; Continuar preenchimento</button>
+    <button class="btn-danger btn-sm" onclick="discardDraft()" style="white-space:nowrap">Descartar</button>
+  </div>
+
+  <!-- Barra de progresso geral (Feature 7) -->
+  <div class="global-progress-wrap">
+    <div class="global-progress-label">Progresso total:</div>
+    <div class="global-progress-track"><div class="global-progress-fill" id="global-progress-fill" style="width:0%"></div></div>
+    <div class="global-progress-pct" id="global-progress-pct">0%</div>
+    <div style="font-size:11px;color:#a0aec0;white-space:nowrap" id="global-progress-detail">0 / 51 campos</div>
+  </div>
 
   <!-- Nav de etapas -->
   <div class="form-steps-nav" style="align-items:center">
@@ -628,8 +668,10 @@ tr:hover td{background:#f7faff}
   <div class="search-bar">
     <input type="text" id="search-input" placeholder="Buscar por nome ou RGHC..." oninput="renderList()">
     <button class="btn-primary btn-sm" onclick="exportCSV()">Exportar CSV</button>
+    <button class="btn-primary btn-sm" onclick="exportXLSX()" style="background:#217346" title="Exportar planilha Excel com múltiplas abas">&#128202; Excel (.xlsx)</button>
     <button class="btn-green-sm" onclick="openSheetsModal()" title="Exportar para Google Sheets via Apps Script">&#127347; Google Sheets</button>
     <button class="btn-secondary btn-sm" onclick="exportJSON()">Backup JSON</button>
+    <button class="btn-secondary btn-sm" onclick="openImportModal()" style="border-color:#805ad5;color:#805ad5" title="Importar pacientes de planilha Excel/CSV">&#128229; Importar Planilha</button>
     <label class="btn-secondary btn-sm" style="cursor:pointer;padding:5px 12px;font-size:12px;font-weight:600;border:2px solid #1a56a0;border-radius:8px;color:#1a56a0">
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
@@ -1145,6 +1187,8 @@ function updateTabBadges() {
     }
     if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
   }
+  updateGlobalProgress();
+  saveDraft();
 }
 
 // ============================================================
@@ -1711,6 +1755,7 @@ function savePatient() {
     db.push(record);
   }
   setData(db);
+  clearDraft();
   msg.innerHTML = '<div class="success">Paciente salvo com sucesso! Total: ' + db.length + ' paciente(s).</div>';
   window.scrollTo(0,0);
   clearForm();
@@ -1744,6 +1789,7 @@ function clearForm() {
   document.getElementById('haq-score-box').style.display = 'none';
   document.getElementById('cqr-score-box').style.display = 'none';
   resetEvas();
+  clearDraft();
   initForm();
   showFormTab(0);
 }
@@ -1770,6 +1816,7 @@ function renderList() {
           <td>${p.entrevista || '—'}</td>
           <td>${p.atividade || '—'}</td>
           <td>
+            <button class="btn-secondary btn-sm" onclick="openResumoModal('${p.rghc}')" style="border-color:#9f7aea;color:#9f7aea">&#128269; Ver</button>
             <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
             <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
           </td>
@@ -2742,6 +2789,95 @@ function renderStats() {
     ap(noHaq);
   }
 
+  // ── SEÇÃO CROSS: ANÁLISES CRUZADAS (Feature 8) ──
+  const crossDb = db.filter(p => p.cqr_aderente === 'Aderente' || p.cqr_aderente === 'Não aderente');
+  if (crossDb.length >= 2) {
+    ap(secHeader('Análises Cruzadas — Aderentes vs Não-aderentes (CQR-19)', 'Feature 8'));
+
+    const aderDb     = crossDb.filter(p => p.cqr_aderente === 'Aderente');
+    const naoAderDb  = crossDb.filter(p => p.cqr_aderente === 'Não aderente');
+
+    // Tabela comparativa de médias
+    const crossGrid = document.createElement('div');
+    crossGrid.className = 'chart-section';
+    const numMean = (arr, field) => {
+      const vals = arr.map(p => parseFloat(p[field])).filter(v => !isNaN(v));
+      if (!vals.length) return '—';
+      return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+    };
+    const crossFields = [
+      ['HAQ-DI (0–3)', 'haq_score'],
+      ['HADS Ansiedade (0–21)', 'hads_anx'],
+      ['HADS Depressão (0–21)', 'hads_dep'],
+      ['SEAMS (13–39)', 'seams_score'],
+      ['BMQ Necessity (5–25)', 'bmq_necessity'],
+      ['BMQ Concerns (6–30)', 'bmq_concerns'],
+      ['EVA Dor (0–100)', 'eva_dor'],
+      ['EVA Estresse (0–100)', 'eva_estresse'],
+      ['Satisfação com tratamento', 'satisfacao'],
+      ['Confiança na equipe médica', 'confianca'],
+    ];
+    const cor2 = GRUPO_CORES[currentGroup] || '#1a56a0';
+    crossGrid.innerHTML = `
+      <div class="chart-title">Comparativo de Scores por Classificação de Adesão <span style="font-size:11px;font-weight:400;color:#718096">(médias — aderentes n=${aderDb.length} · não-aderentes n=${naoAderDb.length})</span></div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 10px;background:#f7faff;font-weight:700;color:#2d3748">Variável</th>
+            <th style="text-align:center;padding:6px 10px;background:#f0fff4;color:#276749;font-weight:700">Aderentes</th>
+            <th style="text-align:center;padding:6px 10px;background:#fff5f5;color:#c53030;font-weight:700">Não-aderentes</th>
+            <th style="text-align:center;padding:6px 10px;background:#f7faff;color:#4a5568;font-weight:700">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${crossFields.map(([label,field],i) => `
+          <tr style="background:${i%2===0?'#fff':'#f7faff'}">
+            <td style="padding:6px 10px;font-weight:600">${label}</td>
+            <td style="padding:6px 10px;text-align:center;color:#276749;font-weight:600">${numMean(aderDb,field)}</td>
+            <td style="padding:6px 10px;text-align:center;color:#c53030;font-weight:600">${numMean(naoAderDb,field)}</td>
+            <td style="padding:6px 10px;text-align:center;color:#4a5568">${numMean(crossDb,field)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      </div>`;
+    ap(crossGrid);
+
+    // Distribuição de atividade de doença por adesão
+    const atividadeGrupos = ['Remissão','Baixa atividade','Moderada atividade','Alta atividade'];
+    const atividadeCross = document.createElement('div');
+    atividadeCross.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+
+    const atAderEntries = atividadeGrupos.map(a => [a, aderDb.filter(p=>p.atividade===a).length]).filter(([,v])=>v>0);
+    const atNAderEntries = atividadeGrupos.map(a => [a, naoAderDb.filter(p=>p.atividade===a).length]).filter(([,v])=>v>0);
+    if (atAderEntries.length) atividadeCross.appendChild(barChart('Atividade de Doença — Aderentes', atAderEntries, aderDb.length));
+    if (atNAderEntries.length) atividadeCross.appendChild(barChart('Atividade de Doença — Não-aderentes', atNAderEntries, naoAderDb.length));
+    if (atAderEntries.length || atNAderEntries.length) ap(atividadeCross);
+
+    // Distribuição HADS por adesão
+    const hadsCross = document.createElement('div');
+    hadsCross.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+    const faixasHADS2 = [['0–7 (Normal)',0,7],['8–10 (Limítrofe)',8,10],['11–21 (Caso clínico)',11,21]];
+    const hadsAderAdb = aderDb.filter(p=>p.hads_anx!==''&&p.hads_anx!==undefined);
+    const hadsNAderAdb = naoAderDb.filter(p=>p.hads_anx!==''&&p.hads_anx!==undefined);
+    if (hadsAderAdb.length || hadsNAderAdb.length) {
+      const anxAderE = faixasHADS2.map(([l,mn,mx])=>[l,hadsAderAdb.filter(p=>{const s=parseFloat(p.hads_anx);return s>=mn&&s<=mx;}).length]).filter(([,v])=>v>0);
+      const anxNAderE = faixasHADS2.map(([l,mn,mx])=>[l,hadsNAderAdb.filter(p=>{const s=parseFloat(p.hads_anx);return s>=mn&&s<=mx;}).length]).filter(([,v])=>v>0);
+      if (anxAderE.length) hadsCross.appendChild(barChart('HADS Ansiedade — Aderentes', anxAderE, hadsAderAdb.length||1));
+      if (anxNAderE.length) hadsCross.appendChild(barChart('HADS Ansiedade — Não-aderentes', anxNAderE, hadsNAderAdb.length||1));
+      ap(hadsCross);
+    }
+
+    // Escolaridade vs adesão
+    const escCross = document.createElement('div');
+    escCross.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
+    const escAderE = countBy(aderDb,'escolaridade');
+    const escNAderE = countBy(naoAderDb,'escolaridade');
+    if (escAderE.length) escCross.appendChild(barChart('Escolaridade — Aderentes', escAderE, aderDb.length));
+    if (escNAderE.length) escCross.appendChild(barChart('Escolaridade — Não-aderentes', escNAderE, naoAderDb.length));
+    if (escAderE.length || escNAderE.length) ap(escCross);
+  }
+
   // ── SEÇÃO 13: ESCALAS ──
   ap(secHeader('Escalas Subjetivas (0–100)', 'Q50'));
   const escGrid = document.createElement('div');
@@ -2781,6 +2917,9 @@ function openEvolucaoModal() {
   document.getElementById('evo-apikey').value = saved;
   document.getElementById('evo-result').style.display = 'none';
   document.getElementById('evo-loading').style.display = 'none';
+  // Pré-preenche data da consulta com a data da entrevista se já informada
+  const dataEntrevista = document.getElementById('f-entrevista').value;
+  if (dataEntrevista) document.getElementById('evo-data-consulta').value = dataEntrevista;
   document.getElementById('evo-modal').style.display = 'flex';
 }
 function closeEvolucaoModal() {
@@ -2802,52 +2941,85 @@ async function extractFromEvolucao() {
   load.style.display = 'block';
   resEl.style.display = 'none';
 
+  const dataConsulta  = document.getElementById('evo-data-consulta').value;
+  const dataRef       = dataConsulta
+    ? new Date(dataConsulta).toLocaleDateString('pt-BR')
+    : 'não informada (use a última consulta registrada)';
+
   const doencasStr    = DOENCAS.join(' | ');
   const csdmardStr    = CS_DMARD.join(', ');
   const bdmardStr     = B_DMARD.join(', ');
   const tsdmardStr    = TS_DMARD.join(', ');
+  const comorbStr     = COMORBIDADES.join(', ');
+  const medContStr    = MED_CONTINUAS.join(', ');
+  const reacaoStr     = REACAO_DMARD.join(', ');
 
-  const prompt = `Você é um assistente de pesquisa clínica especializado em reumatologia. Analise a evolução de prontuário médico abaixo (em português brasileiro) e extraia os dados disponíveis. Retorne SOMENTE um objeto JSON válido, sem markdown, sem texto antes ou depois.
+  const systemPrompt = `Você é um extrator especializado de dados clínicos de prontuários médicos em reumatologia. Sua tarefa é identificar e extrair dados de uma consulta específica dentro de um texto que pode conter várias consultas de datas diferentes, cabeçalhos, histórico de medicações e resultados de exames de múltiplas datas. Você retorna SOMENTE JSON válido, sem markdown e sem texto adicional.`;
 
-Estrutura do JSON (use null para campos não encontrados):
+  const userPrompt = `DATA-ALVO DA CONSULTA: ${dataRef}
+
+TAREFA: Analise o texto do prontuário abaixo e extraia dados EXCLUSIVAMENTE da consulta cuja data seja igual ou mais próxima da DATA-ALVO. Ignore dados de consultas anteriores a essa, exceto para identificar DMARDs suspensos (campos _prev).
+
+Para cada campo extraído, registre também a data de origem no campo correspondente com sufixo "_data" (formato "YYYY-MM-DD"). Se não conseguir identificar a data exata de um dado, use null para "_data".
+
+Retorne SOMENTE um objeto JSON válido com esta estrutura (null para campos não encontrados):
 {
-  "nome": string,
-  "rghc": string,
+  "consulta_data_extraida": "YYYY-MM-DD ou null — data da consulta de onde você extraiu os dados",
+
+  "nome": string,          "nome_data": string,
+  "rghc": string,          "rghc_data": null,
   "nascimento": "YYYY-MM-DD",
   "sexo": "Feminino" | "Masculino",
   "etnia": "Amarela" | "Branca" | "Parda" | "Preta",
-  "doenca": use exatamente um destes valores se identificado: ${doencasStr},
+
+  "doenca": um destes exatamente: ${doencasStr},
   "tempo_diag": "< 1 ano" | "1–3 anos" | "3–5 anos" | "5–7 anos" | "7–9 anos" | "10–15 anos" | "> 15 anos",
-  "atividade": "Remissão" | "Baixa atividade" | "Moderada atividade" | "Alta atividade",
+  "atividade": "Remissão" | "Baixa atividade" | "Moderada atividade" | "Alta atividade",   "atividade_data": string,
   "tempo_remissao": "< 6 meses" | "6–12 meses" | "12–24 meses" | "24–48 meses" | "> 48 meses",
-  "vhs": number,
-  "pcr": number,
-  "cpk": number,
-  "das28": number,
-  "asdas": number,
-  "sledai": number,
-  "myoact": number,
-  "mmt8": number,
-  "bvas": number,
-  "itas": number,
+
+  "vhs": number,   "vhs_data": string,
+  "pcr": number,   "pcr_data": string,
+  "cpk": number,   "cpk_data": string,
+
+  "das28": number,   "das28_data": string,
+  "asdas": number,   "asdas_data": string,
+  "sledai": number,  "sledai_data": string,
+  "myoact": number,  "myoact_data": string,
+  "mmt8": number,    "mmt8_data": string,
+  "bvas": number,    "bvas_data": string,
+  "itas": number,    "itas_data": string,
+
   "gcs": "Não" | "5 mg" | "6–10 mg" | "11–20 mg" | "21–40 mg" | "41–80 mg",
   "num_med": "1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"10"|"11 ou mais",
-  "csdmard": [subconjunto de: ${csdmardStr}],
-  "bdmard":  [subconjunto de: ${bdmardStr}],
-  "tsdmard": [subconjunto de: ${tsdmardStr}],
+
+  "csdmard":  [subconjunto de: ${csdmardStr}],
+  "bdmard":   [subconjunto de: ${bdmardStr}],
+  "tsdmard":  [subconjunto de: ${tsdmardStr}],
+  "csdmard_prev": [subconjunto de: ${csdmardStr}],
+  "bdmard_prev":  [subconjunto de: ${bdmardStr}],
+  "tsdmard_prev": [subconjunto de: ${tsdmardStr}],
   "tempo_dmard": "< 6 meses" | "6–12 meses" | "12–24 meses" | "24–48 meses" | "48 meses ou mais",
+
+  "comorbidades": [subconjunto de: ${comorbStr}],
+  "med_continuas": [subconjunto de: ${medContStr}],
+
   "reacao": "Sim" | "Não",
+  "reacao_quais": [subconjunto de: ${reacaoStr}],
+
   "intervalo": "< 3 meses" | "3 a 6 meses" | "> 6 meses"
 }
 
-Instruções:
-- Para gcs: calcule a dose equivalente de prednisona e classifique na faixa correta (ex: prednisona 5mg → "5 mg", prednisolona 10mg → "6–10 mg").
-- Para num_med: conte todos os medicamentos mencionados em uso (não apenas DMARDs).
-- Para atividade: interprete termos clínicos (ex: "sem sinais de atividade" → "Remissão", "doença ativa" → analise o contexto).
-- Para csdmard/bdmard/tsdmard: use EXATAMENTE os nomes das listas fornecidas.
-- Inclua apenas campos que você encontrou na evolução; os demais devem ser null.
+REGRAS CRÍTICAS:
+1. ANCORAGEM TEMPORAL: Identifique a consulta-alvo pela DATA-ALVO. Se houver múltiplas entradas de datas distintas, extraia medicações, atividade e métricas APENAS da entrada correspondente à DATA-ALVO ou mais próxima anterior.
+2. MEDICAÇÕES ATUAIS vs. PRÉVIAS: Inclua em csdmard/bdmard/tsdmard apenas o que está prescrito na conduta/plano da consulta-alvo. Coloque em _prev medicações descritas como "suspensas", "trocadas", "descontinuadas" ou "usadas anteriormente".
+3. EXAMES LABORATORIAIS: Prefira exames coletados próximos à DATA-ALVO (≤ 30 dias antes). Se o exame mais recente for de data muito anterior, registre o valor mas coloque a data real em _data para que o usuário possa avaliar.
+4. CORTICOSTEROIDES (gcs): Calcule dose equivalente de prednisona: prednisona 1:1, prednisolona 1:1, metilprednisolona ×1.25, dexametasona ×7. Classifique na faixa correta.
+5. NÚMERO DE MEDICAÇÕES (num_med): Conte TODOS os medicamentos em uso na consulta-alvo (DMARDs + contínuos + corticoide). Use "11 ou mais" se ≥ 11.
+6. ATIVIDADE: Interprete termos clínicos: "sem atividade"/"remissão"/"DAS28<2.6" → "Remissão"; "baixa atividade"/"doença controlada" → "Baixa atividade"; "moderada atividade" → "Moderada atividade"; "alta atividade"/"doença ativa" → "Alta atividade".
+7. Use EXATAMENTE os nomes das listas fornecidas para doença, DMARDs, comorbidades e medicações contínuas.
+8. Não invente dados. Retorne null para campos não encontrados no texto.
 
-Texto da evolução:
+TEXTO DO PRONTUÁRIO:
 ${text}`;
 
   try {
@@ -2860,9 +3032,11 @@ ${text}`;
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }]
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        temperature: 0,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
       })
     });
 
@@ -2872,18 +3046,33 @@ ${text}`;
     }
 
     const raw  = await resp.json();
-    const txt  = raw.content[0].text.trim();
+    let txt = raw.content[0].text.trim();
+    // Remove blocos markdown caso o modelo os inclua
+    txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     const data = JSON.parse(txt);
 
-    const filled = fillFromExtracted(data);
+    const dataAlvo = dataConsulta ? new Date(dataConsulta) : null;
+    const { filled, suspicious } = fillFromExtracted(data, dataAlvo);
+
+    const consultaExtraida = data.consulta_data_extraida
+      ? `<div style="font-size:11px;color:#2b6cb0;margin-bottom:8px">📅 Dados extraídos da consulta: <strong>${new Date(data.consulta_data_extraida + 'T00:00:00').toLocaleDateString('pt-BR')}</strong></div>`
+      : '';
+
+    const suspWarn = suspicious.length
+      ? `<div style="margin-top:8px;padding:8px 10px;background:#fffbeb;border:1px solid #f6ad55;border-radius:6px;font-size:11px;color:#744210">
+           ⚠️ <strong>Campos com data suspeita</strong> (extraídos de data diferente da consulta-alvo — revise antes de salvar):<br>
+           ${suspicious.map(s => `<span class="evo-chip" style="background:#fef3c7;color:#92400e">${s}</span>`).join(' ')}
+         </div>`
+      : '';
 
     resEl.className = 'evo-result ok';
     resEl.style.display = 'block';
-    resEl.innerHTML = `<strong>✓ ${filled.length} campo(s) preenchido(s):</strong><br>` +
+    resEl.innerHTML = consultaExtraida +
+      `<strong>✓ ${filled.length} campo(s) preenchido(s):</strong><br>` +
       filled.map(f => `<span class="evo-chip">${f}</span>`).join(' ') +
-      `<br><br><span style="color:#718096;font-size:11px">Os campos não identificados na evolução precisarão ser preenchidos manualmente.</span>`;
+      suspWarn +
+      `<br><span style="color:#718096;font-size:11px">Os campos não identificados na evolução precisarão ser preenchidos manualmente.</span>`;
 
-    // Navega para aba 1 (Dados Clínicos) para revisão
     showFormTab(1);
     closeEvolucaoModal();
 
@@ -2897,11 +3086,24 @@ ${text}`;
   }
 }
 
-function fillFromExtracted(data) {
-  const filled = [];
+function fillFromExtracted(data, dataAlvo) {
+  const filled    = [];
+  const suspicious = [];
+
+  // Retorna true se a data do campo está mais de 45 dias antes da data-alvo
+  const isSuspicious = (dateStr) => {
+    if (!dataAlvo || !dateStr) return false;
+    const d = new Date(dateStr + 'T00:00:00');
+    return (dataAlvo - d) > 45 * 86400000;
+  };
+
+  const trackField = (label, dateStr) => {
+    filled.push(label);
+    if (isSuspicious(dateStr)) suspicious.push(label);
+  };
 
   // Helper: seleciona botão de rádio por valor
-  const selectRadio = (containerId, field, value) => {
+  const selectRadio = (containerId, field, value, dateStr, label) => {
     if (!value) return;
     const c = document.getElementById(containerId);
     if (!c) return;
@@ -2910,13 +3112,13 @@ function fillFromExtracted(data) {
         c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
         b.classList.add('selected');
         formData[field] = value;
-        filled.push(field);
+        trackField(label || field, dateStr);
       }
     });
   };
 
   // Helper: seleciona checkboxes por array de valores
-  const selectCheck = (containerId, field, values) => {
+  const selectCheck = (containerId, field, values, label) => {
     if (!values || !values.length) return;
     formData[field] = [];
     const c = document.getElementById(containerId);
@@ -2927,74 +3129,84 @@ function fillFromExtracted(data) {
         formData[field].push(b.textContent.trim());
       }
     });
-    if (formData[field].length) filled.push(field);
+    if (formData[field].length) filled.push(label || field);
   };
 
   // Helper: preenche input numérico/texto
-  const setInput = (id, value, label) => {
+  const setInput = (id, value, label, dateStr) => {
     if (value === null || value === undefined || value === '') return;
     const el = document.getElementById(id);
     if (!el) return;
     el.value = value;
-    filled.push(label || id);
+    trackField(label || id, dateStr);
   };
 
   // Identificação
-  setInput('f-nome',       data.nome,       'nome');
-  setInput('f-rghc',       data.rghc,       'rghc');
-  setInput('f-nascimento', data.nascimento,  'nascimento');
+  setInput('f-nome',       data.nome,      'nome');
+  setInput('f-rghc',       data.rghc,      'rghc');
+  setInput('f-nascimento', data.nascimento, 'nascimento');
 
   // Demográfico
-  selectRadio('q-sexo',  'sexo',  data.sexo);
-  selectRadio('q-etnia', 'etnia', data.etnia);
+  selectRadio('q-sexo',  'sexo',  data.sexo,  null, 'sexo');
+  selectRadio('q-etnia', 'etnia', data.etnia, null, 'etnia');
 
   // Doença
-  selectRadio('q-doenca',     'doenca',     data.doenca);
-  selectRadio('q-tempo-diag', 'tempo_diag', data.tempo_diag);
-  selectRadio('q-atividade',  'atividade',  data.atividade);
+  selectRadio('q-doenca',     'doenca',     data.doenca,     null, 'doença');
+  selectRadio('q-tempo-diag', 'tempo_diag', data.tempo_diag, null, 'tempo_diag');
+  selectRadio('q-atividade',  'atividade',  data.atividade,  data.atividade_data, 'atividade');
   if (data.doenca)    updateMetrics(data.doenca);
   if (data.atividade) toggleRemissao(data.atividade);
-  selectRadio('q-tempo-remissao', 'tempo_remissao', data.tempo_remissao);
+  selectRadio('q-tempo-remissao', 'tempo_remissao', data.tempo_remissao, null, 'tempo_remissao');
 
   // Labs
-  setInput('f-vhs', data.vhs, 'VHS');
-  setInput('f-pcr', data.pcr, 'PCR');
-  setInput('f-cpk', data.cpk, 'CPK');
+  setInput('f-vhs', data.vhs, 'VHS', data.vhs_data);
+  setInput('f-pcr', data.pcr, 'PCR', data.pcr_data);
+  setInput('f-cpk', data.cpk, 'CPK', data.cpk_data);
 
   // Métricas
-  setInput('f-das28',  data.das28,  'DAS28');
-  setInput('f-asdas',  data.asdas,  'ASDAS');
-  setInput('f-sledai', data.sledai, 'SLEDAI');
-  setInput('f-myoact', data.myoact, 'MYOACT');
-  setInput('f-mmt8',   data.mmt8,   'MMT8');
-  setInput('f-bvas',   data.bvas,   'BVAS');
-  setInput('f-itas',   data.itas,   'ITAS');
+  setInput('f-das28',  data.das28,  'DAS28',  data.das28_data);
+  setInput('f-asdas',  data.asdas,  'ASDAS',  data.asdas_data);
+  setInput('f-sledai', data.sledai, 'SLEDAI', data.sledai_data);
+  setInput('f-myoact', data.myoact, 'MYOACT', data.myoact_data);
+  setInput('f-mmt8',   data.mmt8,   'MMT8',   data.mmt8_data);
+  setInput('f-bvas',   data.bvas,   'BVAS',   data.bvas_data);
+  setInput('f-itas',   data.itas,   'ITAS',   data.itas_data);
 
   // Medicações
-  selectRadio('q-num-med', 'num_med', data.num_med);
-  selectRadio('q-gcs',     'gcs',     data.gcs);
+  selectRadio('q-num-med', 'num_med', data.num_med, null, 'num_med');
+  selectRadio('q-gcs',     'gcs',     data.gcs,     null, 'corticoide');
 
-  selectCheck('q-csdmard', 'csdmard', data.csdmard);
+  selectCheck('q-csdmard', 'csdmard', data.csdmard, 'csDMARDs atuais');
   if ((data.csdmard||[]).length) renderPosologia('csdmard', 'posologia-csdmard');
 
-  selectCheck('q-bdmard', 'bdmard', data.bdmard);
+  selectCheck('q-bdmard', 'bdmard', data.bdmard, 'bDMARDs atuais');
   if ((data.bdmard||[]).length) renderPosologia('bdmard', 'posologia-bdmard');
 
-  selectCheck('q-tsdmard', 'tsdmard', data.tsdmard);
+  selectCheck('q-tsdmard', 'tsdmard', data.tsdmard, 'tsDMARDs atuais');
   if ((data.tsdmard||[]).length) renderPosologia('tsdmard', 'posologia-tsdmard');
 
-  selectRadio('q-tempo-dmard', 'tempo_dmard', data.tempo_dmard);
+  // DMARDs prévios
+  selectCheck('q-csdmard-prev', 'csdmard_prev', data.csdmard_prev, 'csDMARDs prévios');
+  selectCheck('q-bdmard-prev',  'bdmard_prev',  data.bdmard_prev,  'bDMARDs prévios');
+  selectCheck('q-tsdmard-prev', 'tsdmard_prev', data.tsdmard_prev, 'tsDMARDs prévios');
 
-  // Reação e intervalo
-  selectRadio('q-reacao',   'reacao',   data.reacao);
+  selectRadio('q-tempo-dmard', 'tempo_dmard', data.tempo_dmard, null, 'tempo_dmard');
+
+  // Comorbidades e medicações contínuas
+  selectCheck('q-comorbidades',  'comorbidades',  data.comorbidades,  'comorbidades');
+  selectCheck('q-med-continuas', 'med_continuas', data.med_continuas, 'med_continuas');
+
+  // Reação
+  selectRadio('q-reacao', 'reacao', data.reacao, null, 'reação_adv');
   if (data.reacao) toggleReacao(data.reacao);
-  selectRadio('q-intervalo', 'intervalo', data.intervalo);
+  if (data.reacao === 'Sim') selectCheck('q-reacao-quais', 'reacao_quais', data.reacao_quais, 'reacao_quais');
 
-  // Recalcula idade se tiver nascimento e entrevista
+  selectRadio('q-intervalo', 'intervalo', data.intervalo, null, 'intervalo_consultas');
+
   if (data.nascimento) calcIdade();
 
   updateTabBadges();
-  return filled;
+  return { filled, suspicious };
 }
 
 // ============================================================
@@ -3152,7 +3364,1057 @@ function fillTestData() {
 // INIT
 // ============================================================
 initForm();
+checkDraft();
+
+// ============================================================
+// IMPORTAR PLANILHA — salva direto na lista de pacientes
+// ============================================================
+
+// Normalização: valores da planilha → valores exatos do formulário
+const IMPORT_NORM = {
+  estado_civil: {
+    'solteiro (a)':'Solteiro','solteiro(a)':'Solteiro','solteiro':'Solteiro',
+    'casado (a)':'Casado','casado(a)':'Casado','casado':'Casado',
+    'viúvo (a)':'Viúvo','viúvo(a)':'Viúvo','viúvo':'Viúvo',
+    'divorciado (a)':'Divorciado','divorciado(a)':'Divorciado','divorciado':'Divorciado',
+    'união estável':'União estável','uniao estavel':'União estável',
+  },
+  religiao: {
+    'protestantismo / evangélico':'Evangélico / Protestante',
+    'protestantismo/evangélico':'Evangélico / Protestante',
+    'protestante':'Evangélico / Protestante','evangélico':'Evangélico / Protestante',
+    'catolicismo':'Catolicismo','espiritismo':'Espiritismo','budismo':'Budismo',
+    'judaísmo':'Judaísmo','islamismo':'Islamismo',
+    'testemunha de jeová':'Testemunha de Jeová','umbandismo':'Umbandismo',
+    'candomblé':'Candomblé','sem religião':'Sem religião','outro':'Outro',
+  },
+  escolaridade: {
+    'superior incompleto':'Ensino Superior incompleto',
+    'superior completo':'Ensino Superior completo',
+    'médio completo':'Ensino Médio completo','medio completo':'Ensino Médio completo',
+    'médio incompleto':'Ensino Médio incompleto','medio incompleto':'Ensino Médio incompleto',
+    'fundamental completo':'Ensino Fundamental completo',
+    'fundamental incompleto':'Ensino Fundamental incompleto',
+    'pós-graduado':'Pós-graduação','pos-graduado':'Pós-graduação',
+    'pós graduado':'Pós-graduação','pós-graduação':'Pós-graduação',
+    'menos de 1 ano':'Menos de 1 ano de estudo','menos de 1 ano de estudo':'Menos de 1 ano de estudo',
+  },
+  renda: {
+    'até 1 salário mínimo':'Até 1 salário mínimo','até 1 sm':'Até 1 salário mínimo',
+    '1 a 3 salários mínimos':'1 a 3 salários mínimos','1 a 3 sm':'1 a 3 salários mínimos',
+    '3 a 5 salários mínimos':'3 a 5 salários mínimos','3 a 5 sm':'3 a 5 salários mínimos',
+    'mais de 5 salários mínimos':'Mais de 5 salários mínimos','mais de 5 sm':'Mais de 5 salários mínimos',
+  },
+  carga_horaria: {
+    '< 14 horas':'< 14 horas','menos de 14 horas':'< 14 horas',
+    '15 a 39 horas':'15–39 horas','15–39 horas':'15–39 horas',
+    '40 a 48 horas':'40 a 48 horas','40–48 horas':'40 a 48 horas',
+    '49 a 60 horas':'49 a 60 horas','49–60 horas':'49 a 60 horas',
+    '> 60 horas':'> 60 horas','mais de 60 horas':'> 60 horas',
+  },
+  num_pessoas: {
+    'mora sozinho (a)':'Mora sozinho','mora sozinho(a)':'Mora sozinho','mora sozinho':'Mora sozinho',
+    '1':'Mora sozinho','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7',
+  },
+  filhos: {
+    'sem filhos':'Sem filhos','nenhum':'Sem filhos','0':'Sem filhos',
+    '1':'1','2':'2','3':'3','4':'4','5':'5',
+  },
+  // Doenças que mapeiam diretamente
+  doenca_direta: {
+    'aij':'Artrite idiopática juvenil','artrite idiopática juvenil':'Artrite idiopática juvenil',
+    'les juvenil':'Lúpus juvenil','lúpus juvenil':'Lúpus juvenil',
+    'les':'Lúpus eritematoso sistêmico','lúpus eritematoso sistêmico':'Lúpus eritematoso sistêmico',
+    'artrite reumatoide':'Artrite reumatoide','ar':'Artrite reumatoide',
+    'espondiloartrite':'Espondiloartrite','ea':'Espondiloartrite',
+    'artrite psorística':'Artrite psorística','artrite psorítica':'Artrite psorística',
+    'dermatomiosite':'Dermatomiosite','polimiosite':'Polimiosite','gpa':'GPA',
+    'gepa':'GEPA','pam':'PAM','pan':'PAN',
+    'arterite de takayasu':'Arterite de Takayasu',
+    'arterite de células gigantes':'Arterite de células gigantes',
+  },
+  // Doenças ambíguas → lista de opções para o usuário escolher
+  doenca_ambigua: {
+    'vasculite':['GPA','GEPA','PAM','PAN','Arterite de células gigantes','Arterite de Takayasu','Policondrite recidivante'],
+    'miopatia':['Dermatomiosite','Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil','Polimiosite','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','Síndrome antissintetase','Sobreposição miopatia + outra doença'],
+  },
+};
+
+// Mapeia texto de resposta para pts (usando as listas já definidas no app)
+function importTextToPts(txt, type) {
+  const t = String(txt||'').trim().toLowerCase();
+  if (type === 'cqr') {
+    const m = {'não concordo de forma alguma':1,'não concordo':2,'concordo':3,'concordo muito':4};
+    return m[t] ?? null;
+  }
+  if (type === 'haq') {
+    const m = {'sem qualquer dificuldade':0,'com alguma dificuldade':1,'com muita dificuldade':2,'incapaz de realizar':3};
+    return m[t] ?? null;
+  }
+  if (type === 'seams') {
+    const m = {'muito confiante':3,'pouco confiante':2,'não estou confiante':1,'não confiante':1};
+    return m[t] ?? null;
+  }
+  if (type === 'bmq') {
+    const m = {'concordo totalmente':5,'concordo':4,'nem concordo nem discordo':3,'discordo':2,'discordo totalmente':1};
+    return m[t] ?? null;
+  }
+  return null;
+}
+
+// Pts HADS por item (baseado em HADS_ITENS definidos acima)
+function getHadsPts(itemId, txt) {
+  const item = HADS_ITENS.find(i => i.id === itemId);
+  if (!item) return null;
+  const t = String(txt||'').trim().toLowerCase();
+  const match = item.opts.find(o => o.txt.toLowerCase() === t);
+  return match ? match.pts : null;
+}
+
+function normImport(val, map) {
+  if (val === null || val === undefined) return null;
+  const k = String(val).trim().toLowerCase();
+  return map[k] !== undefined ? map[k] : null;
+}
+
+function matchList(val, list) {
+  if (!val) return null;
+  const t = String(val).trim();
+  const exact = list.find(o => o.toLowerCase() === t.toLowerCase());
+  if (exact) return exact;
+  const partial = list.find(o => o.toLowerCase().includes(t.toLowerCase()) || t.toLowerCase().includes(o.toLowerCase()));
+  return partial || null;
+}
+
+function normAlergia(val) {
+  if (!val) return null;
+  const t = String(val).trim().toLowerCase();
+  if (['n','não','nao','nega','nenhuma','nenhhuma'].includes(t) || t.startsWith('neg')) return 'Não';
+  if (t !== '') return 'Sim';
+  return null;
+}
+
+let importedRows = [];
+
+function openImportModal() {
+  document.getElementById('import-modal').style.display = 'flex';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-eva-warn').style.display = 'none';
+  document.getElementById('import-filename').textContent = '';
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').style.display = 'none';
+}
+
+function handleImportFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('import-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let rows;
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        const text = e.target.result;
+        rows = text.split('\n').map(l => l.split(',').map(c => c.replace(/^"|"$/g,'')));
+      } else {
+        const wb = XLSX.read(e.target.result, { type:'array', cellDates:true, dateNF:'yyyy-mm-dd' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'yyyy-mm-dd' });
+      }
+      processImportFile(rows);
+    } catch(err) {
+      alert('Erro ao ler arquivo: ' + err.message);
+    }
+  };
+  if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file,'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function processImportFile(rawRows) {
+  if (!rawRows || rawRows.length < 2) { alert('Arquivo vazio ou sem dados.'); return; }
+  const headers = rawRows[0].map(h => String(h||'').trim());
+  importedRows = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+
+  // Detecta colunas por nome (normalizado)
+  const hIdx = {};
+  headers.forEach((h, i) => { hIdx[h.trim().toLowerCase()] = i; });
+
+  // Helper pega valor da linha pelo nome aproximado do header
+  const get = (row, ...keys) => {
+    for (const key of keys) {
+      const k = key.toLowerCase();
+      // Exact
+      for (const [hk, hi] of Object.entries(hIdx)) {
+        if (hk === k || hk.includes(k) || k.includes(hk.replace(/[^a-záéíóúãõâêîôûçàü]+/g,''))) {
+          const v = row[hi];
+          if (v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== 'nan') return String(v).trim();
+        }
+      }
+    }
+    return null;
+  };
+
+  // Verifica se EVA de comunicação parece fora de escala (valores ≤ 2 indicam problema)
+  const evaWarn = importedRows.some(row => {
+    const communIdx = hIdx[Object.keys(hIdx).find(k => k.includes('clareza')) || ''];
+    const v = communIdx !== undefined ? row[communIdx] : null;
+    return v !== null && v !== undefined && parseFloat(v) <= 2;
+  });
+  document.getElementById('import-eva-warn').style.display = evaWarn ? 'block' : 'none';
+
+  // Renderiza tabela de preview
+  renderImportTable(headers, hIdx, importedRows, get);
+  document.getElementById('import-count').textContent = `${importedRows.length} paciente(s) encontrado(s)`;
+  document.getElementById('import-preview').style.display = 'block';
+}
+
+function renderImportTable(headers, hIdx, rows, get) {
+  const tbody = document.getElementById('import-tbody');
+  tbody.innerHTML = '';
+
+  rows.forEach((row, ri) => {
+    const nome = get(row,'nome') || '(sem nome)';
+    const rghc = get(row,'rghc') || '';
+    const data = get(row,'data da entrevista','data entrevista') || '';
+    const doencaRaw = get(row,'doença em seguimento','doenca em seguimento','doença','doenca') || '';
+    const doencaKey = doencaRaw.toLowerCase();
+
+    const needsDisambig = !!IMPORT_NORM.doenca_ambigua[doencaKey];
+    const disambigOptions = IMPORT_NORM.doenca_ambigua[doencaKey] || [];
+
+    const qScores = [];
+    if (get(row,'reumatologista me diz para tomar','se o reumatologista')) qScores.push('CQR');
+    if (get(row,'vestir-se, inclusive amarrar','1.1 vestir')) qScores.push('HAQ');
+    if (get(row,'eu me sinto tenso','1a eu me sinto')) qScores.push('HADS');
+    if (get(row,'quando você toma vários medicamentos diferentes')) qScores.push('SEAMS');
+    if (get(row,'atualmente, a minha saúde depende')) qScores.push('BMQ');
+
+    const dataFormatted = data ? (() => {
+      try { return new Date(data+'T00:00:00').toLocaleDateString('pt-BR'); } catch { return data; }
+    })() : '—';
+
+    const disambigHtml = needsDisambig
+      ? `<select id="dis-${ri}" style="font-size:11px;border:1px solid #cbd5e0;border-radius:4px;padding:3px 6px;width:100%;max-width:220px" onchange="updateImportBtn()">
+           <option value="">— selecione o subtipo —</option>
+           ${disambigOptions.map(d => `<option value="${d}">${d}</option>`).join('')}
+         </select>`
+      : `<span style="color:#718096;font-size:11px">—</span>`;
+
+    const tr = document.createElement('tr');
+    tr.dataset.ri = ri;
+    tr.dataset.needsDisambig = needsDisambig ? '1' : '0';
+    tr.style.cssText = 'border-bottom:1px solid #e8ecf0';
+    tr.innerHTML = `
+      <td style="padding:8px 10px;text-align:center">
+        <input type="checkbox" class="import-row-check" data-ri="${ri}" onchange="updateImportBtn()">
+      </td>
+      <td style="padding:8px 10px;font-weight:600">${nome}</td>
+      <td style="padding:8px 10px;font-family:monospace;font-size:11px">${rghc}</td>
+      <td style="padding:8px 10px;white-space:nowrap">${dataFormatted}</td>
+      <td style="padding:8px 10px">${doencaRaw || '<span style="color:#a0aec0">—</span>'}</td>
+      <td style="padding:8px 10px">${disambigHtml}</td>
+      <td style="padding:8px 10px">
+        ${qScores.length ? qScores.map(q => `<span style="background:#ebf8ff;color:#2b6cb0;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:2px">${q}</span>`).join('') : '<span style="color:#a0aec0;font-size:11px">nenhum</span>'}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('import-btn').style.display = 'none';
+  document.getElementById('import-result').style.display = 'none';
+}
+
+function toggleAllImportChecks(checked) {
+  document.querySelectorAll('.import-row-check').forEach(cb => { cb.checked = checked; });
+  updateImportBtn();
+}
+
+function updateImportBtn() {
+  const selected = document.querySelectorAll('.import-row-check:checked').length;
+  const btn = document.getElementById('import-btn');
+  btn.style.display = selected > 0 ? 'inline-block' : 'none';
+  btn.textContent = `📥 Importar ${selected} paciente(s) para a Lista`;
+}
+
+// ── Cálculo de scores sem DOM ──
+function calcCQRPure(r) {
+  if (Object.keys(r).length < 19) return { score:'', continuo:'', aderente:'' };
+  let disc = CQR_DISC.constant;
+  for (let i = 1; i <= 19; i++) { if (r[i] === undefined) return { score:'', continuo:'', aderente:'' }; disc += CQR_DISC.coefs[i-1] * r[i]; }
+  const soma = Object.values(r).reduce((a,b)=>a+b,0);
+  const continuo = Math.round((soma-19)/57*100);
+  const aderente = disc >= CQR_DISC.cuttingScore;
+  return { score: parseFloat(disc.toFixed(4)), continuo, aderente: aderente ? 'Aderente' : 'Não aderente' };
+}
+function calcHAQPure(r) {
+  const blocos = HAQ_BLOCOS.map(b => { const v = b.itens.map(it=>r[it.n]).filter(x=>x!==undefined); return v.length ? Math.max(...v) : null; });
+  if (blocos.some(v=>v===null)) return '';
+  return Math.round(blocos.reduce((a,b)=>a+b,0)/8*100)/100;
+}
+function calcHADSPure(r) {
+  const aIds = HADS_ITENS.filter(i=>i.tipo==='A').map(i=>i.id);
+  const dIds = HADS_ITENS.filter(i=>i.tipo==='D').map(i=>i.id);
+  const aV = aIds.map(id=>r[id]).filter(v=>v!==undefined);
+  const dV = dIds.map(id=>r[id]).filter(v=>v!==undefined);
+  return { anx: aV.length===7 ? aV.reduce((a,b)=>a+b,0) : '', dep: dV.length===7 ? dV.reduce((a,b)=>a+b,0) : '' };
+}
+function calcSEAMSPure(r) {
+  const v = Object.values(r); return v.length < SEAMS_ITENS.length ? '' : v.reduce((a,b)=>a+b,0);
+}
+function calcBMQPure(r) {
+  const nV = BMQ_NECESSITY.map((_,i)=>r[`bmqn-${i+1}`]).filter(v=>v!==undefined);
+  const cV = BMQ_CONCERNS.map((_,i)=>r[`bmqc-${i+1}`]).filter(v=>v!==undefined);
+  const nec = nV.length===BMQ_NECESSITY.length ? nV.reduce((a,b)=>a+b,0) : '';
+  const con = cV.length===BMQ_CONCERNS.length  ? cV.reduce((a,b)=>a+b,0) : '';
+  const diff = (nec!==''&&con!=='') ? nec-con : '';
+  return { nec, con, diff };
+}
+
+// ── Keywords para busca nas colunas ──
+const CQR_KEYWORDS = [
+  'reumatologista me diz para tomar',
+  'tomo os meus medicamentos antirreumáticos, pois assim',
+  'definitivamente não me atrevo',
+  'terapias alternativas, prefiro',
+  'ficam sempre guardados no mesmo local',
+  'total confiança no meu reumatologista',
+  'motivo mais importante para tomar',
+  'não gosto de tomar medicamentos',
+  'de férias, às vezes, acontece',
+  'de que adiantaria consultar',
+  'não espero milagres',
+  'não aguenta os medicamentos, pode dizer',
+  'regularmente, a inflamação volta',
+  'meu corpo me avisa',
+  'saúde está acima de tudo',
+  'organizador de comprimidos',
+  'o que o médico me diz',
+  'não tomo os meus medicamentos antirreumáticos, tenho mais queixas',
+  'no fim de semana e então não tomo',
+];
+const HAQ_KEYWORDS = [
+  'vestir-se, inclusive amarrar','lavar sua cabeça e seus cabelos',
+  'levantar-se de uma maneira ereta','deitar-se e levantar-se da cama',
+  'cortar um pedaço de carne','levar à boca um copo',
+  'abrir um saco de leite','caminhar em lugares planos',
+  'subir cinco degraus','lavar seu corpo inteiro',
+  'tomar um banho de chuveiro','sentar-se e levantar-se de um vaso',
+  'levantar os braços e pegar um objeto','curvar-se para pegar suas roupas',
+  'segurar-se em pé no ônibus','abrir potes ou vidros de conserva',
+  'abrir e fechar torneiras','fazer compras na redondeza',
+  'entrar e sair de um ônibus','realizar tarefas tais como usar a vassoura',
+];
+const HADS_KW = [
+  ['1A','eu me sinto tenso ou contraído'],
+  ['1D','eu ainda sinto gosto pelas mesmas coisas de antes'],
+  ['2A','eu sinto uma espécie de medo, como se algum'],
+  ['2D','dou risada e me divirto quando vejo coisas engraçadas'],
+  ['3A','estou com a cabeça cheia de preocupações'],
+  ['3D','eu me sinto alegre'],
+  ['4A','consigo ficar sentado à vontade e me sentir relaxado'],
+  ['4D','eu estou lento para pensar'],
+  ['5A','eu tenho uma sensação ruim de medo, como um frio'],
+  ['5D','eu perdi o interesse em cuidar da minha aparência'],
+  ['6A','eu me sinto inquieto, como se não pudesse ficar parado'],
+  ['6D','fico esperando animado'],
+  ['7A','de repente, tenho a sensação de entrar em pânico'],
+  ['7D','consigo sentir prazer quando assisto um bom programa'],
+];
+const SEAMS_KW = [
+  'quando você toma vários medicamentos diferentes',
+  'quando você toma medicamentos mais de uma vez ao dia',
+  'quando você está fora de casa',
+  'quando você tem um dia agitado',
+  'quando os medicamentos causam alguns efeitos colaterais',
+  'quando ninguém lembra você de tomar o medicamento',
+  'quando os horários de tomar os medicamentos não são convenientes',
+  'quando sua rotina fica bagunçada',
+  'quando você não tem certeza de como deve tomar o medicamento',
+  'quando você não tem certeza em que horário deve tomar',
+  'quando você está se sentindo doente (como ter um resfriado',
+  'quando você adquire os medicamentos e alguns deles parecem diferentes',
+  'quando o médico troca seus medicamentos',
+];
+const BMQ_NEC_KW = [
+  'atualmente, a minha saúde depende destes medicamentos',
+  'a minha vida seria impossível sem estes medicamentos',
+  'sem estes medicamentos, eu estaria muito doente',
+  'a minha saúde no futuro dependerá destes medicamentos',
+  'estes medicamentos protegem-me de ficar pior',
+];
+const BMQ_CON_KW = [
+  'preocupa-me ter de tomar estes medicamentos',
+  'às vezes, preocupo-me com os efeitos a longo prazo',
+  'estes medicamentos são um mistério para mim',
+  'estes medicamentos perturbam a minha vida',
+  'às vezes, preocupo-me em ficar demasiado dependente',
+  'estes medicamentos dão-me desagradáveis efeitos secundários',
+];
+
+// ── Constrói objeto de paciente a partir de uma linha da planilha ──
+function buildRecordFromRow(headers, row, doencaOverride) {
+  const hi = {};
+  headers.forEach((h,i) => { hi[h.trim().toLowerCase()] = i; });
+
+  const g = (...keys) => {
+    for (const key of keys) {
+      const k = key.trim().toLowerCase();
+      for (const [hk, idx] of Object.entries(hi)) {
+        const hkn = hk.replace(/\s+/g,' ');
+        if (hkn === k || hkn.includes(k) || k.includes(hkn)) {
+          const v = row[idx];
+          if (v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'nan') return String(v).trim();
+        }
+      }
+    }
+    return null;
+  };
+
+  // Data
+  let dataE = g('data da entrevista','data entrevista') || '';
+  if (dataE.includes('/')) { const [d,m,y] = dataE.split('/'); dataE = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`; }
+
+  // Doença
+  const doencaRaw = g('doença em seguimento','doenca em seguimento','doença','doenca') || '';
+  const doencaKey = doencaRaw.toLowerCase();
+  const doencaFinal = doencaOverride
+    || normImport(doencaKey, IMPORT_NORM.doenca_direta)
+    || matchList(doencaRaw, DOENCAS)
+    || '';
+
+  // Campos simples
+  const sn = v => matchList(v, SIM_NAO) || matchList(v, SIM_NAO_PARC) || '';
+
+  // CQR
+  const cqrR = {};
+  CQR_KEYWORDS.forEach((kw,i) => { const p=importTextToPts(g(kw),'cqr'); if(p!==null) cqrR[i+1]=p; });
+  const cqr = calcCQRPure(cqrR);
+
+  // HAQ
+  const haqR = {};
+  HAQ_KEYWORDS.forEach((kw,i) => { const p=importTextToPts(g(kw),'haq'); if(p!==null) haqR[i+1]=p; });
+  const haqScore = calcHAQPure(haqR);
+
+  // HADS
+  const hadsR = {};
+  HADS_KW.forEach(([id,kw]) => { const p=getHadsPts(id,g(kw)); if(p!==null) hadsR[id]=p; });
+  const hads = calcHADSPure(hadsR);
+
+  // SEAMS
+  const seamsR = {};
+  SEAMS_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'seams'); if(p!==null) seamsR[i+1]=p; });
+  const seamsScore = calcSEAMSPure(seamsR);
+
+  // BMQ
+  const bmqR = {};
+  BMQ_NEC_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'bmq'); if(p!==null) bmqR[`bmqn-${i+1}`]=p; });
+  BMQ_CON_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'bmq'); if(p!==null) bmqR[`bmqc-${i+1}`]=p; });
+  const bmq = calcBMQPure(bmqR);
+
+  // Escala EVA helper
+  const eva = (...keys) => { const v=g(...keys); return (v!==null&&v!==undefined&&!isNaN(parseFloat(v))) ? String(parseFloat(v)) : ''; };
+
+  return {
+    rghc:  g('rghc') || '',
+    nome:  g('nome') || '',
+    nascimento: '',
+    inicio_seg: '',
+    entrevista: dataE,
+    idade: '',
+    sexo: '', etnia: '',
+    doenca: doencaFinal,
+    tempo_diag:'', atividade:'', tempo_remissao:'',
+    vhs:'', pcr:'', cpk:'', das28:'', asdas:'', sledai:'', myoact:'', mmt8:'', bvas:'', itas:'',
+    num_med: '', gcs: '',
+    csdmard:[], bdmard:[], tsdmard:[], tempo_dmard:'',
+    csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
+    comorbidades:[], med_continuas:[], reacao: normAlergia(g('alergias')) || '', reacao_quais:[],
+    intervalo:'', dmard_posologia:{}, locomocao:[],
+    religiao:    normImport(g('religião','religiao')||'', IMPORT_NORM.religiao) || matchList(g('religião','religiao'), RELIGIAO) || '',
+    estado_civil: normImport(g('estado civil')||'', IMPORT_NORM.estado_civil) || matchList(g('estado civil'), ESTADO_CIVIL) || '',
+    filhos:      (() => { const f=g('filhos'); return normImport(String(f||''),IMPORT_NORM.filhos)||(f&&!isNaN(parseInt(f))?String(parseInt(f)):'')||''; })(),
+    escolaridade: normImport(g('escolaridade')||'', IMPORT_NORM.escolaridade) || matchList(g('escolaridade'), ESCOLARIDADE) || '',
+    renda:        normImport(g('renda familiar mensal','renda familiar','renda')||'', IMPORT_NORM.renda) || matchList(g('renda familiar mensal','renda'), RENDA) || '',
+    ocupacao:     matchList(g('ocupação','ocupacao'), OCUPACAO) || '',
+    carga_horaria: normImport(g('carga horário','carga horaria')||'', IMPORT_NORM.carga_horaria) || matchList(g('carga horário','carga horaria'), CARGA_HORARIA) || '',
+    local_residencia: matchList(g('localização da residência','localizacao'), LOCAL_RESIDENCIA) || '',
+    num_pessoas:  (() => { const n=g('número de pessoas','numero de pessoas'); return normImport(String(n||''),IMPORT_NORM.num_pessoas)||matchList(n,NUM_PESSOAS)||''; })(),
+    situacao_moradia: matchList(g('situação de moradia','situacao de moradia'), SITUACAO_MORADIA) || '',
+    tabagismo:    matchList(g('tabagismo'), TABAGISMO) || '',
+    etilismo:     matchList(g('etilismo'),  ETILISMO)  || '',
+    material_educ:       sn(g('recebe material educativo','material educativo')),
+    acompanhamento:      sn(g('recebe acompanhamento','acompanhamento de enfermeiro')),
+    dif_doenca:          sn(g('tem dificuldade para entender informações sobre a doença','dificuldade para entender informações sobre a doença')),
+    conhec_complic:      sn(g('tem conhecimento das complicações','conhecimento das complicações')),
+    dif_trat:            sn(g('tem dificuldade para entender informações sobre o tratamento','dificuldade para entender informações sobre o tratamento')),
+    facilidade_consulta: sn(g('possui facilidade para marcar','facilidade para marcar consultas')),
+    falta_farm:          sn(g('já ocorreu das suas medicações estarem em falta','medicações estarem em falta')),
+    compra_med:          sn(g('se / quando falta medicamento na farmácia, consegue','consegue comprar')),
+    custo_med:           sn(g('você acha que o custo das medicações','custo das medicações é um problema')),
+    deslocamento:        sn(g('o deslocamento até a unidade','deslocamento até a unidade')),
+    comunic:      eva('clareza de comunicação da equipe médica','clareza de comunicação'),
+    confianca:    eva('confiança na equipe médica','confiança na equipe'),
+    participacao: eva('participação nas decisões terapêuticas','participação nas decisões'),
+    satisfacao:   eva('satisfação com tratamento atual','satisfação com tratamento'),
+    suporte:      eva('suporte social para tomar as medicações','suporte social'),
+    eva_dor:      eva('eva dor'),
+    eva_estresse: eva('eva estresse'),
+    eva_ptga:     eva('eva ptga'),
+    bmq_respostas: {...bmqR}, bmq_necessity: bmq.nec, bmq_concerns: bmq.con, bmq_diff: bmq.diff,
+    seams_respostas: {...seamsR}, seams_score: seamsScore,
+    hads_respostas: {...hadsR}, hads_anx: hads.anx, hads_dep: hads.dep,
+    haq_respostas: {...haqR}, haq_score: haqScore,
+    cqr_respostas: {...cqrR}, cqr_score: cqr.score, cqr_score_continuo: cqr.continuo, cqr_aderente: cqr.aderente,
+    ts: new Date().toISOString(),
+    _importado: true
+  };
+}
+
+// ============================================================
+// FEATURE 1 — AUTO-SAVE DE RASCUNHO
+// ============================================================
+const DRAFT_KEY = 'reumatologia_draft_v1';
+
+function saveDraft() {
+  try {
+    const getVal = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+    const evaFields = ['comunic','confianca','participacao','satisfacao','suporte','eva-dor','eva-estresse','eva-ptga'];
+    const draft = {
+      ts: new Date().toISOString(),
+      fields: {
+        nome:       getVal('f-nome'),
+        rghc:       getVal('f-rghc'),
+        nascimento: getVal('f-nascimento'),
+        inicio_seg: getVal('f-inicio-seg'),
+        entrevista: getVal('f-entrevista'),
+        vhs: getVal('f-vhs'), pcr: getVal('f-pcr'), cpk: getVal('f-cpk'),
+        das28: getVal('f-das28'), asdas: getVal('f-asdas'), sledai: getVal('f-sledai'),
+        myoact: getVal('f-myoact'), mmt8: getVal('f-mmt8'),
+        bvas: getVal('f-bvas'), itas: getVal('f-itas'),
+      },
+      evas: Object.fromEntries(evaFields.map(f => [f, getVal('f-'+f)])),
+      formData: JSON.parse(JSON.stringify(formData)),
+      tab: currentFormTab,
+    };
+    if (!draft.fields.nome && !draft.fields.rghc) return;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch(e) { /* silencioso */ }
+}
+
+function checkDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (!draft.fields?.nome && !draft.fields?.rghc) return;
+    const when = new Date(draft.ts).toLocaleString('pt-BR');
+    const nome = draft.fields.nome || draft.fields.rghc || 'sem identificação';
+    document.getElementById('draft-banner-sub').textContent =
+      `Paciente: ${nome} · Salvo em: ${when}`;
+    document.getElementById('draft-banner').style.display = 'flex';
+  } catch(e) { /* silencioso */ }
+}
+
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    document.getElementById('draft-banner').style.display = 'none';
+    document.getElementById('form-msg').innerHTML =
+      '<div class="success">&#9850; Rascunho restaurado com sucesso.</div>';
+
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+    const f = draft.fields || {};
+    setVal('f-nome', f.nome); setVal('f-rghc', f.rghc); setVal('f-nascimento', f.nascimento);
+    setVal('f-inicio-seg', f.inicio_seg); setVal('f-entrevista', f.entrevista);
+    setVal('f-vhs', f.vhs); setVal('f-pcr', f.pcr); setVal('f-cpk', f.cpk);
+    setVal('f-das28', f.das28); setVal('f-asdas', f.asdas); setVal('f-sledai', f.sledai);
+    setVal('f-myoact', f.myoact); setVal('f-mmt8', f.mmt8);
+    setVal('f-bvas', f.bvas); setVal('f-itas', f.itas);
+
+    const evaFields = ['comunic','confianca','participacao','satisfacao','suporte','eva-dor','eva-estresse','eva-ptga'];
+    evaFields.forEach(f2 => { if (draft.evas?.[f2]) setEva(f2, draft.evas[f2]); });
+
+    if (draft.formData) {
+      const fd = draft.formData;
+      // Radio buttons
+      const restoreR = (containerId, field, val) => {
+        if (!val) return;
+        formData[field] = val;
+        const c = document.getElementById(containerId);
+        if (!c) return;
+        c.querySelectorAll('.opt-btn').forEach(b => { if (b.textContent.trim() === val) { c.querySelectorAll('.opt-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); } });
+      };
+      const restoreC = (containerId, field, vals) => {
+        if (!vals?.length) return;
+        formData[field] = vals;
+        const c = document.getElementById(containerId);
+        if (!c) return;
+        c.querySelectorAll('.opt-btn').forEach(b => { if (vals.includes(b.textContent.trim())) b.classList.add('selected'); });
+      };
+      restoreR('q-sexo','sexo',fd.sexo); restoreR('q-etnia','etnia',fd.etnia);
+      restoreR('q-doenca','doenca',fd.doenca); if(fd.doenca) updateMetrics(fd.doenca);
+      restoreR('q-tempo-diag','tempo_diag',fd.tempo_diag);
+      restoreR('q-atividade','atividade',fd.atividade); if(fd.atividade) toggleRemissao(fd.atividade);
+      restoreR('q-tempo-remissao','tempo_remissao',fd.tempo_remissao);
+      restoreR('q-num-med','num_med',fd.num_med); restoreR('q-gcs','gcs',fd.gcs);
+      restoreC('q-csdmard','csdmard',fd.csdmard); if(fd.csdmard?.length) renderPosologia('csdmard','posologia-csdmard');
+      restoreC('q-bdmard','bdmard',fd.bdmard); if(fd.bdmard?.length) renderPosologia('bdmard','posologia-bdmard');
+      restoreC('q-tsdmard','tsdmard',fd.tsdmard); if(fd.tsdmard?.length) renderPosologia('tsdmard','posologia-tsdmard');
+      restoreR('q-tempo-dmard','tempo_dmard',fd.tempo_dmard);
+      restoreC('q-csdmard-prev','csdmard_prev',fd.csdmard_prev);
+      restoreC('q-bdmard-prev','bdmard_prev',fd.bdmard_prev);
+      restoreC('q-tsdmard-prev','tsdmard_prev',fd.tsdmard_prev);
+      restoreC('q-comorbidades','comorbidades',fd.comorbidades);
+      restoreC('q-med-continuas','med_continuas',fd.med_continuas);
+      restoreR('q-reacao','reacao',fd.reacao); if(fd.reacao) toggleReacao(fd.reacao);
+      restoreC('q-reacao-quais','reacao_quais',fd.reacao_quais);
+      restoreR('q-intervalo','intervalo',fd.intervalo);
+      restoreR('q-religiao','religiao',fd.religiao); restoreR('q-estado-civil','estado_civil',fd.estado_civil);
+      restoreR('q-filhos','filhos',fd.filhos); restoreR('q-escolaridade','escolaridade',fd.escolaridade);
+      restoreR('q-renda','renda',fd.renda); restoreR('q-ocupacao','ocupacao',fd.ocupacao);
+      restoreR('q-carga-horaria','carga_horaria',fd.carga_horaria);
+      restoreC('q-locomocao','locomocao',fd.locomocao);
+      restoreR('q-local-residencia','local_residencia',fd.local_residencia);
+      restoreR('q-num-pessoas','num_pessoas',fd.num_pessoas);
+      restoreR('q-situacao-moradia','situacao_moradia',fd.situacao_moradia);
+      restoreR('q-tabagismo','tabagismo',fd.tabagismo); restoreR('q-etilismo','etilismo',fd.etilismo);
+      restoreR('q-material-educ','material_educ',fd.material_educ);
+      restoreR('q-acompanhamento','acompanhamento',fd.acompanhamento);
+      restoreR('q-dif-doenca','dif_doenca',fd.dif_doenca);
+      restoreR('q-conhec-complic','conhec_complic',fd.conhec_complic);
+      restoreR('q-dif-trat','dif_trat',fd.dif_trat);
+      restoreR('q-facilidade-consulta','facilidade_consulta',fd.facilidade_consulta);
+      restoreR('q-falta-farm','falta_farm',fd.falta_farm);
+      restoreR('q-compra-med','compra_med',fd.compra_med);
+      restoreR('q-custo-med','custo_med',fd.custo_med);
+      restoreR('q-deslocamento','deslocamento',fd.deslocamento);
+      if(fd.dmard_posologia) formData.dmard_posologia = fd.dmard_posologia;
+      if(fd.bmq_respostas) restoreBMQ(fd.bmq_respostas);
+      if(fd.seams_respostas) restoreSEAMS(fd.seams_respostas);
+      if(fd.hads_respostas) restoreHADS(fd.hads_respostas);
+      if(fd.haq_respostas) restoreHAQ(fd.haq_respostas);
+      if(fd.cqr_respostas) restoreCQR(fd.cqr_respostas);
+    }
+    calcIdade();
+    if (draft.tab !== undefined) showFormTab(draft.tab);
+    updateTabBadges();
+  } catch(e) {
+    alert('Erro ao restaurar rascunho: ' + e.message);
+  }
+}
+
+function discardDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+  document.getElementById('draft-banner').style.display = 'none';
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
+
+// ============================================================
+// FEATURE 7 — GLOBAL PROGRESS INDICATOR
+// ============================================================
+function updateGlobalProgress() {
+  let totalDone = 0, totalFields = 0;
+  for (let i = 0; i < 5; i++) {
+    const { done, total } = calcTabProgress(i);
+    totalDone += done;
+    totalFields += total;
+  }
+  const pct = totalFields ? Math.round(totalDone / totalFields * 100) : 0;
+  const fillEl = document.getElementById('global-progress-fill');
+  const pctEl  = document.getElementById('global-progress-pct');
+  const detEl  = document.getElementById('global-progress-detail');
+  if (fillEl) fillEl.style.width = pct + '%';
+  if (pctEl)  pctEl.textContent  = pct + '%';
+  if (detEl)  detEl.textContent  = `${totalDone} / ${totalFields} campos`;
+  if (fillEl) {
+    fillEl.style.background = pct >= 80
+      ? 'linear-gradient(90deg,#276749,#48bb78)'
+      : pct >= 40
+        ? 'linear-gradient(90deg,#1a56a0,#4299e1)'
+        : 'linear-gradient(90deg,#c05621,#f6ad55)';
+  }
+}
+
+// ============================================================
+// FEATURE 2 — EXPORTAÇÃO EXCEL (.xlsx) COM MÚLTIPLAS ABAS
+// ============================================================
+function exportXLSX() {
+  const db = getData();
+  if (!db.length) { alert('Nenhum dado para exportar.'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Aba 1: Dados Gerais ──
+  const geralKeys = ['rghc','nome','nascimento','inicio_seg','entrevista','idade','sexo','etnia',
+    'doenca','tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk',
+    'das28','asdas','sledai','myoact','mmt8','bvas','itas',
+    'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
+    'csdmard_prev','bdmard_prev','tsdmard_prev','reacao','reacao_quais','intervalo',
+    'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
+    'locomocao','local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
+    'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
+    'facilidade_consulta','falta_farm','compra_med','custo_med','deslocamento',
+    'comunic','confianca','participacao','satisfacao','suporte',
+    'eva_dor','eva_estresse','eva_ptga'];
+  const geralLabels = {
+    rghc:'RGHC',nome:'Nome',nascimento:'Nascimento',inicio_seg:'Início Seguimento',
+    entrevista:'Entrevista',idade:'Idade',sexo:'Sexo',etnia:'Etnia',
+    doenca:'Doença',tempo_diag:'Tempo Diagnóstico',atividade:'Atividade',tempo_remissao:'Tempo Remissão',
+    vhs:'VHS',pcr:'PCR',cpk:'CPK',das28:'DAS28',asdas:'ASDAS',sledai:'SLEDAI',
+    myoact:'MYOACT',mmt8:'MMT8',bvas:'BVAS',itas:'ITAS',
+    num_med:'Nº Medicações',gcs:'Corticoide',
+    csdmard:'csDMARDs',bdmard:'bDMARDs',tsdmard:'tsDMARDs',tempo_dmard:'Tempo DMARD',
+    csdmard_prev:'csDMARDs Prévios',bdmard_prev:'bDMARDs Prévios',tsdmard_prev:'tsDMARDs Prévios',
+    reacao:'Reação Adversa',reacao_quais:'Reação – Quais',intervalo:'Intervalo Consultas',
+    religiao:'Religião',estado_civil:'Estado Civil',filhos:'Filhos',escolaridade:'Escolaridade',
+    renda:'Renda',ocupacao:'Ocupação',carga_horaria:'Carga Horária',
+    locomocao:'Locomoção',local_residencia:'Local Residência',num_pessoas:'Pessoas na Residência',
+    situacao_moradia:'Moradia',tabagismo:'Tabagismo',etilismo:'Etilismo',
+    material_educ:'Material Educativo',acompanhamento:'Acompanhamento',
+    dif_doenca:'Dif. Entender Doença',conhec_complic:'Conhece Complicações',
+    dif_trat:'Dif. Entender Trat.',facilidade_consulta:'Facilidade Consultas',
+    falta_farm:'Falta Farmácia',compra_med:'Compra Med.',custo_med:'Custo Problema',
+    deslocamento:'Deslocamento Problema',
+    comunic:'EVA Comunicação',confianca:'EVA Confiança',participacao:'EVA Participação',
+    satisfacao:'EVA Satisfação',suporte:'EVA Suporte',
+    eva_dor:'EVA Dor',eva_estresse:'EVA Estresse',eva_ptga:'EVA PtGA',
+  };
+  const geralHeader = geralKeys.map(k => geralLabels[k] || k);
+  const geralRows = db.map(p => geralKeys.map(k => {
+    const v = p[k];
+    if (Array.isArray(v)) return v.join(' | ');
+    return v ?? '';
+  }));
+  const wsGeral = XLSX.utils.aoa_to_sheet([geralHeader, ...geralRows]);
+  wsGeral['!freeze'] = { xSplit:0, ySplit:1 };
+  XLSX.utils.book_append_sheet(wb, wsGeral, 'Dados Gerais');
+
+  // ── Aba 2: Scores Gerais ──
+  const scoresHeader = ['RGHC','Nome','Doença','Atividade',
+    'HAQ-DI','CQR Score','CQR Classificação','CQR Contínuo (0–100)',
+    'HADS Ansiedade','HADS Depressão','SEAMS','BMQ Necessity','BMQ Concerns','BMQ Diferença'];
+  const scoresRows = db.map(p => [
+    p.rghc, p.nome, p.doenca||'', p.atividade||'',
+    p.haq_score??'', p.cqr_score??'', p.cqr_aderente||'', p.cqr_score_continuo??'',
+    p.hads_anx??'', p.hads_dep??'', p.seams_score??'',
+    p.bmq_necessity??'', p.bmq_concerns??'', p.bmq_diff??'',
+  ]);
+  const wsScores = XLSX.utils.aoa_to_sheet([scoresHeader, ...scoresRows]);
+  XLSX.utils.book_append_sheet(wb, wsScores, 'Scores Gerais');
+
+  // ── Aba 3: HAQ-DI (itens) ──
+  const haqItemHeaders = ['RGHC','Nome', ...Array.from({length:20},(_,i)=>`HAQ-${i+1}`), 'HAQ Score'];
+  const haqRows = db.map(p => [p.rghc, p.nome,
+    ...Array.from({length:20},(_,i) => (p.haq_respostas||{})[i+1] ?? ''),
+    p.haq_score ?? '']);
+  const wsHAQ = XLSX.utils.aoa_to_sheet([haqItemHeaders, ...haqRows]);
+  XLSX.utils.book_append_sheet(wb, wsHAQ, 'HAQ-DI');
+
+  // ── Aba 4: CQR-19 (itens) ──
+  const cqrItemHeaders = ['RGHC','Nome', ...Array.from({length:19},(_,i)=>`CQR-${i+1}`), 'Score Discriminante','Contínuo (0–100)','Classificação'];
+  const cqrRows = db.map(p => [p.rghc, p.nome,
+    ...Array.from({length:19},(_,i) => (p.cqr_respostas||{})[i+1] ?? ''),
+    p.cqr_score??'', p.cqr_score_continuo??'', p.cqr_aderente||'']);
+  const wsCQR = XLSX.utils.aoa_to_sheet([cqrItemHeaders, ...cqrRows]);
+  XLSX.utils.book_append_sheet(wb, wsCQR, 'CQR-19');
+
+  // ── Aba 5: HADS (itens) ──
+  const hadsIds = HADS_ITENS.map(i=>i.id);
+  const hadsItemHeaders = ['RGHC','Nome', ...hadsIds.map(id=>`HADS-${id}`), 'Ansiedade Total','Depressão Total'];
+  const hadsRows = db.map(p => [p.rghc, p.nome,
+    ...hadsIds.map(id => (p.hads_respostas||{})[id] ?? ''),
+    p.hads_anx??'', p.hads_dep??'']);
+  const wsHADS = XLSX.utils.aoa_to_sheet([hadsItemHeaders, ...hadsRows]);
+  XLSX.utils.book_append_sheet(wb, wsHADS, 'HADS');
+
+  // ── Aba 6: BMQ (itens) ──
+  const bmqNecHeaders = BMQ_NECESSITY.map((_,i)=>`BMQ-N${i+1}`);
+  const bmqConHeaders = BMQ_CONCERNS.map((_,i)=>`BMQ-C${i+1}`);
+  const bmqItemHeaders = ['RGHC','Nome', ...bmqNecHeaders, 'Necessity Total', ...bmqConHeaders, 'Concerns Total','Diferença N-C'];
+  const bmqRows = db.map(p => [p.rghc, p.nome,
+    ...BMQ_NECESSITY.map((_,i) => (p.bmq_respostas||{})[`bmqn-${i+1}`] ?? ''),
+    p.bmq_necessity??'',
+    ...BMQ_CONCERNS.map((_,i) => (p.bmq_respostas||{})[`bmqc-${i+1}`] ?? ''),
+    p.bmq_concerns??'', p.bmq_diff??'']);
+  const wsBMQ = XLSX.utils.aoa_to_sheet([bmqItemHeaders, ...bmqRows]);
+  XLSX.utils.book_append_sheet(wb, wsBMQ, 'BMQ');
+
+  // ── Aba 7: SEAMS (itens) ──
+  const seamsItemHeaders = ['RGHC','Nome', ...Array.from({length:13},(_,i)=>`SEAMS-${i+1}`), 'SEAMS Total'];
+  const seamsRows = db.map(p => [p.rghc, p.nome,
+    ...Array.from({length:13},(_,i) => (p.seams_respostas||{})[i+1] ?? ''),
+    p.seams_score??'']);
+  const wsSEAMS = XLSX.utils.aoa_to_sheet([seamsItemHeaders, ...seamsRows]);
+  XLSX.utils.book_append_sheet(wb, wsSEAMS, 'SEAMS');
+
+  // ── Aba 8: Posologia DMARDs ──
+  const posRows = [['RGHC','Nome','Medicação','Via','Dose','Frequência']];
+  db.forEach(p => {
+    if (p.dmard_posologia && Object.keys(p.dmard_posologia).length) {
+      Object.entries(p.dmard_posologia).forEach(([drug, d]) => {
+        posRows.push([p.rghc, p.nome, drug, d.via||'', d.dose||'', d.freq||'']);
+      });
+    }
+  });
+  if (posRows.length > 1) {
+    const wsPoso = XLSX.utils.aoa_to_sheet(posRows);
+    XLSX.utils.book_append_sheet(wb, wsPoso, 'Posologia DMARDs');
+  }
+
+  const fname = 'dados_reumatologia_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, fname);
+}
+
+// ============================================================
+// FEATURE 3 — MODAL RESUMO DO PACIENTE
+// ============================================================
+function openResumoModal(rghc) {
+  const p = getData().find(x => x.rghc === rghc);
+  if (!p) return;
+
+  document.getElementById('resumo-title').textContent = `${p.nome} · RGHC ${p.rghc}`;
+  document.getElementById('resumo-edit-btn').onclick = () => { closeResumoModal(); editPatient(rghc); };
+
+  const classify_hads = s => s === '' || s === undefined ? '—' : parseFloat(s) <= 7 ? 'Normal' : parseFloat(s) <= 10 ? 'Limítrofe' : 'Caso clínico';
+  const haqInterp = s => {
+    const v = parseFloat(s);
+    if (isNaN(v)) return '—';
+    if (v <= 0.25) return 'Sem incapacidade';
+    if (v <= 1.00) return 'Incapacidade leve';
+    if (v <= 2.00) return 'Incapacidade moderada';
+    return 'Incapacidade grave';
+  };
+  const seamsInterp = s => {
+    const v = parseFloat(s);
+    if (isNaN(v)) return '—';
+    if (v <= 19) return 'Baixa autoeficácia';
+    if (v <= 32) return 'Moderada autoeficácia';
+    return 'Alta autoeficácia';
+  };
+  const bmqInterp = d => {
+    if (d === '' || d === undefined) return '—';
+    const v = parseFloat(d);
+    return v > 0 ? 'Favorável à adesão' : v < 0 ? 'Risco de não adesão' : 'Equilibrado';
+  };
+
+  const scoreCard = (val, label, sub, bg, color) =>
+    `<div class="resumo-score-card" style="background:${bg};border:2px solid ${color}">
+       <div class="rv" style="color:${color}">${val !== '' && val !== undefined && val !== null ? val : '—'}</div>
+       <div class="rl" style="color:${color}">${label}</div>
+       <div class="rs">${sub}</div>
+     </div>`;
+
+  const cqrColor = p.cqr_aderente === 'Aderente' ? '#276749' : p.cqr_aderente === 'Não aderente' ? '#c53030' : '#718096';
+  const cqrBg   = p.cqr_aderente === 'Aderente' ? '#f0fff4' : p.cqr_aderente === 'Não aderente' ? '#fff5f5' : '#f7faff';
+
+  const chip = (txt, bg, color) => `<span class="resumo-chip" style="background:${bg};color:${color}">${txt}</span>`;
+  const arr2chips = (arr, bg='#ebf8ff', color='#2b6cb0') => (arr||[]).length ? (arr||[]).map(v=>chip(v,bg,color)).join('') : '<span style="color:#a0aec0;font-size:11px">Nenhum</span>';
+
+  document.getElementById('resumo-body').innerHTML = `
+    <!-- Identificação -->
+    <div class="resumo-section-title">Identificação</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;margin-bottom:12px">
+      <div><strong>Nascimento:</strong> ${p.nascimento ? new Date(p.nascimento+'T00:00:00').toLocaleDateString('pt-BR') : '—'}</div>
+      <div><strong>Idade:</strong> ${p.idade || '—'} anos</div>
+      <div><strong>Sexo:</strong> ${p.sexo || '—'}</div>
+      <div><strong>Etnia:</strong> ${p.etnia || '—'}</div>
+      <div><strong>Entrevista:</strong> ${p.entrevista ? new Date(p.entrevista+'T00:00:00').toLocaleDateString('pt-BR') : '—'}</div>
+      <div><strong>Início seguimento:</strong> ${p.inicio_seg ? new Date(p.inicio_seg+'T00:00:00').toLocaleDateString('pt-BR') : '—'}</div>
+    </div>
+
+    <!-- Clínico -->
+    <div class="resumo-section-title">Dados Clínicos</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:8px">
+      <div><strong>Doença:</strong> ${p.doenca || '—'}</div>
+      <div><strong>Tempo diagnóstico:</strong> ${p.tempo_diag || '—'}</div>
+      <div><strong>Atividade:</strong> ${p.atividade || '—'}${p.tempo_remissao?' · '+p.tempo_remissao:''}</div>
+      <div><strong>VHS/PCR/CPK:</strong> ${p.vhs||'—'} / ${p.pcr||'—'} / ${p.cpk||'—'}</div>
+      ${p.das28?`<div><strong>DAS28:</strong> ${p.das28}</div>`:''}
+      ${p.asdas?`<div><strong>ASDAS:</strong> ${p.asdas}</div>`:''}
+      ${p.sledai?`<div><strong>SLEDAI:</strong> ${p.sledai}</div>`:''}
+      ${p.myoact?`<div><strong>MYOACT:</strong> ${p.myoact}</div>`:''}
+      ${p.bvas?`<div><strong>BVAS:</strong> ${p.bvas}</div>`:''}
+      ${p.itas?`<div><strong>ITAS:</strong> ${p.itas}</div>`:''}
+    </div>
+    <div style="font-size:12px;margin-bottom:4px"><strong>csDMARDs:</strong> ${arr2chips(p.csdmard)}</div>
+    <div style="font-size:12px;margin-bottom:4px"><strong>bDMARDs:</strong> ${arr2chips(p.bdmard,'#e9d8fd','#553c9a')}</div>
+    <div style="font-size:12px;margin-bottom:4px"><strong>tsDMARDs:</strong> ${arr2chips(p.tsdmard,'#fefcbf','#744210')}</div>
+    <div style="font-size:12px;margin-bottom:8px"><strong>Comorbidades:</strong> ${arr2chips(p.comorbidades,'#fed7d7','#9b2c2c')}</div>
+
+    <!-- Scores dos Questionários -->
+    <div class="resumo-section-title">Scores dos Questionários</div>
+    <div class="resumo-score-grid">
+      ${scoreCard(p.cqr_aderente||'—', 'CQR-19 Adesão', p.cqr_score!==undefined&&p.cqr_score!==''?`Score: ${p.cqr_score} · Contínuo: ${p.cqr_score_continuo??'—'}`:' ', cqrBg, cqrColor)}
+      ${scoreCard(p.haq_score??'—', 'HAQ-DI (0–3)', haqInterp(p.haq_score), '#f7faff', '#2b6cb0')}
+      ${scoreCard(p.seams_score??'—', 'SEAMS (13–39)', seamsInterp(p.seams_score), '#f0fff4', '#276749')}
+      ${scoreCard(p.hads_anx??'—', 'HADS Ansiedade', classify_hads(p.hads_anx), '#faf5ff', '#553c9a')}
+      ${scoreCard(p.hads_dep??'—', 'HADS Depressão', classify_hads(p.hads_dep), '#fffaf0', '#c05621')}
+      ${scoreCard(p.bmq_necessity??'—', 'BMQ Necessity (5–25)', p.bmq_necessity!==''&&p.bmq_necessity!==undefined?`Concerns: ${p.bmq_concerns??'—'}`:' ', '#ebf8ff', '#2b6cb0')}
+      ${scoreCard(p.bmq_diff!==undefined&&p.bmq_diff!==''?(p.bmq_diff>0?'+':'')+p.bmq_diff:'—', 'BMQ Diferença N−C', bmqInterp(p.bmq_diff), '#f7faff', '#4a5568')}
+    </div>
+
+    <!-- Escalas EVA -->
+    <div class="resumo-section-title">Escalas Subjetivas (0–100)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;font-size:12px">
+      ${[['Comunicação médica',p.comunic],['Confiança equipe',p.confianca],['Participação',p.participacao],['Satisfação',p.satisfacao],['Suporte social',p.suporte],['EVA Dor',p.eva_dor],['EVA Estresse',p.eva_estresse],['EVA PtGA',p.eva_ptga]].map(([l,v])=>`<div><strong>${l}:</strong> ${v||'—'}</div>`).join('')}
+    </div>
+  `;
+
+  document.getElementById('modal-resumo').style.display = 'flex';
+}
+
+function closeResumoModal() {
+  document.getElementById('modal-resumo').style.display = 'none';
+}
+
+function importSelectedToList() {
+  const checks = [...document.querySelectorAll('.import-row-check:checked')];
+  if (!checks.length) return;
+
+  const fileInput = document.getElementById('import-file-input');
+  if (!fileInput.files[0]) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    let rawRows;
+    const fname = fileInput.files[0].name.toLowerCase();
+    if (fname.endsWith('.csv')) {
+      rawRows = e.target.result.split('\n').map(l => l.split(',').map(c => c.replace(/^"|"$/g,'')));
+    } else {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true, dateNF:'yyyy-mm-dd'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'yyyy-mm-dd'});
+    }
+    const headers = rawRows[0].map(h => String(h||'').trim());
+    const dataRows = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+
+    const db = getData();
+    let imported = 0, skipped = 0, updated = 0;
+
+    checks.forEach(cb => {
+      const ri = parseInt(cb.dataset.ri);
+      const row = dataRows[ri];
+      if (!row) return;
+      const disEl = document.getElementById(`dis-${ri}`);
+      const doencaOverride = disEl ? (disEl.value || null) : null;
+      const record = buildRecordFromRow(headers, row, doencaOverride);
+      if (!record.rghc && !record.nome) { skipped++; return; }
+
+      const idx = db.findIndex(p => record.rghc && p.rghc === record.rghc);
+      if (idx !== -1) {
+        // Atualiza apenas campos vazios no registro existente
+        Object.keys(record).forEach(k => {
+          const v = record[k];
+          const isEmpty = v === '' || v === null || v === undefined || (Array.isArray(v) && !v.length) || (typeof v === 'object' && !Array.isArray(v) && !Object.keys(v||{}).length);
+          if (!isEmpty && (db[idx][k] === '' || db[idx][k] === null || db[idx][k] === undefined)) {
+            db[idx][k] = v;
+          }
+        });
+        updated++;
+      } else {
+        db.push(record);
+        imported++;
+      }
+    });
+
+    setData(db);
+    renderList();
+
+    const resEl = document.getElementById('import-result');
+    resEl.style.display = 'inline';
+    resEl.innerHTML = `<span style="color:#276749;font-weight:600">✓ ${imported} importado(s)</span>`
+      + (updated ? ` <span style="color:#2b6cb0">· ${updated} atualizado(s)</span>` : '')
+      + (skipped ? ` <span style="color:#c05621">· ${skipped} ignorado(s) (sem RGHC/nome)</span>` : '');
+
+    document.getElementById('import-btn').textContent = 'Importar Selecionados para a Lista';
+    document.getElementById('import-btn').disabled = false;
+
+    // Fecha o modal após 1.5s e vai para a lista
+    setTimeout(() => {
+      closeImportModal();
+      showPage('list');
+    }, 1500);
+  };
+
+  document.getElementById('import-btn').textContent = 'Importando...';
+  document.getElementById('import-btn').disabled = true;
+
+  if (fileInput.files[0].name.toLowerCase().endsWith('.csv')) reader.readAsText(fileInput.files[0],'UTF-8');
+  else reader.readAsArrayBuffer(fileInput.files[0]);
+}
 </script>
+<!-- ===== MODAL RESUMO PACIENTE (Feature 3) ===== -->
+<div class="modal-overlay" id="modal-resumo" style="display:none" onclick="if(event.target===this)closeResumoModal()">
+  <div class="modal-box" style="max-width:720px">
+    <div class="modal-header">
+      <h2 id="resumo-title">Resumo do Paciente</h2>
+      <button class="modal-close" onclick="closeResumoModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="resumo-body"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeResumoModal()">Fechar</button>
+      <button class="btn-primary" id="resumo-edit-btn" onclick="closeResumoModal()">&#9998; Editar Paciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL IMPORTAR PLANILHA ===== -->
+<div class="modal-overlay" id="import-modal" style="display:none" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal-box" style="max-width:900px">
+    <div class="modal-header">
+      <h2>&#128229; Importar Pacientes da Planilha</h2>
+      <button class="modal-close" onclick="closeImportModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#faf5ff;border:1px solid #9f7aea;border-radius:8px;padding:10px 14px;font-size:11px;color:#553c9a;margin-bottom:14px">
+        <strong>Formatos aceitos:</strong> Excel (.xlsx, .xls) e CSV (.csv). A planilha deve seguir o formato padrão desta pesquisa (cabeçalho na linha 1, um paciente por linha). Após carregar, selecione o paciente para preencher o formulário.
+      </div>
+      <div id="import-eva-warn" style="display:none;background:#fffbeb;border:1px solid #f6ad55;border-radius:8px;padding:10px 14px;font-size:11px;color:#744210;margin-bottom:14px">
+        ⚠️ <strong>Atenção — EVA fora de escala:</strong> as colunas de EVA (Clareza, Confiança, Participação, Suporte Social, Satisfação) desta planilha contêm valores fora da escala esperada de 0–100. Os valores serão importados como estão — verifique e corrija manualmente no formulário se necessário.
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px">
+          &#128196; Selecionar arquivo
+          <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(this)">
+        </label>
+        <span id="import-filename" style="font-size:12px;color:#718096;margin-left:10px"></span>
+      </div>
+      <div id="import-preview" style="display:none">
+        <div style="font-size:12px;font-weight:600;color:#2d3748;margin-bottom:8px" id="import-count"></div>
+        <div style="overflow-x:auto">
+          <table id="import-table" style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+            <thead>
+              <tr>
+                <th style="background:#805ad5;color:#fff;padding:8px 10px"><input type="checkbox" id="import-check-all" title="Selecionar todos" onchange="toggleAllImportChecks(this.checked)"></th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Nome</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">RGHC</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Data Entrevista</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Doença</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Detalhe Doença</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Questionários</th>
+              </tr>
+            </thead>
+            <tbody id="import-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:10px">
+      <button class="btn-secondary" onclick="closeImportModal()">Fechar</button>
+      <div id="import-result" style="display:none;font-size:12px;align-self:center"></div>
+      <button class="btn-primary" id="import-btn" onclick="importSelectedToList()" style="background:#805ad5;display:none">
+        &#128229; Importar Selecionados para a Lista
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL EVOLUÇÃO ===== -->
 <div class="modal-overlay" id="evo-modal" style="display:none" onclick="if(event.target===this)closeEvolucaoModal()">
   <div class="modal-box">
@@ -3162,16 +4424,23 @@ initForm();
     </div>
     <div class="modal-body">
       <div style="background:#fffaf0;border:1px solid #f6ad55;border-radius:8px;padding:10px 14px;font-size:11px;color:#744210;margin-bottom:14px">
-        <strong>Como funciona:</strong> cole o texto da evolução mais recente do prontuário. O app usa a API do Claude para identificar dados clínicos (doença, medicações, exames laboratoriais, atividade de doença) e preenche o formulário automaticamente. Os dados de identificação e questionários precisarão ser preenchidos manualmente.
+        <strong>Como funciona:</strong> informe a data da consulta e cole o texto completo da evolução do prontuário (pode incluir consultas anteriores, cabeçalho e exames de várias datas). O Claude identificará a consulta-alvo e extrairá dados clínicos apenas dessa data — medicações atuais, prévias, comorbidades e exames. Questionários precisarão ser preenchidos manualmente.
       </div>
-      <div style="margin-bottom:12px">
-        <label for="evo-apikey">Chave de API Anthropic <span style="font-weight:400;color:#718096">(salva localmente no navegador)</span></label>
-        <input type="password" id="evo-apikey" class="modal-apikey" placeholder="sk-ant-api03-...">
-        <div style="font-size:11px;color:#a0aec0;margin-top:4px">Obtenha sua chave em <strong>console.anthropic.com</strong> → API Keys</div>
+      <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <label for="evo-apikey">Chave de API Anthropic <span style="font-weight:400;color:#718096">(salva localmente)</span></label>
+          <input type="password" id="evo-apikey" class="modal-apikey" placeholder="sk-ant-api03-...">
+          <div style="font-size:11px;color:#a0aec0;margin-top:4px">Obtenha em <strong>console.anthropic.com</strong> → API Keys</div>
+        </div>
+        <div style="min-width:180px">
+          <label for="evo-data-consulta">Data da Consulta a Extrair</label>
+          <input type="date" id="evo-data-consulta" style="border:1px solid #cbd5e0;border-radius:6px;padding:7px 10px;font-size:13px;width:100%;background:#fafafa">
+          <div style="font-size:11px;color:#a0aec0;margin-top:4px">Pré-preenchida pela data da entrevista</div>
+        </div>
       </div>
       <div>
-        <label for="evo-textarea">Texto da Evolução</label>
-        <textarea id="evo-textarea" placeholder="Cole aqui o texto completo da evolução do prontuário..."></textarea>
+        <label for="evo-textarea">Texto Completo da Evolução do Prontuário</label>
+        <textarea id="evo-textarea" placeholder="Cole aqui o texto completo da evolução (pode incluir múltiplas consultas, cabeçalho, exames históricos etc.)..."></textarea>
       </div>
       <div class="evo-loading" id="evo-loading">
         <span class="evo-spinner"></span>Analisando evolução com Claude...
