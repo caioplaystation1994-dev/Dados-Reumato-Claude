@@ -376,10 +376,11 @@ tr:hover td{background:#f7faff}
       <span style="font-size:11px;color:#718096">Marque se o paciente não usa nenhum DMARD nem corticosteroide no momento.</span>
     </div>
 
-    <div id="bloco-imuno">
     <div class="q-label">14. Número de Medicações em Uso</div>
+    <div style="font-size:11px;color:#718096;margin-bottom:6px">Incluir todos os medicamentos de uso regular, independente de imunossupressores.</div>
     <div class="options-grid" id="q-num-med"></div>
 
+    <div id="bloco-imuno">
     <div style="margin-top:16px">
       <div class="q-label">15. Uso de Corticosteroides (dose equivalente de prednisona)</div>
       <div class="options-grid" id="q-gcs"></div>
@@ -1467,7 +1468,6 @@ function toggleSemImunossupressao() {
     });
     formData.tempo_dmard = '';
     document.querySelectorAll('#q-tempo-dmard .opt-btn').forEach(b => b.classList.remove('selected'));
-    formData.num_med = '0';
 
     bloco.style.opacity = '0.4';
     bloco.style.pointerEvents = 'none';
