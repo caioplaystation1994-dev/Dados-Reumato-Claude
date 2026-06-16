@@ -2356,9 +2356,10 @@ function editPatient(idx) {
   const db = getData();
   const p = db[idx];
   if (!p) return;
-  editingRghc = p.rghc ?? ('__idx__' + idx);
+  const _rghcToRestore = p.rghc ?? ('__idx__' + idx);
   showPage('form');
-  clearForm();
+  clearForm(); // reseta editingRghc para null
+  editingRghc = _rghcToRestore; // define APÓS o clearForm
   setTimeout(() => {
     document.getElementById('f-nome').value = p.nome;
     document.getElementById('f-rghc').value = p.rghc;
