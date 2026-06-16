@@ -2103,12 +2103,19 @@ function savePatient() {
   };
 
   const db = getData();
-  const idx = db.findIndex(p => p.rghc === rghc);
-  if (idx !== -1) {
-    if (!confirm(`Paciente com RGHC ${rghc} já existe. Deseja sobrescrever os dados?`)) return;
-    db[idx] = record;
+  // Se editando, localiza pelo editingRghc original (não pelo RGHC do form, que pode ter mudado)
+  const editIdx = editingRghc !== null ? db.findIndex(p => (p.rghc ?? '') === editingRghc || (editingRghc.startsWith('__idx__') && db.indexOf(p) === parseInt(editingRghc.replace('__idx__','')))) : -1;
+  if (editIdx !== -1) {
+    db[editIdx] = record;
   } else {
-    db.push(record);
+    // Novo paciente: verifica duplicata de RGHC
+    const dupIdx = rghc ? db.findIndex(p => p.rghc === rghc) : -1;
+    if (dupIdx !== -1) {
+      if (!confirm(`Paciente com RGHC ${rghc} já existe. Deseja sobrescrever os dados?`)) return;
+      db[dupIdx] = record;
+    } else {
+      db.push(record);
+    }
   }
   setData(db);
   msg.innerHTML = '<div class="success">Paciente salvo com sucesso! Total: ' + db.length + ' paciente(s).</div>';
@@ -2122,6 +2129,7 @@ function savePatient() {
 }
 
 function clearForm() {
+  editingRghc = null;
   document.getElementById('f-nome').value = '';
   document.getElementById('f-rghc').value = '';
   document.getElementById('f-nascimento').value = '';
@@ -2264,7 +2272,7 @@ function renderList() {
           <td>${adesaoChip(p)}</td>
           <td style="white-space:nowrap">${missingBadges(p)}</td>
           <td>
-            <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
+            <button class="btn-secondary btn-sm" onclick="editPatient(${i})">Editar</button>
             <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
           </td>
         </tr>`).join('')}
@@ -2344,9 +2352,11 @@ function deletePatient(rghc) {
   renderList();
 }
 
-function editPatient(rghc) {
-  const p = getData().find(x => x.rghc === rghc);
+function editPatient(idx) {
+  const db = getData();
+  const p = db[idx];
   if (!p) return;
+  editingRghc = p.rghc ?? ('__idx__' + idx);
   showPage('form');
   clearForm();
   setTimeout(() => {
