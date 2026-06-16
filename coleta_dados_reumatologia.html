@@ -203,7 +203,34 @@ tr:hover td{background:#f7faff}
 .btn-green{background:#0f9d58;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
 .btn-green:hover{background:#0b7d45}
 .btn-green-sm{background:#0f9d58;color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+
+/* === BADGE ADESÃO CQR-19 (Melhoria 19) === */
+.adesao-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap;cursor:default}
+.adesao-badge.aderente{background:#c6f6d5;color:#276749}
+.adesao-badge.nao-aderente{background:#fed7d7;color:#9b2c2c}
+.adesao-badge.sem-cqr{background:#e2e8f0;color:#718096;font-weight:400;font-style:italic}
+.adesao-badge .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.adesao-badge.aderente .dot{background:#276749}
+.adesao-badge.nao-aderente .dot{background:#9b2c2c}
+.adesao-badge.sem-cqr .dot{background:#a0aec0}
+
+/* === TECLADO: foco nos opt-btn (Melhoria 44) === */
+.opt-btn:focus{outline:2px solid #1a56a0;outline-offset:2px;box-shadow:0 0 0 3px rgba(26,86,160,.22)}
+.opt-btn:focus:not(.selected){border-color:#1a56a0}
+
+/* === FILTRO DE MEDICAÇÃO (Melhoria 9) === */
+.med-filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border-radius:10px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:10px}
+.med-filter-bar label{font-size:11px;font-weight:700;color:#4a5568;white-space:nowrap}
+.med-filter-bar input{border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;background:#fafafa;min-width:220px}
+.med-filter-bar input:focus{outline:none;border-color:#1a56a0}
+
+/* Missing data badges */
+.missing-badge{display:inline-flex;align-items:center;gap:3px;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:3px}
+.missing-badge.clinical{background:#fefcbf;color:#744210;border:1px solid #f6e05e}
+.missing-badge.quest{background:#e9d8fd;color:#553c9a;border:1px solid #b794f4}
+.missing-badge.ok{background:#c6f6d5;color:#276749;border:1px solid #68d391}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -225,9 +252,12 @@ tr:hover td{background:#f7faff}
   <div class="form-steps-nav" style="align-items:center">
     <button class="form-step-btn active" id="ftab-btn-0" onclick="showFormTab(0)"><span class="step-num">1</span>Identificação<span class="step-badge empty" id="ftab-badge-0">0/6</span></button>
     <button class="form-step-btn" id="ftab-btn-1" onclick="showFormTab(1)"><span class="step-num">2</span>Dados Clínicos<span class="step-badge empty" id="ftab-badge-1">0/7</span></button>
-    <button class="form-step-btn" id="ftab-btn-2" onclick="showFormTab(2)"><span class="step-num">3</span>Sociodemográfico<span class="step-badge empty" id="ftab-badge-2">0/13</span></button>
+    <button class="form-step-btn" id="ftab-btn-2" onclick="showFormTab(2)"><span class="step-num">3</span>Sociodemográfico<span class="step-badge empty" id="ftab-badge-2">0/12</span></button>
     <button class="form-step-btn" id="ftab-btn-3" onclick="showFormTab(3)"><span class="step-num">4</span>Acesso e Percepção<span class="step-badge empty" id="ftab-badge-3">0/18</span></button>
     <button class="form-step-btn" id="ftab-btn-4" onclick="showFormTab(4)"><span class="step-num">5</span>Questionários<span class="step-badge empty" id="ftab-badge-4">0/7</span></button>
+    <button id="btn-missing-mode" class="form-step-btn" onclick="toggleMissingMode()" title="Mostrar apenas seções com campos não preenchidos" style="border-color:#d69e2e;color:#744210;background:#fffff0;white-space:nowrap">
+  🔍 Só incompletos
+</button>
     <button class="evo-trigger-btn" onclick="openEvolucaoModal()" title="Colar evolução do prontuário e preencher automaticamente">&#128203; Importar Evolução</button>
   </div>
 
@@ -290,7 +320,7 @@ tr:hover td{background:#f7faff}
       <div class="options-grid" id="q-tempo-diag"></div>
     </div>
 
-    <div style="margin-top:16px">
+    <div style="margin-top:16px" id="sec-atividade">
       <div class="q-label">11. Atividade de Doença</div>
       <div class="options-grid" id="q-atividade"></div>
       <div class="sub-q hidden" id="sub-remissao">
@@ -320,12 +350,15 @@ tr:hover td{background:#f7faff}
     <div class="metric-block" id="m-asdas">
       <div class="numeric-inline"><label>ASDAS (0.6–6):</label><input type="number" id="f-asdas" step="0.01" min="0.6" max="6" placeholder="0.6–6"></div>
     </div>
+    <div class="metric-block" id="m-dapsa">
+      <div class="numeric-inline"><label>DAPSA (0–164):</label><input type="number" id="f-dapsa" step="0.1" min="0" max="164" placeholder="0–164"></div>
+    </div>
     <div class="metric-block" id="m-sledai">
       <div class="numeric-inline"><label>SLEDAI (0–105):</label><input type="number" id="f-sledai" min="0" max="105" placeholder="0–105"></div>
     </div>
     <div class="metric-block" id="m-myoact">
       <div style="display:flex;flex-wrap:wrap;gap:16px">
-        <div class="numeric-inline"><label>MYOACT (0–70):</label><input type="number" id="f-myoact" min="0" max="70" placeholder="0–70"></div>
+        <div class="numeric-inline"><label>MYOACT (0–60):</label><input type="number" id="f-myoact" min="0" max="60" placeholder="0–60"></div>
         <div class="numeric-inline"><label>MMT8 (0–80):</label><input type="number" id="f-mmt8" min="0" max="80" placeholder="0–80"></div>
       </div>
     </div>
@@ -340,9 +373,23 @@ tr:hover td{background:#f7faff}
   <!-- S5: Medicações atuais -->
   <div class="section-card">
     <div class="section-title">Medicações em Uso</div>
+
+    <!-- Sem imunossupressão -->
+    <div style="margin-bottom:16px;padding:10px 14px;background:#fff5f5;border:2px solid #fc8181;border-radius:8px;display:flex;align-items:center;gap:12px">
+      <div id="btn-sem-imuno" class="opt-btn" tabindex="0"
+           style="border-color:#e53e3e;color:#e53e3e;font-weight:700;white-space:nowrap"
+           onclick="toggleSemImunossupressao()"
+           onkeydown="optKeydown(event,this)">
+        ⛔ Sem imunossupressão
+      </div>
+      <span style="font-size:11px;color:#718096">Marque se o paciente não usa nenhum DMARD nem corticosteroide no momento.</span>
+    </div>
+
     <div class="q-label">14. Número de Medicações em Uso</div>
+    <div style="font-size:11px;color:#718096;margin-bottom:6px">Incluir todos os medicamentos de uso regular, independente de imunossupressores.</div>
     <div class="options-grid" id="q-num-med"></div>
 
+    <div id="bloco-imuno">
     <div style="margin-top:16px">
       <div class="q-label">15. Uso de Corticosteroides (dose equivalente de prednisona)</div>
       <div class="options-grid" id="q-gcs"></div>
@@ -367,9 +414,11 @@ tr:hover td{background:#f7faff}
     </div>
 
     <div style="margin-top:16px">
-      <div class="q-label">19. Tempo desde que o Último DMARD foi Introduzido</div>
+      <div class="q-label">19. Tempo desde a Última Mudança do Tratamento</div>
+      <div style="font-size:11px;color:#718096;margin-bottom:6px">Considerar: troca ou introdução de DMARD, aumento de dose de DMARD ou de prednisona, pulsoterapia.</div>
       <div class="options-grid" id="q-tempo-dmard"></div>
     </div>
+    </div><!-- /bloco-imuno -->
   </div>
 
   <!-- S6: Medicações prévias -->
@@ -417,6 +466,18 @@ tr:hover td{background:#f7faff}
     <div class="options-grid" id="q-intervalo"></div>
   </div>
 
+  <!-- S11: Hospitalizações (Melhoria 15) -->
+  <div class="section-card">
+    <div class="section-title">27. Internações e Urgências no Último Ano</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+      <div class="numeric-inline">
+        <label>Hospitalizações (internações):</label>
+        <input type="number" id="f-hospitalizacoes" min="0" max="50" placeholder="0" style="width:80px">
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#718096">Considerar os 12 meses anteriores à data da entrevista. Registrar 0 se não houve.</div>
+  </div>
+
   <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(0)">← Identificação</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-1" style="width:0%"></div></div><button class="btn-primary" onclick="showFormTab(2)">Sociodemográfico →</button></div>
   </div><!-- /painel 1 -->
 
@@ -444,12 +505,10 @@ tr:hover td{background:#f7faff}
 
   <!-- S12: Moradia e Locomoção -->
   <div class="section-card">
-    <div class="section-title">Moradia e Locomoção</div>
-    <div class="q-label">34. Principal Meio de Locomoção <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
-    <div class="options-grid" id="q-locomocao"></div>
-    <div style="margin-top:16px"><div class="q-label">35. Localização da Residência</div>
-    <div class="options-grid" id="q-local-residencia"></div></div>
-    <div style="margin-top:16px"><div class="q-label">36. Número de Pessoas na Residência</div>
+    <div class="section-title">Moradia</div>
+    <div class="q-label">34. Localização da Residência</div>
+    <div class="options-grid" id="q-local-residencia"></div>
+    <div style="margin-top:16px"><div class="q-label">35. Número de Pessoas na Residência</div>
     <div class="options-grid" id="q-num-pessoas"></div></div>
     <div style="margin-top:16px"><div class="q-label">37. Situação de Moradia</div>
     <div class="options-grid" id="q-situacao-moradia"></div></div>
@@ -617,10 +676,6 @@ tr:hover td{background:#f7faff}
   <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(3)">← Acesso e Percepção</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-4" style="width:0%"></div></div><button class="btn-primary" onclick="savePatient()">💾 Salvar Paciente</button></div>
   </div><!-- /painel 4 -->
 
-  <div class="form-actions">
-    <button class="btn-secondary" onclick="clearForm()">Limpar Formulário</button>
-    <button class="btn-primary" onclick="savePatient()">Salvar Paciente</button>
-  </div>
 </div>
 
 <!-- ===== LISTA ===== -->
@@ -630,9 +685,25 @@ tr:hover td{background:#f7faff}
     <button class="btn-primary btn-sm" onclick="exportCSV()">Exportar CSV</button>
     <button class="btn-green-sm" onclick="openSheetsModal()" title="Exportar para Google Sheets via Apps Script">&#127347; Google Sheets</button>
     <button class="btn-secondary btn-sm" onclick="exportJSON()">Backup JSON</button>
+    <button class="btn-secondary btn-sm" onclick="openImportModal()" style="border-color:#805ad5;color:#805ad5" title="Importar pacientes de planilha Excel/CSV">&#128229; Importar Planilha</button>
     <label class="btn-secondary btn-sm" style="cursor:pointer;padding:5px 12px;font-size:12px;font-weight:600;border:2px solid #1a56a0;border-radius:8px;color:#1a56a0">
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
+  </div>
+  <!-- Barra de ações em lote (seleção múltipla) -->
+  <div id="bulk-bar" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;background:#ebf8ff;border:2px solid #90cdf4;border-radius:10px;padding:10px 16px;margin-bottom:10px">
+    <span id="bulk-count" style="font-size:13px;font-weight:700;color:#2b6cb0;flex:1"></span>
+    <button class="btn-danger btn-sm" onclick="deleteSelected()">&#128465; Excluir selecionados</button>
+    <button class="btn-secondary btn-sm" onclick="exportSelectedCSV()" style="border-color:#217346;color:#217346">&#128202; Exportar CSV</button>
+    <button class="btn-secondary btn-sm" onclick="toggleAllChecks(false);renderList()" style="border-color:#718096;color:#718096">&#10005; Desmarcar todos</button>
+  </div>
+  <!-- Filtro por medicação em uso (Melhoria 9) -->
+  <div class="med-filter-bar">
+    <label>&#128138; Medicação em uso:</label>
+    <input type="text" id="flt-med" list="flt-med-list" placeholder="Filtrar por DMARD (ex: Metotrexato)..." oninput="renderList()" autocomplete="off">
+    <datalist id="flt-med-list"></datalist>
+    <button class="btn-secondary btn-sm" onclick="document.getElementById('flt-med').value='';renderList()" title="Limpar filtro de medicação">&#10005; Limpar</button>
+    <span id="flt-med-count" style="font-size:11px;color:#718096;margin-left:4px"></span>
   </div>
   <div id="list-container"></div>
 </div>
@@ -642,6 +713,57 @@ tr:hover td{background:#f7faff}
   <div id="stat-segments" style="margin-bottom:16px"></div>
   <div id="stat-cards"></div>
   <div id="stat-charts"></div>
+</div>
+
+<!-- ===== MODAL IMPORTAR PLANILHA ===== -->
+<div class="modal-overlay" id="import-modal" style="display:none" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal-box" style="max-width:900px">
+    <div class="modal-header">
+      <h2>&#128229; Importar Pacientes da Planilha</h2>
+      <button class="modal-close" onclick="closeImportModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#faf5ff;border:1px solid #9f7aea;border-radius:8px;padding:10px 14px;font-size:11px;color:#553c9a;margin-bottom:14px">
+        <strong>Formatos aceitos:</strong> Excel (.xlsx, .xls) e CSV (.csv). A planilha deve seguir o formato padrão desta pesquisa (cabeçalho na linha 1, um paciente por linha). Após carregar, selecione o paciente para preencher o formulário.
+      </div>
+      <div id="import-eva-warn" style="display:none;background:#fffbeb;border:1px solid #f6ad55;border-radius:8px;padding:10px 14px;font-size:11px;color:#744210;margin-bottom:14px">
+        ⚠️ <strong>Atenção — EVA fora de escala:</strong> as colunas de EVA (Clareza, Confiança, Participação, Suporte Social, Satisfação) desta planilha contêm valores fora da escala esperada de 0–100. Os valores serão importados como estão — verifique e corrija manualmente no formulário se necessário.
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px">
+          &#128196; Selecionar arquivo
+          <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(this)">
+        </label>
+        <span id="import-filename" style="font-size:12px;color:#718096;margin-left:10px"></span>
+      </div>
+      <div id="import-preview" style="display:none">
+        <div style="font-size:12px;font-weight:600;color:#2d3748;margin-bottom:8px" id="import-count"></div>
+        <div style="overflow-x:auto">
+          <table id="import-table" style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+            <thead>
+              <tr>
+                <th style="background:#805ad5;color:#fff;padding:8px 10px"><input type="checkbox" id="import-check-all" title="Selecionar todos" onchange="toggleAllImportChecks(this.checked)"></th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Nome</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">RGHC</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Data Entrevista</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Doença</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Detalhe Doença</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Questionários</th>
+              </tr>
+            </thead>
+            <tbody id="import-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:10px">
+      <button class="btn-secondary" onclick="closeImportModal()">Fechar</button>
+      <div id="import-result" style="display:none;font-size:12px;align-self:center"></div>
+      <button class="btn-primary" id="import-btn" onclick="importSelectedToList()" style="background:#805ad5;display:none">
+        &#128229; Importar Selecionados para a Lista
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -662,6 +784,40 @@ const DOENCAS = [
 const TEMPO_DIAG = ['< 1 ano','1–3 anos','3–5 anos','5–7 anos','7–9 anos','10–15 anos','> 15 anos'];
 const ATIVIDADE = ['Remissão','Baixa atividade','Moderada atividade','Alta atividade'];
 const TEMPO_REMISSAO = ['< 6 meses','6–12 meses','12–24 meses','24–48 meses','> 48 meses'];
+
+// Opções de atividade por grupo de doença
+const ATIVIDADE_GRUPOS = {
+  ar:        ['Remissão (DAS28 < 2,6)','Baixa atividade (DAS28 2,6–3,2)','Moderada atividade (DAS28 3,2–5,1)','Alta atividade (DAS28 > 5,1)','Sem métrica disponível'],
+  psa:       ['Remissão (DAPSA ≤ 4)','Baixa atividade (DAPSA 4–14)','Moderada atividade (DAPSA 14–28)','Alta atividade (DAPSA > 28)','Sem métrica disponível'],
+  spa:       ['Remissão (ASDAS < 1,3)','Baixa atividade (ASDAS 1,3–2,1)','Moderada atividade (ASDAS 2,1–3,5)','Alta atividade (ASDAS > 3,5)','Sem métrica disponível'],
+  lupus:     ['Remissão (DORIS)','LLDAS','Baixa atividade','Moderada atividade','Alta atividade','Sem métrica disponível'],
+  vasculite: ['Remissão (BVAS=0)','Atividade (BVAS≥1)'],
+  binario:   ['Remissão','Atividade'],
+  miopatia:  null,
+};
+const DOENCA_ATIVIDADE_GRUPO = {
+  'Artrite reumatoide':                   'ar',
+  'Artrite psorística':                   'psa',
+  'Espondiloartrite':                     'spa',
+  'Lúpus eritematoso sistêmico':          'lupus',
+  'Lúpus juvenil':                        'lupus',
+  'Artrite idiopática juvenil':           'binario',
+  'GPA':                                  'vasculite',
+  'GEPA':                                 'vasculite',
+  'PAM':                                  'vasculite',
+  'PAN':                                  'vasculite',
+  'Arterite de células gigantes':         'vasculite',
+  'Arterite de Takayasu':                 'vasculite',
+  'Policondrite recidivante':             'vasculite',
+  'Dermatomiosite':                       'miopatia',
+  'Dermatomiosite clinicamente amiopática':'miopatia',
+  'Dermatomiosite juvenil':               'miopatia',
+  'Polimiosite':                          'miopatia',
+  'Miopatia Necrotizante Imunomediada':   'miopatia',
+  'Miosite por corpos de inclusão':       'miopatia',
+  'Síndrome antissintetase':              'miopatia',
+  'Sobreposição miopatia + outra doença': 'miopatia',
+};
 const NUM_MED = ['1','2','3','4','5','6','7','8','9','10','11 ou mais'];
 const GCS = ['Não','5 mg','6–10 mg','11–20 mg','21–40 mg','41–80 mg'];
 const CS_DMARD = ['Azatioprina','Ciclosporina','Hidroxicloroquina','Leflunomida','Metotrexato','Micofenolato de Mofetila','Sulfassalazina','Tacrolimus'];
@@ -673,13 +829,13 @@ const COMORBIDADES = [
   'DAC','DAOP','Depressão','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn',
   'Doença de Sjogren','DPOC','DRC','DRGE','FA','Fibromialgia','HAS',
   'Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','ICFEP','ICFER','IAM',
-  'Glaucoma','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Obesidade',
+  'Glaucoma','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Neuropatia periférica','Obesidade',
   'Osteoartrite','Osteonecrose','Osteoporose','Retocolite ulcerativa','SAF','TEP','TVP'
 ];
 const MED_CONTINUAS = [
-  'AAS','Aciclovir','Ácido fólico','Ácido zoledrônico','Alendronato de sódio',
+  'AAS','Aciclovir','Ácido fólico','Ácido zoledrônico','Alendronato de sódio','Alenia',
   'Amitriptilina','Ambrisentana','Anlodipino','Apixabana','Atenolol','Atorvastatina',
-  'Bactrim','Bisoprolol','Bosentana','Bromoprida','Canaglifozina','Candesartana',
+  'Bactrim','Bisoprolol','Bosentana','Bromoprida','Budesonida','Canaglifozina','Candesartana',
   'Captopril','Carbonato de cálcio','Carvedilol','Citrato de cálcio','Ciclobenzaprina',
   'Clonidina','Clopidogrel','Colchicina','Colecalciferol','Clortalidona','Codeína',
   'Dabigatrana','Dapaglifozina','Dapsona','Denosumabe','Desvenlafaxina','Dipirona',
@@ -703,7 +859,6 @@ const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto'
 const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
 const OCUPACAO = ['Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de limpeza','Balconista','Cabeleireiro','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Técnico de enfermagem','Entregador','Faxineiro','Garçom','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Segurança'];
 const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
-const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
 const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
 const NUM_PESSOAS = ['Mora sozinho','2','3','4','5','6','7','8 ou mais'];
 const SITUACAO_MORADIA = ['Própria','Alugada','Cedida','Instituição','Abrigo','Pensão','Situação de rua'];
@@ -826,8 +981,9 @@ function renderBMQBlock(containerId, itens, prefix) {
       ? `<span class="hads-badge" style="background:#bee3f8;color:#2b6cb0">${n}</span>`
       : `<span class="hads-badge" style="background:#feebc8;color:#c05621">${n}</span>`;
     const optsHtml = BMQ_RESPS.map(o =>
-      `<div class="opt-btn" data-bmq="${prefix}-${n}" data-pts="${o.pts}"
-        onclick="selectBMQ('${prefix}-${n}',${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-bmq="${prefix}-${n}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectBMQ('${prefix}-${n}',${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">${badge}
@@ -911,8 +1067,9 @@ function renderSEAMS() {
     div.className = 'hads-item';
     div.style.cssText = 'border-left:4px solid #48bb78';
     const optsHtml = SEAMS_RESPS.map(o =>
-      `<div class="opt-btn" data-seams="${n}" data-pts="${o.pts}"
-        onclick="selectSEAMS(${n},${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-seams="${n}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectSEAMS(${n},${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">
@@ -1068,7 +1225,7 @@ const DOENCA_METRICAS = {
   'Artrite reumatoide': ['das28'],
   'Artrite idiopática juvenil': ['das28','asdas'],
   'Espondiloartrite': ['asdas'],
-  'Artrite psorística': ['asdas'],
+  'Artrite psorística': ['dapsa'],
   'Lúpus eritematoso sistêmico': ['sledai'],
   'Lúpus juvenil': ['sledai'],
   'Dermatomiosite': ['myoact'],
@@ -1099,39 +1256,81 @@ function showFormTab(idx) {
   document.querySelectorAll('.form-step-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
   document.getElementById('page-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
   updateTabBadges();
+  applyMissingFilter();
+}
+
+function getTabFields(tab) {
+  const r = formData;
+  const gv = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const evaVal = spanId => { const el = document.getElementById(spanId); return el && el.textContent !== '—' ? '1' : ''; };
+  const atividadeVisible = () => { const el = document.getElementById('sec-atividade'); return !el || el.style.display !== 'none'; };
+  const byTab = {
+    0: [
+      {label:'Nome',             val:gv('f-nome'),          cid:'f-nome'},
+      {label:'RGHC',             val:gv('f-rghc'),          cid:'f-rghc'},
+      {label:'Nascimento',       val:gv('f-nascimento'),    cid:'f-nascimento'},
+      {label:'Data entrevista',  val:gv('f-entrevista'),    cid:'f-entrevista'},
+      {label:'Sexo',             val:r.sexo,                cid:'q-sexo'},
+      {label:'Etnia',            val:r.etnia,               cid:'q-etnia'},
+    ],
+    1: [
+      {label:'Doença',                    val:r.doenca,        cid:'q-doenca'},
+      {label:'Tempo de diagnóstico',      val:r.tempo_diag,    cid:'q-tempo-diag'},
+      ...(atividadeVisible() ? [{label:'Atividade de doença', val:r.atividade, cid:'q-atividade'}] : []),
+      {label:'Nº de medicações',          val:r.num_med,       cid:'q-num-med'},
+      {label:'Corticosteroides',          val:r.gcs,           cid:'q-gcs'},
+      {label:'Reação adversa',            val:r.reacao,        cid:'q-reacao'},
+      {label:'Intervalo entre consultas', val:r.intervalo,     cid:'q-intervalo'},
+    ],
+    2: [
+      {label:'Religião',             val:r.religiao,          cid:'q-religiao'},
+      {label:'Estado civil',         val:r.estado_civil,      cid:'q-estado-civil'},
+      {label:'Filhos',               val:r.filhos,            cid:'q-filhos'},
+      {label:'Escolaridade',         val:r.escolaridade,      cid:'q-escolaridade'},
+      {label:'Renda familiar',       val:r.renda,             cid:'q-renda'},
+      {label:'Ocupação',             val:r.ocupacao,          cid:'q-ocupacao'},
+      {label:'Carga horária',        val:r.carga_horaria,     cid:'q-carga-horaria'},
+      {label:'Local de residência',  val:r.local_residencia,  cid:'q-local-residencia'},
+      {label:'Pessoas na residência',val:r.num_pessoas,       cid:'q-num-pessoas'},
+      {label:'Situação de moradia',  val:r.situacao_moradia,  cid:'q-situacao-moradia'},
+      {label:'Tabagismo',            val:r.tabagismo,         cid:'q-tabagismo'},
+      {label:'Etilismo',             val:r.etilismo,          cid:'q-etilismo'},
+    ],
+    3: [
+      {label:'Material educativo',   val:r.material_educ,       cid:'q-material-educ'},
+      {label:'Acompanhamento saúde', val:r.acompanhamento,      cid:'q-acompanhamento'},
+      {label:'Dif. entender doença', val:r.dif_doenca,          cid:'q-dif-doenca'},
+      {label:'Conhec. complicações', val:r.conhec_complic,      cid:'q-conhec-complic'},
+      {label:'Dif. entender trat.',  val:r.dif_trat,            cid:'q-dif-trat'},
+      {label:'Facilidade consultas', val:r.facilidade_consulta, cid:'q-facilidade-consulta'},
+      {label:'Falta na farmácia',    val:r.falta_farm,          cid:'q-falta-farm'},
+      {label:'Compra medicações',    val:r.compra_med,          cid:'q-compra-med'},
+      {label:'Custo medicações',     val:r.custo_med,           cid:'q-custo-med'},
+      {label:'Deslocamento',         val:r.deslocamento,        cid:'q-deslocamento'},
+      {label:'EVA: Comunicação',     val:evaVal('v-comunic'),    cid:'f-comunic'},
+      {label:'EVA: Confiança',       val:evaVal('v-confianca'),  cid:'f-confianca'},
+      {label:'EVA: Participação',    val:evaVal('v-participacao'),cid:'f-participacao'},
+      {label:'EVA: Satisfação',      val:evaVal('v-satisfacao'), cid:'f-satisfacao'},
+      {label:'EVA: Suporte social',  val:evaVal('v-suporte'),    cid:'f-suporte'},
+      {label:'EVA: Dor',             val:evaVal('v-eva-dor'),    cid:'f-eva-dor'},
+      {label:'EVA: Estresse',        val:evaVal('v-eva-estresse'),cid:'f-eva-estresse'},
+      {label:'EVA: PtGA',            val:evaVal('v-eva-ptga'),   cid:'f-eva-ptga'},
+    ],
+    4: [
+      {label:'HAQ',          val:r.haq_score,     cid:'haq-blocks'},
+      {label:'BMQ Necessity',val:r.bmq_necessity, cid:'bmq-necessity-items'},
+      {label:'BMQ Concerns', val:r.bmq_concerns,  cid:'bmq-concerns-items'},
+      {label:'SEAMS',        val:r.seams_score,   cid:'seams-items'},
+      {label:'HADS',         val:r.hads_anx,      cid:'hads-items'},
+      {label:'CQR-19',       val:r.cqr_score,     cid:'cqr-tbody'},
+    ],
+  };
+  return (byTab[tab] || []).map(f => ({...f, filled: f.val !== '' && f.val !== undefined && f.val !== null}));
 }
 
 function calcTabProgress(tab) {
-  const r = formData;
-  const gv = id => document.getElementById(id) ? document.getElementById(id).value : '';
-  switch (tab) {
-    case 0: {
-      const f = [gv('f-nome'), gv('f-rghc'), gv('f-nascimento'), gv('f-entrevista'), r.sexo, r.etnia];
-      return { done: f.filter(Boolean).length, total: 6 };
-    }
-    case 1: {
-      const f = [r.doenca, r.tempo_diag, r.atividade, r.num_med, r.gcs, r.reacao, r.intervalo];
-      return { done: f.filter(Boolean).length, total: 7 };
-    }
-    case 2: {
-      const f = [r.religiao, r.estado_civil, r.filhos, r.escolaridade, r.renda, r.ocupacao,
-                 r.carga_horaria, r.local_residencia, r.num_pessoas, r.situacao_moradia,
-                 r.tabagismo, r.etilismo, (r.locomocao||[]).length > 0 ? 'ok' : ''];
-      return { done: f.filter(Boolean).length, total: 13 };
-    }
-    case 3: {
-      const f = [r.material_educ, r.acompanhamento, r.dif_doenca, r.conhec_complic, r.dif_trat,
-                 r.facilidade_consulta, r.falta_farm, r.compra_med, r.custo_med, r.deslocamento];
-      const evas = ['f-comunic','f-confianca','f-participacao','f-satisfacao','f-suporte',
-                    'f-eva-dor','f-eva-estresse','f-eva-ptga'].filter(id => gv(id) !== '').length;
-      return { done: f.filter(Boolean).length + evas, total: 18 };
-    }
-    case 4: {
-      const scores = [r.bmq_necessity, r.bmq_concerns, r.seams_score, r.hads_anx, r.hads_dep, r.haq_score, r.cqr_score];
-      return { done: scores.filter(v => v !== '' && v !== undefined && v !== null).length, total: 7 };
-    }
-  }
-  return { done: 0, total: 0 };
+  const fields = getTabFields(tab);
+  return { done: fields.filter(f => f.filled).length, total: fields.length };
 }
 
 function updateTabBadges() {
@@ -1142,9 +1341,55 @@ function updateTabBadges() {
     if (badge) {
       badge.textContent = `${done}/${total}`;
       badge.className = 'step-badge ' + (done === total ? 'done' : done > 0 ? 'partial' : 'empty');
+      const missing = getTabFields(i).filter(f => !f.filled).map(f => f.label);
+      badge.title = missing.length ? 'Faltando: ' + missing.join(', ') : '✓ Completo!';
     }
     if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
   }
+}
+
+let showMissingOnly = false;
+
+function toggleMissingMode() {
+  showMissingOnly = !showMissingOnly;
+  const btn = document.getElementById('btn-missing-mode');
+  if (btn) {
+    btn.style.background = showMissingOnly ? '#d69e2e' : '#fffff0';
+    btn.style.color = showMissingOnly ? '#fff' : '#744210';
+    btn.style.borderColor = showMissingOnly ? '#d69e2e' : '#d69e2e';
+  }
+  applyMissingFilter();
+}
+
+function applyMissingFilter() {
+  const panel = document.getElementById(`form-tab-${currentFormTab}`);
+  if (!panel) return;
+  // Remove highlights
+  panel.querySelectorAll('[data-missing]').forEach(el => { el.removeAttribute('data-missing'); el.style.outline = ''; });
+  if (!showMissingOnly) {
+    panel.querySelectorAll('.section-card').forEach(c => c.style.display = '');
+    return;
+  }
+  const missing = getTabFields(currentFormTab).filter(f => !f.filled);
+  const missingCids = new Set(missing.map(f => f.cid));
+  panel.querySelectorAll('.section-card').forEach(card => {
+    let hasMissing = false;
+    for (const cid of missingCids) {
+      const el = document.getElementById(cid);
+      if (el && card.contains(el)) { hasMissing = true; break; }
+    }
+    card.style.display = hasMissing ? '' : 'none';
+    if (hasMissing) {
+      // Highlight each missing field within this card
+      for (const cid of missingCids) {
+        const el = document.getElementById(cid);
+        if (el && card.contains(el)) {
+          const wrap = el.closest('.field-group') || el.parentElement;
+          if (wrap) { wrap.style.outline = '2px solid #f6ad55'; wrap.setAttribute('data-missing','1'); }
+        }
+      }
+    }
+  });
 }
 
 // ============================================================
@@ -1196,6 +1441,11 @@ function setData(arr) {
 // ============================================================
 // RENDER OPTION BUTTONS
 // ============================================================
+// Melhoria 44: helper para ativar opt-btn pelo teclado
+function optKeydown(e, el) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+}
+
 function renderRadio(containerId, options, field) {
   const c = document.getElementById(containerId);
   c.innerHTML = '';
@@ -1203,6 +1453,8 @@ function renderRadio(containerId, options, field) {
     const b = document.createElement('div');
     b.className = 'opt-btn';
     b.textContent = opt;
+    b.tabIndex = 0;
+    b.onkeydown = e => optKeydown(e, b);
     b.onclick = () => {
       c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
       b.classList.add('selected');
@@ -1224,11 +1476,62 @@ function renderCheck(containerId, options, field, posologiaId) {
     const b = document.createElement('div');
     b.className = 'opt-btn multi';
     b.textContent = opt;
+    b.tabIndex = 0;
+    b.onkeydown = e => optKeydown(e, b);
     b.onclick = () => {
       const arr = formData[field];
       const idx = arr.indexOf(opt);
       if (idx === -1) { arr.push(opt); b.classList.add('selected'); }
       else { arr.splice(idx,1); b.classList.remove('selected'); }
+      if (posologiaId) renderPosologia(field, posologiaId);
+      updateTabBadges();
+    };
+    c.appendChild(b);
+  });
+}
+
+function renderCheckWithNA(containerId, options, field, posologiaId) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  if (!formData[field]) formData[field] = [];
+
+  // "Não se aplica" button
+  const naBtn = document.createElement('div');
+  naBtn.className = 'opt-btn multi';
+  naBtn.textContent = 'Não se aplica';
+  naBtn.style.cssText = 'border-color:#a0aec0;color:#718096;font-style:italic';
+  naBtn.tabIndex = 0;
+  naBtn.onkeydown = e => optKeydown(e, naBtn);
+  naBtn.onclick = () => {
+    formData[field] = ['Não se aplica'];
+    // Deselect all other buttons
+    c.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+    naBtn.classList.add('selected');
+    naBtn.style.cssText = 'border-color:#a0aec0;color:#718096;font-style:italic';
+    if (posologiaId) {
+      const pc = document.getElementById(posologiaId);
+      if (pc) { pc.innerHTML = ''; pc.classList.add('hidden'); }
+    }
+    updateTabBadges();
+  };
+  if (formData[field].includes('Não se aplica')) naBtn.classList.add('selected');
+  c.appendChild(naBtn);
+
+  options.forEach(opt => {
+    const b = document.createElement('div');
+    b.className = 'opt-btn multi';
+    b.textContent = opt;
+    b.tabIndex = 0;
+    b.onkeydown = e => optKeydown(e, b);
+    if (formData[field].includes(opt)) b.classList.add('selected');
+    b.onclick = () => {
+      const arr = formData[field];
+      // Remove 'Não se aplica' if present
+      const naIdx = arr.indexOf('Não se aplica');
+      if (naIdx !== -1) { arr.splice(naIdx, 1); naBtn.classList.remove('selected'); }
+      const idx = arr.indexOf(opt);
+      if (idx === -1) { arr.push(opt); b.classList.add('selected'); }
+      else { arr.splice(idx, 1); b.classList.remove('selected'); }
       if (posologiaId) renderPosologia(field, posologiaId);
       updateTabBadges();
     };
@@ -1275,19 +1578,109 @@ function renderPosologia(field, containerId) {
     </table>`;
 }
 
+function isRemissao(val) {
+  return val && (val === 'Remissão' || val.startsWith('Remissão ('));
+}
 function toggleRemissao(val) {
-  document.getElementById('sub-remissao').classList.toggle('hidden', val !== 'Remissão');
+  document.getElementById('sub-remissao').classList.toggle('hidden', !isRemissao(val));
 }
 function toggleReacao(val) {
   document.getElementById('sub-reacao').classList.toggle('hidden', val !== 'Sim');
 }
 
+function toggleSemImunossupressao() {
+  const btn   = document.getElementById('btn-sem-imuno');
+  const bloco = document.getElementById('bloco-imuno');
+  const ativo = btn.classList.toggle('selected');
+  formData.sem_imunossupressao = ativo;
+
+  if (ativo) {
+    // Limpa GCS → "Não"
+    document.querySelectorAll('#q-gcs .opt-btn').forEach(b => {
+      b.classList.toggle('selected', b.textContent.trim() === 'Não');
+    });
+    formData.gcs = 'Não';
+
+    // Limpa todos os DMARDs
+    ['csdmard','bdmard','tsdmard'].forEach(field => {
+      formData[field] = [];
+      document.querySelectorAll(`#q-${field} .opt-btn`).forEach(b => b.classList.remove('selected'));
+      const pos = document.getElementById(`posologia-${field}`);
+      if (pos) { pos.innerHTML = ''; pos.classList.add('hidden'); }
+    });
+    formData.tempo_dmard = '';
+    document.querySelectorAll('#q-tempo-dmard .opt-btn').forEach(b => b.classList.remove('selected'));
+
+    bloco.style.opacity = '0.4';
+    bloco.style.pointerEvents = 'none';
+    btn.style.background = '#e53e3e';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#e53e3e';
+  } else {
+    formData.sem_imunossupressao = false;
+    bloco.style.opacity = '';
+    bloco.style.pointerEvents = '';
+    btn.style.background = '';
+    btn.style.color = '#e53e3e';
+    btn.style.borderColor = '#e53e3e';
+  }
+  updateTabBadges();
+}
+
 function updateMetrics(doenca) {
-  const all = ['das28','asdas','sledai','myoact','bvas','itas'];
+  const all = ['das28','asdas','dapsa','sledai','myoact','bvas','itas'];
   all.forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
   const metrics = DOENCA_METRICAS[doenca] || [];
   metrics.forEach(m => document.getElementById('m-'+m).classList.add('visible'));
   document.getElementById('metrics-hint').style.display = metrics.length ? 'none' : 'block';
+  updateAtividade(doenca);
+}
+
+function updateAtividade(doenca) {
+  const grupo = DOENCA_ATIVIDADE_GRUPO[doenca];
+  const opcoes = grupo ? ATIVIDADE_GRUPOS[grupo] : null;
+  const secAtiv = document.getElementById('sec-atividade');
+  const subRem  = document.getElementById('sub-remissao');
+  if (!opcoes) {
+    // Miopatias: oculta toda a seção de atividade
+    if (secAtiv) secAtiv.style.display = 'none';
+    subRem.classList.add('hidden');
+    formData.atividade = '';
+    formData.tempo_remissao = '';
+    return;
+  }
+  if (secAtiv) secAtiv.style.display = '';
+  // Re-renderiza opções mantendo seleção anterior se ainda válida
+  const prevVal = formData.atividade;
+  renderRadio('q-atividade', opcoes, 'atividade');
+  if (prevVal && opcoes.includes(prevVal)) {
+    document.querySelectorAll('#q-atividade .opt-btn').forEach(b => {
+      if (b.textContent.trim() === prevVal) b.classList.add('selected');
+    });
+    toggleRemissao(prevVal);
+  } else {
+    formData.atividade = '';
+    subRem.classList.add('hidden');
+  }
+
+  // Nota contextual abaixo das opções
+  const hints = {
+    ar:        'DAS28 = Disease Activity Score 28 articulações',
+    psa:       'DAPSA = Disease Activity index for PSoriatic Arthritis',
+    spa:       'ASDAS = Ankylosing Spondylitis Disease Activity Score',
+    lupus:     'LLDAS = Lupus Low Disease Activity State · DORIS = Definition Of Remission In SLE',
+    vasculite: 'BVAS = Birmingham Vasculitis Activity Score',
+    binario:   '',
+    miopatia:  '',
+  };
+  let noteEl = document.getElementById('atividade-hint-note');
+  if (!noteEl) {
+    noteEl = document.createElement('div');
+    noteEl.id = 'atividade-hint-note';
+    noteEl.style.cssText = 'font-size:11px;color:#718096;margin-top:6px';
+    document.getElementById('q-atividade').after(noteEl);
+  }
+  noteEl.textContent = hints[grupo] || '';
 }
 
 // ============================================================
@@ -1298,7 +1691,7 @@ function initForm() {
     csdmard:[], bdmard:[], tsdmard:[],
     csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
     comorbidades:[], med_continuas:[], reacao_quais:[],
-    dmard_posologia:{}, locomocao:[], cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
+    dmard_posologia:{}, cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
   };
   renderRadio('q-sexo', SEXO, 'sexo');
   renderRadio('q-etnia', ETNIA, 'etnia');
@@ -1308,13 +1701,13 @@ function initForm() {
   renderRadio('q-tempo-remissao', TEMPO_REMISSAO, 'tempo_remissao');
   renderRadio('q-num-med', NUM_MED, 'num_med');
   renderRadio('q-gcs', GCS, 'gcs');
-  renderCheck('q-csdmard', CS_DMARD, 'csdmard', 'posologia-csdmard');
-  renderCheck('q-bdmard', B_DMARD, 'bdmard', 'posologia-bdmard');
-  renderCheck('q-tsdmard', TS_DMARD, 'tsdmard', 'posologia-tsdmard');
+  renderCheckWithNA('q-csdmard', CS_DMARD, 'csdmard', 'posologia-csdmard');
+  renderCheckWithNA('q-bdmard', B_DMARD, 'bdmard', 'posologia-bdmard');
+  renderCheckWithNA('q-tsdmard', TS_DMARD, 'tsdmard', 'posologia-tsdmard');
   renderRadio('q-tempo-dmard', TEMPO_DMARD, 'tempo_dmard');
-  renderCheck('q-csdmard-prev', CS_DMARD, 'csdmard_prev');
-  renderCheck('q-bdmard-prev', B_DMARD, 'bdmard_prev');
-  renderCheck('q-tsdmard-prev', TS_DMARD, 'tsdmard_prev');
+  renderCheckWithNA('q-csdmard-prev', CS_DMARD, 'csdmard_prev');
+  renderCheckWithNA('q-bdmard-prev', B_DMARD, 'bdmard_prev');
+  renderCheckWithNA('q-tsdmard-prev', TS_DMARD, 'tsdmard_prev');
   renderCheck('q-comorbidades', COMORBIDADES, 'comorbidades');
   renderCheck('q-med-continuas', MED_CONTINUAS, 'med_continuas');
   renderRadio('q-reacao', ['Sim','Não'], 'reacao');
@@ -1328,7 +1721,6 @@ function initForm() {
   renderRadio('q-renda', RENDA, 'renda');
   renderRadio('q-ocupacao', OCUPACAO, 'ocupacao');
   renderRadio('q-carga-horaria', CARGA_HORARIA, 'carga_horaria');
-  renderCheck('q-locomocao', LOCOMOCAO, 'locomocao');
   renderRadio('q-local-residencia', LOCAL_RESIDENCIA, 'local_residencia');
   renderRadio('q-num-pessoas', NUM_PESSOAS, 'num_pessoas');
   renderRadio('q-situacao-moradia', SITUACAO_MORADIA, 'situacao_moradia');
@@ -1368,8 +1760,9 @@ function renderHADS() {
     const div = document.createElement('div');
     div.className = `hads-item ${item.tipo === 'A' ? 'anx' : 'dep'}`;
     const optsHtml = item.opts.map(o =>
-      `<div class="opt-btn" data-hads="${item.id}" data-pts="${o.pts}"
-        onclick="selectHADS('${item.id}',${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-hads="${item.id}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectHADS('${item.id}',${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">
@@ -1441,8 +1834,9 @@ function renderHAQ() {
       const itemDiv = document.createElement('div');
       itemDiv.className = 'haq-item';
       const optsHtml = HAQ_RESPS.map((r, ri) =>
-        `<div class="opt-btn" data-haq="${item.n}" data-pts="${ri}"
-          onclick="selectHAQ(${item.n},${ri},this)">${ri} – ${r}</div>`
+        `<div class="opt-btn" data-haq="${item.n}" data-pts="${ri}" tabindex="0"
+          onclick="selectHAQ(${item.n},${ri},this)"
+          onkeydown="optKeydown(event,this)">${ri} – ${r}</div>`
       ).join('');
       itemDiv.innerHTML = `
         <div class="haq-item-num">${item.n}.</div>
@@ -1520,8 +1914,9 @@ function renderCQR() {
     const opts = CQR_RESP.map((r, ri) => {
       const pts = isNeg ? (4 - ri) : (ri + 1);
       return `<td style="text-align:center">
-        <div class="opt-btn cqr-opt" data-item="${num}" data-pts="${pts}"
+        <div class="opt-btn cqr-opt" data-item="${num}" data-pts="${pts}" tabindex="0"
           onclick="selectCQR(${num},${pts},this)"
+          onkeydown="optKeydown(event,this)"
           style="display:inline-block;padding:4px 10px;font-size:11px">${r}</div>
       </td>`;
     }).join('');
@@ -1629,6 +2024,7 @@ function savePatient() {
     cpk: document.getElementById('f-cpk').value,
     das28: document.getElementById('f-das28').value,
     asdas: document.getElementById('f-asdas').value,
+    dapsa: document.getElementById('f-dapsa').value,
     sledai: document.getElementById('f-sledai').value,
     myoact: document.getElementById('f-myoact').value,
     mmt8: document.getElementById('f-mmt8').value,
@@ -1648,13 +2044,13 @@ function savePatient() {
     reacao: formData.reacao || '',
     reacao_quais: [...(formData.reacao_quais||[])],
     intervalo: formData.intervalo || '',
+    hospitalizacoes: document.getElementById('f-hospitalizacoes').value,
     dmard_posologia: {...(formData.dmard_posologia||{})},
     // Sociodemográfico
     religiao: formData.religiao||'', estado_civil: formData.estado_civil||'',
     filhos: formData.filhos||'', escolaridade: formData.escolaridade||'',
     renda: formData.renda||'', ocupacao: formData.ocupacao||'',
     carga_horaria: formData.carga_horaria||'',
-    locomocao: [...(formData.locomocao||[])],
     local_residencia: formData.local_residencia||'',
     num_pessoas: formData.num_pessoas||'',
     situacao_moradia: formData.situacao_moradia||'',
@@ -1703,12 +2099,19 @@ function savePatient() {
   };
 
   const db = getData();
-  const idx = db.findIndex(p => p.rghc === rghc);
-  if (idx !== -1) {
-    if (!confirm(`Paciente com RGHC ${rghc} já existe. Deseja sobrescrever os dados?`)) return;
-    db[idx] = record;
+  // Se editando, localiza pelo editingRghc original (não pelo RGHC do form, que pode ter mudado)
+  const editIdx = editingRghc !== null ? db.findIndex(p => (p.rghc ?? '') === editingRghc || (editingRghc.startsWith('__idx__') && db.indexOf(p) === parseInt(editingRghc.replace('__idx__','')))) : -1;
+  if (editIdx !== -1) {
+    db[editIdx] = record;
   } else {
-    db.push(record);
+    // Novo paciente: bloqueia se RGHC já existir
+    const dupIdx = rghc ? db.findIndex(p => p.rghc === rghc) : -1;
+    if (dupIdx !== -1) {
+      msg.innerHTML = `<div class="alert">&#9888; Já existe um paciente com o RGHC <strong>${rghc}</strong>. Use a lista para editar o cadastro existente.</div>`;
+      window.scrollTo(0,0); return;
+    } else {
+      db.push(record);
+    }
   }
   setData(db);
   msg.innerHTML = '<div class="success">Paciente salvo com sucesso! Total: ' + db.length + ' paciente(s).</div>';
@@ -1722,18 +2125,19 @@ function savePatient() {
 }
 
 function clearForm() {
+  editingRghc = null;
   document.getElementById('f-nome').value = '';
   document.getElementById('f-rghc').value = '';
   document.getElementById('f-nascimento').value = '';
   document.getElementById('f-inicio-seg').value = '';
   document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
-  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
+  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-dapsa','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-hospitalizacoes'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('sub-remissao').classList.add('hidden');
   document.getElementById('sub-reacao').classList.add('hidden');
-  ['das28','asdas','sledai','myoact','bvas','itas'].forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
+  ['das28','asdas','dapsa','sledai','myoact','bvas','itas'].forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
   document.getElementById('metrics-hint').style.display = 'block';
   document.getElementById('bmq-nec-box').style.display = 'none';
   document.getElementById('bmq-con-box').style.display = 'none';
@@ -1744,6 +2148,17 @@ function clearForm() {
   document.getElementById('haq-score-box').style.display = 'none';
   document.getElementById('cqr-score-box').style.display = 'none';
   resetEvas();
+  // reset "sem imunossupressão"
+  const btnImuno = document.getElementById('btn-sem-imuno');
+  const blocoImuno = document.getElementById('bloco-imuno');
+  if (btnImuno && btnImuno.classList.contains('selected')) {
+    btnImuno.classList.remove('selected');
+    btnImuno.style.background = '';
+    btnImuno.style.color = '#e53e3e';
+    btnImuno.style.borderColor = '#e53e3e';
+    blocoImuno.style.opacity = '';
+    blocoImuno.style.pointerEvents = '';
+  }
   initForm();
   showFormTab(0);
 }
@@ -1751,24 +2166,107 @@ function clearForm() {
 // ============================================================
 // LIST PAGE
 // ============================================================
+function adesaoChip(p) {
+  if (!p.cqr_aderente) {
+    return `<span class="adesao-badge sem-cqr" title="CQR-19 não aplicado"><span class="dot"></span>Sem CQR-19</span>`;
+  }
+  const aderente = p.cqr_aderente === 'Aderente';
+  const cls = aderente ? 'aderente' : 'nao-aderente';
+  const icon = aderente ? '✓' : '✗';
+  const scoreHint = p.cqr_score !== '' && p.cqr_score !== undefined
+    ? ` · score: ${parseFloat(p.cqr_score).toFixed(3)}`
+    : '';
+  return `<span class="adesao-badge ${cls}" title="CQR-19: ${p.cqr_aderente}${scoreHint}"><span class="dot"></span>${icon} ${p.cqr_aderente}</span>`;
+}
+
+function populateMedFilter() {
+  const dl = document.getElementById('flt-med-list');
+  if (!dl || dl.children.length > 0) return;
+  [...CS_DMARD, ...B_DMARD, ...TS_DMARD].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    dl.appendChild(opt);
+  });
+}
+
+function missingBadges(p) {
+  // Campos clínicos essenciais
+  const clinicalFields = ['sexo','etnia','doenca','tempo_diag','atividade','gcs','reacao','intervalo',
+    'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
+    'local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
+    'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
+    'facilidade_consulta','falta_farm','compra_med','custo_med','deslocamento'];
+  const clinMissing = clinicalFields.filter(f => !p[f] || p[f] === '').length;
+
+  // Verifica também nome, rghc, nascimento, entrevista
+  const basicMissing = ['nome','rghc','nascimento','entrevista'].filter(f => !p[f]).length;
+  const totalClin = clinMissing + basicMissing;
+
+  // Questionários
+  const questFields = [
+    { key: 'haq_score',     label: 'HAQ' },
+    { key: 'bmq_necessity', label: 'BMQ' },
+    { key: 'seams_score',   label: 'SEAMS' },
+    { key: 'hads_anx',      label: 'HADS' },
+    { key: 'cqr_aderente',  label: 'CQR-19' },
+  ];
+  const questMissing = questFields.filter(q => p[q.key] === '' || p[q.key] === undefined || p[q.key] === null);
+
+  let html = '';
+  if (totalClin > 0) {
+    html += `<span class="missing-badge clinical" title="Dados clínicos/sociodemográficos incompletos">📋 ${totalClin} clín.</span>`;
+  }
+  if (questMissing.length > 0) {
+    const labels = questMissing.map(q => q.label).join(', ');
+    html += `<span class="missing-badge quest" title="Questionários pendentes: ${labels}">📝 ${questMissing.map(q=>q.label).join(' · ')}</span>`;
+  }
+  if (totalClin === 0 && questMissing.length === 0) {
+    html += `<span class="missing-badge ok">✓ Completo</span>`;
+  }
+  return html;
+}
+
 function renderList() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const db = getData().filter(p =>
-    p.nome.toLowerCase().includes(q) || p.rghc.toLowerCase().includes(q)
-  );
+  populateMedFilter();
+  const q   = document.getElementById('search-input').value.toLowerCase();
+  const med = (document.getElementById('flt-med')?.value || '').trim().toLowerCase();
+  const all = getData().filter(p => {
+    if (q && !p.nome.toLowerCase().includes(q) && !p.rghc.toLowerCase().includes(q)) return false;
+    if (med) {
+      const allMeds = [...(p.csdmard||[]), ...(p.bdmard||[]), ...(p.tsdmard||[])];
+      if (!allMeds.some(m => m.toLowerCase().includes(med))) return false;
+    }
+    return true;
+  });
+  const db = all;
+  // Atualiza contador do filtro de medicação
+  const cnt = document.getElementById('flt-med-count');
+  if (cnt) cnt.textContent = med ? `${db.length} paciente(s) com este DMARD` : '';
   const c = document.getElementById('list-container');
-  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; return; }
+  if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; updateBulkBar(); return; }
   c.innerHTML = `
     <table>
-      <thead><tr><th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Ações</th></tr></thead>
+      <thead><tr>
+        <th style="width:36px;text-align:center">
+          <input type="checkbox" id="chk-all" title="Selecionar / desmarcar todos" onchange="toggleAllChecks(this.checked)"
+            style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
+        </th>
+        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Adesão CQR-19</th><th>Completude</th><th>Ações</th>
+      </tr></thead>
       <tbody>${db.map((p,i) => `
-        <tr>
+        <tr id="row-${p.rghc}">
+          <td style="text-align:center">
+            <input type="checkbox" class="row-chk" data-rghc="${p.rghc}" onchange="onRowCheck()"
+              style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
+          </td>
           <td>${i+1}</td>
           <td>${p.nome}</td>
           <td>${p.rghc}</td>
           <td>${p.doenca || '—'}</td>
           <td>${p.entrevista || '—'}</td>
           <td>${p.atividade || '—'}</td>
+          <td>${adesaoChip(p)}</td>
+          <td style="white-space:nowrap">${missingBadges(p)}</td>
           <td>
             <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
             <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
@@ -1777,6 +2275,71 @@ function renderList() {
       </tbody>
     </table>
     <p style="margin-top:10px;font-size:12px;color:#718096">${db.length} paciente(s) no total</p>`;
+  updateBulkBar();
+}
+
+// ── Seleção múltipla ──
+function getSelectedRghcs() {
+  return [...document.querySelectorAll('.row-chk:checked')].map(cb => cb.dataset.rghc);
+}
+
+function onRowCheck() {
+  const all  = document.querySelectorAll('.row-chk');
+  const chkd = document.querySelectorAll('.row-chk:checked');
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) {
+    chkAll.indeterminate = chkd.length > 0 && chkd.length < all.length;
+    chkAll.checked = chkd.length === all.length && all.length > 0;
+  }
+  updateBulkBar();
+}
+
+function toggleAllChecks(checked) {
+  document.querySelectorAll('.row-chk').forEach(cb => { cb.checked = checked; });
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) { chkAll.checked = checked; chkAll.indeterminate = false; }
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const rghcs = getSelectedRghcs();
+  const bar   = document.getElementById('bulk-bar');
+  const cnt   = document.getElementById('bulk-count');
+  if (!bar) return;
+  if (rghcs.length > 0) {
+    bar.style.display = 'flex';
+    cnt.textContent   = `${rghcs.length} paciente(s) selecionado(s)`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function deleteSelected() {
+  const rghcs = getSelectedRghcs();
+  if (!rghcs.length) return;
+  if (!confirm(`Excluir ${rghcs.length} paciente(s) selecionado(s)?\n\nEsta ação não pode ser desfeita.`)) return;
+  setData(getData().filter(p => !rghcs.includes(p.rghc)));
+  renderList();
+}
+
+function exportSelectedCSV() {
+  const rghcs = getSelectedRghcs();
+  if (!rghcs.length) return;
+  const selected = getData().filter(p => rghcs.includes(p.rghc));
+  if (!selected.length) return;
+  const headers = Object.keys(selected[0]).filter(k => k !== 'cqr_respostas' && k !== 'haq_respostas' && k !== 'hads_respostas' && k !== 'seams_respostas' && k !== 'bmq_respostas');
+  const rows = [headers.join(';')];
+  selected.forEach(p => {
+    rows.push(headers.map(h => {
+      const v = p[h];
+      if (Array.isArray(v)) return '"' + v.join(', ') + '"';
+      if (typeof v === 'object' && v !== null) return '"' + JSON.stringify(v) + '"';
+      return v ?? '';
+    }).join(';'));
+  });
+  const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `pacientes_selecionados_${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
 function deletePatient(rghc) {
@@ -1786,10 +2349,13 @@ function deletePatient(rghc) {
 }
 
 function editPatient(rghc) {
-  const p = getData().find(x => x.rghc === rghc);
+  const db = getData();
+  const p = db.find(x => x.rghc === rghc);
   if (!p) return;
+  const _rghcToRestore = p.rghc;
   showPage('form');
-  clearForm();
+  clearForm(); // reseta editingRghc para null
+  editingRghc = _rghcToRestore; // define APÓS o clearForm
   setTimeout(() => {
     document.getElementById('f-nome').value = p.nome;
     document.getElementById('f-rghc').value = p.rghc;
@@ -1802,11 +2368,13 @@ function editPatient(rghc) {
     document.getElementById('f-cpk').value = p.cpk || '';
     document.getElementById('f-das28').value = p.das28 || '';
     document.getElementById('f-asdas').value = p.asdas || '';
+    document.getElementById('f-dapsa').value = p.dapsa || '';
     document.getElementById('f-sledai').value = p.sledai || '';
     document.getElementById('f-myoact').value = p.myoact || '';
     document.getElementById('f-mmt8').value = p.mmt8 || '';
     document.getElementById('f-bvas').value = p.bvas || '';
     document.getElementById('f-itas').value = p.itas || '';
+    document.getElementById('f-hospitalizacoes').value = p.hospitalizacoes || '';
 
     const restore = (containerId, field, val) => {
       formData[field] = val;
@@ -1827,9 +2395,13 @@ function editPatient(rghc) {
     if (p.doenca) updateMetrics(p.doenca);
     restore('q-tempo-diag','tempo_diag',p.tempo_diag);
     restore('q-atividade','atividade',p.atividade);
-    if (p.atividade === 'Remissão') { document.getElementById('sub-remissao').classList.remove('hidden'); restore('q-tempo-remissao','tempo_remissao',p.tempo_remissao); }
+    if (isRemissao(p.atividade)) { document.getElementById('sub-remissao').classList.remove('hidden'); restore('q-tempo-remissao','tempo_remissao',p.tempo_remissao); }
     restore('q-num-med','num_med',p.num_med);
     restore('q-gcs','gcs',p.gcs);
+    if (p.sem_imunossupressao) {
+      formData.sem_imunossupressao = false; // força toggle
+      toggleSemImunossupressao();
+    }
     restoreCheck('q-csdmard','csdmard',p.csdmard);
     formData.dmard_posologia = p.dmard_posologia ? {...p.dmard_posologia} : {};
     if (p.csdmard?.length) renderPosologia('csdmard','posologia-csdmard');
@@ -1854,7 +2426,6 @@ function editPatient(rghc) {
     restore('q-renda','renda',p.renda);
     restore('q-ocupacao','ocupacao',p.ocupacao);
     restore('q-carga-horaria','carga_horaria',p.carga_horaria);
-    restoreCheck('q-locomocao','locomocao',p.locomocao);
     restore('q-local-residencia','local_residencia',p.local_residencia);
     restore('q-num-pessoas','num_pessoas',p.num_pessoas);
     restore('q-situacao-moradia','situacao_moradia',p.situacao_moradia);
@@ -1896,12 +2467,12 @@ function exportCSV() {
   const db = getData();
   if (!db.length) { alert('Nenhum dado para exportar.'); return; }
   const headers = ['rghc','nome','nascimento','inicio_seg','entrevista','idade','sexo','etnia','doenca',
-    'tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk','das28','asdas','sledai','myoact','mmt8','bvas','itas',
+    'tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk','das28','asdas','dapsa','sledai','myoact','mmt8','bvas','itas',
     'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
     'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
-    'reacao','reacao_quais','intervalo','dmard_posologia',
+    'reacao','reacao_quais','intervalo','hospitalizacoes','dmard_posologia',
     'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
-    'locomocao','local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
+    'local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
     'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
     'facilidade_consulta','falta_farm','compra_med','custo_med','deslocamento',
     'comunic','confianca','participacao','satisfacao','suporte',
@@ -1986,6 +2557,7 @@ const SHEET_COLS = [
   ['cpk',             'CPK (U/L)'],
   ['das28',           'DAS28'],
   ['asdas',           'ASDAS'],
+  ['dapsa',           'DAPSA'],
   ['sledai',          'SLEDAI'],
   ['myoact',          'MYOACT'],
   ['mmt8',            'MMT8'],
@@ -1996,7 +2568,7 @@ const SHEET_COLS = [
   ['csdmard',         'csDMARD em Uso'],
   ['bdmard',          'bDMARD em Uso'],
   ['tsdmard',         'tsDMARD em Uso'],
-  ['tempo_dmard',     'Tempo desde Último DMARD Introduzido'],
+  ['tempo_dmard',     'Tempo desde Última Mudança do Tratamento'],
   ['csdmard_prev',    'csDMARD Prévios'],
   ['bdmard_prev',     'bDMARD Prévios'],
   ['tsdmard_prev',    'tsDMARD Prévios'],
@@ -2005,6 +2577,7 @@ const SHEET_COLS = [
   ['reacao',          'Histórico de Reação Adversa a DMARD'],
   ['reacao_quais',    'Reação Adversa – Quais Medicações'],
   ['intervalo',       'Intervalo Médio entre Consultas'],
+  ['hospitalizacoes', 'Hospitalizações no Último Ano (nº)'],
   ['dmard_posologia', 'Posologia dos DMARDs'],
   // Sociodemográfico
   ['religiao',        'Religião'],
@@ -2014,7 +2587,6 @@ const SHEET_COLS = [
   ['renda',           'Renda Familiar Mensal'],
   ['ocupacao',        'Ocupação'],
   ['carga_horaria',   'Carga Horária Semanal'],
-  ['locomocao',       'Meio de Locomoção'],
   ['local_residencia','Localização da Residência'],
   ['num_pessoas',     'Pessoas na Residência'],
   ['situacao_moradia','Situação de Moradia'],
@@ -2503,7 +3075,7 @@ function renderStats() {
   metGrid.className = 'stat-grid';
   metGrid.innerHTML = [
     ['DAS28 (0–8)','das28'],['ASDAS (0,6–6)','asdas'],
-    ['SLEDAI (0–105)','sledai'],['MYOACT (0–70)','myoact'],
+    ['SLEDAI (0–105)','sledai'],['MYOACT (0–60)','myoact'],
     ['MMT8 (0–80)','mmt8'],['BVAS (0–63)','bvas'],['ITAS (0–51)','itas']
   ].map(([l,f]) => numericCard('Q13 · '+l, numStat(db,f))).join('');
   ap(metGrid);
@@ -2585,6 +3157,44 @@ function renderStats() {
       [lbl, cqrDb.filter(p=>{ const s=parseFloat(p.cqr_score); return (min===null||s>=min)&&(max===null||s<max); }).length]
     ).filter(([,v])=>v>0);
     ap(barChart('CQR-19 · Distribuição por Faixa de Score', faixaEntries, cqrDb.length));
+
+    // Adesão por doença
+    const doencasComCQR = [...new Set(cqrDb.map(p => p.doenca).filter(Boolean))].sort();
+    if (doencasComCQR.length > 1 || (doencasComCQR.length === 1 && cqrDb.length > 1)) {
+      const sectionDiv = document.createElement('div');
+      sectionDiv.className = 'chart-section';
+      sectionDiv.innerHTML = `<div class="chart-title">CQR-19 · Adesão por Diagnóstico</div>
+        <div style="font-size:11px;color:#718096;margin-bottom:10px">
+          Pacientes com CQR-19 preenchido. Verde = Aderentes · Vermelho = Não aderentes · Cinza = %
+        </div>`;
+      doencasComCQR.forEach(doenca => {
+        const dPac = cqrDb.filter(p => p.doenca === doenca);
+        const total = dPac.length;
+        const nA  = dPac.filter(p => p.cqr_aderente === 'Aderente').length;
+        const nNA = dPac.filter(p => p.cqr_aderente === 'Não aderente').length;
+        const pA  = Math.round(nA / total * 100);
+        const pNA = Math.round(nNA / total * 100);
+        const row = document.createElement('div');
+        row.style.cssText = 'margin-bottom:10px';
+        row.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-size:12px;font-weight:600;color:#2d3748;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${doenca}">${doenca}</span>
+            <span style="font-size:11px;color:#718096;white-space:nowrap">${total} pac.</span>
+          </div>
+          <div style="display:flex;border-radius:6px;overflow:hidden;height:22px;background:#e8ecf0">
+            ${nA  ? `<div style="width:${pA}%;background:#276749;display:flex;align-items:center;justify-content:center;min-width:${pA>8?'0':'28px'}">
+                       <span style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;padding:0 4px">${pA>8?pA+'%':''}</span></div>` : ''}
+            ${nNA ? `<div style="width:${pNA}%;background:#c53030;display:flex;align-items:center;justify-content:center;min-width:${pNA>8?'0':'28px'}">
+                       <span style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;padding:0 4px">${pNA>8?pNA+'%':''}</span></div>` : ''}
+          </div>
+          <div style="display:flex;gap:14px;margin-top:3px">
+            <span style="font-size:11px;color:#276749;font-weight:600">✓ Aderente: ${nA} (${pA}%)</span>
+            <span style="font-size:11px;color:#c53030;font-weight:600">✗ Não aderente: ${nNA} (${pNA}%)</span>
+          </div>`;
+        sectionDiv.appendChild(row);
+      });
+      ap(sectionDiv);
+    }
   } else {
     const noData = document.createElement('p');
     noData.style.cssText = 'color:#718096;font-size:12px;padding:8px 0';
@@ -2621,8 +3231,6 @@ function renderStats() {
   s10e.appendChild(barChart('Q38 · Tabagismo', countBy(db,'tabagismo'), n));
   s10e.appendChild(barChart('Q39 · Etilismo', countBy(db,'etilismo'), n));
   ap(s10e);
-  ap(barChartMulti('Q34 · Meio de Locomoção', countMulti(db,'locomocao'), n));
-
   // ── SEÇÃO 11: ACESSO E EDUCAÇÃO ──
   ap(secHeader('Acesso e Educação em Saúde', 'Q40–Q49'));
   const acessoFields = [
@@ -2872,7 +3480,9 @@ ${text}`;
     }
 
     const raw  = await resp.json();
-    const txt  = raw.content[0].text.trim();
+    let txt    = raw.content[0].text.trim();
+    // remove markdown code fences if present (```json ... ``` or ``` ... ```)
+    txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const data = JSON.parse(txt);
 
     const filled = fillFromExtracted(data);
@@ -3041,7 +3651,7 @@ function fillTestData() {
 
   // ── Dados Clínicos ──
   clickOpt('q-doenca',     'Artrite reumatoide');
-  updateMetrics();
+  updateMetrics('Artrite reumatoide');
   clickOpt('q-tempo-diag', '7–9 anos');
   clickOpt('q-atividade',  'Baixa atividade');
 
@@ -3084,8 +3694,6 @@ function fillTestData() {
       clickOpt('q-renda',             '1 a 3 salários mínimos');
       clickOpt('q-ocupacao',          'Aposentado');
       clickOpt('q-carga-horaria',     '< 14 horas');
-      clickOpt('q-locomocao',         'Ônibus');
-      clickOpt('q-locomocao',         'Táxi/aplicativo');
       clickOpt('q-local-residencia',  'Área urbana');
       clickOpt('q-num-pessoas',       '3');
       clickOpt('q-situacao-moradia',  'Própria');
@@ -3146,6 +3754,739 @@ function fillTestData() {
       window.scrollTo(0,0);
     }, 100);
   }, 100);
+}
+
+// ============================================================
+// IMPORTAR PLANILHA
+// ============================================================
+const IMPORT_NORM = {
+  estado_civil: {
+    'solteiro (a)':'Solteiro','solteiro(a)':'Solteiro','solteiro':'Solteiro',
+    'casado (a)':'Casado','casado(a)':'Casado','casado':'Casado',
+    'viúvo (a)':'Viúvo','viúvo(a)':'Viúvo','viúvo':'Viúvo',
+    'divorciado (a)':'Divorciado','divorciado(a)':'Divorciado','divorciado':'Divorciado',
+    'união estável':'União estável','uniao estavel':'União estável',
+  },
+  religiao: {
+    'protestantismo / evangélico':'Evangélico / Protestante',
+    'protestantismo/evangélico':'Evangélico / Protestante',
+    'protestante':'Evangélico / Protestante','evangélico':'Evangélico / Protestante',
+    'catolicismo':'Catolicismo','espiritismo':'Espiritismo','budismo':'Budismo',
+    'judaísmo':'Judaísmo','islamismo':'Islamismo',
+    'testemunha de jeová':'Testemunha de Jeová','umbandismo':'Umbandismo',
+    'candomblé':'Candomblé','sem religião':'Sem religião','outro':'Outro',
+  },
+  escolaridade: {
+    'superior incompleto':'Ensino Superior incompleto',
+    'superior completo':'Ensino Superior completo',
+    'médio completo':'Ensino Médio completo','medio completo':'Ensino Médio completo',
+    'médio incompleto':'Ensino Médio incompleto','medio incompleto':'Ensino Médio incompleto',
+    'fundamental completo':'Ensino Fundamental completo',
+    'fundamental incompleto':'Ensino Fundamental incompleto',
+    'pós-graduado':'Pós-graduação','pos-graduado':'Pós-graduação',
+    'pós graduado':'Pós-graduação','pós-graduação':'Pós-graduação',
+    'menos de 1 ano':'Menos de 1 ano de estudo','menos de 1 ano de estudo':'Menos de 1 ano de estudo',
+  },
+  renda: {
+    'até 1 salário mínimo':'Até 1 salário mínimo','até 1 sm':'Até 1 salário mínimo',
+    '1 a 3 salários mínimos':'1 a 3 salários mínimos','1 a 3 sm':'1 a 3 salários mínimos',
+    '3 a 5 salários mínimos':'3 a 5 salários mínimos','3 a 5 sm':'3 a 5 salários mínimos',
+    'mais de 5 salários mínimos':'Mais de 5 salários mínimos','mais de 5 sm':'Mais de 5 salários mínimos',
+  },
+  carga_horaria: {
+    '< 14 horas':'< 14 horas','menos de 14 horas':'< 14 horas',
+    '15 a 39 horas':'15–39 horas','15–39 horas':'15–39 horas',
+    '40 a 48 horas':'40 a 48 horas','40–48 horas':'40 a 48 horas',
+    '49 a 60 horas':'49 a 60 horas','49–60 horas':'49 a 60 horas',
+    '> 60 horas':'> 60 horas','mais de 60 horas':'> 60 horas',
+  },
+  num_pessoas: {
+    'mora sozinho (a)':'Mora sozinho','mora sozinho(a)':'Mora sozinho','mora sozinho':'Mora sozinho',
+    '1':'Mora sozinho','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7',
+  },
+  filhos: {
+    'sem filhos':'Sem filhos','nenhum':'Sem filhos','0':'Sem filhos',
+    '1':'1','2':'2','3':'3','4':'4','5':'5',
+  },
+  // Doenças que mapeiam diretamente
+  doenca_direta: {
+    'aij':'Artrite idiopática juvenil','artrite idiopática juvenil':'Artrite idiopática juvenil',
+    'les juvenil':'Lúpus juvenil','lúpus juvenil':'Lúpus juvenil',
+    'les':'Lúpus eritematoso sistêmico','lúpus eritematoso sistêmico':'Lúpus eritematoso sistêmico',
+    'artrite reumatoide':'Artrite reumatoide','ar':'Artrite reumatoide',
+    'espondiloartrite':'Espondiloartrite','ea':'Espondiloartrite',
+    'artrite psorística':'Artrite psorística','artrite psorítica':'Artrite psorística',
+    'dermatomiosite':'Dermatomiosite','polimiosite':'Polimiosite','gpa':'GPA',
+    'gepa':'GEPA','pam':'PAM','pan':'PAN',
+    'arterite de takayasu':'Arterite de Takayasu',
+    'arterite de células gigantes':'Arterite de células gigantes',
+  },
+  // Doenças ambíguas → lista de opções para o usuário escolher
+  doenca_ambigua: {
+    'vasculite':['GPA','GEPA','PAM','PAN','Arterite de células gigantes','Arterite de Takayasu','Policondrite recidivante'],
+    'miopatia':['Dermatomiosite','Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil','Polimiosite','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','Síndrome antissintetase','Sobreposição miopatia + outra doença'],
+  },
+};
+
+// Mapeia texto de resposta para pts (usando as listas já definidas no app)
+function importTextToPts(txt, type) {
+  const t = String(txt||'').trim().toLowerCase();
+  if (type === 'cqr') {
+    const m = {'não concordo de forma alguma':1,'não concordo':2,'concordo':3,'concordo muito':4};
+    return m[t] ?? null;
+  }
+  if (type === 'haq') {
+    const m = {'sem qualquer dificuldade':0,'com alguma dificuldade':1,'com muita dificuldade':2,'incapaz de realizar':3};
+    return m[t] ?? null;
+  }
+  if (type === 'seams') {
+    const m = {'muito confiante':3,'pouco confiante':2,'não estou confiante':1,'não confiante':1};
+    return m[t] ?? null;
+  }
+  if (type === 'bmq') {
+    const m = {'concordo totalmente':5,'concordo':4,'nem concordo nem discordo':3,'discordo':2,'discordo totalmente':1};
+    return m[t] ?? null;
+  }
+  return null;
+}
+
+// Pts HADS por item (baseado em HADS_ITENS definidos acima)
+function getHadsPts(itemId, txt) {
+  const item = HADS_ITENS.find(i => i.id === itemId);
+  if (!item) return null;
+  const t = String(txt||'').trim().toLowerCase();
+  const match = item.opts.find(o => o.txt.toLowerCase() === t);
+  return match ? match.pts : null;
+}
+
+function normImport(val, map) {
+  if (val === null || val === undefined) return null;
+  const k = String(val).trim().toLowerCase();
+  return map[k] !== undefined ? map[k] : null;
+}
+
+function matchList(val, list) {
+  if (!val) return null;
+  const t = String(val).trim();
+  const exact = list.find(o => o.toLowerCase() === t.toLowerCase());
+  if (exact) return exact;
+  const partial = list.find(o => o.toLowerCase().includes(t.toLowerCase()) || t.toLowerCase().includes(o.toLowerCase()));
+  return partial || null;
+}
+
+function normAlergia(val) {
+  if (!val) return null;
+  const t = String(val).trim().toLowerCase();
+  if (['n','não','nao','nega','nenhuma','nenhhuma'].includes(t) || t.startsWith('neg')) return 'Não';
+  if (t !== '') return 'Sim';
+  return null;
+}
+
+let importedRows = [];
+
+function openImportModal() {
+  document.getElementById('import-modal').style.display = 'flex';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-eva-warn').style.display = 'none';
+  document.getElementById('import-filename').textContent = '';
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').style.display = 'none';
+}
+
+// RFC 4180 CSV parser with auto-detected or explicit delimiter
+function parseCSVText(text, delimiter) {
+  // Strip BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  // Auto-detect delimiter: if first line has more semicolons than commas, use semicolon
+  if (!delimiter) {
+    const firstLine = text.slice(0, text.indexOf('\n') + 1 || text.length);
+    delimiter = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+  }
+  const rows = [];
+  let row = [], field = '', inQuote = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuote) {
+      if (ch === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (ch === '"') { inQuote = false; }
+      else { field += ch; }
+    } else {
+      if (ch === '"') { inQuote = true; }
+      else if (ch === delimiter) { row.push(field); field = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else { field += ch; }
+    }
+  }
+  row.push(field);
+  if (row.some(c => c !== '')) rows.push(row);
+  return rows;
+}
+
+// Detect if CSV headers match native app export format
+function isNativeAppCSV(headers) {
+  return headers[0] === 'rghc' && headers[1] === 'nome' && headers.includes('doenca');
+}
+
+// Build patient record directly from app's own CSV export (exact header mapping)
+function buildRecordFromNativeCSV(headers, row) {
+  const h = {};
+  headers.forEach((hdr, i) => { h[hdr] = (row[i] ?? '').trim(); });
+
+  const str = key => h[key] || '';
+  const arr = key => h[key] ? h[key].split('|').filter(Boolean) : [];
+
+  // Restore posologia: Drug:via=X,dose=Y,freq=Z|Drug2:...
+  const posologia = {};
+  if (h['dmard_posologia']) {
+    h['dmard_posologia'].split('|').forEach(part => {
+      const colonIdx = part.indexOf(':');
+      if (colonIdx === -1) return;
+      const drug = part.slice(0, colonIdx).trim();
+      const rest = part.slice(colonIdx + 1);
+      const fields = {};
+      rest.split(',').forEach(kv => {
+        const eqIdx = kv.indexOf('=');
+        if (eqIdx === -1) return;
+        fields[kv.slice(0, eqIdx)] = kv.slice(eqIdx + 1);
+      });
+      if (drug) posologia[drug] = fields;
+    });
+  }
+
+  // Restore questionnaire response objects
+  const bmq_respostas = {};
+  for (let i = 1; i <= 5; i++) { const v = h[`bmqn_${i}`]; if (v !== '') bmq_respostas[`bmqn-${i}`] = Number(v); }
+  for (let i = 1; i <= 6; i++) { const v = h[`bmqc_${i}`]; if (v !== '') bmq_respostas[`bmqc-${i}`] = Number(v); }
+
+  const seams_respostas = {};
+  for (let i = 1; i <= 13; i++) { const v = h[`seams_${i}`]; if (v !== '' && v !== undefined) seams_respostas[i] = Number(v); }
+
+  const hads_respostas = {};
+  ['1A','2A','3A','4A','5A','6A','7A','1D','2D','3D','4D','5D','6D','7D'].forEach(id => {
+    const v = h[`hads_${id}`]; if (v !== '' && v !== undefined) hads_respostas[id] = Number(v);
+  });
+
+  const haq_respostas = {};
+  for (let i = 1; i <= 20; i++) { const v = h[`haq_${i}`]; if (v !== '' && v !== undefined) haq_respostas[i] = Number(v); }
+
+  const cqr_respostas = {};
+  for (let i = 1; i <= 19; i++) { const v = h[`cqr_${i}`]; if (v !== '' && v !== undefined) cqr_respostas[i] = Number(v); }
+
+  return {
+    rghc: str('rghc'), nome: str('nome'), nascimento: str('nascimento'),
+    inicio_seg: str('inicio_seg'), entrevista: str('entrevista'), idade: str('idade'),
+    sexo: str('sexo'), etnia: str('etnia'), doenca: str('doenca'),
+    tempo_diag: str('tempo_diag'), atividade: str('atividade'), tempo_remissao: str('tempo_remissao'),
+    vhs: str('vhs'), pcr: str('pcr'), cpk: str('cpk'),
+    das28: str('das28'), asdas: str('asdas'), dapsa: str('dapsa'),
+    sledai: str('sledai'), myoact: str('myoact'), mmt8: str('mmt8'),
+    bvas: str('bvas'), itas: str('itas'),
+    num_med: str('num_med'), gcs: str('gcs'),
+    csdmard: arr('csdmard'), bdmard: arr('bdmard'), tsdmard: arr('tsdmard'),
+    tempo_dmard: str('tempo_dmard'),
+    csdmard_prev: arr('csdmard_prev'), bdmard_prev: arr('bdmard_prev'), tsdmard_prev: arr('tsdmard_prev'),
+    comorbidades: arr('comorbidades'), med_continuas: arr('med_continuas'),
+    reacao: str('reacao'), reacao_quais: arr('reacao_quais'),
+    intervalo: str('intervalo'), hospitalizacoes: str('hospitalizacoes'),
+    dmard_posologia: posologia,
+    religiao: str('religiao'), estado_civil: str('estado_civil'), filhos: str('filhos'),
+    escolaridade: str('escolaridade'), renda: str('renda'), ocupacao: str('ocupacao'),
+    carga_horaria: str('carga_horaria'), local_residencia: str('local_residencia'),
+    num_pessoas: str('num_pessoas'), situacao_moradia: str('situacao_moradia'),
+    tabagismo: str('tabagismo'), etilismo: str('etilismo'),
+    material_educ: str('material_educ'), acompanhamento: str('acompanhamento'),
+    dif_doenca: str('dif_doenca'), conhec_complic: str('conhec_complic'),
+    dif_trat: str('dif_trat'), facilidade_consulta: str('facilidade_consulta'),
+    falta_farm: str('falta_farm'), compra_med: str('compra_med'),
+    custo_med: str('custo_med'), deslocamento: str('deslocamento'),
+    comunic: str('comunic'), confianca: str('confianca'),
+    participacao: str('participacao'), satisfacao: str('satisfacao'), suporte: str('suporte'),
+    eva_dor: str('eva_dor'), eva_estresse: str('eva_estresse'), eva_ptga: str('eva_ptga'),
+    bmq_respostas, bmq_necessity: str('bmq_necessity'), bmq_concerns: str('bmq_concerns'), bmq_diff: str('bmq_diff'),
+    seams_respostas, seams_score: str('seams_score'),
+    hads_respostas, hads_anx: str('hads_anx'), hads_dep: str('hads_dep'),
+    haq_respostas, haq_score: str('haq_score'),
+    cqr_respostas, cqr_score: str('cqr_score'), cqr_score_continuo: str('cqr_score_continuo'), cqr_aderente: str('cqr_aderente'),
+    ts: new Date().toISOString(), _importado: true
+  };
+}
+
+function handleImportFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('import-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let rows;
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        rows = parseCSVText(e.target.result);
+      } else {
+        const wb = XLSX.read(e.target.result, { type:'array', cellDates:true, dateNF:'yyyy-mm-dd' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'yyyy-mm-dd' });
+      }
+      processImportFile(rows);
+    } catch(err) {
+      alert('Erro ao ler arquivo: ' + err.message);
+    }
+  };
+  if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file,'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function processImportFile(rawRows) {
+  if (!rawRows || rawRows.length < 2) { alert('Arquivo vazio ou sem dados.'); return; }
+  const headers = rawRows[0].map(h => String(h||'').trim());
+  importedRows = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+
+  // Detecta colunas por nome (normalizado)
+  const hIdx = {};
+  headers.forEach((h, i) => { hIdx[h.trim().toLowerCase()] = i; });
+
+  // Helper pega valor da linha pelo nome aproximado do header (para planilhas externas)
+  const get = (row, ...keys) => {
+    for (const key of keys) {
+      const k = key.toLowerCase();
+      for (const [hk, hi] of Object.entries(hIdx)) {
+        if (hk === k || hk.includes(k) || k.includes(hk.replace(/[^a-záéíóúãõâêîôûçàü]+/g,''))) {
+          const v = row[hi];
+          if (v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== 'nan') return String(v).trim();
+        }
+      }
+    }
+    return null;
+  };
+
+  const native = isNativeAppCSV(headers);
+
+  // Verifica se EVA de comunicação parece fora de escala (valores ≤ 2 indicam problema) — apenas planilha externa
+  if (!native) {
+    const evaWarn = importedRows.some(row => {
+      const communIdx = hIdx[Object.keys(hIdx).find(k => k.includes('clareza')) || ''];
+      const v = communIdx !== undefined ? row[communIdx] : null;
+      return v !== null && v !== undefined && parseFloat(v) <= 2;
+    });
+    document.getElementById('import-eva-warn').style.display = evaWarn ? 'block' : 'none';
+  } else {
+    document.getElementById('import-eva-warn').style.display = 'none';
+  }
+
+  // Renderiza tabela de preview
+  renderImportTable(headers, hIdx, importedRows, get, native);
+  document.getElementById('import-count').textContent = `${importedRows.length} paciente(s) encontrado(s)`;
+  document.getElementById('import-preview').style.display = 'block';
+}
+
+function renderImportTable(headers, hIdx, rows, get, native) {
+  const tbody = document.getElementById('import-tbody');
+  tbody.innerHTML = '';
+
+  rows.forEach((row, ri) => {
+    const h = {};
+    if (native) headers.forEach((hdr, i) => { h[hdr] = (row[i] ?? '').trim(); });
+
+    const nome = native ? (h['nome'] || '(sem nome)') : (get(row,'nome') || '(sem nome)');
+    const rghc = native ? (h['rghc'] || '') : (get(row,'rghc') || '');
+    const data = native ? (h['entrevista'] || '') : (get(row,'data da entrevista','data entrevista') || '');
+    const doencaRaw = native ? (h['doenca'] || '') : (get(row,'doença em seguimento','doenca em seguimento','doença','doenca') || '');
+    const doencaKey = doencaRaw.toLowerCase();
+
+    const needsDisambig = !native && !!IMPORT_NORM.doenca_ambigua[doencaKey];
+    const disambigOptions = IMPORT_NORM.doenca_ambigua[doencaKey] || [];
+
+    // Detecta questionários presentes
+    const qScores = [];
+    if (native) {
+      if (h['cqr_score'] !== '' || h['cqr_1'] !== '') qScores.push('CQR');
+      if (h['haq_score'] !== '' || h['haq_1'] !== '') qScores.push('HAQ');
+      if (h['hads_anx'] !== '' || h['hads_1A'] !== '') qScores.push('HADS');
+      if (h['seams_score'] !== '' || h['seams_1'] !== '') qScores.push('SEAMS');
+      if (h['bmq_necessity'] !== '' || h['bmqn_1'] !== '') qScores.push('BMQ');
+    } else {
+      if (get(row,'reumatologista me diz para tomar','se o reumatologista')) qScores.push('CQR');
+      if (get(row,'vestir-se, inclusive amarrar','1.1 vestir')) qScores.push('HAQ');
+      if (get(row,'eu me sinto tenso','1a eu me sinto')) qScores.push('HADS');
+      if (get(row,'quando você toma vários medicamentos diferentes')) qScores.push('SEAMS');
+      if (get(row,'atualmente, a minha saúde depende')) qScores.push('BMQ');
+    }
+
+    const dataFormatted = data ? (() => {
+      try { return new Date(data+'T00:00:00').toLocaleDateString('pt-BR'); } catch { return data; }
+    })() : '—';
+
+    const disambigHtml = needsDisambig
+      ? `<select id="dis-${ri}" style="font-size:11px;border:1px solid #cbd5e0;border-radius:4px;padding:3px 6px;width:100%;max-width:220px" onchange="updateImportBtn()">
+           <option value="">— selecione o subtipo —</option>
+           ${disambigOptions.map(d => `<option value="${d}">${d}</option>`).join('')}
+         </select>`
+      : `<span style="color:#718096;font-size:11px">—</span>`;
+
+    const tr = document.createElement('tr');
+    tr.dataset.ri = ri;
+    tr.dataset.needsDisambig = needsDisambig ? '1' : '0';
+    tr.style.cssText = 'border-bottom:1px solid #e8ecf0';
+    tr.innerHTML = `
+      <td style="padding:8px 10px;text-align:center">
+        <input type="checkbox" class="import-row-check" data-ri="${ri}" onchange="updateImportBtn()">
+      </td>
+      <td style="padding:8px 10px;font-weight:600">${nome}</td>
+      <td style="padding:8px 10px;font-family:monospace;font-size:11px">${rghc}</td>
+      <td style="padding:8px 10px;white-space:nowrap">${dataFormatted}</td>
+      <td style="padding:8px 10px">${doencaRaw || '<span style="color:#a0aec0">—</span>'}</td>
+      <td style="padding:8px 10px">${disambigHtml}</td>
+      <td style="padding:8px 10px">
+        ${qScores.length ? qScores.map(q => `<span style="background:#ebf8ff;color:#2b6cb0;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:2px">${q}</span>`).join('') : '<span style="color:#a0aec0;font-size:11px">nenhum</span>'}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('import-btn').style.display = 'none';
+  document.getElementById('import-result').style.display = 'none';
+}
+
+function toggleAllImportChecks(checked) {
+  document.querySelectorAll('.import-row-check').forEach(cb => { cb.checked = checked; });
+  updateImportBtn();
+}
+
+function updateImportBtn() {
+  const selected = document.querySelectorAll('.import-row-check:checked').length;
+  const btn = document.getElementById('import-btn');
+  btn.style.display = selected > 0 ? 'inline-block' : 'none';
+  btn.textContent = `📥 Importar ${selected} paciente(s) para a Lista`;
+}
+
+// ── Cálculo de scores sem DOM ──
+function calcCQRPure(r) {
+  if (Object.keys(r).length < 19) return { score:'', continuo:'', aderente:'' };
+  let disc = CQR_DISC.constant;
+  for (let i = 1; i <= 19; i++) { if (r[i] === undefined) return { score:'', continuo:'', aderente:'' }; disc += CQR_DISC.coefs[i-1] * r[i]; }
+  const soma = Object.values(r).reduce((a,b)=>a+b,0);
+  const continuo = Math.round((soma-19)/57*100);
+  const aderente = disc >= CQR_DISC.cuttingScore;
+  return { score: parseFloat(disc.toFixed(4)), continuo, aderente: aderente ? 'Aderente' : 'Não aderente' };
+}
+function calcHAQPure(r) {
+  const blocos = HAQ_BLOCOS.map(b => { const v = b.itens.map(it=>r[it.n]).filter(x=>x!==undefined); return v.length ? Math.max(...v) : null; });
+  if (blocos.some(v=>v===null)) return '';
+  return Math.round(blocos.reduce((a,b)=>a+b,0)/8*100)/100;
+}
+function calcHADSPure(r) {
+  const aIds = HADS_ITENS.filter(i=>i.tipo==='A').map(i=>i.id);
+  const dIds = HADS_ITENS.filter(i=>i.tipo==='D').map(i=>i.id);
+  const aV = aIds.map(id=>r[id]).filter(v=>v!==undefined);
+  const dV = dIds.map(id=>r[id]).filter(v=>v!==undefined);
+  return { anx: aV.length===7 ? aV.reduce((a,b)=>a+b,0) : '', dep: dV.length===7 ? dV.reduce((a,b)=>a+b,0) : '' };
+}
+function calcSEAMSPure(r) {
+  const v = Object.values(r); return v.length < SEAMS_ITENS.length ? '' : v.reduce((a,b)=>a+b,0);
+}
+function calcBMQPure(r) {
+  const nV = BMQ_NECESSITY.map((_,i)=>r[`bmqn-${i+1}`]).filter(v=>v!==undefined);
+  const cV = BMQ_CONCERNS.map((_,i)=>r[`bmqc-${i+1}`]).filter(v=>v!==undefined);
+  const nec = nV.length===BMQ_NECESSITY.length ? nV.reduce((a,b)=>a+b,0) : '';
+  const con = cV.length===BMQ_CONCERNS.length  ? cV.reduce((a,b)=>a+b,0) : '';
+  const diff = (nec!==''&&con!=='') ? nec-con : '';
+  return { nec, con, diff };
+}
+
+// ── Keywords para busca nas colunas ──
+const CQR_KEYWORDS = [
+  'reumatologista me diz para tomar',
+  'tomo os meus medicamentos antirreumáticos, pois assim',
+  'definitivamente não me atrevo',
+  'terapias alternativas, prefiro',
+  'ficam sempre guardados no mesmo local',
+  'total confiança no meu reumatologista',
+  'motivo mais importante para tomar',
+  'não gosto de tomar medicamentos',
+  'de férias, às vezes, acontece',
+  'de que adiantaria consultar',
+  'não espero milagres',
+  'não aguenta os medicamentos, pode dizer',
+  'regularmente, a inflamação volta',
+  'meu corpo me avisa',
+  'saúde está acima de tudo',
+  'organizador de comprimidos',
+  'o que o médico me diz',
+  'não tomo os meus medicamentos antirreumáticos, tenho mais queixas',
+  'no fim de semana e então não tomo',
+];
+const HAQ_KEYWORDS = [
+  'vestir-se, inclusive amarrar','lavar sua cabeça e seus cabelos',
+  'levantar-se de uma maneira ereta','deitar-se e levantar-se da cama',
+  'cortar um pedaço de carne','levar à boca um copo',
+  'abrir um saco de leite','caminhar em lugares planos',
+  'subir cinco degraus','lavar seu corpo inteiro',
+  'tomar um banho de chuveiro','sentar-se e levantar-se de um vaso',
+  'levantar os braços e pegar um objeto','curvar-se para pegar suas roupas',
+  'segurar-se em pé no ônibus','abrir potes ou vidros de conserva',
+  'abrir e fechar torneiras','fazer compras na redondeza',
+  'entrar e sair de um ônibus','realizar tarefas tais como usar a vassoura',
+];
+const HADS_KW = [
+  ['1A','eu me sinto tenso ou contraído'],
+  ['1D','eu ainda sinto gosto pelas mesmas coisas de antes'],
+  ['2A','eu sinto uma espécie de medo, como se algum'],
+  ['2D','dou risada e me divirto quando vejo coisas engraçadas'],
+  ['3A','estou com a cabeça cheia de preocupações'],
+  ['3D','eu me sinto alegre'],
+  ['4A','consigo ficar sentado à vontade e me sentir relaxado'],
+  ['4D','eu estou lento para pensar'],
+  ['5A','eu tenho uma sensação ruim de medo, como um frio'],
+  ['5D','eu perdi o interesse em cuidar da minha aparência'],
+  ['6A','eu me sinto inquieto, como se não pudesse ficar parado'],
+  ['6D','fico esperando animado'],
+  ['7A','de repente, tenho a sensação de entrar em pânico'],
+  ['7D','consigo sentir prazer quando assisto um bom programa'],
+];
+const SEAMS_KW = [
+  'quando você toma vários medicamentos diferentes',
+  'quando você toma medicamentos mais de uma vez ao dia',
+  'quando você está fora de casa',
+  'quando você tem um dia agitado',
+  'quando os medicamentos causam alguns efeitos colaterais',
+  'quando ninguém lembra você de tomar o medicamento',
+  'quando os horários de tomar os medicamentos não são convenientes',
+  'quando sua rotina fica bagunçada',
+  'quando você não tem certeza de como deve tomar o medicamento',
+  'quando você não tem certeza em que horário deve tomar',
+  'quando você está se sentindo doente (como ter um resfriado',
+  'quando você adquire os medicamentos e alguns deles parecem diferentes',
+  'quando o médico troca seus medicamentos',
+];
+const BMQ_NEC_KW = [
+  'atualmente, a minha saúde depende destes medicamentos',
+  'a minha vida seria impossível sem estes medicamentos',
+  'sem estes medicamentos, eu estaria muito doente',
+  'a minha saúde no futuro dependerá destes medicamentos',
+  'estes medicamentos protegem-me de ficar pior',
+];
+const BMQ_CON_KW = [
+  'preocupa-me ter de tomar estes medicamentos',
+  'às vezes, preocupo-me com os efeitos a longo prazo',
+  'estes medicamentos são um mistério para mim',
+  'estes medicamentos perturbam a minha vida',
+  'às vezes, preocupo-me em ficar demasiado dependente',
+  'estes medicamentos dão-me desagradáveis efeitos secundários',
+];
+
+// ── Constrói objeto de paciente a partir de uma linha da planilha ──
+function buildRecordFromRow(headers, row, doencaOverride) {
+  const hi = {};
+  headers.forEach((h,i) => { hi[h.trim().toLowerCase()] = i; });
+
+  const g = (...keys) => {
+    for (const key of keys) {
+      const k = key.trim().toLowerCase();
+      for (const [hk, idx] of Object.entries(hi)) {
+        const hkn = hk.replace(/\s+/g,' ');
+        if (hkn === k || hkn.includes(k) || k.includes(hkn)) {
+          const v = row[idx];
+          if (v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'nan') return String(v).trim();
+        }
+      }
+    }
+    return null;
+  };
+
+  // Data
+  let dataE = g('data da entrevista','data entrevista') || '';
+  if (dataE.includes('/')) { const [d,m,y] = dataE.split('/'); dataE = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`; }
+
+  // Doença
+  const doencaRaw = g('doença em seguimento','doenca em seguimento','doença','doenca') || '';
+  const doencaKey = doencaRaw.toLowerCase();
+  const doencaFinal = doencaOverride
+    || normImport(doencaKey, IMPORT_NORM.doenca_direta)
+    || matchList(doencaRaw, DOENCAS)
+    || '';
+
+  // Campos simples
+  const sn = v => matchList(v, SIM_NAO) || matchList(v, SIM_NAO_PARC) || '';
+
+  // CQR
+  const cqrR = {};
+  CQR_KEYWORDS.forEach((kw,i) => {
+    const num = i + 1;
+    let p = importTextToPts(g(kw),'cqr');
+    if (p !== null) {
+      // Os itens negativos (CQR_NEG) são pontuados de forma invertida no app
+      // (Não concordo de forma alguma = 4 … Concordo muito = 1), que é o valor
+      // que renderCQR/restoreCQR/calcCQR esperam. importTextToPts devolve o valor
+      // literal da escala (1–4), então invertemos aqui apenas os itens NEG.
+      if (CQR_NEG.has(num)) p = 5 - p;
+      cqrR[num] = p;
+    }
+  });
+  const cqr = calcCQRPure(cqrR);
+
+  // HAQ
+  const haqR = {};
+  HAQ_KEYWORDS.forEach((kw,i) => { const p=importTextToPts(g(kw),'haq'); if(p!==null) haqR[i+1]=p; });
+  const haqScore = calcHAQPure(haqR);
+
+  // HADS
+  const hadsR = {};
+  HADS_KW.forEach(([id,kw]) => { const p=getHadsPts(id,g(kw)); if(p!==null) hadsR[id]=p; });
+  const hads = calcHADSPure(hadsR);
+
+  // SEAMS
+  const seamsR = {};
+  SEAMS_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'seams'); if(p!==null) seamsR[i+1]=p; });
+  const seamsScore = calcSEAMSPure(seamsR);
+
+  // BMQ
+  const bmqR = {};
+  BMQ_NEC_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'bmq'); if(p!==null) bmqR[`bmqn-${i+1}`]=p; });
+  BMQ_CON_KW.forEach((kw,i) => { const p=importTextToPts(g(kw),'bmq'); if(p!==null) bmqR[`bmqc-${i+1}`]=p; });
+  const bmq = calcBMQPure(bmqR);
+
+  // Escala EVA helper
+  const eva = (...keys) => { const v=g(...keys); return (v!==null&&v!==undefined&&!isNaN(parseFloat(v))) ? String(parseFloat(v)) : ''; };
+
+  return {
+    rghc:  g('rghc') || '',
+    nome:  g('nome') || '',
+    nascimento: '',
+    inicio_seg: '',
+    entrevista: dataE,
+    idade: '',
+    sexo: '', etnia: '',
+    doenca: doencaFinal,
+    tempo_diag:'', atividade:'', tempo_remissao:'',
+    vhs:'', pcr:'', cpk:'', das28:'', asdas:'', dapsa:'', sledai:'', myoact:'', mmt8:'', bvas:'', itas:'',
+    num_med: '', gcs: '',
+    csdmard:[], bdmard:[], tsdmard:[], tempo_dmard:'',
+    csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
+    comorbidades:[], med_continuas:[], reacao: normAlergia(g('alergias')) || '', reacao_quais:[],
+    intervalo:'', dmard_posologia:{},
+    religiao:    normImport(g('religião','religiao')||'', IMPORT_NORM.religiao) || matchList(g('religião','religiao'), RELIGIAO) || '',
+    estado_civil: normImport(g('estado civil')||'', IMPORT_NORM.estado_civil) || matchList(g('estado civil'), ESTADO_CIVIL) || '',
+    filhos:      (() => { const f=g('filhos'); return normImport(String(f||''),IMPORT_NORM.filhos)||(f&&!isNaN(parseInt(f))?String(parseInt(f)):'')||''; })(),
+    escolaridade: normImport(g('escolaridade')||'', IMPORT_NORM.escolaridade) || matchList(g('escolaridade'), ESCOLARIDADE) || '',
+    renda:        normImport(g('renda familiar mensal','renda familiar','renda')||'', IMPORT_NORM.renda) || matchList(g('renda familiar mensal','renda'), RENDA) || '',
+    ocupacao:     matchList(g('ocupação','ocupacao'), OCUPACAO) || '',
+    carga_horaria: normImport(g('carga horário','carga horaria')||'', IMPORT_NORM.carga_horaria) || matchList(g('carga horário','carga horaria'), CARGA_HORARIA) || '',
+    local_residencia: matchList(g('localização da residência','localizacao'), LOCAL_RESIDENCIA) || '',
+    num_pessoas:  (() => { const n=g('número de pessoas','numero de pessoas'); return normImport(String(n||''),IMPORT_NORM.num_pessoas)||matchList(n,NUM_PESSOAS)||''; })(),
+    situacao_moradia: matchList(g('situação de moradia','situacao de moradia'), SITUACAO_MORADIA) || '',
+    tabagismo:    matchList(g('tabagismo'), TABAGISMO) || '',
+    etilismo:     matchList(g('etilismo'),  ETILISMO)  || '',
+    material_educ:       sn(g('recebe material educativo','material educativo')),
+    acompanhamento:      sn(g('recebe acompanhamento','acompanhamento de enfermeiro')),
+    dif_doenca:          sn(g('tem dificuldade para entender informações sobre a doença','dificuldade para entender informações sobre a doença')),
+    conhec_complic:      sn(g('tem conhecimento das complicações','conhecimento das complicações')),
+    dif_trat:            sn(g('tem dificuldade para entender informações sobre o tratamento','dificuldade para entender informações sobre o tratamento')),
+    facilidade_consulta: sn(g('possui facilidade para marcar','facilidade para marcar consultas')),
+    falta_farm:          sn(g('já ocorreu das suas medicações estarem em falta','medicações estarem em falta')),
+    compra_med:          sn(g('se / quando falta medicamento na farmácia, consegue','consegue comprar')),
+    custo_med:           sn(g('você acha que o custo das medicações','custo das medicações é um problema')),
+    deslocamento:        sn(g('o deslocamento até a unidade','deslocamento até a unidade')),
+    comunic:      eva('clareza de comunicação da equipe médica','clareza de comunicação'),
+    confianca:    eva('confiança na equipe médica','confiança na equipe'),
+    participacao: eva('participação nas decisões terapêuticas','participação nas decisões'),
+    satisfacao:   eva('satisfação com tratamento atual','satisfação com tratamento'),
+    suporte:      eva('suporte social para tomar as medicações','suporte social'),
+    eva_dor:      eva('eva dor'),
+    eva_estresse: eva('eva estresse'),
+    eva_ptga:     eva('eva ptga'),
+    bmq_respostas: {...bmqR}, bmq_necessity: bmq.nec, bmq_concerns: bmq.con, bmq_diff: bmq.diff,
+    seams_respostas: {...seamsR}, seams_score: seamsScore,
+    hads_respostas: {...hadsR}, hads_anx: hads.anx, hads_dep: hads.dep,
+    haq_respostas: {...haqR}, haq_score: haqScore,
+    cqr_respostas: {...cqrR}, cqr_score: cqr.score, cqr_score_continuo: cqr.continuo, cqr_aderente: cqr.aderente,
+    ts: new Date().toISOString(),
+    _importado: true
+  };
+}
+
+function importSelectedToList() {
+  const checks = [...document.querySelectorAll('.import-row-check:checked')];
+  if (!checks.length) return;
+
+  const fileInput = document.getElementById('import-file-input');
+  if (!fileInput.files[0]) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    let rawRows;
+    const fname = fileInput.files[0].name.toLowerCase();
+    if (fname.endsWith('.csv')) {
+      rawRows = parseCSVText(e.target.result);
+    } else {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true, dateNF:'yyyy-mm-dd'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'yyyy-mm-dd'});
+    }
+    const headers = rawRows[0].map(h => String(h||'').trim());
+    const dataRows = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+    const native = isNativeAppCSV(headers);
+
+    const db = getData();
+    let imported = 0, skipped = 0, updated = 0;
+
+    checks.forEach(cb => {
+      const ri = parseInt(cb.dataset.ri);
+      const row = dataRows[ri];
+      if (!row) return;
+      let record;
+      if (native) {
+        record = buildRecordFromNativeCSV(headers, row);
+      } else {
+        const disEl = document.getElementById(`dis-${ri}`);
+        const doencaOverride = disEl ? (disEl.value || null) : null;
+        record = buildRecordFromRow(headers, row, doencaOverride);
+      }
+      if (!record.rghc && !record.nome) { skipped++; return; }
+
+      const idx = db.findIndex(p => record.rghc && p.rghc === record.rghc);
+      if (idx !== -1) {
+        // Atualiza apenas campos vazios no registro existente
+        const isEmptyVal = x => x === '' || x === null || x === undefined ||
+          (Array.isArray(x) && !x.length) ||
+          (typeof x === 'object' && !Array.isArray(x) && !Object.keys(x||{}).length);
+        Object.keys(record).forEach(k => {
+          const v = record[k];
+          if (!isEmptyVal(v) && isEmptyVal(db[idx][k])) {
+            db[idx][k] = v;
+          }
+        });
+        updated++;
+      } else {
+        db.push(record);
+        imported++;
+      }
+    });
+
+    setData(db);
+    renderList();
+
+    const resEl = document.getElementById('import-result');
+    resEl.style.display = 'inline';
+    resEl.innerHTML = `<span style="color:#276749;font-weight:600">✓ ${imported} importado(s)</span>`
+      + (updated ? ` <span style="color:#2b6cb0">· ${updated} atualizado(s)</span>` : '')
+      + (skipped ? ` <span style="color:#c05621">· ${skipped} ignorado(s) (sem RGHC/nome)</span>` : '');
+
+    document.getElementById('import-btn').textContent = 'Importar Selecionados para a Lista';
+    document.getElementById('import-btn').disabled = false;
+
+    // Fecha o modal após 1.5s e vai para a lista
+    setTimeout(() => {
+      closeImportModal();
+      showPage('list');
+    }, 1500);
+  };
+
+  document.getElementById('import-btn').textContent = 'Importando...';
+  document.getElementById('import-btn').disabled = true;
+
+  if (fileInput.files[0].name.toLowerCase().endsWith('.csv')) reader.readAsText(fileInput.files[0],'UTF-8');
+  else reader.readAsArrayBuffer(fileInput.files[0]);
 }
 
 // ============================================================
