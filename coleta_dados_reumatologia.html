@@ -213,6 +213,16 @@ tr:hover td{background:#f7faff}
 .adesao-badge.aderente .dot{background:#276749}
 .adesao-badge.nao-aderente .dot{background:#9b2c2c}
 .adesao-badge.sem-cqr .dot{background:#a0aec0}
+
+/* === TECLADO: foco nos opt-btn (Melhoria 44) === */
+.opt-btn:focus{outline:2px solid #1a56a0;outline-offset:2px;box-shadow:0 0 0 3px rgba(26,86,160,.22)}
+.opt-btn:focus:not(.selected){border-color:#1a56a0}
+
+/* === FILTRO DE MEDICAÇÃO (Melhoria 9) === */
+.med-filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border-radius:10px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:10px}
+.med-filter-bar label{font-size:11px;font-weight:700;color:#4a5568;white-space:nowrap}
+.med-filter-bar input{border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;background:#fafafa;min-width:220px}
+.med-filter-bar input:focus{outline:none;border-color:#1a56a0}
 </style>
 </head>
 <body>
@@ -425,6 +435,22 @@ tr:hover td{background:#f7faff}
   <div class="section-card">
     <div class="section-title">26. Intervalo Médio entre Consultas Médicas</div>
     <div class="options-grid" id="q-intervalo"></div>
+  </div>
+
+  <!-- S11: Hospitalizações (Melhoria 15) -->
+  <div class="section-card">
+    <div class="section-title">27. Internações e Urgências no Último Ano</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+      <div class="numeric-inline">
+        <label>Hospitalizações (internações):</label>
+        <input type="number" id="f-hospitalizacoes" min="0" max="50" placeholder="0" style="width:80px">
+      </div>
+      <div class="numeric-inline">
+        <label>Visitas ao pronto-socorro:</label>
+        <input type="number" id="f-ps-visitas" min="0" max="99" placeholder="0" style="width:80px">
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#718096">Considerar os 12 meses anteriores à data da entrevista. Registrar 0 se não houve.</div>
   </div>
 
   <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(0)">← Identificação</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-1" style="width:0%"></div></div><button class="btn-primary" onclick="showFormTab(2)">Sociodemográfico →</button></div>
@@ -644,6 +670,14 @@ tr:hover td{background:#f7faff}
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
   </div>
+  <!-- Filtro por medicação em uso (Melhoria 9) -->
+  <div class="med-filter-bar">
+    <label>&#128138; Medicação em uso:</label>
+    <input type="text" id="flt-med" list="flt-med-list" placeholder="Filtrar por DMARD (ex: Metotrexato)..." oninput="renderList()" autocomplete="off">
+    <datalist id="flt-med-list"></datalist>
+    <button class="btn-secondary btn-sm" onclick="document.getElementById('flt-med').value='';renderList()" title="Limpar filtro de medicação">&#10005; Limpar</button>
+    <span id="flt-med-count" style="font-size:11px;color:#718096;margin-left:4px"></span>
+  </div>
   <div id="list-container"></div>
 </div>
 
@@ -836,8 +870,9 @@ function renderBMQBlock(containerId, itens, prefix) {
       ? `<span class="hads-badge" style="background:#bee3f8;color:#2b6cb0">${n}</span>`
       : `<span class="hads-badge" style="background:#feebc8;color:#c05621">${n}</span>`;
     const optsHtml = BMQ_RESPS.map(o =>
-      `<div class="opt-btn" data-bmq="${prefix}-${n}" data-pts="${o.pts}"
-        onclick="selectBMQ('${prefix}-${n}',${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-bmq="${prefix}-${n}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectBMQ('${prefix}-${n}',${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">${badge}
@@ -921,8 +956,9 @@ function renderSEAMS() {
     div.className = 'hads-item';
     div.style.cssText = 'border-left:4px solid #48bb78';
     const optsHtml = SEAMS_RESPS.map(o =>
-      `<div class="opt-btn" data-seams="${n}" data-pts="${o.pts}"
-        onclick="selectSEAMS(${n},${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-seams="${n}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectSEAMS(${n},${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">
@@ -1206,6 +1242,11 @@ function setData(arr) {
 // ============================================================
 // RENDER OPTION BUTTONS
 // ============================================================
+// Melhoria 44: helper para ativar opt-btn pelo teclado
+function optKeydown(e, el) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+}
+
 function renderRadio(containerId, options, field) {
   const c = document.getElementById(containerId);
   c.innerHTML = '';
@@ -1213,6 +1254,8 @@ function renderRadio(containerId, options, field) {
     const b = document.createElement('div');
     b.className = 'opt-btn';
     b.textContent = opt;
+    b.tabIndex = 0;
+    b.onkeydown = e => optKeydown(e, b);
     b.onclick = () => {
       c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
       b.classList.add('selected');
@@ -1234,6 +1277,8 @@ function renderCheck(containerId, options, field, posologiaId) {
     const b = document.createElement('div');
     b.className = 'opt-btn multi';
     b.textContent = opt;
+    b.tabIndex = 0;
+    b.onkeydown = e => optKeydown(e, b);
     b.onclick = () => {
       const arr = formData[field];
       const idx = arr.indexOf(opt);
@@ -1378,8 +1423,9 @@ function renderHADS() {
     const div = document.createElement('div');
     div.className = `hads-item ${item.tipo === 'A' ? 'anx' : 'dep'}`;
     const optsHtml = item.opts.map(o =>
-      `<div class="opt-btn" data-hads="${item.id}" data-pts="${o.pts}"
-        onclick="selectHADS('${item.id}',${o.pts},this)">${o.txt}</div>`
+      `<div class="opt-btn" data-hads="${item.id}" data-pts="${o.pts}" tabindex="0"
+        onclick="selectHADS('${item.id}',${o.pts},this)"
+        onkeydown="optKeydown(event,this)">${o.txt}</div>`
     ).join('');
     div.innerHTML = `
       <div class="hads-item-header">
@@ -1451,8 +1497,9 @@ function renderHAQ() {
       const itemDiv = document.createElement('div');
       itemDiv.className = 'haq-item';
       const optsHtml = HAQ_RESPS.map((r, ri) =>
-        `<div class="opt-btn" data-haq="${item.n}" data-pts="${ri}"
-          onclick="selectHAQ(${item.n},${ri},this)">${ri} – ${r}</div>`
+        `<div class="opt-btn" data-haq="${item.n}" data-pts="${ri}" tabindex="0"
+          onclick="selectHAQ(${item.n},${ri},this)"
+          onkeydown="optKeydown(event,this)">${ri} – ${r}</div>`
       ).join('');
       itemDiv.innerHTML = `
         <div class="haq-item-num">${item.n}.</div>
@@ -1530,8 +1577,9 @@ function renderCQR() {
     const opts = CQR_RESP.map((r, ri) => {
       const pts = isNeg ? (4 - ri) : (ri + 1);
       return `<td style="text-align:center">
-        <div class="opt-btn cqr-opt" data-item="${num}" data-pts="${pts}"
+        <div class="opt-btn cqr-opt" data-item="${num}" data-pts="${pts}" tabindex="0"
           onclick="selectCQR(${num},${pts},this)"
+          onkeydown="optKeydown(event,this)"
           style="display:inline-block;padding:4px 10px;font-size:11px">${r}</div>
       </td>`;
     }).join('');
@@ -1658,6 +1706,8 @@ function savePatient() {
     reacao: formData.reacao || '',
     reacao_quais: [...(formData.reacao_quais||[])],
     intervalo: formData.intervalo || '',
+    hospitalizacoes: document.getElementById('f-hospitalizacoes').value,
+    ps_visitas: document.getElementById('f-ps-visitas').value,
     dmard_posologia: {...(formData.dmard_posologia||{})},
     // Sociodemográfico
     religiao: formData.religiao||'', estado_civil: formData.estado_civil||'',
@@ -1738,7 +1788,7 @@ function clearForm() {
   document.getElementById('f-inicio-seg').value = '';
   document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
-  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
+  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-hospitalizacoes','f-ps-visitas'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('sub-remissao').classList.add('hidden');
@@ -1774,11 +1824,32 @@ function adesaoChip(p) {
   return `<span class="adesao-badge ${cls}" title="CQR-19: ${p.cqr_aderente}${scoreHint}"><span class="dot"></span>${icon} ${p.cqr_aderente}</span>`;
 }
 
+function populateMedFilter() {
+  const dl = document.getElementById('flt-med-list');
+  if (!dl || dl.children.length > 0) return;
+  [...CS_DMARD, ...B_DMARD, ...TS_DMARD].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    dl.appendChild(opt);
+  });
+}
+
 function renderList() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const db = getData().filter(p =>
-    p.nome.toLowerCase().includes(q) || p.rghc.toLowerCase().includes(q)
-  );
+  populateMedFilter();
+  const q   = document.getElementById('search-input').value.toLowerCase();
+  const med = (document.getElementById('flt-med')?.value || '').trim().toLowerCase();
+  const all = getData().filter(p => {
+    if (q && !p.nome.toLowerCase().includes(q) && !p.rghc.toLowerCase().includes(q)) return false;
+    if (med) {
+      const allMeds = [...(p.csdmard||[]), ...(p.bdmard||[]), ...(p.tsdmard||[])];
+      if (!allMeds.some(m => m.toLowerCase().includes(med))) return false;
+    }
+    return true;
+  });
+  const db = all;
+  // Atualiza contador do filtro de medicação
+  const cnt = document.getElementById('flt-med-count');
+  if (cnt) cnt.textContent = med ? `${db.length} paciente(s) com este DMARD` : '';
   const c = document.getElementById('list-container');
   if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; return; }
   c.innerHTML = `
@@ -1831,6 +1902,8 @@ function editPatient(rghc) {
     document.getElementById('f-mmt8').value = p.mmt8 || '';
     document.getElementById('f-bvas').value = p.bvas || '';
     document.getElementById('f-itas').value = p.itas || '';
+    document.getElementById('f-hospitalizacoes').value = p.hospitalizacoes || '';
+    document.getElementById('f-ps-visitas').value = p.ps_visitas || '';
 
     const restore = (containerId, field, val) => {
       formData[field] = val;
@@ -1923,7 +1996,7 @@ function exportCSV() {
     'tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk','das28','asdas','sledai','myoact','mmt8','bvas','itas',
     'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
     'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
-    'reacao','reacao_quais','intervalo','dmard_posologia',
+    'reacao','reacao_quais','intervalo','hospitalizacoes','ps_visitas','dmard_posologia',
     'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
     'locomocao','local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
     'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
@@ -2029,6 +2102,8 @@ const SHEET_COLS = [
   ['reacao',          'Histórico de Reação Adversa a DMARD'],
   ['reacao_quais',    'Reação Adversa – Quais Medicações'],
   ['intervalo',       'Intervalo Médio entre Consultas'],
+  ['hospitalizacoes', 'Hospitalizações no Último Ano (nº)'],
+  ['ps_visitas',      'Visitas ao Pronto-Socorro no Último Ano (nº)'],
   ['dmard_posologia', 'Posologia dos DMARDs'],
   // Sociodemográfico
   ['religiao',        'Religião'],
