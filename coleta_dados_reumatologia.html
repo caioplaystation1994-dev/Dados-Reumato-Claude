@@ -223,6 +223,12 @@ tr:hover td{background:#f7faff}
 .med-filter-bar label{font-size:11px;font-weight:700;color:#4a5568;white-space:nowrap}
 .med-filter-bar input{border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;background:#fafafa;min-width:220px}
 .med-filter-bar input:focus{outline:none;border-color:#1a56a0}
+
+/* Missing data badges */
+.missing-badge{display:inline-flex;align-items:center;gap:3px;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:3px}
+.missing-badge.clinical{background:#fefcbf;color:#744210;border:1px solid #f6e05e}
+.missing-badge.quest{background:#e9d8fd;color:#553c9a;border:1px solid #b794f4}
+.missing-badge.ok{background:#c6f6d5;color:#276749;border:1px solid #68d391}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -249,6 +255,9 @@ tr:hover td{background:#f7faff}
     <button class="form-step-btn" id="ftab-btn-2" onclick="showFormTab(2)"><span class="step-num">3</span>Sociodemográfico<span class="step-badge empty" id="ftab-badge-2">0/12</span></button>
     <button class="form-step-btn" id="ftab-btn-3" onclick="showFormTab(3)"><span class="step-num">4</span>Acesso e Percepção<span class="step-badge empty" id="ftab-badge-3">0/18</span></button>
     <button class="form-step-btn" id="ftab-btn-4" onclick="showFormTab(4)"><span class="step-num">5</span>Questionários<span class="step-badge empty" id="ftab-badge-4">0/7</span></button>
+    <button id="btn-missing-mode" class="form-step-btn" onclick="toggleMissingMode()" title="Mostrar apenas seções com campos não preenchidos" style="border-color:#d69e2e;color:#744210;background:#fffff0;white-space:nowrap">
+  🔍 Só incompletos
+</button>
     <button class="evo-trigger-btn" onclick="openEvolucaoModal()" title="Colar evolução do prontuário e preencher automaticamente">&#128203; Importar Evolução</button>
   </div>
 
@@ -824,13 +833,13 @@ const COMORBIDADES = [
   'DAC','DAOP','Depressão','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn',
   'Doença de Sjogren','DPOC','DRC','DRGE','FA','Fibromialgia','HAS',
   'Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','ICFEP','ICFER','IAM',
-  'Glaucoma','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Obesidade',
+  'Glaucoma','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Neuropatia periférica','Obesidade',
   'Osteoartrite','Osteonecrose','Osteoporose','Retocolite ulcerativa','SAF','TEP','TVP'
 ];
 const MED_CONTINUAS = [
-  'AAS','Aciclovir','Ácido fólico','Ácido zoledrônico','Alendronato de sódio',
+  'AAS','Aciclovir','Ácido fólico','Ácido zoledrônico','Alendronato de sódio','Alenia',
   'Amitriptilina','Ambrisentana','Anlodipino','Apixabana','Atenolol','Atorvastatina',
-  'Bactrim','Bisoprolol','Bosentana','Bromoprida','Canaglifozina','Candesartana',
+  'Bactrim','Bisoprolol','Bosentana','Bromoprida','Budesonida','Canaglifozina','Candesartana',
   'Captopril','Carbonato de cálcio','Carvedilol','Citrato de cálcio','Ciclobenzaprina',
   'Clonidina','Clopidogrel','Colchicina','Colecalciferol','Clortalidona','Codeína',
   'Dabigatrana','Dapaglifozina','Dapsona','Denosumabe','Desvenlafaxina','Dipirona',
@@ -1251,6 +1260,7 @@ function showFormTab(idx) {
   document.querySelectorAll('.form-step-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
   document.getElementById('page-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
   updateTabBadges();
+  applyMissingFilter();
 }
 
 function calcTabProgress(tab) {
@@ -1297,6 +1307,50 @@ function updateTabBadges() {
     }
     if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
   }
+}
+
+let showMissingOnly = false;
+
+function toggleMissingMode() {
+  showMissingOnly = !showMissingOnly;
+  const btn = document.getElementById('btn-missing-mode');
+  if (btn) {
+    btn.style.background = showMissingOnly ? '#d69e2e' : '#fffff0';
+    btn.style.color = showMissingOnly ? '#fff' : '#744210';
+  }
+  applyMissingFilter();
+}
+
+function sectionHasMissing(card) {
+  // Check opt-btn groups (excluindo sub-posologias e grupos ocultos)
+  const grids = card.querySelectorAll('.options-grid');
+  for (const grid of grids) {
+    if (!grid.id) continue;
+    if (grid.id.startsWith('posologia') || grid.id.startsWith('flt-')) continue;
+    const parent = grid.closest('.hidden, [style*="display: none"], [style*="display:none"]');
+    if (parent) continue;
+    if (!grid.querySelector('.opt-btn.selected')) return true;
+  }
+  // Check text/date inputs (not readonly, not number)
+  const inputs = card.querySelectorAll('input[type=text]:not([readonly]), input[type=date]:not([readonly])');
+  for (const inp of inputs) {
+    if (!inp.value.trim()) return true;
+  }
+  return false;
+}
+
+function applyMissingFilter() {
+  const panel = document.getElementById(`form-tab-${currentFormTab}`);
+  if (!panel) return;
+  panel.querySelectorAll('.section-card').forEach(card => {
+    if (!showMissingOnly) {
+      card.style.display = '';
+      card.style.outline = '';
+    } else {
+      const missing = sectionHasMissing(card);
+      card.style.display = missing ? '' : 'none';
+    }
+  });
 }
 
 // ============================================================
@@ -1390,6 +1444,55 @@ function renderCheck(containerId, options, field, posologiaId) {
       const idx = arr.indexOf(opt);
       if (idx === -1) { arr.push(opt); b.classList.add('selected'); }
       else { arr.splice(idx,1); b.classList.remove('selected'); }
+      if (posologiaId) renderPosologia(field, posologiaId);
+      updateTabBadges();
+    };
+    c.appendChild(b);
+  });
+}
+
+function renderCheckWithNA(containerId, options, field, posologiaId) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  if (!formData[field]) formData[field] = [];
+
+  // "Não se aplica" button
+  const naBtn = document.createElement('div');
+  naBtn.className = 'opt-btn multi';
+  naBtn.textContent = 'Não se aplica';
+  naBtn.style.cssText = 'border-color:#a0aec0;color:#718096;font-style:italic';
+  naBtn.tabIndex = 0;
+  naBtn.onkeydown = e => optKeydown(e, naBtn);
+  naBtn.onclick = () => {
+    formData[field] = ['Não se aplica'];
+    // Deselect all other buttons
+    c.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+    naBtn.classList.add('selected');
+    naBtn.style.cssText = 'border-color:#a0aec0;color:#718096;font-style:italic';
+    if (posologiaId) {
+      const pc = document.getElementById(posologiaId);
+      if (pc) { pc.innerHTML = ''; pc.classList.add('hidden'); }
+    }
+    updateTabBadges();
+  };
+  if (formData[field].includes('Não se aplica')) naBtn.classList.add('selected');
+  c.appendChild(naBtn);
+
+  options.forEach(opt => {
+    const b = document.createElement('div');
+    b.className = 'opt-btn multi';
+    b.textContent = opt;
+    b.tabIndex = 0;
+    b.onkeydown = e => optKeydown(e, b);
+    if (formData[field].includes(opt)) b.classList.add('selected');
+    b.onclick = () => {
+      const arr = formData[field];
+      // Remove 'Não se aplica' if present
+      const naIdx = arr.indexOf('Não se aplica');
+      if (naIdx !== -1) { arr.splice(naIdx, 1); naBtn.classList.remove('selected'); }
+      const idx = arr.indexOf(opt);
+      if (idx === -1) { arr.push(opt); b.classList.add('selected'); }
+      else { arr.splice(idx, 1); b.classList.remove('selected'); }
       if (posologiaId) renderPosologia(field, posologiaId);
       updateTabBadges();
     };
@@ -1559,13 +1662,13 @@ function initForm() {
   renderRadio('q-tempo-remissao', TEMPO_REMISSAO, 'tempo_remissao');
   renderRadio('q-num-med', NUM_MED, 'num_med');
   renderRadio('q-gcs', GCS, 'gcs');
-  renderCheck('q-csdmard', CS_DMARD, 'csdmard', 'posologia-csdmard');
-  renderCheck('q-bdmard', B_DMARD, 'bdmard', 'posologia-bdmard');
-  renderCheck('q-tsdmard', TS_DMARD, 'tsdmard', 'posologia-tsdmard');
+  renderCheckWithNA('q-csdmard', CS_DMARD, 'csdmard', 'posologia-csdmard');
+  renderCheckWithNA('q-bdmard', B_DMARD, 'bdmard', 'posologia-bdmard');
+  renderCheckWithNA('q-tsdmard', TS_DMARD, 'tsdmard', 'posologia-tsdmard');
   renderRadio('q-tempo-dmard', TEMPO_DMARD, 'tempo_dmard');
-  renderCheck('q-csdmard-prev', CS_DMARD, 'csdmard_prev');
-  renderCheck('q-bdmard-prev', B_DMARD, 'bdmard_prev');
-  renderCheck('q-tsdmard-prev', TS_DMARD, 'tsdmard_prev');
+  renderCheckWithNA('q-csdmard-prev', CS_DMARD, 'csdmard_prev');
+  renderCheckWithNA('q-bdmard-prev', B_DMARD, 'bdmard_prev');
+  renderCheckWithNA('q-tsdmard-prev', TS_DMARD, 'tsdmard_prev');
   renderCheck('q-comorbidades', COMORBIDADES, 'comorbidades');
   renderCheck('q-med-continuas', MED_CONTINUAS, 'med_continuas');
   renderRadio('q-reacao', ['Sim','Não'], 'reacao');
@@ -2039,6 +2142,43 @@ function populateMedFilter() {
   });
 }
 
+function missingBadges(p) {
+  // Campos clínicos essenciais
+  const clinicalFields = ['sexo','etnia','doenca','tempo_diag','atividade','gcs','reacao','intervalo',
+    'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
+    'local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
+    'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
+    'facilidade_consulta','falta_farm','compra_med','custo_med','deslocamento'];
+  const clinMissing = clinicalFields.filter(f => !p[f] || p[f] === '').length;
+
+  // Verifica também nome, rghc, nascimento, entrevista
+  const basicMissing = ['nome','rghc','nascimento','entrevista'].filter(f => !p[f]).length;
+  const totalClin = clinMissing + basicMissing;
+
+  // Questionários
+  const questFields = [
+    { key: 'haq_score',     label: 'HAQ' },
+    { key: 'bmq_necessity', label: 'BMQ' },
+    { key: 'seams_score',   label: 'SEAMS' },
+    { key: 'hads_anx',      label: 'HADS' },
+    { key: 'cqr_aderente',  label: 'CQR-19' },
+  ];
+  const questMissing = questFields.filter(q => p[q.key] === '' || p[q.key] === undefined || p[q.key] === null);
+
+  let html = '';
+  if (totalClin > 0) {
+    html += `<span class="missing-badge clinical" title="Dados clínicos/sociodemográficos incompletos">📋 ${totalClin} clín.</span>`;
+  }
+  if (questMissing.length > 0) {
+    const labels = questMissing.map(q => q.label).join(', ');
+    html += `<span class="missing-badge quest" title="Questionários pendentes: ${labels}">📝 ${questMissing.map(q=>q.label).join(' · ')}</span>`;
+  }
+  if (totalClin === 0 && questMissing.length === 0) {
+    html += `<span class="missing-badge ok">✓ Completo</span>`;
+  }
+  return html;
+}
+
 function renderList() {
   populateMedFilter();
   const q   = document.getElementById('search-input').value.toLowerCase();
@@ -2064,7 +2204,7 @@ function renderList() {
           <input type="checkbox" id="chk-all" title="Selecionar / desmarcar todos" onchange="toggleAllChecks(this.checked)"
             style="width:16px;height:16px;cursor:pointer;accent-color:#1a56a0">
         </th>
-        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Adesão CQR-19</th><th>Ações</th>
+        <th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Adesão CQR-19</th><th>Completude</th><th>Ações</th>
       </tr></thead>
       <tbody>${db.map((p,i) => `
         <tr id="row-${p.rghc}">
@@ -2079,6 +2219,7 @@ function renderList() {
           <td>${p.entrevista || '—'}</td>
           <td>${p.atividade || '—'}</td>
           <td>${adesaoChip(p)}</td>
+          <td style="white-space:nowrap">${missingBadges(p)}</td>
           <td>
             <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
             <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
