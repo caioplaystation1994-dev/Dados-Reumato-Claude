@@ -3899,6 +3899,125 @@ function closeImportModal() {
   document.getElementById('import-modal').style.display = 'none';
 }
 
+// RFC 4180 CSV parser with auto-detected or explicit delimiter
+function parseCSVText(text, delimiter) {
+  // Strip BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  // Auto-detect delimiter: if first line has more semicolons than commas, use semicolon
+  if (!delimiter) {
+    const firstLine = text.slice(0, text.indexOf('\n') + 1 || text.length);
+    delimiter = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+  }
+  const rows = [];
+  let row = [], field = '', inQuote = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuote) {
+      if (ch === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (ch === '"') { inQuote = false; }
+      else { field += ch; }
+    } else {
+      if (ch === '"') { inQuote = true; }
+      else if (ch === delimiter) { row.push(field); field = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else { field += ch; }
+    }
+  }
+  row.push(field);
+  if (row.some(c => c !== '')) rows.push(row);
+  return rows;
+}
+
+// Detect if CSV headers match native app export format
+function isNativeAppCSV(headers) {
+  return headers[0] === 'rghc' && headers[1] === 'nome' && headers.includes('doenca');
+}
+
+// Build patient record directly from app's own CSV export (exact header mapping)
+function buildRecordFromNativeCSV(headers, row) {
+  const h = {};
+  headers.forEach((hdr, i) => { h[hdr] = (row[i] ?? '').trim(); });
+
+  const str = key => h[key] || '';
+  const arr = key => h[key] ? h[key].split('|').filter(Boolean) : [];
+
+  // Restore posologia: Drug:via=X,dose=Y,freq=Z|Drug2:...
+  const posologia = {};
+  if (h['dmard_posologia']) {
+    h['dmard_posologia'].split('|').forEach(part => {
+      const colonIdx = part.indexOf(':');
+      if (colonIdx === -1) return;
+      const drug = part.slice(0, colonIdx).trim();
+      const rest = part.slice(colonIdx + 1);
+      const fields = {};
+      rest.split(',').forEach(kv => {
+        const eqIdx = kv.indexOf('=');
+        if (eqIdx === -1) return;
+        fields[kv.slice(0, eqIdx)] = kv.slice(eqIdx + 1);
+      });
+      if (drug) posologia[drug] = fields;
+    });
+  }
+
+  // Restore questionnaire response objects
+  const bmq_respostas = {};
+  for (let i = 1; i <= 5; i++) { const v = h[`bmqn_${i}`]; if (v !== '') bmq_respostas[`bmqn-${i}`] = Number(v); }
+  for (let i = 1; i <= 6; i++) { const v = h[`bmqc_${i}`]; if (v !== '') bmq_respostas[`bmqc-${i}`] = Number(v); }
+
+  const seams_respostas = {};
+  for (let i = 1; i <= 13; i++) { const v = h[`seams_${i}`]; if (v !== '' && v !== undefined) seams_respostas[i] = Number(v); }
+
+  const hads_respostas = {};
+  ['1A','2A','3A','4A','5A','6A','7A','1D','2D','3D','4D','5D','6D','7D'].forEach(id => {
+    const v = h[`hads_${id}`]; if (v !== '' && v !== undefined) hads_respostas[id] = Number(v);
+  });
+
+  const haq_respostas = {};
+  for (let i = 1; i <= 20; i++) { const v = h[`haq_${i}`]; if (v !== '' && v !== undefined) haq_respostas[i] = Number(v); }
+
+  const cqr_respostas = {};
+  for (let i = 1; i <= 19; i++) { const v = h[`cqr_${i}`]; if (v !== '' && v !== undefined) cqr_respostas[i] = Number(v); }
+
+  return {
+    rghc: str('rghc'), nome: str('nome'), nascimento: str('nascimento'),
+    inicio_seg: str('inicio_seg'), entrevista: str('entrevista'), idade: str('idade'),
+    sexo: str('sexo'), etnia: str('etnia'), doenca: str('doenca'),
+    tempo_diag: str('tempo_diag'), atividade: str('atividade'), tempo_remissao: str('tempo_remissao'),
+    vhs: str('vhs'), pcr: str('pcr'), cpk: str('cpk'),
+    das28: str('das28'), asdas: str('asdas'), dapsa: str('dapsa'),
+    sledai: str('sledai'), myoact: str('myoact'), mmt8: str('mmt8'),
+    bvas: str('bvas'), itas: str('itas'),
+    num_med: str('num_med'), gcs: str('gcs'),
+    csdmard: arr('csdmard'), bdmard: arr('bdmard'), tsdmard: arr('tsdmard'),
+    tempo_dmard: str('tempo_dmard'),
+    csdmard_prev: arr('csdmard_prev'), bdmard_prev: arr('bdmard_prev'), tsdmard_prev: arr('tsdmard_prev'),
+    comorbidades: arr('comorbidades'), med_continuas: arr('med_continuas'),
+    reacao: str('reacao'), reacao_quais: arr('reacao_quais'),
+    intervalo: str('intervalo'), hospitalizacoes: str('hospitalizacoes'),
+    dmard_posologia: posologia,
+    religiao: str('religiao'), estado_civil: str('estado_civil'), filhos: str('filhos'),
+    escolaridade: str('escolaridade'), renda: str('renda'), ocupacao: str('ocupacao'),
+    carga_horaria: str('carga_horaria'), local_residencia: str('local_residencia'),
+    num_pessoas: str('num_pessoas'), situacao_moradia: str('situacao_moradia'),
+    tabagismo: str('tabagismo'), etilismo: str('etilismo'),
+    material_educ: str('material_educ'), acompanhamento: str('acompanhamento'),
+    dif_doenca: str('dif_doenca'), conhec_complic: str('conhec_complic'),
+    dif_trat: str('dif_trat'), facilidade_consulta: str('facilidade_consulta'),
+    falta_farm: str('falta_farm'), compra_med: str('compra_med'),
+    custo_med: str('custo_med'), deslocamento: str('deslocamento'),
+    comunic: str('comunic'), confianca: str('confianca'),
+    participacao: str('participacao'), satisfacao: str('satisfacao'), suporte: str('suporte'),
+    eva_dor: str('eva_dor'), eva_estresse: str('eva_estresse'), eva_ptga: str('eva_ptga'),
+    bmq_respostas, bmq_necessity: str('bmq_necessity'), bmq_concerns: str('bmq_concerns'), bmq_diff: str('bmq_diff'),
+    seams_respostas, seams_score: str('seams_score'),
+    hads_respostas, hads_anx: str('hads_anx'), hads_dep: str('hads_dep'),
+    haq_respostas, haq_score: str('haq_score'),
+    cqr_respostas, cqr_score: str('cqr_score'), cqr_score_continuo: str('cqr_score_continuo'), cqr_aderente: str('cqr_aderente'),
+    ts: new Date().toISOString(), _importado: true
+  };
+}
+
 function handleImportFile(input) {
   const file = input.files[0];
   if (!file) return;
@@ -3908,8 +4027,7 @@ function handleImportFile(input) {
     try {
       let rows;
       if (file.name.toLowerCase().endsWith('.csv')) {
-        const text = e.target.result;
-        rows = text.split('\n').map(l => l.split(',').map(c => c.replace(/^"|"$/g,'')));
+        rows = parseCSVText(e.target.result);
       } else {
         const wb = XLSX.read(e.target.result, { type:'array', cellDates:true, dateNF:'yyyy-mm-dd' });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -3933,11 +4051,10 @@ function processImportFile(rawRows) {
   const hIdx = {};
   headers.forEach((h, i) => { hIdx[h.trim().toLowerCase()] = i; });
 
-  // Helper pega valor da linha pelo nome aproximado do header
+  // Helper pega valor da linha pelo nome aproximado do header (para planilhas externas)
   const get = (row, ...keys) => {
     for (const key of keys) {
       const k = key.toLowerCase();
-      // Exact
       for (const [hk, hi] of Object.entries(hIdx)) {
         if (hk === k || hk.includes(k) || k.includes(hk.replace(/[^a-záéíóúãõâêîôûçàü]+/g,''))) {
           const v = row[hi];
@@ -3948,40 +4065,58 @@ function processImportFile(rawRows) {
     return null;
   };
 
-  // Verifica se EVA de comunicação parece fora de escala (valores ≤ 2 indicam problema)
-  const evaWarn = importedRows.some(row => {
-    const communIdx = hIdx[Object.keys(hIdx).find(k => k.includes('clareza')) || ''];
-    const v = communIdx !== undefined ? row[communIdx] : null;
-    return v !== null && v !== undefined && parseFloat(v) <= 2;
-  });
-  document.getElementById('import-eva-warn').style.display = evaWarn ? 'block' : 'none';
+  const native = isNativeAppCSV(headers);
+
+  // Verifica se EVA de comunicação parece fora de escala (valores ≤ 2 indicam problema) — apenas planilha externa
+  if (!native) {
+    const evaWarn = importedRows.some(row => {
+      const communIdx = hIdx[Object.keys(hIdx).find(k => k.includes('clareza')) || ''];
+      const v = communIdx !== undefined ? row[communIdx] : null;
+      return v !== null && v !== undefined && parseFloat(v) <= 2;
+    });
+    document.getElementById('import-eva-warn').style.display = evaWarn ? 'block' : 'none';
+  } else {
+    document.getElementById('import-eva-warn').style.display = 'none';
+  }
 
   // Renderiza tabela de preview
-  renderImportTable(headers, hIdx, importedRows, get);
+  renderImportTable(headers, hIdx, importedRows, get, native);
   document.getElementById('import-count').textContent = `${importedRows.length} paciente(s) encontrado(s)`;
   document.getElementById('import-preview').style.display = 'block';
 }
 
-function renderImportTable(headers, hIdx, rows, get) {
+function renderImportTable(headers, hIdx, rows, get, native) {
   const tbody = document.getElementById('import-tbody');
   tbody.innerHTML = '';
 
   rows.forEach((row, ri) => {
-    const nome = get(row,'nome') || '(sem nome)';
-    const rghc = get(row,'rghc') || '';
-    const data = get(row,'data da entrevista','data entrevista') || '';
-    const doencaRaw = get(row,'doença em seguimento','doenca em seguimento','doença','doenca') || '';
+    const h = {};
+    if (native) headers.forEach((hdr, i) => { h[hdr] = (row[i] ?? '').trim(); });
+
+    const nome = native ? (h['nome'] || '(sem nome)') : (get(row,'nome') || '(sem nome)');
+    const rghc = native ? (h['rghc'] || '') : (get(row,'rghc') || '');
+    const data = native ? (h['entrevista'] || '') : (get(row,'data da entrevista','data entrevista') || '');
+    const doencaRaw = native ? (h['doenca'] || '') : (get(row,'doença em seguimento','doenca em seguimento','doença','doenca') || '');
     const doencaKey = doencaRaw.toLowerCase();
 
-    const needsDisambig = !!IMPORT_NORM.doenca_ambigua[doencaKey];
+    const needsDisambig = !native && !!IMPORT_NORM.doenca_ambigua[doencaKey];
     const disambigOptions = IMPORT_NORM.doenca_ambigua[doencaKey] || [];
 
+    // Detecta questionários presentes
     const qScores = [];
-    if (get(row,'reumatologista me diz para tomar','se o reumatologista')) qScores.push('CQR');
-    if (get(row,'vestir-se, inclusive amarrar','1.1 vestir')) qScores.push('HAQ');
-    if (get(row,'eu me sinto tenso','1a eu me sinto')) qScores.push('HADS');
-    if (get(row,'quando você toma vários medicamentos diferentes')) qScores.push('SEAMS');
-    if (get(row,'atualmente, a minha saúde depende')) qScores.push('BMQ');
+    if (native) {
+      if (h['cqr_score'] !== '' || h['cqr_1'] !== '') qScores.push('CQR');
+      if (h['haq_score'] !== '' || h['haq_1'] !== '') qScores.push('HAQ');
+      if (h['hads_anx'] !== '' || h['hads_1A'] !== '') qScores.push('HADS');
+      if (h['seams_score'] !== '' || h['seams_1'] !== '') qScores.push('SEAMS');
+      if (h['bmq_necessity'] !== '' || h['bmqn_1'] !== '') qScores.push('BMQ');
+    } else {
+      if (get(row,'reumatologista me diz para tomar','se o reumatologista')) qScores.push('CQR');
+      if (get(row,'vestir-se, inclusive amarrar','1.1 vestir')) qScores.push('HAQ');
+      if (get(row,'eu me sinto tenso','1a eu me sinto')) qScores.push('HADS');
+      if (get(row,'quando você toma vários medicamentos diferentes')) qScores.push('SEAMS');
+      if (get(row,'atualmente, a minha saúde depende')) qScores.push('BMQ');
+    }
 
     const dataFormatted = data ? (() => {
       try { return new Date(data+'T00:00:00').toLocaleDateString('pt-BR'); } catch { return data; }
@@ -4286,7 +4421,7 @@ function importSelectedToList() {
     let rawRows;
     const fname = fileInput.files[0].name.toLowerCase();
     if (fname.endsWith('.csv')) {
-      rawRows = e.target.result.split('\n').map(l => l.split(',').map(c => c.replace(/^"|"$/g,'')));
+      rawRows = parseCSVText(e.target.result);
     } else {
       const wb = XLSX.read(e.target.result, {type:'array', cellDates:true, dateNF:'yyyy-mm-dd'});
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -4294,6 +4429,7 @@ function importSelectedToList() {
     }
     const headers = rawRows[0].map(h => String(h||'').trim());
     const dataRows = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+    const native = isNativeAppCSV(headers);
 
     const db = getData();
     let imported = 0, skipped = 0, updated = 0;
@@ -4302,9 +4438,14 @@ function importSelectedToList() {
       const ri = parseInt(cb.dataset.ri);
       const row = dataRows[ri];
       if (!row) return;
-      const disEl = document.getElementById(`dis-${ri}`);
-      const doencaOverride = disEl ? (disEl.value || null) : null;
-      const record = buildRecordFromRow(headers, row, doencaOverride);
+      let record;
+      if (native) {
+        record = buildRecordFromNativeCSV(headers, row);
+      } else {
+        const disEl = document.getElementById(`dis-${ri}`);
+        const doencaOverride = disEl ? (disEl.value || null) : null;
+        record = buildRecordFromRow(headers, row, doencaOverride);
+      }
       if (!record.rghc && !record.nome) { skipped++; return; }
 
       const idx = db.findIndex(p => record.rghc && p.rghc === record.rghc);
