@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coleta de Dados – Adesão em Reumatologia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a202c;font-size:14px}
@@ -630,6 +631,7 @@ tr:hover td{background:#f7faff}
     <button class="btn-primary btn-sm" onclick="exportCSV()">Exportar CSV</button>
     <button class="btn-green-sm" onclick="openSheetsModal()" title="Exportar para Google Sheets via Apps Script">&#127347; Google Sheets</button>
     <button class="btn-secondary btn-sm" onclick="exportJSON()">Backup JSON</button>
+    <button class="btn-secondary btn-sm" onclick="openImportModal()" style="border-color:#805ad5;color:#805ad5" title="Importar pacientes de planilha Excel/CSV">&#128229; Importar Planilha</button>
     <label class="btn-secondary btn-sm" style="cursor:pointer;padding:5px 12px;font-size:12px;font-weight:600;border:2px solid #1a56a0;border-radius:8px;color:#1a56a0">
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
@@ -3228,7 +3230,658 @@ function fillTestData() {
 // INIT
 // ============================================================
 initForm();
+
+// ============================================================
+// IMPORTAR PLANILHA
+// ============================================================
+
+// Normalização: valores da planilha → valores exatos do formulário
+const IMPORT_NORM = {
+  estado_civil: {
+    'solteiro (a)':'Solteiro','solteiro(a)':'Solteiro','solteiro':'Solteiro',
+    'casado (a)':'Casado','casado(a)':'Casado','casado':'Casado',
+    'viúvo (a)':'Viúvo','viúvo(a)':'Viúvo','viúvo':'Viúvo',
+    'divorciado (a)':'Divorciado','divorciado(a)':'Divorciado','divorciado':'Divorciado',
+    'união estável':'União estável','uniao estavel':'União estável',
+  },
+  religiao: {
+    'protestantismo / evangélico':'Evangélico / Protestante',
+    'protestantismo/evangélico':'Evangélico / Protestante',
+    'protestante':'Evangélico / Protestante','evangélico':'Evangélico / Protestante',
+    'catolicismo':'Catolicismo','espiritismo':'Espiritismo','budismo':'Budismo',
+    'judaísmo':'Judaísmo','islamismo':'Islamismo',
+    'testemunha de jeová':'Testemunha de Jeová','umbandismo':'Umbandismo',
+    'candomblé':'Candomblé','sem religião':'Sem religião','outro':'Outro',
+  },
+  escolaridade: {
+    'superior incompleto':'Ensino Superior incompleto',
+    'superior completo':'Ensino Superior completo',
+    'médio completo':'Ensino Médio completo','medio completo':'Ensino Médio completo',
+    'médio incompleto':'Ensino Médio incompleto','medio incompleto':'Ensino Médio incompleto',
+    'fundamental completo':'Ensino Fundamental completo',
+    'fundamental incompleto':'Ensino Fundamental incompleto',
+    'pós-graduado':'Pós-graduação','pos-graduado':'Pós-graduação',
+    'pós graduado':'Pós-graduação','pós-graduação':'Pós-graduação',
+    'menos de 1 ano':'Menos de 1 ano de estudo','menos de 1 ano de estudo':'Menos de 1 ano de estudo',
+  },
+  renda: {
+    'até 1 salário mínimo':'Até 1 salário mínimo','até 1 sm':'Até 1 salário mínimo',
+    '1 a 3 salários mínimos':'1 a 3 salários mínimos','1 a 3 sm':'1 a 3 salários mínimos',
+    '3 a 5 salários mínimos':'3 a 5 salários mínimos','3 a 5 sm':'3 a 5 salários mínimos',
+    'mais de 5 salários mínimos':'Mais de 5 salários mínimos','mais de 5 sm':'Mais de 5 salários mínimos',
+  },
+  carga_horaria: {
+    '< 14 horas':'< 14 horas','menos de 14 horas':'< 14 horas',
+    '15 a 39 horas':'15–39 horas','15–39 horas':'15–39 horas',
+    '40 a 48 horas':'40 a 48 horas','40–48 horas':'40 a 48 horas',
+    '49 a 60 horas':'49 a 60 horas','49–60 horas':'49 a 60 horas',
+    '> 60 horas':'> 60 horas','mais de 60 horas':'> 60 horas',
+  },
+  num_pessoas: {
+    'mora sozinho (a)':'Mora sozinho','mora sozinho(a)':'Mora sozinho','mora sozinho':'Mora sozinho',
+    '1':'Mora sozinho','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7',
+  },
+  filhos: {
+    'sem filhos':'Sem filhos','nenhum':'Sem filhos','0':'Sem filhos',
+    '1':'1','2':'2','3':'3','4':'4','5':'5',
+  },
+  // Doenças que mapeiam diretamente
+  doenca_direta: {
+    'aij':'Artrite idiopática juvenil','artrite idiopática juvenil':'Artrite idiopática juvenil',
+    'les juvenil':'Lúpus juvenil','lúpus juvenil':'Lúpus juvenil',
+    'les':'Lúpus eritematoso sistêmico','lúpus eritematoso sistêmico':'Lúpus eritematoso sistêmico',
+    'artrite reumatoide':'Artrite reumatoide','ar':'Artrite reumatoide',
+    'espondiloartrite':'Espondiloartrite','ea':'Espondiloartrite',
+    'artrite psorística':'Artrite psorística','artrite psorítica':'Artrite psorística',
+    'dermatomiosite':'Dermatomiosite','polimiosite':'Polimiosite','gpa':'GPA',
+    'gepa':'GEPA','pam':'PAM','pan':'PAN',
+    'arterite de takayasu':'Arterite de Takayasu',
+    'arterite de células gigantes':'Arterite de células gigantes',
+  },
+  // Doenças ambíguas → lista de opções para o usuário escolher
+  doenca_ambigua: {
+    'vasculite':['GPA','GEPA','PAM','PAN','Arterite de células gigantes','Arterite de Takayasu','Policondrite recidivante'],
+    'miopatia':['Dermatomiosite','Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil','Polimiosite','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','Síndrome antissintetase','Sobreposição miopatia + outra doença'],
+  },
+};
+
+// Mapeia texto de resposta para pts (usando as listas já definidas no app)
+function importTextToPts(txt, type) {
+  const t = String(txt||'').trim().toLowerCase();
+  if (type === 'cqr') {
+    const m = {'não concordo de forma alguma':1,'não concordo':2,'concordo':3,'concordo muito':4};
+    return m[t] ?? null;
+  }
+  if (type === 'haq') {
+    const m = {'sem qualquer dificuldade':0,'com alguma dificuldade':1,'com muita dificuldade':2,'incapaz de realizar':3};
+    return m[t] ?? null;
+  }
+  if (type === 'seams') {
+    const m = {'muito confiante':3,'pouco confiante':2,'não estou confiante':1,'não confiante':1};
+    return m[t] ?? null;
+  }
+  if (type === 'bmq') {
+    const m = {'concordo totalmente':5,'concordo':4,'nem concordo nem discordo':3,'discordo':2,'discordo totalmente':1};
+    return m[t] ?? null;
+  }
+  return null;
+}
+
+// Pts HADS por item (baseado em HADS_ITENS definidos acima)
+function getHadsPts(itemId, txt) {
+  const item = HADS_ITENS.find(i => i.id === itemId);
+  if (!item) return null;
+  const t = String(txt||'').trim().toLowerCase();
+  const match = item.opts.find(o => o.txt.toLowerCase() === t);
+  return match ? match.pts : null;
+}
+
+function normImport(val, map) {
+  if (val === null || val === undefined) return null;
+  const k = String(val).trim().toLowerCase();
+  return map[k] !== undefined ? map[k] : null;
+}
+
+function matchList(val, list) {
+  if (!val) return null;
+  const t = String(val).trim();
+  const exact = list.find(o => o.toLowerCase() === t.toLowerCase());
+  if (exact) return exact;
+  const partial = list.find(o => o.toLowerCase().includes(t.toLowerCase()) || t.toLowerCase().includes(o.toLowerCase()));
+  return partial || null;
+}
+
+function normAlergia(val) {
+  if (!val) return null;
+  const t = String(val).trim().toLowerCase();
+  if (['n','não','nao','nega','nenhuma','nenhhuma'].includes(t) || t.startsWith('neg')) return 'Não';
+  if (t !== '') return 'Sim';
+  return null;
+}
+
+let importedRows = [];
+
+function openImportModal() {
+  document.getElementById('import-modal').style.display = 'flex';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-eva-warn').style.display = 'none';
+  document.getElementById('import-filename').textContent = '';
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').style.display = 'none';
+}
+
+function handleImportFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('import-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let rows;
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        const text = e.target.result;
+        rows = text.split('\n').map(l => l.split(',').map(c => c.replace(/^"|"$/g,'')));
+      } else {
+        const wb = XLSX.read(e.target.result, { type:'array', cellDates:true, dateNF:'yyyy-mm-dd' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'yyyy-mm-dd' });
+      }
+      processImportFile(rows);
+    } catch(err) {
+      alert('Erro ao ler arquivo: ' + err.message);
+    }
+  };
+  if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file,'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function processImportFile(rawRows) {
+  if (!rawRows || rawRows.length < 2) { alert('Arquivo vazio ou sem dados.'); return; }
+  const headers = rawRows[0].map(h => String(h||'').trim());
+  importedRows = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''));
+
+  // Detecta colunas por nome (normalizado)
+  const hIdx = {};
+  headers.forEach((h, i) => { hIdx[h.trim().toLowerCase()] = i; });
+
+  // Helper pega valor da linha pelo nome aproximado do header
+  const get = (row, ...keys) => {
+    for (const key of keys) {
+      const k = key.toLowerCase();
+      // Exact
+      for (const [hk, hi] of Object.entries(hIdx)) {
+        if (hk === k || hk.includes(k) || k.includes(hk.replace(/[^a-záéíóúãõâêîôûçàü]+/g,''))) {
+          const v = row[hi];
+          if (v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== 'nan') return String(v).trim();
+        }
+      }
+    }
+    return null;
+  };
+
+  // Verifica se EVA de comunicação parece fora de escala (valores ≤ 2 indicam problema)
+  const evaWarn = importedRows.some(row => {
+    const communIdx = hIdx[Object.keys(hIdx).find(k => k.includes('clareza')) || ''];
+    const v = communIdx !== undefined ? row[communIdx] : null;
+    return v !== null && v !== undefined && parseFloat(v) <= 2;
+  });
+  document.getElementById('import-eva-warn').style.display = evaWarn ? 'block' : 'none';
+
+  // Renderiza tabela de preview
+  renderImportTable(headers, hIdx, importedRows, get);
+  document.getElementById('import-count').textContent = `${importedRows.length} paciente(s) encontrado(s)`;
+  document.getElementById('import-preview').style.display = 'block';
+}
+
+function renderImportTable(headers, hIdx, rows, get) {
+  const tbody = document.getElementById('import-tbody');
+  tbody.innerHTML = '';
+
+  rows.forEach((row, ri) => {
+    const nome = get(row,'nome') || '(sem nome)';
+    const rghc = get(row,'rghc') || '';
+    const data = get(row,'data da entrevista','data entrevista') || '';
+    const doencaRaw = get(row,'doença em seguimento','doenca em seguimento','doença','doenca') || '';
+    const doencaKey = doencaRaw.toLowerCase();
+
+    let doencaDisplay = '';
+    let needsDisambig = false;
+    let disambigOptions = [];
+
+    const direto = normImport(doencaKey, IMPORT_NORM.doenca_direta);
+    if (direto) {
+      doencaDisplay = doencaRaw;
+    } else if (IMPORT_NORM.doenca_ambigua[doencaKey]) {
+      needsDisambig = true;
+      disambigOptions = IMPORT_NORM.doenca_ambigua[doencaKey];
+      doencaDisplay = doencaRaw;
+    } else {
+      doencaDisplay = doencaRaw;
+    }
+
+    // Conta quantos questionários estão preenchidos
+    const qScores = [];
+    // CQR (cols com texto de concordância)
+    const cqrSample = get(row,'se o reumatologista','reumatologista me diz');
+    if (cqrSample) qScores.push('CQR');
+    const haqSample = get(row,'vestir-se','1.1');
+    if (haqSample) qScores.push('HAQ');
+    const hadsSample = get(row,'1a eu me sinto','eu me sinto tenso');
+    if (hadsSample) qScores.push('HADS');
+    const seamsSample = get(row,'quando você toma vários','vários medicamentos diferentes');
+    if (seamsSample) qScores.push('SEAMS');
+    const bmqSample = get(row,'atualmente, a minha saúde','atualmente a minha saúde');
+    if (bmqSample) qScores.push('BMQ');
+
+    const dataFormatted = data ? (() => {
+      try { return new Date(data+'T00:00:00').toLocaleDateString('pt-BR'); } catch { return data; }
+    })() : '—';
+
+    const disambigHtml = needsDisambig
+      ? `<select id="dis-${ri}" style="font-size:11px;border:1px solid #cbd5e0;border-radius:4px;padding:3px 6px;width:100%;max-width:220px">
+           <option value="">— selecione a doença —</option>
+           ${disambigOptions.map(d => `<option value="${d}">${d}</option>`).join('')}
+         </select>`
+      : `<span style="color:#718096;font-size:11px">—</span>`;
+
+    const tr = document.createElement('tr');
+    tr.style.cssText = 'border-bottom:1px solid #e8ecf0';
+    tr.innerHTML = `
+      <td style="padding:8px 10px;font-weight:600">${nome}</td>
+      <td style="padding:8px 10px;font-family:monospace;font-size:11px">${rghc}</td>
+      <td style="padding:8px 10px;white-space:nowrap">${dataFormatted}</td>
+      <td style="padding:8px 10px">${doencaDisplay || '<span style="color:#a0aec0">—</span>'}</td>
+      <td style="padding:8px 10px">${disambigHtml}</td>
+      <td style="padding:8px 10px">
+        ${qScores.length ? qScores.map(q => `<span style="background:#ebf8ff;color:#2b6cb0;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:2px">${q}</span>`).join('') : '<span style="color:#a0aec0;font-size:11px">nenhum</span>'}
+      </td>
+      <td style="padding:8px 10px;white-space:nowrap">
+        <button onclick="loadRowToForm(${ri})" style="background:#805ad5;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">
+          Carregar &#8594;
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function loadRowToForm(rowIdx) {
+  const rows = importedRows;
+  const row  = rows[rowIdx];
+  if (!row) return;
+
+  // Descobre headers novamente a partir do último arquivo processado
+  // (importedRows contém os dados; precisamos dos índices)
+  // Usamos a estratégia de buscar pelo conteúdo conhecido da planilha
+  const fileInput = document.getElementById('import-file-input');
+  if (!fileInput.files[0]) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    let rawRows;
+    const fname = fileInput.files[0].name.toLowerCase();
+    if (fname.endsWith('.csv')) {
+      rawRows = e.target.result.split('\n').map(l => l.split(',').map(c => c.replace(/^"|"$/g,'')));
+    } else {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true, dateNF:'yyyy-mm-dd'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'yyyy-mm-dd'});
+    }
+    const headers = rawRows[0].map(h => String(h||'').trim());
+    const dataRow  = rawRows.slice(1).filter(r => r.some(c => c !== null && c !== undefined && c !== ''))[rowIdx];
+    if (!dataRow) return;
+
+    // Verifica desambiguação de doença
+    const disEl = document.getElementById(`dis-${rowIdx}`);
+    const doencaOverride = disEl ? disEl.value : null;
+
+    applyRowToForm(headers, dataRow, doencaOverride);
+    closeImportModal();
+    showPage('form');
+    document.getElementById('form-msg').innerHTML =
+      '<div class="success">&#128229; Dados importados da planilha. Revise o formulário e complete os campos faltantes.</div>';
+    window.scrollTo(0,0);
+  };
+  if (fileInput.files[0].name.toLowerCase().endsWith('.csv')) reader.readAsText(fileInput.files[0],'UTF-8');
+  else reader.readAsArrayBuffer(fileInput.files[0]);
+}
+
+function applyRowToForm(headers, row, doencaOverride) {
+  // Índice de cada header (normalizado)
+  const hi = {};
+  headers.forEach((h, i) => { hi[h.trim().toLowerCase()] = i; });
+
+  const g = (...keys) => {
+    for (const key of keys) {
+      const k = key.trim().toLowerCase();
+      for (const [hk, idx] of Object.entries(hi)) {
+        if (hk.replace(/\s+/g,' ') === k || hk.replace(/\s+/g,' ').includes(k) || k.includes(hk.replace(/\s+/g,' '))) {
+          const v = row[idx];
+          if (v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'nan') return String(v).trim();
+        }
+      }
+    }
+    return null;
+  };
+
+  clearForm();
+
+  setTimeout(() => {
+    // ── Identificação ──
+    const nome  = g('nome');
+    const rghc  = g('rghc');
+    const dataE = g('data da entrevista','data entrevista');
+    if (nome)  { document.getElementById('f-nome').value  = nome; }
+    if (rghc)  { document.getElementById('f-rghc').value  = rghc; }
+    if (dataE) {
+      // SheetJS retorna datas como string "YYYY-MM-DD" quando dateNF definido
+      let ds = dataE;
+      if (ds.includes('/')) {
+        const [d,m,y] = ds.split('/');
+        ds = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      }
+      document.getElementById('f-entrevista').value = ds;
+    }
+
+    // ── Doença ──
+    const doencaRaw = doencaOverride || g('doença em seguimento','doenca em seguimento','doença','doenca') || '';
+    const doencaKey = doencaRaw.toLowerCase();
+    const doencaFinal = doencaOverride
+      || normImport(doencaKey, IMPORT_NORM.doenca_direta)
+      || matchList(doencaRaw, DOENCAS);
+    if (doencaFinal) {
+      const c = document.getElementById('q-doenca');
+      if (c) c.querySelectorAll('.opt-btn').forEach(b => {
+        if (b.textContent.trim() === doencaFinal) {
+          c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
+          b.classList.add('selected');
+          formData.doenca = doencaFinal;
+          updateMetrics(doencaFinal);
+        }
+      });
+    }
+
+    // ── Sociodemográfico ──
+    const setRadio = (containerId, field, val) => {
+      if (!val) return;
+      const c = document.getElementById(containerId);
+      if (!c) return;
+      c.querySelectorAll('.opt-btn').forEach(b => {
+        if (b.textContent.trim().toLowerCase() === val.toLowerCase()) {
+          c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
+          b.classList.add('selected');
+          formData[field] = b.textContent.trim();
+        }
+      });
+    };
+
+    const religiaoVal = normImport(g('religião','religiao')||'', IMPORT_NORM.religiao) || matchList(g('religião','religiao'), RELIGIAO);
+    setRadio('q-religiao', 'religiao', religiaoVal);
+
+    const ecivil = normImport(g('estado civil')||'', IMPORT_NORM.estado_civil) || matchList(g('estado civil'), ESTADO_CIVIL);
+    setRadio('q-estado-civil', 'estado_civil', ecivil);
+
+    const filhosRaw = g('filhos');
+    const filhosVal = normImport(String(filhosRaw||''), IMPORT_NORM.filhos)
+      || (filhosRaw && String(parseInt(filhosRaw)||0) !== 'NaN' ? String(parseInt(filhosRaw)) : null);
+    if (filhosVal) setRadio('q-filhos', 'filhos', filhosVal);
+
+    const escol = normImport(g('escolaridade')||'', IMPORT_NORM.escolaridade) || matchList(g('escolaridade'), ESCOLARIDADE);
+    setRadio('q-escolaridade', 'escolaridade', escol);
+
+    const renda = normImport(g('renda familiar','renda')||'', IMPORT_NORM.renda) || matchList(g('renda familiar','renda'), RENDA);
+    setRadio('q-renda', 'renda', renda);
+
+    const ocup = matchList(g('ocupação','ocupacao'), OCUPACAO);
+    setRadio('q-ocupacao', 'ocupacao', ocup);
+
+    const cargaH = normImport(g('carga horário','carga horaria')||'', IMPORT_NORM.carga_horaria) || matchList(g('carga horário','carga horaria'), CARGA_HORARIA);
+    setRadio('q-carga-horaria', 'carga_horaria', cargaH);
+
+    const localRes = matchList(g('localização da residência','localizacao da residencia'), LOCAL_RESIDENCIA);
+    setRadio('q-local-residencia', 'local_residencia', localRes);
+
+    const npessoas = normImport(String(g('número de pessoas','numero de pessoas')||''), IMPORT_NORM.num_pessoas)
+      || matchList(g('número de pessoas','numero de pessoas'), NUM_PESSOAS);
+    setRadio('q-num-pessoas', 'num_pessoas', npessoas);
+
+    const moradia = matchList(g('situação de moradia','situacao de moradia'), SITUACAO_MORADIA);
+    setRadio('q-situacao-moradia', 'situacao_moradia', moradia);
+
+    const tabag = matchList(g('tabagismo'), TABAGISMO);
+    setRadio('q-tabagismo', 'tabagismo', tabag);
+
+    const etil = matchList(g('etilismo'), ETILISMO);
+    setRadio('q-etilismo', 'etilismo', etil);
+
+    // ── Reação adversa (via campo Alergias) ──
+    const alergia = normAlergia(g('alergias'));
+    if (alergia) {
+      setRadio('q-reacao', 'reacao', alergia);
+      toggleReacao(alergia);
+    }
+
+    // ── Acesso e Percepção ──
+    const setSimNao = (containerId, field, val) => {
+      if (!val) return;
+      const norm = matchList(val, SIM_NAO) || matchList(val, SIM_NAO_PARC);
+      setRadio(containerId, field, norm);
+    };
+
+    setSimNao('q-material-educ',      'material_educ',      g('recebe material educativo','material educativo'));
+    setSimNao('q-acompanhamento',     'acompanhamento',      g('recebe acompanhamento','acompanhamento'));
+    setSimNao('q-dif-doenca',         'dif_doenca',          g('dificuldade para entender informações sobre a doença','dif.*doenca','tem dificuldade para entender informações sobre a doença'));
+    setSimNao('q-conhec-complic',     'conhec_complic',      g('tem conhecimento das complicações','conhecimento das complicações'));
+    setSimNao('q-dif-trat',           'dif_trat',            g('dificuldade para entender informações sobre o tratamento','dif.*trat'));
+    setSimNao('q-facilidade-consulta','facilidade_consulta', g('facilidade para marcar consultas','facilidade para marcar'));
+    setSimNao('q-falta-farm',         'falta_farm',          g('falta na farmácia','falta na farmacia','medicações estarem em falta'));
+    setSimNao('q-compra-med',         'compra_med',          g('consegue comprar','falta medicamento na farmácia, consegue'));
+    setSimNao('q-custo-med',          'custo_med',           g('custo das medicações é um problema','custo.*problema'));
+    setSimNao('q-deslocamento',       'deslocamento',        g('deslocamento até a unidade','deslocamento'));
+
+    // ── EVAs ──
+    const setEva = (inputId, valId, val) => {
+      if (val === null || val === undefined) return;
+      const n = parseFloat(val);
+      if (isNaN(n)) return;
+      document.getElementById(inputId).value = n;
+      updEva(inputId, valId);
+    };
+    setEva('f-comunic',      'v-comunic',      g('clareza de comunicação','clareza'));
+    setEva('f-confianca',    'v-confianca',    g('confiança na equipe','confianca na equipe'));
+    setEva('f-participacao', 'v-participacao', g('participação nas decisões','participacao'));
+    setEva('f-suporte',      'v-suporte',      g('suporte social','suporte'));
+    setEva('f-eva-dor',      'v-eva-dor',      g('eva dor'));
+    setEva('f-eva-estresse', 'v-eva-estresse', g('eva estresse'));
+    setEva('f-eva-ptga',     'v-eva-ptga',     g('eva ptga'));
+    setEva('f-satisfacao',   'v-satisfacao',   g('satisfação com tratamento','satisfacao com tratamento'));
+
+    // ── CQR ── (19 itens, cols com texto completo do item)
+    const CQR_KEYWORDS = [
+      'reumatologista me diz para tomar',         // 1
+      'tomo os meus medicamentos antirreumáticos, pois assim', // 2
+      'definitivamente não me atrevo',             // 3
+      'terapias alternativas, prefiro',            // 4
+      'ficam sempre guardados no mesmo local',     // 5
+      'total confiança no meu reumatologista',     // 6
+      'motivo mais importante para tomar',         // 7
+      'não gosto de tomar medicamentos',           // 8
+      'de férias, às vezes, acontece',             // 9
+      'de que adiantaria consultar',               // 10
+      'não espero milagres',                       // 11
+      'não aguenta os medicamentos, pode dizer',   // 12
+      'regularmente, a inflamação volta',          // 13
+      'meu corpo me avisa',                        // 14
+      'saúde está acima de tudo',                  // 15
+      'organizador de comprimidos',                // 16
+      'o que o médico me diz',                     // 17
+      'não tomo os meus medicamentos antirreumáticos, tenho mais queixas', // 18
+      'no fim de semana e então não tomo',         // 19
+    ];
+    const cqrR = {};
+    CQR_KEYWORDS.forEach((kw, i) => {
+      const val = g(kw);
+      const pts = importTextToPts(val, 'cqr');
+      if (pts !== null) cqrR[i+1] = pts;
+    });
+
+    // ── HAQ ── (20 itens)
+    const HAQ_KEYWORDS = [
+      'vestir-se, inclusive amarrar','lavar sua cabeça e seus cabelos',
+      'levantar-se de uma maneira ereta','deitar-se e levantar-se da cama',
+      'cortar um pedaço de carne','levar à boca um copo',
+      'abrir um saco de leite','caminhar em lugares planos',
+      'subir cinco degraus','lavar seu corpo inteiro',
+      'tomar um banho de chuveiro','sentar-se e levantar-se de um vaso',
+      'levantar os braços e pegar um objeto','curvar-se para pegar suas roupas',
+      'segurar-se em pé no ônibus','abrir potes ou vidros de conserva',
+      'abrir e fechar torneiras','fazer compras na redondeza',
+      'entrar e sair de um ônibus','realizar tarefas tais como usar a vassoura',
+    ];
+    const haqR = {};
+    HAQ_KEYWORDS.forEach((kw, i) => {
+      const val = g(kw);
+      const pts = importTextToPts(val, 'haq');
+      if (pts !== null) haqR[i+1] = pts;
+    });
+
+    // ── HADS ──
+    const HADS_KW = [
+      ['1A','eu me sinto tenso ou contraído'],
+      ['1D','eu ainda sinto gosto pelas mesmas coisas de antes'],
+      ['2A','eu sinto uma espécie de medo, como se algum'],
+      ['2D','dou risada e me divirto quando vejo coisas engraçadas'],
+      ['3A','estou com a cabeça cheia de preocupações'],
+      ['3D','eu me sinto alegre'],
+      ['4A','consigo ficar sentado à vontade e me sentir relaxado'],
+      ['4D','eu estou lento para pensar'],
+      ['5A','eu tenho uma sensação ruim de medo, como um frio'],
+      ['5D','eu perdi o interesse em cuidar da minha aparência'],
+      ['6A','eu me sinto inquieto, como se não pudesse ficar parado'],
+      ['6D','fico esperando animado'],
+      ['7A','de repente, tenho a sensação de entrar em pânico'],
+      ['7D','consigo sentir prazer quando assisto um bom programa'],
+    ];
+    const hadsR = {};
+    HADS_KW.forEach(([id, kw]) => {
+      const val = g(kw);
+      const pts = getHadsPts(id, val);
+      if (pts !== null) hadsR[id] = pts;
+    });
+
+    // ── SEAMS ── (13 itens)
+    const SEAMS_KW = [
+      'quando você toma vários medicamentos diferentes',
+      'quando você toma medicamentos mais de uma vez ao dia',
+      'quando você está fora de casa',
+      'quando você tem um dia agitado',
+      'quando os medicamentos causam alguns efeitos colaterais',
+      'quando ninguém lembra você de tomar o medicamento',
+      'quando os horários de tomar os medicamentos não são convenientes',
+      'quando sua rotina fica bagunçada',
+      'quando você não tem certeza de como deve tomar o medicamento',
+      'quando você não tem certeza em que horário deve tomar',
+      'quando você está se sentindo doente (como ter um resfriado',
+      'quando você adquire os medicamentos e alguns deles parecem diferentes',
+      'quando o médico troca seus medicamentos',
+    ];
+    const seamsR = {};
+    SEAMS_KW.forEach((kw, i) => {
+      const val = g(kw);
+      const pts = importTextToPts(val, 'seams');
+      if (pts !== null) seamsR[i+1] = pts;
+    });
+
+    // ── BMQ ──
+    const BMQ_NEC_KW = [
+      'atualmente, a minha saúde depende destes medicamentos',
+      'a minha vida seria impossível sem estes medicamentos',
+      'sem estes medicamentos, eu estaria muito doente',
+      'a minha saúde no futuro dependerá destes medicamentos',
+      'estes medicamentos protegem-me de ficar pior',
+    ];
+    const BMQ_CON_KW = [
+      'preocupa-me ter de tomar estes medicamentos',
+      'às vezes, preocupo-me com os efeitos a longo prazo',
+      'estes medicamentos são um mistério para mim',
+      'estes medicamentos perturbam a minha vida',
+      'às vezes, preocupo-me em ficar demasiado dependente',
+      'estes medicamentos dão-me desagradáveis efeitos secundários',
+    ];
+    const bmqR = {};
+    BMQ_NEC_KW.forEach((kw, i) => {
+      const val = g(kw);
+      const pts = importTextToPts(val, 'bmq');
+      if (pts !== null) bmqR[`bmqn-${i+1}`] = pts;
+    });
+    BMQ_CON_KW.forEach((kw, i) => {
+      const val = g(kw);
+      const pts = importTextToPts(val, 'bmq');
+      if (pts !== null) bmqR[`bmqc-${i+1}`] = pts;
+    });
+
+    // Aplica questionários (aguarda render do DOM)
+    setTimeout(() => {
+      if (Object.keys(cqrR).length)  restoreCQR(cqrR);
+      if (Object.keys(haqR).length)  restoreHAQ(haqR);
+      if (Object.keys(hadsR).length) restoreHADS(hadsR);
+      if (Object.keys(seamsR).length) restoreSEAMS(seamsR);
+      if (Object.keys(bmqR).length)  restoreBMQ(bmqR);
+      calcIdade();
+      updateTabBadges();
+    }, 100);
+
+  }, 100);
+}
 </script>
+<!-- ===== MODAL IMPORTAR PLANILHA ===== -->
+<div class="modal-overlay" id="import-modal" style="display:none" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal-box" style="max-width:900px">
+    <div class="modal-header">
+      <h2>&#128229; Importar Pacientes da Planilha</h2>
+      <button class="modal-close" onclick="closeImportModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#faf5ff;border:1px solid #9f7aea;border-radius:8px;padding:10px 14px;font-size:11px;color:#553c9a;margin-bottom:14px">
+        <strong>Formatos aceitos:</strong> Excel (.xlsx, .xls) e CSV (.csv). A planilha deve seguir o formato padrão desta pesquisa (cabeçalho na linha 1, um paciente por linha). Após carregar, selecione o paciente para preencher o formulário.
+      </div>
+      <div id="import-eva-warn" style="display:none;background:#fffbeb;border:1px solid #f6ad55;border-radius:8px;padding:10px 14px;font-size:11px;color:#744210;margin-bottom:14px">
+        ⚠️ <strong>Atenção — EVA fora de escala:</strong> as colunas de EVA (Clareza, Confiança, Participação, Suporte Social, Satisfação) desta planilha contêm valores fora da escala esperada de 0–100. Os valores serão importados como estão — verifique e corrija manualmente no formulário se necessário.
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px">
+          &#128196; Selecionar arquivo
+          <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(this)">
+        </label>
+        <span id="import-filename" style="font-size:12px;color:#718096;margin-left:10px"></span>
+      </div>
+      <div id="import-preview" style="display:none">
+        <div style="font-size:12px;font-weight:600;color:#2d3748;margin-bottom:8px" id="import-count"></div>
+        <div style="overflow-x:auto">
+          <table id="import-table" style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+            <thead>
+              <tr>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Nome</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">RGHC</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Data Entrevista</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Doença</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Detalhe Doença</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px;text-align:left;white-space:nowrap">Questionários</th>
+                <th style="background:#805ad5;color:#fff;padding:8px 12px"></th>
+              </tr>
+            </thead>
+            <tbody id="import-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeImportModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL EVOLUÇÃO ===== -->
 <div class="modal-overlay" id="evo-modal" style="display:none" onclick="if(event.target===this)closeEvolucaoModal()">
   <div class="modal-box">
