@@ -1,0 +1,44 @@
+======================================================================
+ML — ESCORES TOTAIS DAS ESCALAS (sem itens isolados, sem CQR)
+======================================================================
+
+Dataset (5 escores, sem HAQ): n=696  Aderente=385 (55.3%)  Não aderente=311 (44.7%)
+Dataset (6 escores, com HAQ): n=610  Aderente=338 (55.4%)  Não aderente=272 (44.6%)
+
+──────────────────────────────────────────────────────────────────────
+Feature set: 5 escores (sem HAQ)  (5 features)
+Model                        CV AUC     Test AUC    Sens    Spec     VPP     VPN    Brier
+────────────────────────────────────────────────────────────────────────────────
+Logistic Regression    0.693±0.009  0.684±0.038  0.700  0.571  0.667  0.611  0.225
+Random Forest          0.636±0.014  0.639±0.036  0.629  0.559  0.635  0.553  0.243
+Gradient Boosting      0.658±0.012  0.649±0.042  0.740  0.476  0.633  0.603  0.235
+XGBoost                0.629±0.016  0.628±0.041  0.643  0.557  0.641  0.561  0.252
+
+──────────────────────────────────────────────────────────────────────
+Feature set: 6 escores (com HAQ)  (6 features)
+Model                        CV AUC     Test AUC    Sens    Spec     VPP     VPN    Brier
+────────────────────────────────────────────────────────────────────────────────
+Logistic Regression    0.692±0.011  0.696±0.050  0.696  0.585  0.680  0.604  0.223
+Random Forest          0.655±0.027  0.651±0.048  0.640  0.559  0.647  0.554  0.236
+Gradient Boosting      0.650±0.022  0.658±0.045  0.726  0.467  0.632  0.578  0.232
+XGBoost                0.633±0.024  0.642±0.055  0.643  0.559  0.649  0.555  0.254
+
+======================================================================
+COMPARAÇÃO: Escores totais vs Itens isolados (Regressão Logística)
+======================================================================
+Abordagem                            AUC médio     ±DP
+───────────────────────────────────────────────────────
+Escores totais (5 escalas, sem HAQ)      0.684   0.038
+Escores totais (6 escalas, com HAQ)      0.696   0.050
+Itens isolados (27 itens HADS+SEAMS+BMQ)      0.743   0.028  ← análise anterior
+
+======================================================================
+IMPORTÂNCIA DAS FEATURES — Regressão Logística (permutation, 1 split)
+======================================================================
+  SEAMS Total                 0.1674 ± 0.0453
+  HADS Ansiedade              0.0432 ± 0.0129
+  HADS Depressão              0.0074 ± 0.0021
+  BMQ Preocupações           -0.0001 ± 0.0011
+  BMQ Necessidade            -0.0080 ± 0.0098
+
+ROC salvo em ml_scores_roc.png
