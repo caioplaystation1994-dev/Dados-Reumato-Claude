@@ -4741,15 +4741,22 @@ function handleRestoreFile(input) {
       const backup = JSON.parse(e.target.result);
       if (!Array.isArray(backup)) { alert('Arquivo inválido.'); return; }
       const current = getData();
-      // Conjuntos de RGHC e nomes normalizados para comparar
-      const currentRghcs = new Set(current.map(p => (p.rghc||'').trim().toLowerCase()).filter(Boolean));
-      const currentNomes = new Set(current.map(p => (p.nome||'').trim().toLowerCase()).filter(Boolean));
-      // Faltantes: não têm RGHC na lista atual E o nome também não bate
+      // Normaliza: minúsculo + sem acentos + espaços colapsados
+      const norm = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+                                .toLowerCase().replace(/\s+/g,' ').trim();
+      const currentRghcs = new Set(current.map(p => norm(p.rghc)).filter(Boolean));
+      const currentNomes = new Set(current.map(p => norm(p.nome)).filter(Boolean));
+      // Rastreia nomes já vistos no backup para evitar duplicatas internas
+      const seenNomes = new Set();
+      // Faltantes: não têm RGHC nem nome correspondente no app, sem duplicata no backup
       _restoreCandidates = backup.filter(p => {
-        const rghc = (p.rghc||'').trim().toLowerCase();
-        const nome = (p.nome||'').trim().toLowerCase();
-        if (rghc && currentRghcs.has(rghc)) return false; // RGHC já existe
-        if (nome && currentNomes.has(nome)) return false;  // nome já existe
+        const rghc = norm(p.rghc);
+        const nome = norm(p.nome);
+        if (!nome) return false;
+        if (rghc && currentRghcs.has(rghc)) return false; // RGHC já existe no app
+        if (currentNomes.has(nome)) return false;          // nome já existe no app
+        if (seenNomes.has(nome)) return false;             // duplicata dentro do backup
+        seenNomes.add(nome);
         return true;
       });
       renderRestoreTable();
