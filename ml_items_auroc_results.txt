@@ -1,0 +1,77 @@
+======================================================================
+ML ADHERENCE ANALYSIS — RHEUMATOLOGY DATA
+======================================================================
+
+Loading data from: /root/.claude/uploads/e8adc5a8-da29-5395-b412-4b73c749cad3/a2dbaa3d-backup_reumatologia_20260617.json
+Total records loaded: 730
+Flattened dataframe shape: (730, 59)
+
+--- Feature Key Availability ---
+Keys found (35): ['cqr3', 'cqr5', 'cqr8', 'cqr9', 'cqr15', 'cqr16', 'cqr17', 'cqr19', 'hads1a', 'hads3a', 'hads5a', 'hads7a', 'hads1d', 'hads3d', 'hads4d', 'hads5d', 'hads6d', 'hads6a', 'seams1', 'seams2', 'seams3', 'seams4', 'seams6', 'seams7', 'seams8', 'seams9', 'seams10', 'seams11', 'bmqc1', 'bmqc3', 'bmqc4', 'bmqn2', 'bmqn3', 'bmqc6', 'bmqn5']
+Keys missing (0): []
+
+--- Adherence Label Distribution ---
+y
+1.0    396
+0.0    317
+NaN     17
+
+Rows after filtering (non-null features + valid label): 701
+Class distribution: {0: np.int64(312), 1: np.int64(389)}
+
+======================================================================
+SECTION 1: 10-FOLD STRATIFIED CV — ALL AVAILABLE ITEMS
+======================================================================
+
+  All available items (n=701, n_features=35)
+    Logistic Regression             AUC = 0.9114 ± 0.0385
+    Random Forest                   AUC = 0.9060 ± 0.0345
+    Gradient Boosting               AUC = 0.9157 ± 0.0353
+
+Best model: Gradient Boosting (AUC = 0.9157)
+
+======================================================================
+SECTION 2: TOP-10 FEATURE IMPORTANCES — GRADIENT BOOSTING
+======================================================================
+
+Rank   Feature              Feature Importance
+---------------------------------------------
+1      cqr3                 0.585107
+2      cqr19                0.244982
+3      hads6d               0.013877
+4      hads5d               0.012890
+5      seams11              0.011591
+6      hads1a               0.011127
+7      cqr15                0.010439
+8      cqr5                 0.010192
+9      bmqc4                0.010107
+10     bmqn2                0.009287
+
+======================================================================
+SECTION 3: SUB-ANALYSES
+======================================================================
+
+--- A) CQR items only ---
+
+  CQR items: ['cqr3', 'cqr5', 'cqr8', 'cqr9', 'cqr15', 'cqr16', 'cqr17', 'cqr19'] (n=701, n_features=8)
+    Logistic Regression             AUC = 0.9122 ± 0.0415
+    Random Forest                   AUC = 0.9084 ± 0.0370
+    Gradient Boosting               AUC = 0.9190 ± 0.0290
+
+--- B) Non-CQR items only (HADS + SEAMS + BMQ) ---
+
+  Non-CQR items: ['hads1a', 'hads3a', 'hads5a', 'hads7a', 'hads1d', 'hads3d', 'hads4d', 'hads5d', 'hads6d', 'hads6a', 'seams1', 'seams2', 'seams3', 'seams4', 'seams6', 'seams7', 'seams8', 'seams9', 'seams10', 'seams11', 'bmqc1', 'bmqc3', 'bmqc4', 'bmqn2', 'bmqn3', 'bmqc6', 'bmqn5'] (n=701, n_features=27)
+    Logistic Regression             AUC = 0.7010 ± 0.0432
+    Random Forest                   AUC = 0.6994 ± 0.0409
+    Gradient Boosting               AUC = 0.6797 ± 0.0352
+
+--- C) All items combined ---
+
+  All items combined (n=701, n_features=35)
+    Logistic Regression             AUC = 0.9114 ± 0.0385
+    Random Forest                   AUC = 0.9060 ± 0.0345
+    Gradient Boosting               AUC = 0.9157 ± 0.0353
+
+======================================================================
+Results saved to: /home/user/Dados-Reumato-Claude/ml_items_auroc_results.txt
+======================================================================
