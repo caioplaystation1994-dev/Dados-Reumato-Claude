@@ -1,0 +1,98 @@
+Raw records: 730
+Records with CQR label: 713
+  Aderente:     396 (55.5%)
+  Não aderente: 317 (44.5%)
+
+Feature columns found: 27/27
+
+After dropna: 701 patients
+  Aderente:     389 (55.5%)
+  Não aderente: 312 (44.5%)
+
+======================================================================
+REPEATED 80/20 HOLDOUT EVALUATION (10 repeats)
+======================================================================
+Note: hyperparameter tuning via 5-fold CV inside each training set
+      class_weight=balanced applied to all models
+      feature selection NOT pre-applied (all 27 features enter pipeline)
+
+Model                      CV AUC   Test AUC    Sens    Spec     PPV     NPV    Brier
+--------------------------------------------------------------------------------
+Logistic Regression    0.720±0.010  0.743±0.028  0.767  0.583  0.697  0.670  0.206
+Random Forest          0.698±0.011  0.712±0.033  0.742  0.579  0.688  0.646  0.214
+Gradient Boosting      0.687±0.012  0.709±0.026  0.781  0.537  0.677  0.667  0.216
+XGBoost                0.666±0.013  0.689±0.025  0.741  0.560  0.676  0.640  0.226
+
+Best model: Logistic Regression (mean test AUC = 0.743)
+
+======================================================================
+DETAILED EVALUATION — FINAL SINGLE SPLIT (for plots)
+======================================================================
+Train: 560 | Test: 141
+Test class dist: Aderente=78 | Não aderente=63
+
+Logistic Regression  (best params: {'est__C': 0.01})
+  AUC=0.758  Brier=0.209
+  TP=60 TN=40 FP=23 FN=18
+  Sensitivity=0.769  Specificity=0.635
+  PPV=0.723  NPV=0.690
+
+Random Forest  (best params: {'est__max_depth': 10, 'est__n_estimators': 200})
+  AUC=0.725  Brier=0.208
+  TP=61 TN=40 FP=23 FN=17
+  Sensitivity=0.782  Specificity=0.635
+  PPV=0.726  NPV=0.702
+
+Gradient Boosting  (best params: {'est__learning_rate': 0.05, 'est__n_estimators': 100})
+  AUC=0.729  Brier=0.210
+  TP=65 TN=36 FP=27 FN=13
+  Sensitivity=0.833  Specificity=0.571
+  PPV=0.707  NPV=0.735
+
+XGBoost  (best params: {'est__learning_rate': 0.05, 'est__n_estimators': 100})
+  AUC=0.746  Brier=0.206
+  TP=60 TN=39 FP=24 FN=18
+  Sensitivity=0.769  Specificity=0.619
+  PPV=0.714  NPV=0.684
+
+ROC plot saved.
+Calibration plot saved.
+
+======================================================================
+FEATURE IMPORTANCES — Logistic Regression
+======================================================================
+Rank  Feature        Importance
+--------------------------------
+1     seams3             0.0231
+2     seams4             0.0202
+3     seams8             0.0130
+4     hads7a             0.0109
+5     seams6             0.0106
+6     hads6d             0.0102
+7     hads5d             0.0100
+8     hads5a             0.0090
+9     bmqc3              0.0063
+10    hads4d             0.0040
+11    hads1a             0.0039
+12    hads3a             0.0037
+13    seams10            0.0032
+14    bmqn5              0.0026
+15    seams1             0.0022
+16    seams2             0.0021
+17    hads3d             0.0021
+18    seams11            0.0008
+19    bmqn3              0.0003
+20    bmqc6              0.0002
+
+======================================================================
+SUB-ANALYSES BY SCALE (Random Forest, 10 repeated holdouts)
+======================================================================
+Scale group                 Mean AUC     ±SD
+---------------------------------------------
+HADS only (10)                 0.585   0.035
+SEAMS only (10)                0.656   0.035
+BMQ only (7)                   0.508   0.040
+HADS + SEAMS (20)              0.700   0.032
+HADS + BMQ (17)                0.594   0.032
+SEAMS + BMQ (17)               0.658   0.034
+All 27 items                   0.706   0.026
