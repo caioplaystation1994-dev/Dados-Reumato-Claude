@@ -140,6 +140,16 @@ header h1{font-size:15px;font-weight:700}
       <div class="section-title">📊 Estatísticas de Uso</div>
       <div id="stats-container"></div>
     </div>
+    <div class="section-card" style="margin-top:16px">
+      <div class="section-title">💾 Backup de Dados</div>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+        <button onclick="exportarJSON()" class="btn-secondary" style="background:#43a047;color:#fff;border:none">📥 Exportar JSON</button>
+        <label style="cursor:pointer">
+          <span class="btn-secondary" style="background:#1976d2;color:#fff;border:none;display:inline-block;padding:8px 16px;border-radius:8px;font-size:14px">📤 Importar JSON</span>
+          <input type="file" accept=".json" style="display:none" onchange="importarJSON(this)">
+        </label>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -396,6 +406,15 @@ header h1{font-size:15px;font-weight:700}
           </div>
         </div>
       </div>
+      <div class="section-card" style="margin-top:12px" id="ar_tcar_section">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🫁 TC de Tórax de Alta Resolução (TCAR)</h4>
+        <div style="display:grid;grid-template-columns:1fr 160px;gap:12px">
+          <div><label>Laudo resumido</label>
+          <textarea id="ar_tcar_laudo" rows="3" placeholder="ex: Padrão em vidro fosco bibasal, linhas B de Kerley. Compatível com DPI em padrão UIP." onchange="fd.ar_tcar_laudo=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea></div>
+          <div><label>Data do exame</label>
+          <input type="date" id="ar_tcar_data" onchange="fd.ar_tcar_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+        </div>
+      </div>
     </div>
 
     <!-- EA -->
@@ -569,6 +588,31 @@ header h1{font-size:15px;font-weight:700}
           </div>
         </div>
       </div>
+      <div class="section-card" style="margin-top:12px" id="les_renal_section">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🔬 Avaliação Renal</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div><label>Proteinúria 24h (mg/24h)</label>
+          <input type="number" id="les_proteinuria_24h" placeholder="ex: 500" onchange="fd.les_proteinuria_24h=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+          <div><label>Rel. Prot/Creat urinária (mg/mg)</label>
+          <input type="number" step="0.01" id="les_prot_creat" placeholder="ex: 0.5" onchange="fd.les_prot_creat=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+          <div><label>EAS — cilindros</label>
+          <input type="text" id="les_cilindros" placeholder="ex: cilindros hemáticos presentes" onchange="fd.les_cilindros=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🧪 Sistema Complemento</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div><label>C3 (mg/dL)</label>
+          <input type="number" step="0.1" id="les_c3_comp" placeholder="VR: 90–180" onchange="fd.les_c3=this.value;updComplemento()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box">
+          <span id="les_c3_alert"></span></div>
+          <div><label>C4 (mg/dL)</label>
+          <input type="number" step="0.1" id="les_c4_comp" placeholder="VR: 16–47" onchange="fd.les_c4=this.value;updComplemento()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box">
+          <span id="les_c4_alert"></span></div>
+          <div><label>CH50 (%)</label>
+          <input type="number" step="0.1" id="les_ch50" placeholder="VR: 70–150%" onchange="fd.les_ch50=this.value;updComplemento()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box">
+          <span id="les_ch50_alert"></span></div>
+        </div>
+      </div>
     </div>
 
     <!-- VASC -->
@@ -634,6 +678,17 @@ header h1{font-size:15px;font-weight:700}
             <label>Duração da doença</label>
             <input type="text" id="vasc_dur" placeholder="Ex: 1 ano" oninput="fd.duracao=this.value">
           </div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🔬 Avaliação Renal</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div><label>Proteinúria 24h (mg/24h)</label>
+          <input type="number" id="vasc_proteinuria_24h" placeholder="ex: 500" onchange="fd.vasc_proteinuria_24h=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+          <div><label>Rel. Prot/Creat urinária (mg/mg)</label>
+          <input type="number" step="0.01" id="vasc_prot_creat" placeholder="ex: 0.5" onchange="fd.vasc_prot_creat=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+          <div><label>EAS — cilindros</label>
+          <input type="text" id="vasc_cilindros" placeholder="ex: cilindros hemáticos presentes" onchange="fd.vasc_cilindros=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
         </div>
       </div>
     </div>
@@ -754,6 +809,15 @@ header h1{font-size:15px;font-weight:700}
           </div>
         </div>
       </div>
+      <div class="section-card" style="margin-top:12px" id="dm_tcar_section">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🫁 TC de Tórax de Alta Resolução (TCAR) — Triagem de DPI</h4>
+        <div style="display:grid;grid-template-columns:1fr 160px;gap:12px">
+          <div><label>Laudo resumido</label>
+          <textarea id="dm_tcar_laudo" rows="3" placeholder="ex: Opacidades em vidro fosco nos lobos inferiores bilateralmente, sem faveolamento. Padrão sugestivo de PINE." onchange="fd.dm_tcar_laudo=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea></div>
+          <div><label>Data do exame</label>
+          <input type="date" id="dm_tcar_data" onchange="fd.dm_tcar_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+        </div>
+      </div>
     </div>
 
     <!-- OP -->
@@ -795,6 +859,20 @@ header h1{font-size:15px;font-weight:700}
         <input type="text" placeholder="Ex: prednisona 10mg/dia há 2 anos" oninput="fd.op_corticoide=this.value">
       </div>
       <div id="op-result" style="margin-top:12px;padding:12px;background:#f0f9ff;border-radius:8px;font-size:13px;display:none"></div>
+      <div class="section-card" style="margin-top:12px" id="op_dxa2_section">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">📊 Densitometria Óssea — Exame Anterior (Comparação)</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 160px;gap:12px">
+          <div><label>T-score Coluna L1-L4</label>
+          <input type="number" step="0.1" id="op_col2" placeholder="-2.5" onchange="fd.op_col2=this.value;updDeltaDXA()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+          <div><label>T-score Fêmur Total</label>
+          <input type="number" step="0.1" id="op_fem2" placeholder="-2.5" onchange="fd.op_fem2=this.value;updDeltaDXA()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+          <div><label>T-score Colo Femoral</label>
+          <input type="number" step="0.1" id="op_colo2" placeholder="-2.5" onchange="fd.op_colo2=this.value;updDeltaDXA()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+          <div><label>Data do exame anterior</label>
+          <input type="date" id="op_dxa2_data" onchange="fd.op_dxa2_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+        </div>
+        <div id="delta_dxa_result" style="margin-top:10px;font-size:13px;color:#555"></div>
+      </div>
     </div>
 
     <div class="form-actions">
@@ -822,6 +900,12 @@ header h1{font-size:15px;font-weight:700}
       </table>
       <button class="btn-add" onclick="addDmard()">+ Adicionar medicamento</button>
       <div id="dut-trat-msg" class="ref-box" style="margin-top:12px"></div>
+    </div>
+    <div class="section-card" style="margin-top:16px">
+      <h4 style="margin:0 0 10px;color:#5c6bc0">💉 Biológicos Anteriores</h4>
+      <p style="font-size:13px;color:#666;margin:0 0 10px">Registre imunobiológicos utilizados anteriormente e motivo de troca/suspensão.</p>
+      <div id="bioanterior-container"></div>
+      <button onclick="addBioAnterior()" class="btn-secondary" style="margin-top:8px">+ Adicionar biológico anterior</button>
     </div>
     <div class="form-actions">
       <button class="btn-secondary" onclick="showTabByName('tab-diag')">← Voltar</button>
@@ -1076,7 +1160,8 @@ function showTabByName(id) {
 
 // ─── SELEÇÃO DE DOENÇA ────────────────────────────────────────────────────────
 function selectDisease(d) {
-  disease=d; fd={}; mv={}; dmards=[]; exams={}; examDateGlobal=''; imagens=[];
+  disease=d; fd={}; mv={}; dmards=[]; bioAnteriores=[]; exams={}; examDateGlobal=''; imagens=[];
+  const bac=document.getElementById('bioanterior-container'); if(bac) bac.innerHTML='';
   fd.das28_tipo='pcr';
   document.getElementById('form-disease-title').textContent=D_NAMES[d];
   document.getElementById('p_cid').value=D_CID[d];
@@ -1330,6 +1415,7 @@ function updOP() {
     el.style.display='';
     el.innerHTML = `<b>Classificação DXA:</b> ${cls}<br><b>T-score mais baixo:</b> ${tc.toFixed(1)}<br>${fraxM?'<b>FRAX fratura maior:</b> '+fraxM+'%<br>':''} ${fraxQ?'<b>FRAX fratura quadril:</b> '+fraxQ+'%':''}`;
   }
+  updDeltaDXA();
 }
 
 // ─── TABELA DE TRATAMENTO ────────────────────────────────────────────────────
@@ -1687,8 +1773,19 @@ function narrative() {
   const trat=dmards.filter(x=>x.med).length===0
     ?'Nenhum medicamento convencional registrado.'
     :dmards.filter(x=>x.med).map(x=>`${x.med}${x.dose?' '+x.dose:''}${x.dur?' por '+x.dur:''}${x.motivo?' ('+x.motivo+')':''}`).join('; ')+'.';
+  let bioAntTxt = '';
+  if(bioAnteriores.length>0){
+    const lines = bioAnteriores.filter(b=>b.med).map(b=>{
+      let t=`• ${b.med}`;
+      if(b.duracao) t+=` (${b.duracao})`;
+      if(b.motivo) t+=` — Motivo de troca: ${b.motivo}`;
+      if(b.obs) t+=`. ${b.obs}`;
+      return t;
+    });
+    if(lines.length>0) bioAntTxt = '\n\nBIOLÓGICOS ANTERIORES:\n'+lines.join('\n');
+  }
   const med=f.med_nome?`Solicita-se autorização para uso de ${f.med_nome}, via ${f.med_via||'a definir'}, na posologia: ${f.med_posologia||'a definir'}. ${D_DUT[d]}.`:'Medicamento não selecionado.';
-  return {intro,atv,trat,med};
+  return {intro,atv,trat,bioAntTxt,med};
 }
 
 // ─── PRÉVIA ───────────────────────────────────────────────────────────────────
@@ -1725,6 +1822,7 @@ function buildPreview() {
     <h2>2. Atividade de Doença</h2><p>${n.atv}</p>
     <h2>3. Histórico de Tratamento</h2>
     ${dmardRows?`<table><tr><th>Medicamento</th><th>Dose</th><th>Duração</th><th>Motivo de suspensão</th></tr>${dmardRows}</table>`:'<p>Nenhum medicamento registrado.</p>'}
+    ${n.bioAntTxt?`<pre style="font-size:12px;white-space:pre-wrap;margin-top:8px">${n.bioAntTxt}</pre>`:''}
     <h2>4. Exames Pré-Autorização</h2>
     ${examRows?`<table><tr><th>Exame</th><th>Resultado</th><th>Data</th></tr>${examRows}</table>`:'<p>Nenhum exame laboratorial registrado.</p>'}
     ${tbTxt}
@@ -2093,10 +2191,120 @@ function genRecursoPDF() {
   document.getElementById('recurso-modal').style.display='none';
 }
 
+// ─── BIOLÓGICOS ANTERIORES ────────────────────────────────────────────────────
+let bioAnteriores = [];
+
+function addBioAnterior(data) {
+  const idx = bioAnteriores.length;
+  bioAnteriores.push(data || {med:'', motivo:'', duracao:'', obs:''});
+  const c = document.getElementById('bioanterior-container');
+  const div = document.createElement('div');
+  div.id = 'bioant_row_'+idx;
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 120px 1fr auto;gap:8px;margin-bottom:8px;align-items:start';
+  const allMeds = [...new Set(Object.values(MED_OPTS).flat())].filter(m=>m!=='Outro').sort();
+  div.innerHTML = `
+    <div><label style="font-size:11px;color:#888">Medicamento</label>
+    <select onchange="bioAnteriores[${idx}].med=this.value" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+      <option value="">Selecione...</option>
+      ${allMeds.map(m=>`<option value="${m}"${(data&&data.med===m)?' selected':''}>${m}</option>`).join('')}
+      <option value="Outro"${(data&&data.med==='Outro')?' selected':''}>Outro</option>
+    </select></div>
+    <div><label style="font-size:11px;color:#888">Motivo de troca/suspensão</label>
+    <select onchange="bioAnteriores[${idx}].motivo=this.value" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+      <option value="">Selecione...</option>
+      <option value="Ineficácia primária"${(data&&data.motivo==='Ineficácia primária')?' selected':''}>Ineficácia primária</option>
+      <option value="Ineficácia secundária (perda de resposta)"${(data&&data.motivo==='Ineficácia secundária (perda de resposta)')?' selected':''}>Ineficácia secundária (perda de resposta)</option>
+      <option value="Efeito adverso"${(data&&data.motivo==='Efeito adverso')?' selected':''}>Efeito adverso</option>
+      <option value="Contraindicação"${(data&&data.motivo==='Contraindicação')?' selected':''}>Contraindicação</option>
+      <option value="Preferência do paciente"${(data&&data.motivo==='Preferência do paciente')?' selected':''}>Preferência do paciente</option>
+      <option value="Outro"${(data&&data.motivo==='Outro')?' selected':''}>Outro</option>
+    </select></div>
+    <div><label style="font-size:11px;color:#888">Duração de uso</label>
+    <input type="text" placeholder="ex: 18 meses" value="${(data&&data.duracao)||''}" onchange="bioAnteriores[${idx}].duracao=this.value" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box"></div>
+    <div><label style="font-size:11px;color:#888">Observações</label>
+    <input type="text" placeholder="ex: suspendido por reação infusional" value="${(data&&data.obs)||''}" onchange="bioAnteriores[${idx}].obs=this.value" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box"></div>
+    <div style="padding-top:18px"><button onclick="rmBioAnterior(${idx})" style="background:#e53935;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer">✕</button></div>`;
+  c.appendChild(div);
+}
+
+function rmBioAnterior(idx) {
+  const tmp = bioAnteriores.filter((_,i)=>i!==idx);
+  bioAnteriores = [];
+  document.getElementById('bioanterior-container').innerHTML='';
+  tmp.forEach(b=>addBioAnterior(b));
+}
+
+// ─── COMPLEMENTO ──────────────────────────────────────────────────────────────
+function updComplemento() {
+  const c3 = parseFloat(fd.les_c3||'');
+  const c4 = parseFloat(fd.les_c4||'');
+  const ch50 = parseFloat(fd.les_ch50||'');
+  const el3 = document.getElementById('les_c3_alert');
+  const el4 = document.getElementById('les_c4_alert');
+  const el50 = document.getElementById('les_ch50_alert');
+  if(el3) el3.innerHTML = (!isNaN(c3) && c3<80) ? '<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">⚠ Baixo</span>' : '';
+  if(el4) el4.innerHTML = (!isNaN(c4) && c4<16) ? '<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">⚠ Baixo</span>' : '';
+  if(el50) el50.innerHTML = (!isNaN(ch50) && ch50<50) ? '<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">⚠ Baixo</span>' : '';
+}
+
+// ─── DELTA DXA ────────────────────────────────────────────────────────────────
+function updDeltaDXA() {
+  const col1 = parseFloat(fd.op_tscore_col||document.getElementById('op_col')?.value||'');
+  const col2 = parseFloat(fd.op_col2||'');
+  const fem1 = parseFloat(fd.op_tscore_fem||document.getElementById('op_fem')?.value||'');
+  const fem2 = parseFloat(fd.op_fem2||'');
+  const colo1 = parseFloat(fd.op_tscore_colo||document.getElementById('op_colo')?.value||'');
+  const colo2 = parseFloat(fd.op_colo2||'');
+  const el = document.getElementById('delta_dxa_result');
+  if(!el) return;
+  let parts = [];
+  if(!isNaN(col1)&&!isNaN(col2)) parts.push(`Δ Coluna: ${(col1-col2)>=0?'+':''}${(col1-col2).toFixed(1)}`);
+  if(!isNaN(fem1)&&!isNaN(fem2)) parts.push(`Δ Fêmur Total: ${(fem1-fem2)>=0?'+':''}${(fem1-fem2).toFixed(1)}`);
+  if(!isNaN(colo1)&&!isNaN(colo2)) parts.push(`Δ Colo Femoral: ${(colo1-colo2)>=0?'+':''}${(colo1-colo2).toFixed(1)}`);
+  el.innerHTML = parts.length ? `<strong>Variação de T-score (atual vs anterior):</strong> ${parts.join(' | ')}` : '';
+}
+
+// ─── EXPORT / IMPORT JSON ─────────────────────────────────────────────────────
+function exportarJSON() {
+  const data = {};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    data[k]=localStorage.getItem(k);
+  }
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'reumaLaudos_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function importarJSON(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      let count = 0;
+      for(const [k,v] of Object.entries(data)){
+        localStorage.setItem(k,v);
+        count++;
+      }
+      alert(`✅ Importação concluída! ${count} registros importados.`);
+      renderLaudos();
+      renderStats();
+    } catch(err) {
+      alert('❌ Erro ao importar: arquivo JSON inválido.');
+    }
+  };
+  reader.readAsText(file);
+}
+
 // ─── NOVA CONSULTA ────────────────────────────────────────────────────────────
 function novaConsulta() {
   if(!confirm('Iniciar nova consulta? Os dados atuais serão apagados.')) return;
-  disease=''; fd={}; mv={}; dmards=[]; exams={}; examDateGlobal=''; imagens=[];
+  disease=''; fd={}; mv={}; dmards=[]; bioAnteriores=[]; exams={}; examDateGlobal=''; imagens=[];
+  const bac=document.getElementById('bioanterior-container'); if(bac) bac.innerHTML='';
   document.querySelectorAll('#page2 input:not([readonly]),#page2 select,#page2 textarea').forEach(el=>{
     if(el.type==='range') el.value=0; else el.value='';
   });
