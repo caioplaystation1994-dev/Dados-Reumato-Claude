@@ -195,14 +195,6 @@ header h1{font-size:15px;font-weight:700}
           </div>
         </div>
         <div class="field-group">
-          <label>Convênio</label>
-          <input type="text" id="p_convenio" placeholder="Ex: Unimed, Bradesco Saúde" oninput="fd.convenio=this.value">
-        </div>
-        <div class="field-group">
-          <label>Número da carteirinha</label>
-          <input type="text" id="p_carteirinha" oninput="fd.carteirinha=this.value">
-        </div>
-        <div class="field-group">
           <label>CID-10</label>
           <input type="text" id="p_cid" readonly style="background:#f0f4f8">
         </div>
@@ -818,7 +810,7 @@ const MMT8_MUSCLES = ['Deltóide direito','Bíceps direito','Extensor do punho d
 const BASDAI_Q = ['Nível geral de fadiga','Dor no pescoço, costas ou quadril','Dor ou edema em outras articulações','Desconforto em regiões de entesopatia (inserções tendinosas)','Intensidade da rigidez matinal','Duração da rigidez matinal (0=nenhuma, 10=2h ou mais)'];
 const EXAMES_BASE = [
   {id:'ppd',l:'PPD ou IGRA (Quantiferon-TB)',req:true,ownDate:true},
-  {id:'rx_torax',l:'Radiografia de tórax',req:true,ownDate:true},
+  {id:'rx_torax',l:'Radiografia de tórax',req:true,ownDate:true,defaultResult:'Laudo sem alterações'},
   {id:'hbsag',l:'HBsAg (Hepatite B)',req:true},
   {id:'anti_hbc',l:'Anti-HBc total',req:true},
   {id:'anti_hcv',l:'Anti-HCV (Hepatite C)',req:true},
@@ -1119,7 +1111,7 @@ function buildExams() {
   }
 
   EXAMES_BASE.forEach(e=>{
-    exams[e.id]={result:'',date:''};
+    exams[e.id]={result:e.defaultResult||'',date:''};
     const row=document.createElement('div');
     row.className='exam-row';
     const dateField = e.ownDate
@@ -1133,7 +1125,7 @@ function buildExams() {
         </div>`;
     row.innerHTML=`<div>
         <div class="exam-label">${e.l}${e.req?'<span class="badge-req">Obrigatório</span>':''}</div>
-        <input type="text" placeholder="Resultado" oninput="exams['${e.id}'].result=this.value" style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fafafa">
+        <input type="text" placeholder="Resultado" value="${e.defaultResult||''}" oninput="exams['${e.id}'].result=this.value" style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fafafa">
       </div>
       ${dateField}`;
     c.appendChild(row);
@@ -1264,7 +1256,6 @@ function buildPreview() {
     </div>
     <h2>Identificação do Paciente</h2>
     <table><tr><td><b>Nome:</b> ${f.nome||'—'}</td><td><b>DN:</b> ${dnFmt}${f.idade?' ('+f.idade+')':''}</td><td><b>Sexo:</b> ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}</td></tr>
-    <tr><td><b>Convênio:</b> ${f.convenio||'—'}</td><td colspan="2"><b>Carteirinha:</b> ${f.carteirinha||'—'}</td></tr>
     <tr><td colspan="3"><b>CID-10:</b> ${document.getElementById('p_cid').value||'—'}</td></tr></table>
     <h2>Médico Responsável</h2>
     <table><tr><td><b>Dr(a).</b> ${f.medico||'—'}</td><td><b>CRM:</b> ${f.crm||'—'}</td><td><b>Data:</b> ${dataL}</td></tr></table>
@@ -1324,7 +1315,6 @@ function genPDF() {
 
   addSec('IDENTIFICAÇÃO DO PACIENTE');
   addText(`Nome: ${f.nome||'—'}     DN: ${dnFmt}${f.idade?' ('+f.idade+')':''}     Sexo: ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}`);
-  addText(`Convênio: ${f.convenio||'—'}     Carteirinha: ${f.carteirinha||'—'}`);
   addText(`CID-10: ${document.getElementById('p_cid').value||'—'}`);
 
   addSec('MÉDICO RESPONSÁVEL');
@@ -1405,7 +1395,6 @@ function genDOCX() {
     h2('IDENTIFICAÇÃO DO PACIENTE'),
     b('Nome: ',f.nome), b('Data de nascimento: ',`${dnFmt}${f.idade?' ('+f.idade+')':''}`),
     b('Sexo: ',f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'),
-    b('Convênio: ',f.convenio), b('Carteirinha: ',f.carteirinha),
     b('CID-10: ',document.getElementById('p_cid').value||'—'),
     h2('MÉDICO RESPONSÁVEL'),
     b('Dr(a). ',f.medico), b('CRM: ',f.crm),
