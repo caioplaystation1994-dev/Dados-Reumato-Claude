@@ -1125,7 +1125,7 @@ const DMARD_DEFAULT_DOSE = {
   'Meloxicam': '15mg/dia por 6 semanas',
 };
 
-
+function addDmard(data) {
   const idx=dmards.length;
   const d=data||{med:'',dose:'',dur:'',motivo:''};
   dmards.push(d);
