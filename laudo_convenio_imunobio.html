@@ -1160,7 +1160,8 @@ function updDutMsg() {
     aps:'📋 DUT 65.4: Exige falha a pelo menos 1 DMARD sintético convencional (preferencialmente Metotrexato) em dose adequada.',
     les:'📋 ANS (RN 612/2024 e RN 645/2025): Exige falha ou intolerância a pelo menos 1 imunossupressor (azatioprina ou micofenolato de mofetila) associado à hidroxicloroquina.',
     vasc:'📋 ANS: Documente o tratamento convencional prévio com ciclofosfamida ou a indicação de rituximabe como terapia de primeira linha na indução.',
-    dm:'📋 ANS: Exige refratariedade a pelo menos 2 imunossupressores convencionais em doses adequadas (ex: azatioprina + metotrexato ou micofenolato).'
+    dm:'📋 ANS: Exige refratariedade a pelo menos 2 imunossupressores convencionais em doses adequadas (ex: azatioprina + metotrexato ou micofenolato).',
+    op:'📋 DUT 56 / RN 465/2021: Documente T-score ≤ −2,5 ou fratura por fragilidade. Para terapias avançadas (denosumabe, teriparatida, romosozumabe), exige falha ou contraindicação a bifosfonato oral.'
   };
   el.textContent=msgs[disease]||'';
 }
@@ -1284,7 +1285,7 @@ function narrative() {
   const idad=f.idade?(f.idade+', '):(document.getElementById('p_idade').value?document.getElementById('p_idade').value+', ':'');
   const sexo=f.sexo==='M'?'sexo masculino':f.sexo==='F'?'sexo feminino':'';
   const dur=f.duracao||'tempo de evolução não especificado';
-  const intro=`Paciente ${nome}, ${idad}${sexo}, portador(a) de ${D_NAMES[d]||d}, com ${dur} de doença.`;
+  let intro=`Paciente ${nome}, ${idad}${sexo}, portador(a) de ${D_NAMES[d]||d}, com ${dur} de doença.`;
   let atv='';
   if(d==='ar'){
     atv=`Apresenta atividade de doença ${f.das28_class||'não calculada'}, com DAS28-${f.das28_tipo==='vhs'?'VHS':'PCR'} de ${f.das28||'—'}. `;
