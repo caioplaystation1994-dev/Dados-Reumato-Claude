@@ -156,6 +156,12 @@ header h1{font-size:15px;font-weight:700}
       <div class="dc-cid">CID M33 · RN 465/2021</div>
       <div class="dc-desc">DM, PM, IMNM ou sínd. anti-sintetase refratária a corticosteroides e imunossupressores. Rituximabe, IVIG.</div>
     </div>
+    <div class="disease-card" onclick="selectDisease('op')">
+      <div class="dc-icon">🦴</div>
+      <div class="dc-name">Osteoporose</div>
+      <div class="dc-cid">CID M81.0 · DUT 56 · RN 465/2021</div>
+      <div class="dc-desc">T-score ≤ −2,5 ou fratura por fragilidade. Bifosfonatos, denosumabe, teriparatida, romosozumabe.</div>
+    </div>
   </div>
 </div>
 
@@ -625,6 +631,47 @@ header h1{font-size:15px;font-weight:700}
       </div>
     </div>
 
+    <!-- OP -->
+    <div id="diag-op" style="display:none">
+      <div class="field-row">
+        <div class="field-group">
+          <label>T-score (coluna lombar)</label>
+          <input type="number" step="0.1" placeholder="Ex: -2.8" oninput="fd.op_tscore_col=this.value;updOP()">
+        </div>
+        <div class="field-group">
+          <label>T-score (fêmur total)</label>
+          <input type="number" step="0.1" placeholder="Ex: -2.5" oninput="fd.op_tscore_fem=this.value;updOP()">
+        </div>
+        <div class="field-group">
+          <label>T-score (colo femoral)</label>
+          <input type="number" step="0.1" placeholder="Ex: -2.6" oninput="fd.op_tscore_colo=this.value;updOP()">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>Data da densitometria</label>
+          <input type="date" oninput="fd.op_dxa_data=this.value">
+        </div>
+        <div class="field-group">
+          <label>FRAX — risco fratura maior (%)</label>
+          <input type="number" step="0.1" min="0" max="100" placeholder="Ex: 18.5" oninput="fd.op_frax_maior=this.value;updOP()">
+        </div>
+        <div class="field-group">
+          <label>FRAX — risco fratura quadril (%)</label>
+          <input type="number" step="0.1" min="0" max="100" placeholder="Ex: 5.2" oninput="fd.op_frax_quad=this.value;updOP()">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Fraturas por fragilidade (descreva, se houver)</label>
+        <input type="text" placeholder="Ex: fratura vertebral T12 em 2023, fratura de punho em 2022" oninput="fd.op_fraturas=this.value">
+      </div>
+      <div class="field-group">
+        <label>Uso de corticoide (dose e duração)</label>
+        <input type="text" placeholder="Ex: prednisona 10mg/dia há 2 anos" oninput="fd.op_corticoide=this.value">
+      </div>
+      <div id="op-result" style="margin-top:12px;padding:12px;background:#f0f9ff;border-radius:8px;font-size:13px;display:none"></div>
+    </div>
+
     <div class="form-actions">
       <button class="btn-secondary" onclick="showTabByName('tab-pac')">← Voltar</button>
       <button class="btn-primary" onclick="showTabByName('tab-trat')">Próximo: Tratamento →</button>
@@ -738,7 +785,8 @@ const D_NAMES = {
   aps:'Artrite Psoriásica',
   les:'Lúpus Eritematoso Sistêmico',
   vasc:'Vasculites ANCA-Associadas',
-  dm:'Dermatomiosite / Miopatia Inflamatória Autoimune'
+  dm:'Dermatomiosite / Miopatia Inflamatória Autoimune',
+  op:'Osteoporose'
 };
 const D_CID = {
   ar:'M05.9 — Artrite Reumatoide soropositiva',
@@ -746,7 +794,8 @@ const D_CID = {
   aps:'L40.5 — Artropatia Psoriásica',
   les:'M32.1 — Lúpus Eritematoso Sistêmico com manifestação orgânica',
   vasc:'M31.3 — Granulomatose com Poliangiite (GPA) / Vasculite ANCA-associada',
-  dm:'M33.1 — Dermatomiosite / Miopatia Inflamatória Autoimune'
+  dm:'M33.1 — Dermatomiosite / Miopatia Inflamatória Autoimune',
+  op:'M81.0'
 };
 const D_DUT = {
   ar:'DUT 65.1 — Resolução Normativa ANS nº 465/2021 e atualizações (RN 642/2025, RN 667/2026)',
@@ -754,7 +803,8 @@ const D_DUT = {
   aps:'DUT 65.4 — Resolução Normativa ANS nº 465/2021 e atualizações (RN 536/2022)',
   les:'RN ANS nº 612/2024 (belimumabe — nefrite lúpica) e RN 645/2025 (LES com atividade persistente)',
   vasc:'Resolução Normativa ANS nº 465/2021 — Cobertura de rituximabe (imunobiológico EV/SC)',
-  dm:'Resolução Normativa ANS nº 465/2021 — Cobertura de rituximabe e IVIG para miopatias inflamatórias'
+  dm:'Resolução Normativa ANS nº 465/2021 — Cobertura de rituximabe e IVIG para miopatias inflamatórias',
+  op:'DUT 56 — ANS / RN 465/2021 e atualizações'
 };
 const MED_OPTS = {
   ar:['Adalimumabe','Etanercepte','Infliximabe','Certolizumabe pegol','Golimumabe','Tocilizumabe','Abatacepte','Rituximabe','Baricitinibe','Tofacitinibe','Upadacitinibe','Outro'],
@@ -762,7 +812,8 @@ const MED_OPTS = {
   aps:['Adalimumabe','Etanercepte','Infliximabe','Certolizumabe pegol','Golimumabe','Secuquinumabe','Ixequizumabe','Ustequinumabe','Guselcumabe','Risanquizumabe','Tofacitinibe','Upadacitinibe','Apremilaste','Outro'],
   les:['Belimumabe','Anifrolumabe','Rituximabe','Outro'],
   vasc:['Rituximabe','Mepolizumabe','Outro'],
-  dm:['Rituximabe','Imunoglobulina Humana IV (IVIG)','Outro']
+  dm:['Rituximabe','Imunoglobulina Humana IV (IVIG)','Outro'],
+  op:['Ácido zoledrônico','Denosumabe','Teriparatida','Romosozumabe','Alendronato','Risedronato','Ibandronato','Outro']
 };
 const MED_INFO = {
   'Adalimumabe':{via:'Subcutânea (SC)',pos:'40 mg SC a cada 14 dias'},
@@ -786,7 +837,14 @@ const MED_INFO = {
   'Anifrolumabe':{via:'Endovenosa (EV)',pos:'300 mg EV a cada 4 semanas'},
   'Mepolizumabe':{via:'Subcutânea (SC)',pos:'300 mg SC a cada 4 semanas (GEPA/vasculite eosinofílica)'},
   'Imunoglobulina Humana IV (IVIG)':{via:'Endovenosa (EV)',pos:'2 g/kg EV divididos em 2–5 dias por ciclo (repetir mensalmente por 3–6 meses)'},
-  'Outro':{via:'',pos:''}
+  'Outro':{via:'',pos:''},
+  'Ácido zoledrônico':{via:'Endovenosa (EV)',pos:'5 mg EV em dose única anual (infusão de 15 min)'},
+  'Denosumabe':{via:'Subcutânea (SC)',pos:'60 mg SC a cada 6 meses'},
+  'Teriparatida':{via:'Subcutânea (SC)',pos:'20 mcg SC 1x/dia por até 24 meses'},
+  'Romosozumabe':{via:'Subcutânea (SC)',pos:'210 mg SC (2 injeções de 105 mg) 1x/mês por 12 meses'},
+  'Alendronato':{via:'Via oral',pos:'70 mg VO 1x/semana'},
+  'Risedronato':{via:'Via oral',pos:'35 mg VO 1x/semana'},
+  'Ibandronato':{via:'Via oral',pos:'150 mg VO 1x/mês'}
 };
 const DMARD_OPTS = {
   ar:['Metotrexato (MTX)','Hidroxicloroquina','Sulfassalazina','Leflunomida','Azatioprina','Outro'],
@@ -794,7 +852,8 @@ const DMARD_OPTS = {
   aps:['Metotrexato (MTX)','Leflunomida','Sulfassalazina','Ciclosporina','Outro'],
   les:['Hidroxicloroquina','Azatioprina','Micofenolato de mofetila','Metotrexato (MTX)','Ciclofosfamida','Tacrolimo','Outro'],
   vasc:['Ciclofosfamida (pulsos EV)','Ciclofosfamida (VO)','Azatioprina','Micofenolato de mofetila','Metotrexato (MTX)','Rituximabe (ciclo prévio)','Outro'],
-  dm:['Prednisona','Azatioprina','Metotrexato (MTX)','Micofenolato de mofetila','Imunoglobulina IV (IVIG)','Ciclosporina','Tacrolimo','Outro']
+  dm:['Prednisona','Azatioprina','Metotrexato (MTX)','Micofenolato de mofetila','Imunoglobulina IV (IVIG)','Ciclosporina','Tacrolimo','Outro'],
+  op:['Alendronato','Risedronato','Ibandronato','Cálcio + Vitamina D','Outro']
 };
 const MOTIVOS = ['Ineficácia','Intolerância / Efeito adverso','Contraindicação','Ainda em uso (base)','Outro'];
 const SLEDAI_ITEMS = [
@@ -856,7 +915,7 @@ function selectDisease(d) {
   document.getElementById('form-disease-title').textContent=D_NAMES[d];
   document.getElementById('p_cid').value=D_CID[d];
   document.getElementById('p_data_laudo').value=new Date().toISOString().split('T')[0];
-  ['ar','ea','aps','les','vasc','dm'].forEach(dd=>{
+  ['ar','ea','aps','les','vasc','dm','op'].forEach(dd=>{
     const el=document.getElementById('diag-'+dd);
     if(el) el.style.display=dd===d?'':'none';
   });
@@ -1035,6 +1094,27 @@ function updMMT8() {
   fd.mmt8_class=cl.textContent;
 }
 
+function updOP() {
+  const tc = Math.min(
+    parseFloat(fd.op_tscore_col||0)||0,
+    parseFloat(fd.op_tscore_fem||0)||0,
+    parseFloat(fd.op_tscore_colo||0)||0
+  );
+  const fraxM = parseFloat(fd.op_frax_maior||0)||0;
+  const fraxQ = parseFloat(fd.op_frax_quad||0)||0;
+  let cls = '';
+  if(tc <= -2.5) cls = 'Osteoporose (T-score ≤ −2,5)';
+  else if(tc <= -1.0) cls = 'Osteopenia (T-score entre −1,0 e −2,5)';
+  else if(tc > -1.0 && tc !== 0) cls = 'Densidade óssea normal';
+  fd.op_tscore_min = tc;
+  fd.op_cls = cls;
+  const el = document.getElementById('op-result');
+  if(el && cls) {
+    el.style.display='';
+    el.innerHTML = `<b>Classificação DXA:</b> ${cls}<br><b>T-score mais baixo:</b> ${tc.toFixed(1)}<br>${fraxM?'<b>FRAX fratura maior:</b> '+fraxM+'%<br>':''} ${fraxQ?'<b>FRAX fratura quadril:</b> '+fraxQ+'%':''}`;
+  }
+}
+
 // ─── TABELA DE TRATAMENTO ────────────────────────────────────────────────────
 const DMARD_DEFAULT_DOSE = {
   'Metotrexato (MTX)': '15mg/semana via oral',
@@ -1181,6 +1261,14 @@ function validate() {
     r.push({pass:mmt<80||ck>200,l:`Atividade documentada (MMT-8: ${fd.mmt8!==undefined?fd.mmt8:'—'}/80, CK: ${fd.dm_ck||'—'} U/L)`,det:'Fraqueza muscular (MMT-8 <80) ou enzimas elevadas (CK >200 U/L)'});
     const cnt=dmards.filter(x=>x.med&&x.motivo).length;
     r.push({pass:cnt>=2,l:`Falha a ≥ 2 imunossupressores documentada (atual: ${cnt})`,det:'Refratariedade a pelo menos 2 agentes convencionais'});
+  } else if(d==='op') {
+    const tc = parseFloat(fd.op_tscore_min||0)||0;
+    const fraxM = parseFloat(fd.op_frax_maior||0)||0;
+    const fraxQ = parseFloat(fd.op_frax_quad||0)||0;
+    const temFratura = !!fd.op_fraturas;
+    r.push({pass: tc<=-2.5 || temFratura, l:`T-score ≤ −2,5 ou fratura por fragilidade (T-score mais baixo: ${tc||'—'})`, det:'Critério diagnóstico de osteoporose pela DXA ou fratura de baixo impacto'});
+    r.push({pass: fraxM>=20 || fraxQ>=3 || tc<=-2.5 || temFratura, l:`Risco elevado pelo FRAX ou critério densitométrico/clínico`, det:'FRAX fratura maior ≥20% ou quadril ≥3%, ou T-score ≤−2,5 com fator de risco, ou fratura prévia'});
+    r.push({pass: dmards.some(x=>x.med&&x.motivo), l:'Falha ou contraindicação a bifosfonato oral documentada (para terapias avançadas)', det:'Exigido para denosumabe, teriparatida e romosozumabe'});
   }
   const req=EXAMES_BASE.filter(e=>e.req);
   const done=req.filter(e=>exams[e.id]&&exams[e.id].result).length;
@@ -1231,6 +1319,15 @@ function narrative() {
     if(f.dm_aldolase) atv+=`Aldolase: ${f.dm_aldolase} U/L. `;
     if(f.dm_ac) atv+=`Anticorpos: ${f.dm_ac}. `;
     if(f.dm_manif) atv+=`Manifestações: ${f.dm_manif}.`;
+  }
+  if(d==='op'){
+    const tc = fd.op_tscore_min!==undefined ? fd.op_tscore_min : '—';
+    intro = `Paciente com diagnóstico de osteoporose${fd.op_fraturas?', com história de fraturas por fragilidade ('+fd.op_fraturas+')':''}.`+
+      ` Densitometria óssea evidencia T-score mais baixo de ${tc}, compatível com ${fd.op_cls||'osteoporose'}.`+
+      (fd.op_frax_maior?` FRAX: risco de fratura maior ${fd.op_frax_maior}%${fd.op_frax_quad?', risco de fratura de quadril '+fd.op_frax_quad+'%':''}.`:'')+
+      (fd.op_corticoide?` Faz uso de corticoide: ${fd.op_corticoide}.`:'');
+    atv = `T-score (menor valor): ${tc}. ${fd.op_cls||''}.`+
+      (fd.op_frax_maior?` FRAX fratura maior: ${fd.op_frax_maior}%. FRAX fratura quadril: ${fd.op_frax_quad||'não calculado'}%.`:'');
   }
   const trat=dmards.filter(x=>x.med).length===0
     ?'Nenhum medicamento convencional registrado.'
