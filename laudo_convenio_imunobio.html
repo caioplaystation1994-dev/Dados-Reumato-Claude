@@ -241,7 +241,7 @@ header h1{font-size:15px;font-weight:700}
       </div>
     </div>
     <div class="section-card">
-      <div class="section-title">Médico Responsável</div>
+      <div class="section-title">Dados do Médico e do Laudo</div>
       <div class="field-grid">
         <div class="field-group" style="grid-column:span 2">
           <label>Nome do médico</label>
@@ -806,7 +806,7 @@ header h1{font-size:15px;font-weight:700}
   <!-- TAB TRATAMENTO -->
   <div class="tab-content" id="tab-trat">
     <div class="section-card">
-      <div class="section-title">Histórico de Tratamento Convencional</div>
+      <div class="section-title">Histórico de Tratamento</div>
       <div style="font-size:12px;color:#718096;margin-bottom:12px">Documente todos os medicamentos utilizados anteriormente. A DUT 65 exige comprovação de falha ao tratamento convencional.</div>
       <table class="dmard-table">
         <thead>
@@ -858,6 +858,10 @@ header h1{font-size:15px;font-weight:700}
           </select>
         </div>
         <div class="field-group">
+          <label>Peso do paciente (kg)</label>
+          <input type="number" id="med_peso" min="1" max="300" step="0.1" placeholder="Ex: 72" oninput="fd.med_peso=+this.value;onPesoChange()">
+        </div>
+        <div class="field-group" id="med_via_group">
           <label>Via de administração</label>
           <input type="text" id="med_via" readonly style="background:#f0f4f8">
         </div>
@@ -974,28 +978,30 @@ const MED_OPTS = {
   dm:['Rituximabe','Imunoglobulina Humana IV (IVIG)','Outro'],
   op:['Ácido zoledrônico','Denosumabe','Teriparatida','Romosozumabe','Alendronato','Risedronato','Ibandronato','Outro']
 };
+// vias: array = múltiplas opções para seletor; string = via única
+// pesoDep: true = posologia calculada com peso do paciente
 const MED_INFO = {
   'Adalimumabe':{via:'Subcutânea (SC)',pos:'40 mg SC a cada 14 dias'},
   'Etanercepte':{via:'Subcutânea (SC)',pos:'50 mg SC uma vez por semana'},
-  'Infliximabe':{via:'Endovenosa (EV)',pos:'3–5 mg/kg EV nas semanas 0, 2, 6 e a seguir a cada 8 semanas'},
+  'Infliximabe':{via:'Endovenosa (EV)',pos:'3–5 mg/kg EV nas semanas 0, 2, 6 e a seguir a cada 8 semanas',pesoDep:true,posPeso:(kg)=>`${(3*kg).toFixed(0)}–${(5*kg).toFixed(0)} mg EV nas semanas 0, 2, 6 e a cada 8 semanas (3–5 mg/kg; peso: ${kg} kg)`},
   'Certolizumabe pegol':{via:'Subcutânea (SC)',pos:'400 mg SC nas semanas 0, 2 e 4 (ataque), depois 200 mg a cada 2 semanas'},
-  'Golimumabe':{via:'SC / EV',pos:'50 mg SC mensalmente ou 2 mg/kg EV nas semanas 0, 4 e depois a cada 8 semanas'},
-  'Tocilizumabe':{via:'EV / SC',pos:'8 mg/kg EV a cada 4 semanas ou 162 mg SC semanalmente'},
-  'Abatacepte':{via:'EV / SC',pos:'10 mg/kg EV nas semanas 0, 2, 4 e depois a cada 4 semanas (ou 125 mg SC semanalmente)'},
-  'Rituximabe':{via:'Endovenosa (EV)',pos:'1000 mg EV, 2 doses com intervalo de 15 dias (protocolo AR) — ou 375 mg/m² EV semanalmente por 4 semanas (protocolo vasculite)'},
+  'Golimumabe':{via:['Subcutânea (SC)','Endovenosa (EV)'],pos:{sc:'50 mg SC mensalmente',ev:'2 mg/kg EV nas semanas 0, 4 e depois a cada 8 semanas',evPeso:(kg)=>`${(2*kg).toFixed(0)} mg EV nas semanas 0, 4 e depois a cada 8 semanas (2 mg/kg; peso: ${kg} kg)`},pesoDep:true},
+  'Tocilizumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'8 mg/kg EV a cada 4 semanas',evPeso:(kg)=>`${(8*kg).toFixed(0)} mg EV a cada 4 semanas (8 mg/kg; peso: ${kg} kg)`,sc:'162 mg SC semanalmente'},pesoDep:true},
+  'Abatacepte':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois a cada 4 semanas',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois a cada 4 semanas (10 mg/kg; peso: ${kg} kg)`,sc:'125 mg SC semanalmente'},pesoDep:true},
+  'Rituximabe':{via:'Endovenosa (EV)',pos:'1000 mg EV, 2 doses com intervalo de 15 dias (protocolo AR/vasculite)'},
   'Baricitinibe':{via:'Oral (VO)',pos:'2–4 mg VO uma vez ao dia (ajustar conforme TFG)'},
   'Tofacitinibe':{via:'Oral (VO)',pos:'5 mg VO duas vezes ao dia (ou 11 mg liberação prolongada uma vez ao dia)'},
-  'Upadacitinibe':{via:'Oral (VO)',pos:'15 mg VO uma vez ao dia (AR/EA/APs)'},
+  'Upadacitinibe':{via:'Oral (VO)',pos:'15 mg VO uma vez ao dia'},
   'Secuquinumabe':{via:'Subcutânea (SC)',pos:'150–300 mg SC nas semanas 0, 1, 2, 3, 4 (ataque), depois mensalmente'},
   'Ixequizumabe':{via:'Subcutânea (SC)',pos:'160 mg SC (ataque), depois 80 mg a cada 2 semanas por 12 semanas, depois 80 mg mensalmente'},
-  'Ustequinumabe':{via:'EV / SC',pos:'Dose de ataque EV (peso-dependente), depois 90 mg SC a cada 12 semanas'},
+  'Ustequinumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'Dose de ataque EV peso-dependente (260 mg se ≤55 kg; 390 mg se 55–85 kg; 520 mg se >85 kg)',evPeso:(kg)=>`${kg<=55?260:kg<=85?390:520} mg EV dose única de ataque (peso: ${kg} kg)`,sc:'90 mg SC a cada 12 semanas (manutenção)'},pesoDep:true},
   'Guselcumabe':{via:'Subcutânea (SC)',pos:'100 mg SC nas semanas 0, 4 e depois a cada 8 semanas'},
-  'Risanquizumabe':{via:'EV / SC',pos:'600 mg EV (3 doses de indução), depois 360 mg SC a cada 8 semanas'},
+  'Risanquizumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'600 mg EV (3 doses de indução nas semanas 0, 4 e 8)',sc:'360 mg SC a cada 8 semanas (manutenção)'}},
   'Apremilaste':{via:'Oral (VO)',pos:'30 mg VO duas vezes ao dia (após titulação gradual de 5 dias)'},
-  'Belimumabe':{via:'EV / SC',pos:'10 mg/kg EV nas semanas 0, 2, 4 e depois mensalmente — ou 200 mg SC semanalmente'},
+  'Belimumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois mensalmente',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois mensalmente (10 mg/kg; peso: ${kg} kg)`,sc:'200 mg SC semanalmente'},pesoDep:true},
   'Anifrolumabe':{via:'Endovenosa (EV)',pos:'300 mg EV a cada 4 semanas'},
-  'Mepolizumabe':{via:'Subcutânea (SC)',pos:'300 mg SC a cada 4 semanas (GEPA/vasculite eosinofílica)'},
-  'Imunoglobulina Humana IV (IVIG)':{via:'Endovenosa (EV)',pos:'2 g/kg EV divididos em 2–5 dias por ciclo (repetir mensalmente por 3–6 meses)'},
+  'Mepolizumabe':{via:'Subcutânea (SC)',pos:'300 mg SC a cada 4 semanas'},
+  'Imunoglobulina Humana IV (IVIG)':{via:'Endovenosa (EV)',pos:'2 g/kg EV divididos em 2–5 dias por ciclo',pesoDep:true,posPeso:(kg)=>`${(2*kg).toFixed(0)} g EV divididos em 2–5 dias por ciclo (2 g/kg; peso: ${kg} kg), repetir mensalmente por 3–6 meses`},
   'Outro':{via:'',pos:''},
   'Ácido zoledrônico':{via:'Endovenosa (EV)',pos:'5 mg EV em dose única anual (infusão de 15 min)'},
   'Denosumabe':{via:'Subcutânea (SC)',pos:'60 mg SC a cada 6 meses'},
@@ -1138,6 +1144,14 @@ function calcAge() {
 function fmtDate(s) {
   if(!s) return '—';
   try{return new Date(s+'T12:00:00').toLocaleDateString('pt-BR');}catch(e){return s;}
+}
+
+function marcarSorologiasNegativas() {
+  ['hbsag','anti_hbc','anti_hcv','hiv'].forEach(id=>{
+    if(exams[id]) exams[id].result='Não reagente';
+    const inp=document.getElementById('exam_result_'+id);
+    if(inp) inp.value='Não reagente';
+  });
 }
 
 function checkPPD() {
@@ -1402,6 +1416,17 @@ function buildExams() {
     c.appendChild(hdr);
   }
 
+  // Botão sorologias negativas
+  const sorolIds = ['hbsag','anti_hbc','anti_hcv','hiv'];
+  const sorolBtn = document.createElement('div');
+  sorolBtn.style.cssText='margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+  sorolBtn.innerHTML=`<button type="button" onclick="marcarSorologiasNegativas()"
+    style="background:#f0fdf4;color:#166534;border:1.5px solid #86efac;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">
+    ✅ Marcar sorologias como Não Reagente
+  </button>
+  <span style="font-size:11px;color:#64748b">HBsAg · Anti-HBc · Anti-HCV · Anti-HIV</span>`;
+  c.appendChild(sorolBtn);
+
   EXAMES_BASE.forEach(e=>{
     exams[e.id]={result:e.defaultResult||'',date:''};
     const row=document.createElement('div');
@@ -1420,7 +1445,7 @@ function buildExams() {
       : `exams['${e.id}'].result=this.value`;
     row.innerHTML=`<div>
         <div class="exam-label">${e.l}${e.req?'<span class="badge-req">Obrigatório</span>':''}</div>
-        <input type="text" placeholder="Resultado" value="${e.defaultResult||''}" oninput="${resultOninput}" style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fafafa">
+        <input type="text" id="exam_result_${e.id}" placeholder="Resultado" value="${e.defaultResult||''}" oninput="${resultOninput}" style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fafafa">
       </div>
       ${dateField}`;
     c.appendChild(row);
@@ -1509,9 +1534,49 @@ function onMedChange() {
   const m=document.getElementById('med_nome').value;
   fd.med_nome=m;
   const info=MED_INFO[m]||{via:'',pos:''};
-  document.getElementById('med_via').value=info.via;
-  document.getElementById('med_posologia').value=info.pos;
-  fd.med_via=info.via; fd.med_posologia=info.pos;
+  const viaGroup=document.getElementById('med_via_group');
+
+  if(Array.isArray(info.via)){
+    // Múltiplas vias — mostrar seletor
+    viaGroup.innerHTML=`<label>Via de administração</label>
+      <select id="med_via" onchange="onViaChange(this.value)">
+        ${info.via.map(v=>`<option value="${v}">${v}</option>`).join('')}
+      </select>`;
+    fd.med_via=info.via[0];
+    onViaChange(info.via[0]);
+  } else {
+    viaGroup.innerHTML=`<label>Via de administração</label>
+      <input type="text" id="med_via" readonly style="background:#f0f4f8" value="${info.via}">`;
+    fd.med_via=info.via;
+    const pos=typeof info.pos==='string'?info.pos:(info.pos||'');
+    const peso=fd.med_peso;
+    const posText=peso&&info.posPeso?info.posPeso(peso):(typeof pos==='string'?pos:'');
+    document.getElementById('med_posologia').value=posText;
+    fd.med_posologia=posText;
+  }
+}
+
+function onViaChange(via) {
+  fd.med_via=via;
+  const m=fd.med_nome;
+  const info=MED_INFO[m]||{};
+  const peso=fd.med_peso;
+  let posText='';
+  if(info.pos && typeof info.pos==='object'){
+    if(via.includes('EV') || via.includes('Endovenosa')){
+      posText=peso&&info.pos.evPeso?info.pos.evPeso(peso):info.pos.ev||'';
+    } else {
+      posText=info.pos.sc||'';
+    }
+  } else if(typeof info.pos==='string'){
+    posText=peso&&info.posPeso?info.posPeso(peso):info.pos;
+  }
+  document.getElementById('med_posologia').value=posText;
+  fd.med_posologia=posText;
+}
+
+function onPesoChange() {
+  if(fd.med_nome) onViaChange(fd.med_via||'');
 }
 
 // ─── VALIDAÇÃO ────────────────────────────────────────────────────────────────
@@ -1657,7 +1722,7 @@ function buildPreview() {
     <table><tr><td><b>Dr(a).</b> ${f.medico||'—'}</td><td><b>CRM:</b> ${f.crm||'—'}</td><td><b>Data:</b> ${dataL}</td></tr></table>
     <h2>1. Diagnóstico e Justificativa Clínica</h2><p>${n.intro}</p>
     <h2>2. Atividade de Doença</h2><p>${n.atv}</p>
-    <h2>3. Histórico de Tratamento Convencional</h2>
+    <h2>3. Histórico de Tratamento</h2>
     ${dmardRows?`<table><tr><th>Medicamento</th><th>Dose</th><th>Duração</th><th>Motivo de suspensão</th></tr>${dmardRows}</table>`:'<p>Nenhum medicamento registrado.</p>'}
     <h2>4. Exames Pré-Autorização</h2>
     ${examRows?`<table><tr><th>Exame</th><th>Resultado</th><th>Data</th></tr>${examRows}</table>`:'<p>Nenhum exame laboratorial registrado.</p>'}
