@@ -1036,7 +1036,16 @@ function updMMT8() {
 }
 
 // ─── TABELA DE TRATAMENTO ────────────────────────────────────────────────────
-function addDmard(data) {
+const DMARD_DEFAULT_DOSE = {
+  'Metotrexato (MTX)': '15mg/semana via oral',
+  'Leflunomida': '20mg/dia',
+  'Azatioprina': '150mg/dia',
+  'Sulfassalazina': '2g/dia',
+  'Naproxeno': '550mg de 12/12h por 6 semanas',
+  'Meloxicam': '15mg/dia por 6 semanas',
+};
+
+
   const idx=dmards.length;
   const d=data||{med:'',dose:'',dur:'',motivo:''};
   dmards.push(d);
@@ -1045,8 +1054,8 @@ function addDmard(data) {
   tr.id='dr'+idx;
   const opts=(DMARD_OPTS[disease]||['Outro']).map(o=>`<option value="${o}"${d.med===o?' selected':''}>${o}</option>`).join('');
   const mots=MOTIVOS.map(o=>`<option value="${o}"${d.motivo===o?' selected':''}>${o}</option>`).join('');
-  tr.innerHTML=`<td><select onchange="dmards[${idx}].med=this.value;updDutMsg()"><option value="">Selecione...</option>${opts}</select></td>
-    <td><input type="text" placeholder="Ex: 20mg/sem" value="${d.dose}" oninput="dmards[${idx}].dose=this.value"></td>
+  tr.innerHTML=`<td><select onchange="dmards[${idx}].med=this.value;const def=DMARD_DEFAULT_DOSE[this.value];if(def&&!dmards[${idx}].dose){dmards[${idx}].dose=def;document.getElementById('dose${idx}').value=def;}updDutMsg()"><option value="">Selecione...</option>${opts}</select></td>
+    <td><input type="text" id="dose${idx}" placeholder="Ex: 20mg/sem" value="${d.dose}" oninput="dmards[${idx}].dose=this.value"></td>
     <td><input type="text" placeholder="Ex: 6 meses" value="${d.dur}" oninput="dmards[${idx}].dur=this.value"></td>
     <td><select onchange="dmards[${idx}].motivo=this.value"><option value="">Motivo...</option>${mots}</select></td>
     <td><button class="btn-danger" onclick="rmDmard(${idx})">✕</button></td>`;
