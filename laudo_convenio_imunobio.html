@@ -250,11 +250,11 @@ header h1{font-size:15px;font-weight:700}
         <div class="field-grid">
           <div class="field-group">
             <label>Articulações dolorosas (0–28)</label>
-            <input type="number" id="das_td" min="0" max="28" placeholder="0" oninput="fd.das_td=+this.value;updDAS28()">
+            <input type="number" id="das_td" min="0" max="28" placeholder="0" oninput="fd.das_td=+this.value;updDAS28();updCDAI_SDAI()">
           </div>
           <div class="field-group">
             <label>Articulações edemaciadas (0–28)</label>
-            <input type="number" id="das_te" min="0" max="28" placeholder="0" oninput="fd.das_te=+this.value;updDAS28()">
+            <input type="number" id="das_te" min="0" max="28" placeholder="0" oninput="fd.das_te=+this.value;updDAS28();updCDAI_SDAI()">
           </div>
           <div class="field-group">
             <label>Avaliação global paciente (EVA 0–100 mm)</label>
@@ -269,6 +269,35 @@ header h1{font-size:15px;font-weight:700}
           <div class="score-val" id="das_result">—</div>
           <div class="score-label">DAS28</div>
           <div id="das_class" class="score-class cls-inactive">Não calculado</div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="section-title" style="font-size:13px;margin-bottom:10px">CDAI e SDAI</div>
+          <div class="field-grid">
+            <div class="field-group">
+              <label>Avaliação global médico (0–10)</label>
+              <input type="number" id="cdai_ega" min="0" max="10" step="0.1" placeholder="0" oninput="fd.cdai_ega=+this.value;updCDAI_SDAI()">
+            </div>
+            <div class="field-group">
+              <label>Avaliação global paciente (0–10)</label>
+              <input type="number" id="cdai_pga" min="0" max="10" step="0.1" placeholder="0" oninput="fd.cdai_pga=+this.value;updCDAI_SDAI()">
+            </div>
+            <div class="field-group">
+              <label>PCR (mg/dL) — para SDAI</label>
+              <input type="number" id="cdai_pcr" min="0" step="0.01" placeholder="0" oninput="fd.cdai_pcr=+this.value;updCDAI_SDAI()">
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
+            <div class="score-display" style="flex:1;min-width:140px">
+              <div class="score-val" id="cdai_result">—</div>
+              <div class="score-label">CDAI</div>
+              <div id="cdai_class" class="score-class cls-inactive">Não calculado</div>
+            </div>
+            <div class="score-display" style="flex:1;min-width:140px">
+              <div class="score-val" id="sdai_result">—</div>
+              <div class="score-label">SDAI</div>
+              <div id="sdai_class" class="score-class cls-inactive">Não calculado</div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="section-card">
@@ -998,6 +1027,38 @@ function updDAS28() {
   fd.das28_class=cl.textContent;
 }
 
+function updCDAI_SDAI() {
+  const td=parseFloat(document.getElementById('das_td').value)||0;
+  const te=parseFloat(document.getElementById('das_te').value)||0;
+  const ega=parseFloat(document.getElementById('cdai_ega').value)||0;
+  const pga=parseFloat(document.getElementById('cdai_pga').value)||0;
+  const pcr=parseFloat(document.getElementById('cdai_pcr').value)||0;
+  const cdai=td+te+ega+pga;
+  const sdai=cdai+pcr;
+  fd.cdai=cdai.toFixed(1); fd.sdai=sdai.toFixed(1);
+
+  const ce=document.getElementById('cdai_result');
+  const cc=document.getElementById('cdai_class');
+  if(ce){ce.textContent=cdai.toFixed(1);}
+  if(cc){
+    if(cdai<=2.8){cc.className='score-class cls-remission';cc.textContent='Remissão (≤2,8)';}
+    else if(cdai<=10){cc.className='score-class cls-low';cc.textContent='Atividade Baixa (2,9–10)';}
+    else if(cdai<=22){cc.className='score-class cls-moderate';cc.textContent='Atividade Moderada (10,1–22)';}
+    else{cc.className='score-class cls-high';cc.textContent='Atividade Alta (>22)';}
+    fd.cdai_class=cc.textContent;
+  }
+  const se=document.getElementById('sdai_result');
+  const sc=document.getElementById('sdai_class');
+  if(se){se.textContent=sdai.toFixed(1);}
+  if(sc){
+    if(sdai<=3.3){sc.className='score-class cls-remission';sc.textContent='Remissão (≤3,3)';}
+    else if(sdai<=11){sc.className='score-class cls-low';sc.textContent='Atividade Baixa (3,4–11)';}
+    else if(sdai<=26){sc.className='score-class cls-moderate';sc.textContent='Atividade Moderada (11,1–26)';}
+    else{sc.className='score-class cls-high';sc.textContent='Atividade Alta (>26)';}
+    fd.sdai_class=sc.textContent;
+  }
+}
+
 function updDAPSA() {
   const td=parseFloat(document.getElementById('dapsa_td').value)||0;
   const te=parseFloat(document.getElementById('dapsa_te').value)||0;
@@ -1134,7 +1195,7 @@ function addDmard(data) {
   tr.id='dr'+idx;
   const opts=(DMARD_OPTS[disease]||['Outro']).map(o=>`<option value="${o}"${d.med===o?' selected':''}>${o}</option>`).join('');
   const mots=MOTIVOS.map(o=>`<option value="${o}"${d.motivo===o?' selected':''}>${o}</option>`).join('');
-  tr.innerHTML=`<td><select onchange="dmards[${idx}].med=this.value;const def=DMARD_DEFAULT_DOSE[this.value];if(def&&!dmards[${idx}].dose){dmards[${idx}].dose=def;document.getElementById('dose${idx}').value=def;}updDutMsg()"><option value="">Selecione...</option>${opts}</select></td>
+  tr.innerHTML=`<td><select onchange="dmards[${idx}].med=this.value;var def=DMARD_DEFAULT_DOSE[this.value];if(def){dmards[${idx}].dose=def;document.getElementById('dose${idx}').value=def;}else{dmards[${idx}].dose='';document.getElementById('dose${idx}').value='';}updDutMsg()"><option value="">Selecione...</option>${opts}</select></td>
     <td><input type="text" id="dose${idx}" placeholder="Ex: 20mg/sem" value="${d.dose}" oninput="dmards[${idx}].dose=this.value"></td>
     <td><input type="text" placeholder="Ex: 6 meses" value="${d.dur}" oninput="dmards[${idx}].dur=this.value"></td>
     <td><select onchange="dmards[${idx}].motivo=this.value"><option value="">Motivo...</option>${mots}</select></td>
@@ -1288,7 +1349,10 @@ function narrative() {
   let intro=`Paciente ${nome}, ${idad}${sexo}, portador(a) de ${D_NAMES[d]||d}, com ${dur} de doença.`;
   let atv='';
   if(d==='ar'){
-    atv=`Apresenta atividade de doença ${f.das28_class||'não calculada'}, com DAS28-${f.das28_tipo==='vhs'?'VHS':'PCR'} de ${f.das28||'—'}. `;
+    atv=`Apresenta atividade de doença ${f.das28_class||'não calculada'}, com DAS28-${f.das28_tipo==='vhs'?'VHS':'PCR'} de ${f.das28||'—'}`;
+    if(f.cdai) atv+=`, CDAI de ${f.cdai} (${f.cdai_class||'—'})`;
+    if(f.sdai) atv+=`, SDAI de ${f.sdai} (${f.sdai_class||'—'})`;
+    atv+='. ';
     if(f.fr) atv+=`FR: ${f.fr==='neg'?'negativo':f.fr==='pos_baixo'?'positivo (baixo título)':'positivo (alto título)'}. `;
     if(f.anticcp) atv+=`Anti-CCP: ${f.anticcp==='neg'?'negativo':f.anticcp==='pos_baixo'?'positivo (baixo título)':'positivo (alto título)'}.`;
   } else if(d==='ea'){
