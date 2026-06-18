@@ -203,6 +203,12 @@ header h1{font-size:15px;font-weight:700}
         <div class="field-group">
           <label>CID-10</label>
           <input type="text" id="p_cid" readonly style="background:#f0f4f8">
+          <div id="ar_cid_selector" style="display:none;margin-top:6px">
+            <div class="pill-group">
+              <span class="pill selected" onclick="setPill(this,'ar_cid','pos');document.getElementById('p_cid').value='M05.9 — Artrite Reumatoide soropositiva'">Soropositiva (M05.9)</span>
+              <span class="pill" onclick="setPill(this,'ar_cid','neg');document.getElementById('p_cid').value='M06.0 — Artrite Reumatoide soronegativa'">Soronegativa (M06.0)</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -380,6 +386,10 @@ header h1{font-size:15px;font-weight:700}
           <div class="field-group" style="grid-column:span 2">
             <label>RNM sacroilíacas — laudo resumido</label>
             <textarea id="ea_rnm" placeholder="Ex: Edema ósseo nas articulações sacroilíacas bilateralmente" oninput="fd.ea_rnm=this.value"></textarea>
+          </div>
+          <div class="field-group">
+            <label>Data da RNM sacroilíacas</label>
+            <input type="date" id="ea_rnm_data" oninput="fd.ea_rnm_data=this.value">
           </div>
         </div>
       </div>
@@ -739,6 +749,11 @@ header h1{font-size:15px;font-weight:700}
       <div class="section-title">Triagem Pré-Biológico <span class="badge-req">Obrigatório pela DUT</span></div>
       <div id="exames-container"></div>
     </div>
+    <div class="section-card">
+      <div class="section-title">Outros Exames de Imagem</div>
+      <div id="imagem-container"></div>
+      <button class="btn-add" onclick="addImagem()" style="margin-top:10px">+ Adicionar exame de imagem</button>
+    </div>
     <div class="form-actions">
       <button class="btn-secondary" onclick="showTabByName('tab-trat')">← Voltar</button>
       <button class="btn-primary" onclick="showTabByName('tab-med')">Próximo: Medicamento →</button>
@@ -807,6 +822,7 @@ let fd = {};
 let mv = {};
 let dmards = [];
 let exams = {};
+let imagens = [];
 
 const D_NAMES = {
   ar:'Artrite Reumatoide',
@@ -939,7 +955,7 @@ function showTabByName(id) {
 
 // ─── SELEÇÃO DE DOENÇA ────────────────────────────────────────────────────────
 function selectDisease(d) {
-  disease=d; fd={}; mv={}; dmards=[]; exams={}; examDateGlobal='';
+  disease=d; fd={}; mv={}; dmards=[]; exams={}; examDateGlobal=''; imagens=[];
   fd.das28_tipo='pcr';
   document.getElementById('form-disease-title').textContent=D_NAMES[d];
   document.getElementById('p_cid').value=D_CID[d];
@@ -960,11 +976,14 @@ function selectDisease(d) {
   document.querySelectorAll('.sledai-item.checked').forEach(s=>{s.classList.remove('checked');const cb=s.querySelector('input');if(cb)cb.checked=false;});
   document.getElementById('dmard-tbody').innerHTML='';
   document.getElementById('p_cid').value=D_CID[d];
+  const cidSel=document.getElementById('ar_cid_selector');
+  if(cidSel) cidSel.style.display=d==='ar'?'':'none';
   document.getElementById('p_data_laudo').value=new Date().toISOString().split('T')[0];
   if(d==='ea') buildBASDAI();
   if(d==='dm') buildMMT8();
   if(d==='les') buildSLEDAI();
   buildExams();
+  buildImagens();
   updDutMsg();
   goPage(2); showTab('tab-pac');
 }
@@ -1283,6 +1302,50 @@ function buildExams() {
   });
 }
 
+// ─── OUTROS EXAMES DE IMAGEM ─────────────────────────────────────────────────
+function buildImagens() {
+  imagens=[];
+  document.getElementById('imagem-container').innerHTML='';
+}
+
+function addImagem() {
+  const idx=imagens.length;
+  imagens.push({tipo:'',laudo:'',data:''});
+  const c=document.getElementById('imagem-container');
+  const row=document.createElement('div');
+  row.id='img'+idx;
+  row.style.cssText='display:grid;grid-template-columns:1fr 2fr 1fr auto;gap:8px;align-items:start;margin-bottom:10px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0';
+  row.innerHTML=`
+    <div>
+      <div class="exam-label">Tipo de exame</div>
+      <input type="text" placeholder="Ex: RM de mãos e punhos" value="${imagens[idx].tipo}"
+        oninput="imagens[${idx}].tipo=this.value"
+        style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fff">
+    </div>
+    <div>
+      <div class="exam-label">Laudo / Resultado</div>
+      <input type="text" placeholder="Ex: Erosões em metacarpofalangeanas bilaterais" value="${imagens[idx].laudo}"
+        oninput="imagens[${idx}].laudo=this.value"
+        style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fff">
+    </div>
+    <div>
+      <div class="exam-label">Data</div>
+      <input type="date" value="${imagens[idx].data}"
+        oninput="imagens[${idx}].data=this.value"
+        style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fff">
+    </div>
+    <div style="padding-top:20px">
+      <button class="btn-danger" onclick="rmImagem(${idx})">✕</button>
+    </div>`;
+  c.appendChild(row);
+}
+
+function rmImagem(idx) {
+  const tmp=imagens.filter((_,i)=>i!==idx);
+  imagens=[]; document.getElementById('imagem-container').innerHTML='';
+  tmp.forEach(im=>{ imagens.push(im); addImagem(); imagens[imagens.length-1]=im; });
+}
+
 // ─── MEDICAMENTO ──────────────────────────────────────────────────────────────
 function onMedChange() {
   const m=document.getElementById('med_nome').value;
@@ -1359,7 +1422,7 @@ function narrative() {
     atv=`BASDAI: ${f.basdai||'—'}/10 (${f.basdai_class||'não calculado'}). `;
     if(f.hlab27) atv+=`HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}. `;
     if(f.ea_tipo) atv+=`Classificação: ${f.ea_tipo==='rad'?'espondiloartrite axial radiográfica (critérios de Nova York modificados)':'espondiloartrite axial não-radiográfica (nr-axSpA)'}.`;
-    if(f.ea_rnm) atv+=` RNM sacroilíacas: ${f.ea_rnm}.`;
+    if(f.ea_rnm) atv+=` RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}.`;
   } else if(d==='aps'){
     atv=`DAPSA: ${f.dapsa||'—'} (${f.dapsa_class||'não calculado'}). `;
     if(f.aps_dom) atv+=`Domínios clínicos: ${f.aps_dom}. `;
@@ -1435,7 +1498,8 @@ function buildPreview() {
     <h2>3. Histórico de Tratamento Convencional</h2>
     ${dmardRows?`<table><tr><th>Medicamento</th><th>Dose</th><th>Duração</th><th>Motivo de suspensão</th></tr>${dmardRows}</table>`:'<p>Nenhum medicamento registrado.</p>'}
     <h2>4. Exames Pré-Autorização</h2>
-    ${examRows?`<table><tr><th>Exame</th><th>Resultado</th><th>Data</th></tr>${examRows}</table>`:'<p>Nenhum exame registrado.</p>'}
+    ${examRows?`<table><tr><th>Exame</th><th>Resultado</th><th>Data</th></tr>${examRows}</table>`:'<p>Nenhum exame laboratorial registrado.</p>'}
+    ${imagens.filter(i=>i.tipo).length>0?`<h3 style="margin:10px 0 6px">Exames de Imagem</h3><table><tr><th>Exame</th><th>Laudo</th><th>Data</th></tr>${imagens.filter(i=>i.tipo).map(i=>`<tr><td>${i.tipo}</td><td>${i.laudo||'—'}</td><td>${fmtDate(i.data)||'—'}</td></tr>`).join('')}</table>`:''}
     <h2>5. Critérios ANS/DUT Atendidos</h2>
     <table>${critRows}</table>
     <h2>6. Medicamento Solicitado</h2>
@@ -1513,7 +1577,14 @@ function genPDF() {
     doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Exame','Resultado','Data']],body:eRows,
       styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]}});
     y=doc.lastAutoTable.finalY+4;
-  } else addText('Nenhum exame registrado.');
+  } else addText('Nenhum exame laboratorial registrado.');
+  const imgRows=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
+  if(imgRows.length>0){
+    addText('Exames de Imagem:',10);
+    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Exame','Laudo','Data']],body:imgRows,
+      styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]}});
+    y=doc.lastAutoTable.finalY+4;
+  }
 
   addSec('5. CRITÉRIOS ANS/DUT ATENDIDOS');
   crit.forEach(c=>addText((c.pass?'✓  ':'⚠  ')+c.l,9));
@@ -1578,7 +1649,9 @@ function genDOCX() {
   else children.push(p('Nenhum medicamento convencional registrado.'));
   children.push(h2('4. EXAMES PRÉ-AUTORIZAÇÃO'));
   if(eRows.length>0) children.push(tbl(['Exame','Resultado','Data'],eRows));
-  else children.push(p('Nenhum exame registrado.'));
+  else children.push(p('Nenhum exame laboratorial registrado.'));
+  const imgRowsW=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
+  if(imgRowsW.length>0){children.push(p('Exames de Imagem:'));children.push(tbl(['Exame','Laudo','Data'],imgRowsW));}
   children.push(h2('5. CRITÉRIOS ANS/DUT ATENDIDOS'));
   crit.forEach(c=>children.push(p((c.pass?'✓  ':'⚠  ')+c.l)));
   children.push(h2('6. MEDICAMENTO SOLICITADO'));
@@ -1605,7 +1678,7 @@ function genDOCX() {
 // ─── NOVA CONSULTA ────────────────────────────────────────────────────────────
 function novaConsulta() {
   if(!confirm('Iniciar nova consulta? Os dados atuais serão apagados.')) return;
-  disease=''; fd={}; mv={}; dmards=[]; exams={}; examDateGlobal='';
+  disease=''; fd={}; mv={}; dmards=[]; exams={}; examDateGlobal=''; imagens=[];
   document.querySelectorAll('#page2 input:not([readonly]),#page2 select,#page2 textarea').forEach(el=>{
     if(el.type==='range') el.value=0; else el.value='';
   });
