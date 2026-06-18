@@ -1879,10 +1879,6 @@ function genPDF() {
   addText(`Nome: ${f.nome||'—'}     DN: ${dnFmt}${f.idade?' ('+f.idade+')':''}     Sexo: ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}`);
   addText(`CID-10: ${document.getElementById('p_cid').value||'—'}`);
 
-  addSec('MÉDICO RESPONSÁVEL');
-  addText(`Dr(a). ${f.medico||'—'}     CRM: ${f.crm||'—'}     Data: ${dataL}`);
-  if(f.cidade) addText(`Local: ${f.cidade}`);
-
   addSec('1. DIAGNÓSTICO E JUSTIFICATIVA CLÍNICA');
   addText(n.intro);
 
@@ -1965,9 +1961,6 @@ function genDOCX() {
     b('Nome: ',f.nome), b('Data de nascimento: ',`${dnFmt}${f.idade?' ('+f.idade+')':''}`),
     b('Sexo: ',f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'),
     b('CID-10: ',document.getElementById('p_cid').value||'—'),
-    h2('MÉDICO RESPONSÁVEL'),
-    b('Dr(a). ',f.medico), b('CRM: ',f.crm),
-    b('Data do laudo: ',dataL), b('Cidade: ',f.cidade),
     h2('1. DIAGNÓSTICO E JUSTIFICATIVA CLÍNICA'), p(n.intro),
     h2('2. ATIVIDADE DE DOENÇA'), p(n.atv),
     h2('3. HISTÓRICO DE TRATAMENTO CONVENCIONAL'),
