@@ -1838,6 +1838,195 @@ function genDOCX() {
   }).catch(err=>{console.error(err);alert('Erro ao gerar Word: '+err.message);});
 }
 
+// ─── BANCO DE LAUDOS (localStorage) ──────────────────────────────────────────
+function salvarLaudo() {
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
+  const id = Date.now();
+  const snap = {
+    id, disease,
+    nome: fd.nome||'Paciente sem nome',
+    data: fd.data_laudo||new Date().toISOString().split('T')[0],
+    med: fd.med_nome||'—',
+    fd: JSON.parse(JSON.stringify(fd)),
+    mv: JSON.parse(JSON.stringify(mv)),
+    dmards: JSON.parse(JSON.stringify(dmards)),
+    imagens: JSON.parse(JSON.stringify(imagens)),
+  };
+  laudos.unshift(snap);
+  if(laudos.length>100) laudos.pop();
+  localStorage.setItem('reumaLaudos', JSON.stringify(laudos));
+  registrarEstatistica(disease);
+  alert('Laudo salvo com sucesso!');
+  renderLaudos();
+}
+
+function excluirLaudo(id) {
+  if(!confirm('Excluir este laudo?')) return;
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]').filter(l=>l.id!==id);
+  localStorage.setItem('reumaLaudos', JSON.stringify(laudos));
+  renderLaudos();
+}
+
+function carregarLaudo(id) {
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
+  const snap = laudos.find(l=>l.id===id);
+  if(!snap) return;
+  selectDisease(snap.disease);
+  setTimeout(()=>{
+    fd=snap.fd; mv=snap.mv; dmards=[]; imagens=[];
+    snap.dmards.forEach(d=>addDmard(d));
+    snap.imagens.forEach(im=>{imagens.push(im);addImagem();imagens[imagens.length-1]=im;});
+    alert('Laudo carregado. Verifique os campos e atualize os escores se necessário.');
+  },100);
+}
+
+function renderLaudos(filtro) {
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
+  const el = document.getElementById('laudos-lista');
+  if(!el) return;
+  const lista = filtro ? laudos.filter(l=>l.nome.toLowerCase().includes(filtro.toLowerCase())) : laudos;
+  if(lista.length===0){
+    el.innerHTML='<p style="color:#718096;font-size:13px;text-align:center;padding:20px">Nenhum laudo encontrado.</p>';
+    return;
+  }
+  el.innerHTML=lista.map(l=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;background:#fafafa">
+      <div style="flex:1">
+        <div style="font-weight:600;color:#1a202c;font-size:13px">${l.nome}</div>
+        <div style="font-size:11px;color:#718096;margin-top:2px">${D_NAMES[l.disease]||l.disease} · ${l.med} · ${fmtDate(l.data)||l.data}</div>
+      </div>
+      <button class="btn-secondary" style="padding:5px 12px;font-size:12px" onclick="carregarLaudo(${l.id})">Carregar</button>
+      <button class="btn-danger" onclick="excluirLaudo(${l.id})">✕</button>
+    </div>`).join('');
+}
+
+function filtrarLaudos(v) { renderLaudos(v); }
+function limparBusca() { document.getElementById('busca-paciente').value=''; renderLaudos(); }
+
+// ─── ESTATÍSTICAS ──────────────────────────────────────────────────────────────
+function registrarEstatistica(d) {
+  const stats = JSON.parse(localStorage.getItem('reumaStats')||'{}');
+  stats[d] = (stats[d]||0) + 1;
+  stats._total = (stats._total||0) + 1;
+  localStorage.setItem('reumaStats', JSON.stringify(stats));
+  renderStats();
+}
+
+function renderStats() {
+  const el = document.getElementById('stats-container');
+  if(!el) return;
+  const stats = JSON.parse(localStorage.getItem('reumaStats')||'{}');
+  const total = stats._total||0;
+  if(total===0){el.innerHTML='<p style="color:#718096;font-size:13px">Nenhum laudo gerado ainda.</p>';return;}
+  const cores = {ar:'#3182ce',ea:'#805ad5',aps:'#38a169',les:'#d53f8c',vasc:'#e53e3e',dm:'#dd6b20',op:'#718096'};
+  el.innerHTML=`<div style="margin-bottom:10px;font-size:13px;color:#4a5568"><b>Total de laudos salvos:</b> ${total}</div>`+
+    Object.entries(D_NAMES).map(([k,name])=>{
+      const n=stats[k]||0;
+      const pct=total?Math.round(n/total*100):0;
+      return n>0?`<div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+          <span style="color:#2d3748;font-weight:600">${name}</span>
+          <span style="color:#718096">${n} laudo${n!==1?'s':''} (${pct}%)</span>
+        </div>
+        <div style="background:#e2e8f0;border-radius:99px;height:8px">
+          <div style="background:${cores[k]||'#1a56a0'};width:${pct}%;height:8px;border-radius:99px;transition:.3s"></div>
+        </div>
+      </div>`:''
+    }).join('');
+}
+
+// ─── CARTA DE RECURSO ──────────────────────────────────────────────────────────
+function genRecurso() {
+  document.getElementById('recurso-modal').style.display='';
+}
+
+function genRecursoPDF() {
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm',format:'a4'});
+  const M=20, W=170;
+  let y=20;
+  const f=fd;
+  const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
+  const dataNeg=fmtDate(document.getElementById('rec_data_negativa').value)||'—';
+  const prot=document.getElementById('rec_protocolo').value||'';
+  const motivo=document.getElementById('rec_motivo').value||'';
+  const crit=validate();
+  const n=narrative();
+
+  const addText=(t,sz,bold)=>{
+    sz=sz||10; bold=bold||false;
+    doc.setFontSize(sz);
+    doc.setFont('helvetica',bold?'bold':'normal');
+    const lines=doc.splitTextToSize(t,W);
+    doc.text(lines,M,y);
+    y+=lines.length*(sz*0.45)+2;
+    if(y>270){doc.addPage();y=20;}
+  };
+
+  doc.setFillColor(107,70,193);
+  doc.rect(0,0,210,14,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text('RECURSO CONTRA NEGATIVA DE COBERTURA — MEDICAMENTO DE ALTO CUSTO',M,9);
+  doc.setTextColor(0,0,0);
+  y=24;
+
+  addText((f.cidade||'___________')+', '+dataL,10);
+  y+=4;
+  addText('Ilmo(a). Sr(a). Diretor(a) de Autorização',10,true);
+  addText('Operadora de Saúde',10);
+  y+=6;
+  addText('RECURSO ADMINISTRATIVO CONTRA NEGATIVA DE COBERTURA',12,true);
+  y+=4;
+  if(prot) addText('Protocolo da negativa: '+prot+'   Data: '+dataNeg,10);
+  else addText('Data da negativa: '+dataNeg,10);
+  y+=4;
+
+  addText('I — IDENTIFICAÇÃO DO PACIENTE E DO SOLICITANTE',11,true);
+  addText('Paciente: '+(f.nome||'—')+'     Data de nascimento: '+(fmtDate(document.getElementById('p_dn').value)||'—'),10);
+  addText('Médico solicitante: Dr(a). '+(f.medico||'—')+'     CRM: '+(f.crm||'—'),10);
+  addText('Diagnóstico: '+(D_NAMES[disease]||'—')+'     CID-10: '+(document.getElementById('p_cid').value||'—'),10);
+  addText('Medicamento solicitado: '+(f.med_nome||'—'),10);
+  y+=4;
+
+  addText('II — FUNDAMENTO LEGAL DA COBERTURA OBRIGATÓRIA',11,true);
+  addText('A cobertura do medicamento '+(f.med_nome||'solicitado')+' é obrigatória nos termos da '+(D_DUT[disease]||'Resolução Normativa ANS nº 465/2021 e atualizações')+', que estabelece os critérios de utilização (DUT) para esta condição clínica. Nos termos do art. 10 da Lei nº 9.656/1998, a operadora não pode negar cobertura para procedimentos e medicamentos previstos no rol da ANS quando os critérios de indicação estão atendidos.',10);
+  y+=4;
+
+  addText('III — ADEQUAÇÃO DO CASO AOS CRITÉRIOS DUT',11,true);
+  addText('O paciente '+(f.nome||'—')+' apresenta todos os critérios clínicos exigidos para a autorização do medicamento solicitado, conforme demonstrado abaixo:',10);
+  y+=2;
+  crit.forEach(function(c){
+    addText((c.pass?'✓':'⚠')+' '+c.l,9,false);
+  });
+  y+=4;
+
+  addText('IV — QUADRO CLÍNICO E JUSTIFICATIVA MÉDICA',11,true);
+  addText(n.intro,10);
+  if(n.atv) addText('Atividade de doença: '+n.atv,10);
+  if(f.med_justificativa) addText('Justificativa clínica: '+f.med_justificativa,10);
+  y+=4;
+
+  if(motivo){
+    addText('V — RESPOSTA AO MOTIVO ALEGADO PELA OPERADORA',11,true);
+    addText('A operadora alegou: "'+motivo+'". Tal alegação não procede, pois o caso preenche integralmente os critérios estabelecidos pela DUT aplicável, conforme demonstrado na seção anterior. A negativa de cobertura, nestas circunstâncias, configura prática abusiva vedada pela legislação vigente (Lei nº 9.656/1998, art. 39, XV do CDC e Resolução ANS nº 465/2021).',10);
+    y+=4;
+  }
+
+  addText('VI — PEDIDO',11,true);
+  addText('Diante do exposto, requer-se a imediata revisão da negativa e a AUTORIZAÇÃO do medicamento '+(f.med_nome||'solicitado')+' para o paciente '+(f.nome||'—')+', sob pena de caracterização de negativa abusiva de cobertura, sujeitando a operadora às sanções previstas na legislação vigente e à possibilidade de ação judicial com pedido de tutela de urgência.',10);
+  y+=6;
+
+  addText('Atenciosamente,',10);
+  y+=14;
+  addText('_______________________________________________',10);
+  addText('Dr(a). '+(f.medico||'_______________')+'     CRM: '+(f.crm||'_______________'),10);
+  addText((f.cidade||'___________')+', '+dataL,10);
+
+  doc.save('Recurso_'+((f.nome||'paciente').replace(/\s+/g,'_'))+'_'+disease+'.pdf');
+  document.getElementById('recurso-modal').style.display='none';
+}
+
 // ─── NOVA CONSULTA ────────────────────────────────────────────────────────────
 function novaConsulta() {
   if(!confirm('Iniciar nova consulta? Os dados atuais serão apagados.')) return;
@@ -1850,7 +2039,7 @@ function novaConsulta() {
   document.getElementById('dmard-tbody').innerHTML='';
   const dr=document.getElementById('das_result'); if(dr) dr.textContent='—';
   const dc=document.getElementById('das_class'); if(dc) dc.textContent='Não calculado';
-  goPage(1);
+  goPage(0); renderLaudos();
 }
 
 // ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────────
@@ -1860,6 +2049,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   buildMMT8();
   buildExams();
   fd.das28_tipo='pcr';
+  renderLaudos();
+  renderStats();
 });
 </script>
 </body>
