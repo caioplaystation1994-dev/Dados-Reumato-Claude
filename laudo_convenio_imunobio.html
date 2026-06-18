@@ -971,8 +971,8 @@ const D_DUT = {
 };
 const MED_OPTS = {
   ar:['Adalimumabe','Etanercepte','Infliximabe','Certolizumabe pegol','Golimumabe','Tocilizumabe','Abatacepte','Rituximabe','Baricitinibe','Tofacitinibe','Upadacitinibe','Outro'],
-  ea:['Adalimumabe','Etanercepte','Infliximabe','Certolizumabe pegol','Golimumabe','Secuquinumabe','Ixequizumabe','Tofacitinibe','Upadacitinibe','Outro'],
-  aps:['Adalimumabe','Etanercepte','Infliximabe','Certolizumabe pegol','Golimumabe','Secuquinumabe','Ixequizumabe','Ustequinumabe','Guselcumabe','Risanquizumabe','Tofacitinibe','Upadacitinibe','Apremilaste','Outro'],
+  ea:['Adalimumabe','Etanercepte','Infliximabe','Certolizumabe pegol','Golimumabe','Secuquinumabe','Ixequizumabe','Bimekizumabe','Tofacitinibe','Upadacitinibe','Outro'],
+  aps:['Adalimumabe','Etanercepte','Infliximabe','Certolizumabe pegol','Golimumabe','Secuquinumabe','Ixequizumabe','Bimekizumabe','Ustequinumabe','Guselcumabe','Risanquizumabe','Tofacitinibe','Upadacitinibe','Apremilaste','Outro'],
   les:['Belimumabe','Anifrolumabe','Rituximabe','Outro'],
   vasc:['Rituximabe','Mepolizumabe','Outro'],
   dm:['Rituximabe','Imunoglobulina Humana IV (IVIG)','Outro'],
@@ -994,9 +994,10 @@ const MED_INFO = {
   'Upadacitinibe':{via:'Oral (VO)',pos:'15 mg VO uma vez ao dia'},
   'Secuquinumabe':{via:'Subcutânea (SC)',pos:'150–300 mg SC nas semanas 0, 1, 2, 3, 4 (ataque), depois mensalmente'},
   'Ixequizumabe':{via:'Subcutânea (SC)',pos:'160 mg SC (ataque), depois 80 mg a cada 2 semanas por 12 semanas, depois 80 mg mensalmente'},
-  'Ustequinumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'Dose de ataque EV peso-dependente (260 mg se ≤55 kg; 390 mg se 55–85 kg; 520 mg se >85 kg)',evPeso:(kg)=>`${kg<=55?260:kg<=85?390:520} mg EV dose única de ataque (peso: ${kg} kg)`,sc:'90 mg SC a cada 12 semanas (manutenção)'},pesoDep:true},
+  'Ustequinumabe':{via:['Endovenosa (EV) — Ataque','Subcutânea (SC) — Manutenção'],pos:{ev:'Ataque: dose única EV peso-dependente (260 mg se ≤55 kg; 390 mg se 55–85 kg; 520 mg se >85 kg). Manutenção: 90 mg SC a cada 12 semanas a partir da semana 16.',evPeso:(kg)=>`Ataque: ${kg<=55?260:kg<=85?390:520} mg EV dose única (peso: ${kg} kg). Manutenção: 90 mg SC a cada 12 semanas a partir da semana 16.`,sc:'90 mg SC a cada 12 semanas (manutenção; após ataque EV prévio)'},pesoDep:true},
   'Guselcumabe':{via:'Subcutânea (SC)',pos:'100 mg SC nas semanas 0, 4 e depois a cada 8 semanas'},
-  'Risanquizumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'600 mg EV (3 doses de indução nas semanas 0, 4 e 8)',sc:'360 mg SC a cada 8 semanas (manutenção)'}},
+  'Risanquizumabe':{via:['Endovenosa (EV) — Indução','Subcutânea (SC) — Manutenção'],pos:{ev:'Indução: 600 mg EV nas semanas 0, 4 e 8 (total de 3 infusões). Manutenção: 360 mg SC a cada 8 semanas a partir da semana 16.',sc:'360 mg SC a cada 8 semanas (manutenção; após indução EV prévia)'}},
+  'Bimekizumabe':{via:'Subcutânea (SC)',pos:'320 mg SC a cada 4 semanas nas primeiras 16 semanas (ataque), depois 320 mg SC a cada 8 semanas (manutenção)'},
   'Apremilaste':{via:'Oral (VO)',pos:'30 mg VO duas vezes ao dia (após titulação gradual de 5 dias)'},
   'Belimumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois mensalmente',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois mensalmente (10 mg/kg; peso: ${kg} kg)`,sc:'200 mg SC semanalmente'},pesoDep:true},
   'Anifrolumabe':{via:'Endovenosa (EV)',pos:'300 mg EV a cada 4 semanas'},
