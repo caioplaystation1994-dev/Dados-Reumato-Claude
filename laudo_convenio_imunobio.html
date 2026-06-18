@@ -817,8 +817,8 @@ const SLEDAI_ITEMS = [
 const MMT8_MUSCLES = ['Deltóide direito','Bíceps direito','Extensor do punho direito','Quadríceps direito','Glúteo médio direito','Flexor dorsal do tornozelo direito','Flexores do pescoço','Abdominais'];
 const BASDAI_Q = ['Nível geral de fadiga','Dor no pescoço, costas ou quadril','Dor ou edema em outras articulações','Desconforto em regiões de entesopatia (inserções tendinosas)','Intensidade da rigidez matinal','Duração da rigidez matinal (0=nenhuma, 10=2h ou mais)'];
 const EXAMES_BASE = [
-  {id:'ppd',l:'PPD ou IGRA (Quantiferon-TB)',req:true},
-  {id:'rx_torax',l:'Radiografia de tórax',req:true},
+  {id:'ppd',l:'PPD ou IGRA (Quantiferon-TB)',req:true,ownDate:true},
+  {id:'rx_torax',l:'Radiografia de tórax',req:true,ownDate:true},
   {id:'hbsag',l:'HBsAg (Hepatite B)',req:true},
   {id:'anti_hbc',l:'Anti-HBc total',req:true},
   {id:'anti_hcv',l:'Anti-HCV (Hepatite C)',req:true},
@@ -829,6 +829,7 @@ const EXAMES_BASE = [
   {id:'pcr_vhs',l:'PCR e VHS',req:false},
   {id:'urina',l:'EAS (urina tipo I)',req:false}
 ];
+let examDateGlobal = '';
 
 // ─── NAVEGAÇÃO ────────────────────────────────────────────────────────────────
 function goPage(n) {
@@ -858,7 +859,7 @@ function showTabByName(id) {
 
 // ─── SELEÇÃO DE DOENÇA ────────────────────────────────────────────────────────
 function selectDisease(d) {
-  disease=d; fd={}; mv={}; dmards=[]; exams={};
+  disease=d; fd={}; mv={}; dmards=[]; exams={}; examDateGlobal='';
   fd.das28_tipo='pcr';
   document.getElementById('form-disease-title').textContent=D_NAMES[d];
   document.getElementById('p_cid').value=D_CID[d];
@@ -1084,23 +1085,57 @@ function updDutMsg() {
 }
 
 // ─── EXAMES ───────────────────────────────────────────────────────────────────
+function setGlobalExamDate(val) {
+  examDateGlobal = val;
+  const formatted = fmtDate(val) || '';
+  EXAMES_BASE.filter(e=>!e.ownDate).forEach(e=>{
+    exams[e.id].date=val;
+    const disp=document.getElementById('exam_date_display_'+e.id);
+    if(disp) disp.value=formatted;
+  });
+}
+
 function buildExams() {
-  exams={};
+  exams={}; examDateGlobal='';
   const c=document.getElementById('exames-container');
   if(!c) return;
   c.innerHTML='';
+
+  // Data global para exames laboratoriais
+  const labExams = EXAMES_BASE.filter(e=>!e.ownDate);
+  if(labExams.length>0){
+    const hdr=document.createElement('div');
+    hdr.style.cssText='background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;';
+    hdr.innerHTML=`
+      <div style="flex:1;min-width:200px;">
+        <div style="font-weight:600;color:#1a56a0;font-size:13px;margin-bottom:4px;">📅 Data dos exames laboratoriais</div>
+        <div style="font-size:11px;color:#64748b;">Aplicada a todos os exames abaixo, exceto IGRA e imagem</div>
+      </div>
+      <div>
+        <input type="date" id="exam_date_global" oninput="setGlobalExamDate(this.value)"
+          style="border:1px solid #a5b4fc;border-radius:6px;padding:8px 12px;font-size:13px;background:#fff;color:#1e293b;">
+      </div>`;
+    c.appendChild(hdr);
+  }
+
   EXAMES_BASE.forEach(e=>{
     exams[e.id]={result:'',date:''};
     const row=document.createElement('div');
     row.className='exam-row';
+    const dateField = e.ownDate
+      ? `<div>
+          <div class="exam-label">Data</div>
+          <input type="date" oninput="exams['${e.id}'].date=this.value" style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fafafa">
+        </div>`
+      : `<div>
+          <div class="exam-label" style="color:#94a3b8;">Data (da coleta)</div>
+          <input type="text" readonly id="exam_date_display_${e.id}" placeholder="—" style="border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#f1f5f9;color:#64748b;cursor:default;" value="">
+        </div>`;
     row.innerHTML=`<div>
         <div class="exam-label">${e.l}${e.req?'<span class="badge-req">Obrigatório</span>':''}</div>
         <input type="text" placeholder="Resultado" oninput="exams['${e.id}'].result=this.value" style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fafafa">
       </div>
-      <div>
-        <div class="exam-label">Data</div>
-        <input type="date" oninput="exams['${e.id}'].date=this.value" style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fafafa">
-      </div>`;
+      ${dateField}`;
     c.appendChild(row);
   });
 }
@@ -1217,8 +1252,8 @@ function buildPreview() {
   const n=narrative(); const f=fd;
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
   const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
-  const examRows=EXAMES_BASE.filter(e=>exams[e.id]&&(exams[e.id].result||exams[e.id].date))
-    .map(e=>`<tr><td>${e.l}</td><td>${exams[e.id].result||'—'}</td><td>${fmtDate(exams[e.id].date)}</td></tr>`).join('');
+  const examRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
+    .map(e=>`<tr><td>${e.l}</td><td>${exams[e.id].result||'—'}</td><td>${e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—'}</td></tr>`).join('');
   const dmardRows=dmards.filter(x=>x.med)
     .map(x=>`<tr><td>${x.med}</td><td>${x.dose||'—'}</td><td>${x.dur||'—'}</td><td>${x.motivo||'—'}</td></tr>`).join('');
   const critRows=crit.map(c=>`<tr><td>${c.pass?'✅':'⚠️'}</td><td>${c.l}</td></tr>`).join('');
@@ -1311,8 +1346,8 @@ function genPDF() {
   } else addText('Nenhum medicamento convencional registrado.');
 
   addSec('4. EXAMES PRÉ-AUTORIZAÇÃO');
-  const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&(exams[e.id].result||exams[e.id].date))
-    .map(e=>[e.l,exams[e.id].result||'—',fmtDate(exams[e.id].date)]);
+  const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
+    .map(e=>[e.l,exams[e.id].result||'—',e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—']);
   if(eRows.length>0){
     doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Exame','Resultado','Data']],body:eRows,
       styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]}});
@@ -1361,8 +1396,8 @@ function genDOCX() {
   });
 
   const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',x.dur||'—',x.motivo||'—']);
-  const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&(exams[e.id].result||exams[e.id].date))
-    .map(e=>[e.l,exams[e.id].result||'—',fmtDate(exams[e.id].date)]);
+  const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
+    .map(e=>[e.l,exams[e.id].result||'—',e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—']);
 
   const children=[
     h1('LAUDO MÉDICO — SOLICITAÇÃO DE MEDICAMENTO ESPECIAL'),
@@ -1410,7 +1445,7 @@ function genDOCX() {
 // ─── NOVA CONSULTA ────────────────────────────────────────────────────────────
 function novaConsulta() {
   if(!confirm('Iniciar nova consulta? Os dados atuais serão apagados.')) return;
-  disease=''; fd={}; mv={}; dmards=[]; exams={};
+  disease=''; fd={}; mv={}; dmards=[]; exams={}; examDateGlobal='';
   document.querySelectorAll('#page2 input:not([readonly]),#page2 select,#page2 textarea').forEach(el=>{
     if(el.type==='range') el.value=0; else el.value='';
   });
