@@ -108,12 +108,20 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
 
 <header>
   <h1>📋 Documentos Ambulatoriais – Reumatologia</h1>
-  <nav>
-    <button class="active" onclick="showPage('relatorio',this)">Relatório Médico</button>
-    <button onclick="showPage('receita',this)">Receita Médica</button>
-    <button onclick="showPage('exames-lab',this)">Exames Laboratoriais</button>
-    <button onclick="showPage('exames-img',this)">Exames de Imagem</button>
-  </nav>
+  <div style="display:flex;align-items:center;gap:12px">
+    <select id="select-local" onchange="atualizarLocal()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;max-width:240px">
+      <option value="Hospital Bartira">Hospital Bartira</option>
+      <option value="Hospital Samaritano Higienópolis">Hospital Samaritano Higienópolis</option>
+      <option value="Clínica EVCITI">Clínica EVCITI</option>
+      <option value="Clínica Croma Oncologia">Clínica Croma Oncologia</option>
+    </select>
+    <nav>
+      <button class="active" onclick="showPage('relatorio',this)">Relatório Médico</button>
+      <button onclick="showPage('receita',this)">Receita Médica</button>
+      <button onclick="showPage('exames-lab',this)">Exames Laboratoriais</button>
+      <button onclick="showPage('exames-img',this)">Exames de Imagem</button>
+    </nav>
+  </div>
 </header>
 
 <!-- ======================== RELATÓRIO MÉDICO ======================== -->
@@ -121,7 +129,7 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
   <div class="doc-wrapper">
     <div class="doc-header">
       <div class="doc-title">RELATÓRIO MÉDICO</div>
-      <div class="doc-subtitle">Ambulatório de Reumatologia</div>
+      <div class="doc-subtitle local-nome">Hospital Bartira</div>
     </div>
 
     <div class="field-row">
@@ -212,7 +220,7 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
   <div class="doc-wrapper">
     <div class="doc-header">
       <div class="doc-title">RECEITA MÉDICA</div>
-      <div class="doc-subtitle">Ambulatório de Reumatologia</div>
+      <div class="doc-subtitle local-nome">Hospital Bartira</div>
     </div>
 
     <div class="field-row">
@@ -294,7 +302,7 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
   <div class="doc-wrapper">
     <div class="doc-header">
       <div class="doc-title">SOLICITAÇÃO DE EXAMES LABORATORIAIS</div>
-      <div class="doc-subtitle">Ambulatório de Reumatologia</div>
+      <div class="doc-subtitle local-nome">Hospital Bartira</div>
     </div>
 
     <div class="field-row">
@@ -362,7 +370,7 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
   <div class="doc-wrapper">
     <div class="doc-header">
       <div class="doc-title">SOLICITAÇÃO DE EXAMES DE IMAGEM</div>
-      <div class="doc-subtitle">Ambulatório de Reumatologia</div>
+      <div class="doc-subtitle local-nome">Hospital Bartira</div>
     </div>
 
     <div class="field-row">
@@ -761,7 +769,7 @@ async function downloadDocx(doc, filename) {
 async function gerarWordRelatorio() {
   const paras = [
     { type: 'title', text: 'RELATÓRIO MÉDICO' },
-    { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+    { type: 'subtitle', text: localAtual() },
     { type: 'label-value', label: 'Paciente', value: v('rel-nome') },
     { type: 'label-value', label: 'Data de Nascimento', value: v('rel-nascimento') },
     { type: 'label-value', label: 'Idade', value: v('rel-idade') },
@@ -795,7 +803,7 @@ async function gerarWordReceita() {
   });
   const paras = [
     { type: 'title', text: 'RECEITA MÉDICA' },
-    { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+    { type: 'subtitle', text: localAtual() },
     { type: 'label-value', label: 'Paciente', value: v('rx-nome') },
     { type: 'label-value', label: 'Idade', value: v('rx-idade') },
     { type: 'label-value', label: 'Endereço', value: v('rx-endereco') },
@@ -828,7 +836,7 @@ async function gerarWordLab() {
   if (sections.length || v('lab-adicional') || v('lab-indicacao')) {
     const paras = [
       { type: 'title', text: 'SOLICITAÇÃO DE EXAMES LABORATORIAIS' },
-      { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+      { type: 'subtitle', text: localAtual() },
       { type: 'label-value', label: 'Paciente', value: nomePaciente },
       { type: 'label-value', label: 'Data', value: v('lab-data') },
       { type: 'label-value', label: 'Diagnóstico / CID', value: v('lab-cid') },
@@ -859,7 +867,7 @@ async function gerarWordLab() {
     const relatorio = PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
     const parasHla = [
       { type: 'title', text: 'SOLICITAÇÃO DE EXAME LABORATORIAL' },
-      { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+      { type: 'subtitle', text: localAtual() },
       { type: 'label-value', label: 'Paciente', value: nomePaciente },
       { type: 'label-value', label: 'Data', value: v('lab-data') },
       { type: 'label-value', label: 'Convênio', value: v('lab-convenio') },
@@ -887,7 +895,7 @@ async function gerarWordImg() {
   ];
   const paras = [
     { type: 'title', text: 'SOLICITAÇÃO DE EXAMES DE IMAGEM' },
-    { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+    { type: 'subtitle', text: localAtual() },
     { type: 'label-value', label: 'Paciente', value: v('img-nome') },
     { type: 'label-value', label: 'Data', value: v('img-data') },
     { type: 'label-value', label: 'Diagnóstico / CID', value: v('img-cid') },
@@ -916,10 +924,21 @@ async function gerarWordImg() {
   await downloadDocx(makeDoc(paras), `exames-imagem-${(v('img-nome')||'paciente').replace(/\s+/g,'-')}.docx`);
 }
 
+// ─── Local / hospital ─────────────────────────────────────────────────────────
+function atualizarLocal() {
+  const nome = document.getElementById('select-local').value;
+  document.querySelectorAll('.local-nome').forEach(el => el.textContent = nome);
+}
+
+function localAtual() {
+  return document.getElementById('select-local')?.value || 'Ambulatório de Reumatologia';
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   renderPacotes();
   renderImgExams();
+  atualizarLocal();
   const hoje = new Date().toISOString().split('T')[0];
   ['rel-data','rx-data','lab-data','img-data'].forEach(id => {
     const el = document.getElementById(id);
