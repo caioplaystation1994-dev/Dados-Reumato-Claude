@@ -104,23 +104,50 @@ body{padding-bottom:60px}
 
 /* Print combinado */
 @media print{
-  .barra-selecao{display:none!important}
-  .doc-wrapper{page-break-after:always}
-  .doc-wrapper:last-of-type{page-break-after:avoid}
-}
-@media print{
-  header,nav,.action-bar,.btn-add,.btn-remove,.pacote-toggle,.barra-selecao{display:none!important}
-  body{background:#fff}
-  .page{display:block!important;padding:0;max-width:100%}
-  .doc-wrapper{box-shadow:none;border-radius:0;padding:20px}
-  .field-group input,.field-group select,.field-group textarea{border:none;border-bottom:1px solid #aaa;border-radius:0;background:transparent}
-  .med-table td input{border:none;border-bottom:1px solid #aaa;background:transparent}
-  .pacote{border:none;box-shadow:none;break-inside:avoid}
-  .pacote-header{background:#f0f4f8;padding:6px 10px}
+  /* ── Estrutura: só páginas marcadas aparecem ── */
+  header,nav,.action-bar,.btn-add,.btn-remove,.pacote-toggle,
+  .barra-selecao,.doc-subtitle,.section-label,.hlab27-aviso,
+  #print-hide{display:none!important}
+
+  body{background:#fff;padding:0}
+  .page{display:none!important;padding:0;max-width:100%}
+  .page.print-selected{display:block!important}
+
+  /* ── Aparência limpa ── */
+  .doc-wrapper{box-shadow:none;border:none;border-radius:0;padding:16px 0;margin:0}
+  .doc-header{border-bottom:2px solid #1a56a0;margin-bottom:14px}
+  .doc-title{font-size:16px}
+  .doc-subtitle{display:none!important}
+
+  /* Campos de texto: apenas o valor, sem bordas */
+  .field-group label{font-size:10px;color:#666;margin-bottom:1px}
+  .field-group input,.field-group select{border:none;border-bottom:1px solid #ccc;border-radius:0;background:transparent;padding:2px 0;font-size:13px}
+  .field-group textarea{border:none;background:transparent;padding:2px 0;font-size:13px;min-height:unset}
+
+  /* Tabela de medicamentos */
+  .med-table td input{border:none;border-bottom:1px solid #ccc;background:transparent;font-size:12px}
+  .med-table th{font-size:11px;padding:5px 8px}
+  .med-table td{padding:4px 8px;font-size:12px}
+
+  /* ── Pacotes de exames: cabeçalho só se tiver exame marcado ── */
+  .pacote{border:none;box-shadow:none;break-inside:avoid;margin-bottom:4px}
+  .pacote.sem-selecao{display:none!important}
+  .pacote-header{background:none;border:none;padding:4px 0;pointer-events:none}
+  .pacote-titulo{font-size:11px;font-weight:700;color:#1a56a0}
   .pacote-check{display:none}
-  .exam-item:not(.checked){display:none}
-  .exam-item.checked{background:none;border:none;padding:2px 0}
-  .pacote:not(:has(.exam-item.checked)){display:none}
+  .pacote-items{padding:0 0 0 8px}
+  .exam-item{border:none;background:none;padding:1px 0}
+  .exam-item:not(.checked){display:none!important}
+  .exam-item.checked label{font-size:12px;font-weight:normal;color:#1a202c}
+
+  /* Seções de imagem vazias */
+  .section-img-vazia{display:none!important}
+  .exam-grid-img{display:flex;flex-wrap:wrap;gap:4px}
+
+  /* Quebra de página entre documentos */
+  .page.print-selected .doc-wrapper{page-break-after:always}
+  .page.print-selected:last-of-type .doc-wrapper{page-break-after:avoid}
+
   @page{size:A4;margin:2cm 2.5cm}
 }
 </style>
@@ -708,14 +735,41 @@ function clearForm(pageId) {
   }
 }
 
+// ─── Preparar / limpar estado de impressão ────────────────────────────────────
+function prepararImpressao(ids) {
+  // Marcar páginas selecionadas
+  DOCS.forEach(id => document.getElementById(id).classList.remove('print-selected'));
+  ids.forEach(id => document.getElementById(id).classList.add('print-selected'));
+
+  // Pacotes sem nenhum exame marcado ficam ocultos
+  document.querySelectorAll('.pacote').forEach(pkg => {
+    const temMarcado = pkg.querySelectorAll('.exam-item.checked').length > 0;
+    pkg.classList.toggle('sem-selecao', !temMarcado);
+  });
+
+  // Seções de imagem (section-label + exam-grid-img) sem exames marcados
+  document.querySelectorAll('.exam-grid-img').forEach(grid => {
+    const temMarcado = grid.querySelectorAll('.exam-item.checked').length > 0;
+    grid.classList.toggle('section-img-vazia', !temMarcado);
+    // esconde também o section-label anterior
+    const label = grid.previousElementSibling;
+    if (label?.classList.contains('section-label')) {
+      label.classList.toggle('section-img-vazia', !temMarcado);
+    }
+  });
+}
+
+function limparImpressao() {
+  DOCS.forEach(id => document.getElementById(id).classList.remove('print-selected'));
+  document.querySelectorAll('.pacote').forEach(p => p.classList.remove('sem-selecao'));
+  document.querySelectorAll('.section-img-vazia').forEach(el => el.classList.remove('section-img-vazia'));
+}
+
 // ─── Impressão individual ──────────────────────────────────────────────────────
 function printDoc(pageId) {
-  const ativa = document.querySelector('.page.active')?.id || 'relatorio';
-  document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
-  document.getElementById(pageId).style.display = 'block';
+  prepararImpressao([pageId]);
   window.print();
-  document.querySelectorAll('.page').forEach(p => p.style.display = '');
-  document.getElementById(ativa).classList.add('active');
+  limparImpressao();
 }
 
 // ─── Medicamentos ──────────────────────────────────────────────────────────────
@@ -989,30 +1043,9 @@ function selecionados() {
 function imprimirSelecionados() {
   const sel = selecionados();
   if (!sel.length) { alert('Selecione ao menos um documento na barra inferior.'); return; }
-  // Esconde tudo, mostra apenas os selecionados
-  DOCS.forEach(id => {
-    const p = document.getElementById(id);
-    p.style.display = 'none';
-    p.classList.remove('active');
-  });
-  sel.forEach(id => { document.getElementById(id).style.display = 'block'; });
+  prepararImpressao(sel);
   window.print();
-  // Restaura estado anterior
-  DOCS.forEach(id => { document.getElementById(id).style.display = ''; });
-  const ativo = document.querySelector('nav button.active');
-  // reativa a aba atual
-  DOCS.forEach(id => {
-    const p = document.getElementById(id);
-    p.classList.remove('active');
-  });
-  const paginaAtiva = document.querySelector('.page.active') ||
-    document.getElementById('relatorio');
-  // fallback: reativa relatorio se nenhuma aba ativa
-  if (!document.querySelector('.page[style*="block"]')) {
-    const navBtns = document.querySelectorAll('nav button');
-    navBtns[0]?.classList.add('active');
-    document.getElementById('relatorio').classList.add('active');
-  }
+  limparImpressao();
 }
 
 async function baixarWordSelecionados() {
