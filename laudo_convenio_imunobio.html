@@ -279,6 +279,7 @@ header h1{font-size:15px;font-weight:700}
     </div>
     <div class="form-actions">
       <button class="btn-secondary" onclick="goPage(1)">← Voltar</button>
+      <button class="btn-secondary" style="background:#f59e0b;color:#fff;border:none" onclick="fillDemoData()" title="Preenche o formulário com dados fictícios para testar a formatação do laudo">🧪 Preencher Dados de Teste</button>
       <button class="btn-primary" onclick="showTabByName('tab-diag')">Próximo: Diagnóstico →</button>
     </div>
   </div>
@@ -2419,6 +2420,172 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderLaudos();
   renderStats();
 });
+
+// ─── DADOS DE TESTE ──────────────────────────────────────────────────────────
+function fillDemoData() {
+  const demos = {
+    ar: fillDemoAR,
+    ea: fillDemoEA,
+    aps: fillDemoAPS,
+    les: fillDemoLES,
+    vasc: fillDemoVASC,
+    dm: fillDemoDM,
+    op: fillDemoOP
+  };
+  const fn = demos[disease];
+  if (!fn) { alert('Selecione uma doença antes de preencher dados de teste.'); return; }
+
+  // Dados comuns do paciente e médico
+  setV('p_nome','Maria Silva dos Santos');
+  document.getElementById('p_dn').value='1968-03-15';
+  fd.dn='1968-03-15'; calcAge();
+  setPillById('sexo','F');
+  setV('p_medico','Dr. João Carlos Almeida');
+  setV('p_crm','CRM-SP 123456');
+  setV('p_cidade','São Paulo - SP');
+  document.getElementById('p_data_laudo').value='2026-06-19';
+  fd.data_laudo='2026-06-19';
+
+  // Exames laboratoriais base
+  examDateGlobal='2026-05-20';
+  document.getElementById('exam-date-global').value='2026-05-20';
+  const examVals = {
+    ppd:{result:'Não reator (0mm)',date:'2026-04-10'},
+    rx_torax:{result:'Ausência de cavitações ou consolidações. Mediastino centrado, ausência de alargamento. Área cardíaca dentro da normalidade. Sem linfadenopatia aparente.',date:'2026-04-10'},
+    hbsag:{result:'Não reagente'},
+    anti_hbc:{result:'Não reagente'},
+    anti_hcv:{result:'Não reagente'},
+    hiv:{result:'Não reagente'},
+    hemograma:{result:'Hb 11,8 g/dL / Ht 36% / 8.400 leucócitos / 285.000 plaquetas'},
+    tgo:{result:'32 U/L'},
+    tgp:{result:'28 U/L'},
+    creatinina:{result:'0,82 mg/dL'},
+    pcr:{result:'28,4 mg/L'},
+    vhs:{result:'56 mm/h'}
+  };
+  Object.entries(examVals).forEach(([id,v])=>{
+    if(!exams[id]) exams[id]={};
+    exams[id].result=v.result;
+    if(v.date) exams[id].date=v.date;
+    const ri=document.getElementById('exam-result-'+id);
+    const di=document.getElementById('exam-date-'+id);
+    if(ri){ri.value=v.result; ri.dispatchEvent(new Event('input'));}
+    if(di&&v.date){di.value=v.date; di.dispatchEvent(new Event('input'));}
+  });
+
+  // DMARDs
+  dmards=[];
+  document.getElementById('dmard-tbody').innerHTML='';
+  addDmard({med:'Metotrexato',dose:'20mg/semana',inicio:'2022-03-01',fim:'',motivo:''});
+  addDmard({med:'Leflunomida',dose:'20mg/dia',inicio:'2023-07-15',fim:'2024-02-10',motivo:'Elevação de enzimas hepáticas'});
+  addDmard({med:'Sulfassalazina',dose:'2g/dia',inicio:'2021-01-10',fim:'2022-02-28',motivo:'Resposta inadequada'});
+
+  fn();
+
+  // Selecionar medicamento: Adalimumabe
+  const medSel = document.getElementById('med_nome');
+  if(medSel){
+    medSel.value='Adalimumabe';
+    medSel.dispatchEvent(new Event('change'));
+  }
+  setV('med_justificativa','Paciente com artrite reumatoide de atividade moderada a grave, sem resposta adequada a dois DMARDs sintéticos (metotrexato e leflunomida), preenchendo critérios para uso de imunobiológico conforme DUT 65 ANS.');
+
+  alert('✅ Dados de teste preenchidos! Confira as abas e depois clique em "Ver Prévia do Laudo".');
+}
+
+function setV(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = val;
+  el.dispatchEvent(new Event('input'));
+  el.dispatchEvent(new Event('change'));
+}
+
+function setPillById(key, val) {
+  document.querySelectorAll(`[onclick*="setPill(this,'${key}'"]`).forEach(el=>{
+    const m = el.getAttribute('onclick').match(new RegExp(`setPill\\(this,'${key}','([^']+)'`));
+    if(m && m[1]===val){ el.click(); }
+  });
+}
+
+function fillDemoAR() {
+  document.getElementById('p_cid').value='M05.9 — Artrite Reumatoide soropositiva';
+  document.getElementById('ar_dur').value='2021-01-10'; fd.data_diag='2021-01-10';
+  setPillById('ar_cid','pos');
+  setPillById('fr','pos_alto');
+  setPillById('anticcp','pos_alto');
+  setV('ar_pcr','28.4'); setV('ar_vhs','56');
+  // DAS28 sliders — articulações dolorosas/edemaciadas via range inputs
+  const sliders = document.querySelectorAll('#diag-ar input[type=range]');
+  // Slider order: nd28, ne28, eq_saude
+  if(sliders[0]){sliders[0].value=8;sliders[0].dispatchEvent(new Event('input'));}
+  if(sliders[1]){sliders[1].value=6;sliders[1].dispatchEvent(new Event('input'));}
+  if(sliders[2]){sliders[2].value=65;sliders[2].dispatchEvent(new Event('input'));}
+}
+
+function fillDemoEA() {
+  document.getElementById('p_cid').value='M45 — Espondilite Anquilosante';
+  document.getElementById('ea_dur').value='2019-06-01'; fd.data_diag='2019-06-01';
+  setPillById('hlab27','pos');
+  setPillById('ea_tipo','rad');
+  setPillById('ea_cid','m45');
+  setV('ea_pcr','18.2'); setV('ea_vhs','42');
+  setV('ea_rnm','Edema ósseo nas articulações sacroilíacas bilateralmente, com erosões subcorticais. Sacroileíte grau III à direita e grau II à esquerda.');
+  document.getElementById('ea_rnm_data').value='2026-01-15'; fd.ea_rnm_data='2026-01-15';
+  const sliders = document.querySelectorAll('#diag-ea input[type=range]');
+  sliders.forEach((s,i)=>{s.value=i<6?7:i===6?5.8:5.8; s.dispatchEvent(new Event('input'));});
+}
+
+function fillDemoAPS() {
+  document.getElementById('p_cid').value='L40.5 — Artrite Psoriásica';
+  document.getElementById('aps_dur').value='2020-09-01'; fd.data_diag='2020-09-01';
+  setV('aps_pasi','14.2'); setV('aps_bsa','22');
+  const sliders = document.querySelectorAll('#diag-aps input[type=range]');
+  sliders.forEach(s=>{s.value=6;s.dispatchEvent(new Event('input'));});
+}
+
+function fillDemoLES() {
+  document.getElementById('p_cid').value='M32.1 — LES com comprometimento orgânico';
+  document.getElementById('les_dur').value='2018-04-15'; fd.data_diag='2018-04-15';
+  setV('les_ana','1:640, padrão nuclear homogêneo');
+  setV('les_dsdna','280 UI/mL');
+  setV('les_c3','62'); setV('les_c4','8');
+  setV('les_prot','1,4 g/24h');
+  const sliders = document.querySelectorAll('#diag-les input[type=range]');
+  sliders.forEach(s=>{s.value=3;s.dispatchEvent(new Event('input'));});
+}
+
+function fillDemoVASC() {
+  document.getElementById('p_cid').value='M31.3 — Granulomatose com Poliangiite (Wegener)';
+  document.getElementById('vasc_dur').value='2023-02-01'; fd.data_diag='2023-02-01';
+  setPillById('vasc_anca','pr3');
+  setV('vasc_anca_tit','1:160');
+  setV('vasc_bvas','22');
+  setV('vasc_creat','1.8'); setV('vasc_tfg','42');
+  setV('vasc_biopsia_res','Glomerulonefrite com crescentes em 60% dos glomérulos, padrão pauci-imune. Sem depósitos imunes ao IFD.');
+}
+
+function fillDemoDM() {
+  document.getElementById('p_cid').value='M33.1 — Dermatomiosite';
+  document.getElementById('dm_dur').value='2022-11-01'; fd.data_diag='2022-11-01';
+  setV('dm_ck','3240'); setV('dm_aldolase','28'); setV('dm_ldh','680'); setV('dm_tgo','85');
+  const sliders = document.querySelectorAll('#diag-dm input[type=range]');
+  sliders.forEach((s,i)=>{s.value=i<10?4:i<14?3:3;s.dispatchEvent(new Event('input'));});
+}
+
+function fillDemoOP() {
+  document.getElementById('p_cid').value='M81.0 — Osteoporose primária';
+  setV('op_corticoide','Prednisona 10mg/dia há 3 anos');
+  setV('op_fraturas','Fratura vertebral T12 em 2024 (traumatismo mínimo)');
+  // T-scores via fd direto + updOP
+  const opInputs = document.querySelectorAll('#diag-op .section-card:first-child input[type=number]');
+  if(opInputs[0]){opInputs[0].value=-3.1;opInputs[0].dispatchEvent(new Event('input'));}
+  if(opInputs[1]){opInputs[1].value=-2.9;opInputs[1].dispatchEvent(new Event('input'));}
+  if(opInputs[2]){opInputs[2].value=-3.0;opInputs[2].dispatchEvent(new Event('input'));}
+  if(opInputs[3]){opInputs[3].value='2025-08-20';opInputs[3].dispatchEvent(new Event('input'));}
+  if(opInputs[4]){opInputs[4].value=28.5;opInputs[4].dispatchEvent(new Event('input'));}
+  if(opInputs[5]){opInputs[5].value=12.3;opInputs[5].dispatchEvent(new Event('input'));}
+}
 </script>
 </body>
 </html>
