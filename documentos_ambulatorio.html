@@ -129,16 +129,20 @@ body{padding-bottom:60px}
   .med-table th{font-size:11px;padding:5px 8px}
   .med-table td{padding:4px 8px;font-size:12px}
 
-  /* ── Pacotes de exames: cabeçalho só se tiver exame marcado ── */
-  .pacote{border:none;box-shadow:none;break-inside:avoid;margin-bottom:4px}
+  /* ── Pacotes de exames: sem cabeçalho, apenas exames marcados ── */
+  .pacote{border:none;box-shadow:none;break-inside:avoid;margin-bottom:2px}
   .pacote.sem-selecao{display:none!important}
-  .pacote-header{background:none;border:none;padding:4px 0;pointer-events:none}
-  .pacote-titulo{font-size:11px;font-weight:700;color:#1a56a0}
-  .pacote-check{display:none}
-  .pacote-items{padding:0 0 0 8px}
+  .pacote-header{display:none!important}
+  .pacote-items{padding:0}
   .exam-item{border:none;background:none;padding:1px 0}
   .exam-item:not(.checked){display:none!important}
+  .exam-item.checked{display:flex;align-items:center;gap:4px}
+  .exam-item.checked input[type=checkbox]{display:none}
   .exam-item.checked label{font-size:12px;font-weight:normal;color:#1a202c}
+  .exam-item.checked label::before{content:"• ";color:#1a56a0}
+
+  /* Textareas vazias não imprimem */
+  .field-group textarea:placeholder-shown{display:none!important}
 
   /* Seções de imagem vazias */
   .section-img-vazia{display:none!important}
@@ -155,7 +159,7 @@ body{padding-bottom:60px}
 <body>
 
 <header>
-  <h1>📋 Documentos Ambulatoriais – Reumatologia</h1>
+  <h1>Reumatologia</h1>
   <div style="display:flex;align-items:center;gap:12px">
     <select id="select-local" onchange="atualizarLocal()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;max-width:240px">
       <option value="Hospital Bartira">Hospital Bartira</option>
@@ -395,14 +399,9 @@ body{padding-bottom:60px}
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
         <input type="text" id="lab-cid" placeholder="Ex: Artrite Reumatoide – M05.8">
       </div>
-      <div class="field-group" style="flex:0 0 160px">
-        <label>Convênio / Particular</label>
-        <input type="text" id="lab-convenio" placeholder="SUS / convênio">
-      </div>
     </div>
 
     <div class="section-label">Pacotes de Exames</div>
-    <p style="font-size:11px;color:#718096;margin-bottom:12px">Clique no nome do pacote para selecionar todos os exames. Dentro do pacote, desmarque exames individuais conforme necessário.</p>
 
     <div class="pacotes-grid" id="pacotes-lab"></div>
 
@@ -462,10 +461,6 @@ body{padding-bottom:60px}
       <div class="field-group">
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
         <input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45">
-      </div>
-      <div class="field-group" style="flex:0 0 160px">
-        <label>Convênio / Particular</label>
-        <input type="text" id="img-convenio" placeholder="SUS / convênio">
       </div>
     </div>
 
@@ -943,8 +938,7 @@ async function gerarWordLab() {
       { type: 'label-value', label: 'Paciente', value: nomePaciente },
       { type: 'label-value', label: 'Data', value: v('lab-data') },
       { type: 'label-value', label: 'Diagnóstico / CID', value: v('lab-cid') },
-      { type: 'label-value', label: 'Convênio', value: v('lab-convenio') },
-      { type: 'separator' },
+        { type: 'separator' },
     ];
     sections.forEach(sec => {
       paras.push({ type: 'heading', text: sec.titulo });
@@ -973,8 +967,7 @@ async function gerarWordLab() {
       { type: 'subtitle', text: localAtual() },
       { type: 'label-value', label: 'Paciente', value: nomePaciente },
       { type: 'label-value', label: 'Data', value: v('lab-data') },
-      { type: 'label-value', label: 'Convênio', value: v('lab-convenio') },
-      { type: 'separator' },
+        { type: 'separator' },
       { type: 'heading', text: 'Exame Solicitado' },
       { type: 'bullet', text: 'HLA-B27' },
       { type: 'heading', text: 'Indicação Clínica' },
@@ -1002,7 +995,6 @@ async function gerarWordImg() {
     { type: 'label-value', label: 'Paciente', value: v('img-nome') },
     { type: 'label-value', label: 'Data', value: v('img-data') },
     { type: 'label-value', label: 'Diagnóstico / CID', value: v('img-cid') },
-    { type: 'label-value', label: 'Convênio', value: v('img-convenio') },
     { type: 'separator' },
   ];
   sections.forEach(sec => {
