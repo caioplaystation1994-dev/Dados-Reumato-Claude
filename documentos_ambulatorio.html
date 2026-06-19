@@ -732,32 +732,33 @@ function clearForm(pageId) {
 
 // ─── Preparar / limpar estado de impressão ────────────────────────────────────
 function prepararImpressao(ids) {
-  // Marcar páginas selecionadas
   DOCS.forEach(id => document.getElementById(id).classList.remove('print-selected'));
   ids.forEach(id => document.getElementById(id).classList.add('print-selected'));
-
-  // Pacotes sem nenhum exame marcado ficam ocultos
   document.querySelectorAll('.pacote').forEach(pkg => {
     const temMarcado = pkg.querySelectorAll('.exam-item.checked').length > 0;
     pkg.classList.toggle('sem-selecao', !temMarcado);
   });
-
-  // Seções de imagem (section-label + exam-grid-img) sem exames marcados
   document.querySelectorAll('.exam-grid-img').forEach(grid => {
     const temMarcado = grid.querySelectorAll('.exam-item.checked').length > 0;
     grid.classList.toggle('section-img-vazia', !temMarcado);
-    // esconde também o section-label anterior
     const label = grid.previousElementSibling;
     if (label?.classList.contains('section-label')) {
       label.classList.toggle('section-img-vazia', !temMarcado);
     }
   });
+  // Zera título para não aparecer no cabeçalho do browser na impressão
+  document._tituloOriginal = document.title;
+  document.title = ' ';
 }
 
 function limparImpressao() {
   DOCS.forEach(id => document.getElementById(id).classList.remove('print-selected'));
   document.querySelectorAll('.pacote').forEach(p => p.classList.remove('sem-selecao'));
   document.querySelectorAll('.section-img-vazia').forEach(el => el.classList.remove('section-img-vazia'));
+  if (document._tituloOriginal !== undefined) {
+    document.title = document._tituloOriginal;
+    delete document._tituloOriginal;
+  }
 }
 
 // ─── Impressão individual ──────────────────────────────────────────────────────
