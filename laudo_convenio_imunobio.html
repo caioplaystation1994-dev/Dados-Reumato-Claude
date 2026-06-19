@@ -378,8 +378,8 @@ header h1{font-size:15px;font-weight:700}
             <input type="number" id="ar_vhs" min="0" oninput="fd.ar_vhs=this.value">
           </div>
           <div class="field-group">
-            <label>Duração da doença</label>
-            <input type="text" id="ar_dur" placeholder="Ex: 2 anos" oninput="fd.duracao=this.value">
+            <label>Data do diagnóstico</label>
+            <input type="date" id="ar_dur" oninput="fd.data_diag=this.value">
           </div>
         </div>
       </div>
@@ -469,8 +469,8 @@ header h1{font-size:15px;font-weight:700}
             <input type="number" id="ea_vhs" min="0" oninput="fd.ea_vhs=this.value">
           </div>
           <div class="field-group">
-            <label>Duração da doença</label>
-            <input type="text" id="ea_dur" placeholder="Ex: 5 anos" oninput="fd.duracao=this.value">
+            <label>Data do diagnóstico</label>
+            <input type="date" id="ea_dur" oninput="fd.data_diag=this.value">
           </div>
           <div class="field-group" style="grid-column:span 2">
             <label>RNM sacroilíacas — laudo resumido</label>
@@ -545,8 +545,8 @@ header h1{font-size:15px;font-weight:700}
             <input type="number" id="aps_bsa" min="0" max="100" oninput="fd.aps_bsa=this.value">
           </div>
           <div class="field-group">
-            <label>Duração da doença</label>
-            <input type="text" id="aps_dur" placeholder="Ex: 3 anos" oninput="fd.duracao=this.value">
+            <label>Data do diagnóstico</label>
+            <input type="date" id="aps_dur" oninput="fd.data_diag=this.value">
           </div>
         </div>
       </div>
@@ -596,8 +596,8 @@ header h1{font-size:15px;font-weight:700}
             <input type="text" id="les_prot" placeholder="Ex: 1,2 g/24h" oninput="fd.les_prot=this.value">
           </div>
           <div class="field-group">
-            <label>Duração da doença</label>
-            <input type="text" id="les_dur" placeholder="Ex: 4 anos" oninput="fd.duracao=this.value">
+            <label>Data do diagnóstico</label>
+            <input type="date" id="les_dur" oninput="fd.data_diag=this.value">
           </div>
         </div>
       </div>
@@ -688,8 +688,8 @@ header h1{font-size:15px;font-weight:700}
             <textarea id="vasc_biopsia_res" placeholder="Ex: Glomerulonefrite com crescentes, sem depósito imune" oninput="fd.vasc_biopsia_res=this.value"></textarea>
           </div>
           <div class="field-group">
-            <label>Duração da doença</label>
-            <input type="text" id="vasc_dur" placeholder="Ex: 1 ano" oninput="fd.duracao=this.value">
+            <label>Data do diagnóstico</label>
+            <input type="date" id="vasc_dur" oninput="fd.data_diag=this.value">
           </div>
         </div>
       </div>
@@ -789,8 +789,8 @@ header h1{font-size:15px;font-weight:700}
           </div>
         </div>
         <div class="field-group" style="margin-top:12px">
-          <label>Duração da doença</label>
-          <input type="text" id="dm_dur" placeholder="Ex: 18 meses" oninput="fd.duracao=this.value">
+          <label>Data do diagnóstico</label>
+          <input type="date" id="dm_dur" oninput="fd.data_diag=this.value">
         </div>
       </div>
       <div class="section-card" style="margin-top:12px">
@@ -1773,7 +1773,7 @@ function narrative() {
       f.cdai?`CDAI ${f.cdai}`:null,
       f.sdai?`SDAI ${f.sdai}`:null
     ].filter(Boolean).join(' / ');
-    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Artrite Reumatoide${serologia?' ('+serologia+')':''}${f.duracao?', com '+f.duracao+' de evolução':''}, ${apesarDe}.`.replace(/\s+/g,' ');
+    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Artrite Reumatoide${serologia?' ('+serologia+')':''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores || '';
     if(f.ar_fev1||f.ar_cvf||f.ar_dlco) atv+=`${atv?'. ':''}Espirometria${f.ar_espiro_data?' ('+fmtDate(f.ar_espiro_data)+')':''}: FEV1 ${f.ar_fev1||'—'}%, CVF ${f.ar_cvf||'—'}%, FEV1/CVF ${f.ar_fev1cvf||'—'}, DLCO ${f.ar_dlco||'—'}%${f.ar_espiro_laudo?'. '+f.ar_espiro_laudo:''}`;
   } else if(d==='ea'){
@@ -1783,20 +1783,20 @@ function narrative() {
       f.basdai?`BASDAI ${parseFloat(f.basdai).toFixed(1)}/10`:null,
       f.asdas?`ASDAS-PCR ${parseFloat(f.asdas).toFixed(2)}`:null
     ].filter(Boolean).join(' / ');
-    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${cidTxt}${f.duracao?', com '+f.duracao+' de evolução':''}, ${apesarDe}.`.replace(/,\s*\.$/, '.').replace(/\s+/g,' ');
+    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${cidTxt}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/,\s*\.$/, '.').replace(/\s+/g,' ');
     atv = scores || '';
     if(f.hlab27) atv+=`${atv?' | ':''}HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}`;
     if(f.ea_rnm) atv+=`${atv?'. ':''}RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}`;
   } else if(d==='aps'){
     const scores = f.dapsa ? `DAPSA ${f.dapsa} (${f.dapsa_class||'—'})` : '';
     const dominios = f.aps_dom ? `com comprometimento de ${f.aps_dom}` : '';
-    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Artrite Psoriásica${dominios?' '+dominios:''}${f.duracao?', com '+f.duracao+' de evolução':''}, ${apesarDe}.`.replace(/\s+/g,' ');
+    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Artrite Psoriásica${dominios?' '+dominios:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores;
     if(f.aps_pasi) atv+=`${atv?'. ':''}PASI: ${f.aps_pasi}`;
   } else if(d==='les'){
     const scores = f.sledai!==undefined ? `SLEDAI-2K ${f.sledai} (${f.sledai_class||'—'})` : '';
     const manif = f.sledai_active ? `com manifestações ativas de ${f.sledai_active}` : '';
-    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Lúpus Eritematoso Sistêmico${manif?' '+manif:''}${f.duracao?', com '+f.duracao+' de evolução':''}, ${apesarDe}.`.replace(/\s+/g,' ');
+    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Lúpus Eritematoso Sistêmico${manif?' '+manif:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores;
     const sorol = [
       f.les_ana?`ANA: ${f.les_ana}`:null,
@@ -1813,7 +1813,7 @@ function narrative() {
   } else if(d==='vasc'){
     const tipoNome = f.vasc_tipo==='gpa'?'Granulomatose com Poliangiite (GPA)':f.vasc_tipo==='pam'?'Poliangiite Microscópica (PAM)':f.vasc_tipo==='gepa'?'Granulomatose Eosinofílica com Poliangiite (GEPA)':'vasculite ANCA-associada';
     const orgaosTxt = f.vasc_org ? `com comprometimento de ${f.vasc_org}` : '';
-    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${tipoNome}${orgaosTxt?' '+orgaosTxt:''}${f.duracao?', com '+f.duracao+' de evolução':''}, ${apesarDe}.`.replace(/\s+/g,' ');
+    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${tipoNome}${orgaosTxt?' '+orgaosTxt:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     const ancaTxt = f.vasc_anca==='pr3'?'PR3-ANCA positivo (c-ANCA)':f.vasc_anca==='mpo'?'MPO-ANCA positivo (p-ANCA)':f.vasc_anca==='neg'?'ANCA negativo':'';
     atv = [
       ancaTxt?(ancaTxt+(f.vasc_anca_tit?' — título: '+f.vasc_anca_tit:'')):null,
@@ -1829,7 +1829,7 @@ function narrative() {
   } else if(d==='dm'){
     const sub = f.dm_subtipo==='dm'?'Dermatomiosite':f.dm_subtipo==='pm'?'Polimiosite':f.dm_subtipo==='imnm'?'Miopatia Necrosante Autoimune (IMNM)':f.dm_subtipo==='anti_sint'?'Síndrome Anti-Sintetase':f.dm_subtipo==='cadm'?'Dermatomiosite Amiopática (CADM)':'Miopatia Inflamatória Autoimune';
     const manifTxt = f.dm_manif ? `com ${f.dm_manif}` : '';
-    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${sub}${manifTxt?' '+manifTxt:''}${f.duracao?', com '+f.duracao+' de evolução':''}, ${apesarDe}.`.replace(/\s+/g,' ');
+    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${sub}${manifTxt?' '+manifTxt:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = f.mmt8!==undefined ? `MMT-8: ${f.mmt8}/80 (${f.mmt8_class||'—'})` : '';
     atv += [
       f.dm_ck?`CK: ${f.dm_ck} U/L`:null,
@@ -1842,7 +1842,7 @@ function narrative() {
     const tc = fd.op_tscore_min!==undefined ? fd.op_tscore_min : '—';
     const fraturaTxt = fd.op_fraturas ? `, com história de fraturas por fragilidade (${fd.op_fraturas})` : '';
     const corticoideTxt = fd.op_corticoide ? `, em uso de corticoide (${fd.op_corticoide})` : '';
-    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de osteoporose${fraturaTxt}${corticoideTxt}${fd.duracao?', com '+fd.duracao+' de evolução':''}, ${apesarDe}.`.replace(/\s+/g,' ');
+    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de osteoporose${fraturaTxt}${corticoideTxt}${fd.data_diag?', diagnóstico em '+fmtDate(fd.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = `T-score (menor valor): ${tc}${fd.op_cls?' — '+fd.op_cls:''}`;
     if(fd.op_frax_maior) atv+=`. FRAX fratura maior: ${fd.op_frax_maior}%${fd.op_frax_quad?', quadril: '+fd.op_frax_quad+'%':''}`;
   }
