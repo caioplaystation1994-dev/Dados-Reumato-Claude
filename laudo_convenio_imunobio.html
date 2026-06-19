@@ -1129,9 +1129,11 @@ const EXAMES_BASE = [
   {id:'anti_hcv',l:'Anti-HCV (Hepatite C)',req:true},
   {id:'hiv',l:'Anti-HIV',req:true},
   {id:'hemograma',l:'Hemograma completo',req:true},
-  {id:'tgo_tgp',l:'TGO / TGP (transaminases)',req:true},
+  {id:'tgo',l:'TGO (U/L)',req:true},
+  {id:'tgp',l:'TGP (U/L)',req:true},
   {id:'creatinina',l:'Creatinina sérica',req:true},
-  {id:'pcr_vhs',l:'PCR e VHS',req:false},
+  {id:'pcr',l:'PCR (mg/L)',req:false},
+  {id:'vhs',l:'VHS (mm/h)',req:false},
   {id:'urina',l:'EAS (urina tipo I)',req:false}
 ];
 let examDateGlobal = '';
@@ -1780,7 +1782,7 @@ function narrative() {
     const eaTipoTxt = f.ea_tipo==='rad'?'espondiloartrite axial radiográfica':f.ea_tipo==='nrad'?'espondiloartrite axial não-radiográfica (nr-axSpA)':'espondiloartrite axial';
     const cidTxt = (document.getElementById('p_cid')?.value||'').includes('M46.8') ? 'espondiloartrite axial + periférica' : eaTipoTxt;
     const scores = [
-      f.basdai?`BASDAI ${parseFloat(f.basdai).toFixed(1)}/10`:null,
+      f.basdai?`BASDAI ${parseFloat(f.basdai).toFixed(1)}`:null,
       f.asdas?`ASDAS-PCR ${parseFloat(f.asdas).toFixed(2)}`:null
     ].filter(Boolean).join(' / ');
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${cidTxt}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/,\s*\.$/, '.').replace(/\s+/g,' ');
@@ -1788,13 +1790,13 @@ function narrative() {
     if(f.hlab27) atv+=`${atv?' | ':''}HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}`;
     if(f.ea_rnm) atv+=`${atv?'. ':''}RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}`;
   } else if(d==='aps'){
-    const scores = f.dapsa ? `DAPSA ${f.dapsa} (${f.dapsa_class||'—'})` : '';
+    const scores = f.dapsa ? `DAPSA ${f.dapsa}` : '';
     const dominios = f.aps_dom ? `com comprometimento de ${f.aps_dom}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Artrite Psoriásica${dominios?' '+dominios:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores;
     if(f.aps_pasi) atv+=`${atv?'. ':''}PASI: ${f.aps_pasi}`;
   } else if(d==='les'){
-    const scores = f.sledai!==undefined ? `SLEDAI-2K ${f.sledai} (${f.sledai_class||'—'})` : '';
+    const scores = f.sledai!==undefined ? `SLEDAI-2K ${f.sledai}` : '';
     const manif = f.sledai_active ? `com manifestações ativas de ${f.sledai_active}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Lúpus Eritematoso Sistêmico${manif?' '+manif:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores;
@@ -1830,7 +1832,7 @@ function narrative() {
     const sub = f.dm_subtipo==='dm'?'Dermatomiosite':f.dm_subtipo==='pm'?'Polimiosite':f.dm_subtipo==='imnm'?'Miopatia Necrosante Autoimune (IMNM)':f.dm_subtipo==='anti_sint'?'Síndrome Anti-Sintetase':f.dm_subtipo==='cadm'?'Dermatomiosite Amiopática (CADM)':'Miopatia Inflamatória Autoimune';
     const manifTxt = f.dm_manif ? `com ${f.dm_manif}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${sub}${manifTxt?' '+manifTxt:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
-    atv = f.mmt8!==undefined ? `MMT-8: ${f.mmt8}/80 (${f.mmt8_class||'—'})` : '';
+    atv = f.mmt8!==undefined ? `MMT-8: ${f.mmt8}/80` : '';
     atv += [
       f.dm_ck?`CK: ${f.dm_ck} U/L`:null,
       f.dm_aldolase?`Aldolase: ${f.dm_aldolase} U/L`:null,
@@ -1843,7 +1845,7 @@ function narrative() {
     const fraturaTxt = fd.op_fraturas ? `, com história de fraturas por fragilidade (${fd.op_fraturas})` : '';
     const corticoideTxt = fd.op_corticoide ? `, em uso de corticoide (${fd.op_corticoide})` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de osteoporose${fraturaTxt}${corticoideTxt}${fd.data_diag?', diagnóstico em '+fmtDate(fd.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
-    atv = `T-score (menor valor): ${tc}${fd.op_cls?' — '+fd.op_cls:''}`;
+    atv = `T-score (menor valor): ${tc}`;
     if(fd.op_frax_maior) atv+=`. FRAX fratura maior: ${fd.op_frax_maior}%${fd.op_frax_quad?', quadril: '+fd.op_frax_quad+'%':''}`;
   }
   if(fd.tb_igra_positivo) atv += `${atv?'. ':''}IGRA/PPD positivo — Profilaxia para TB latente: ${fd.tb_profilaxia_med||'não registrada'} (${fd.tb_profilaxia_status||'status não informado'})`;
@@ -1884,19 +1886,17 @@ function buildPreview() {
   const tbTxt = fd.tb_igra_positivo ? `<p style="background:#fffbeb;border:1px solid #f6ad55;padding:8px 12px;border-radius:6px;font-size:11px;margin-top:6px"><b>⚠️ IGRA/PPD Positivo.</b> Profilaxia de TB: ${fd.tb_profilaxia_med||'não registrada'}${fd.tb_profilaxia_inicio?' — iniciada em '+fmtDate(fd.tb_profilaxia_inicio):''}. Status: ${fd.tb_profilaxia_status||'—'}.</p>` : '';
   const dmardRows=dmards.filter(x=>x.med)
     .map(x=>`<tr><td>${x.med}</td><td>${x.dose||'—'}</td><td>${fmtDate(x.inicio)||'—'}</td><td>${fmtDate(x.fim)||'em uso'}</td><td>${x.motivo||'—'}</td></tr>`).join('');
-  // Group exams by date for display
+  // Group exams by date as flowing text paragraphs
   const examsByDate = {};
   EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result).forEach(e=>{
-    const dt = e.ownDate ? (fmtDate(exams[e.id].date)||'—') : (fmtDate(examDateGlobal)||'—');
+    const dt = e.ownDate ? (fmtDate(exams[e.id].date)||'s/d') : (fmtDate(examDateGlobal)||'s/d');
     if(!examsByDate[dt]) examsByDate[dt]=[];
     examsByDate[dt].push({l:e.l,r:exams[e.id].result});
   });
   let groupedExamRows='';
   Object.entries(examsByDate).forEach(([dt,items])=>{
-    groupedExamRows+=`<tr><td colspan="2" style="font-size:10px;color:#888;padding-top:6px;padding-bottom:2px">${dt}</td></tr>`;
-    items.forEach(it=>{
-      groupedExamRows+=`<tr><td style="color:#2d3748">${it.l}</td><td>${it.r}</td></tr>`;
-    });
+    const inline = items.map(it=>`${it.l}: ${it.r}`).join(' / ');
+    groupedExamRows+=`<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#888">${dt} — </span>${inline}</p>`;
   });
   const sep='<div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>';
   const cidVal=document.getElementById('p_cid').value||'—';
@@ -1913,7 +1913,7 @@ function buildPreview() {
     ${clinicoPar}
     ${dmardRows?sep+`<table>${dmardRows}</table>`:''}
     ${n.bioAntTxt?`<pre style="font-size:12px;white-space:pre-wrap;margin-top:8px">${n.bioAntTxt}</pre>`:''}
-    ${groupedExamRows?sep+`<table>${groupedExamRows}</table>`:''}
+    ${groupedExamRows?sep+`<div>${groupedExamRows}</div>`:''}
     ${tbTxt}
     ${imagens.filter(i=>i.tipo).length>0?`<table style="margin-top:6px">${imagens.filter(i=>i.tipo).map(i=>`<tr><td>${i.tipo}</td><td>${i.laudo||''}</td><td>${fmtDate(i.data)||''}</td></tr>`).join('')}</table>`:''}
     ${sep}
@@ -1977,17 +1977,18 @@ function genPDF() {
   }
 
   y+=4;
-  const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
-    .map(e=>[e.l,exams[e.id].result||'—',e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—']);
-  if(eRows.length>0){
-    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Exame','Resultado','Data']],body:eRows,
-      styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]}});
-    y=doc.lastAutoTable.finalY+4;
-  } else addText('Nenhum exame laboratorial registrado.');
+  const pdfExamsByDate={};
+  EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result).forEach(e=>{
+    const dt=e.ownDate?(fmtDate(exams[e.id].date)||'s/d'):(fmtDate(examDateGlobal)||'s/d');
+    if(!pdfExamsByDate[dt]) pdfExamsByDate[dt]=[];
+    pdfExamsByDate[dt].push(`${e.l}: ${exams[e.id].result}`);
+  });
+  Object.entries(pdfExamsByDate).forEach(([dt,items])=>{
+    addText(`${dt} — ${items.join(' / ')}`,9);
+  });
   const imgRows=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
   if(imgRows.length>0){
-    addText('Exames de Imagem:',10);
-    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Exame','Laudo','Data']],body:imgRows,
+    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Exame de Imagem','Laudo','Data']],body:imgRows,
       styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]}});
     y=doc.lastAutoTable.finalY+4;
   }
@@ -2031,8 +2032,12 @@ function genDOCX() {
   });
 
   const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—',fmtDate(x.fim)||'em uso',x.motivo||'—']);
-  const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
-    .map(e=>[e.l,exams[e.id].result||'—',e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—']);
+  const docxExamsByDate={};
+  EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result).forEach(e=>{
+    const dt=e.ownDate?(fmtDate(exams[e.id].date)||'s/d'):(fmtDate(examDateGlobal)||'s/d');
+    if(!docxExamsByDate[dt]) docxExamsByDate[dt]=[];
+    docxExamsByDate[dt].push(`${e.l}: ${exams[e.id].result}`);
+  });
 
   const children=[
     h1('LAUDO MÉDICO — SOLICITAÇÃO DE MEDICAMENTO ESPECIAL'),
@@ -2043,7 +2048,7 @@ function genDOCX() {
     p(n.intro+(n.atv?' ('+n.atv+')':'')),
   ];
   if(dRows.length>0) children.push(tbl(['Medicamento','Dose','Início','Suspensão','Motivo'],dRows));
-  if(eRows.length>0) children.push(tbl(['Exame','Resultado','Data'],eRows));
+  Object.entries(docxExamsByDate).forEach(([dt,items])=>children.push(p(`${dt} — ${items.join(' / ')}`)));
   const imgRowsW=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
   if(imgRowsW.length>0) children.push(tbl(['Exame de Imagem','Laudo','Data'],imgRowsW));
   children.push(b('Medicamento: ',f.med_nome));
