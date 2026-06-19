@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentos Ambulatoriais – Reumatologia</title>
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a202c;font-size:14px}
+header{background:#1a56a0;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+header h1{font-size:17px;font-weight:600}
+nav button{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 16px;border-radius:6px;cursor:pointer;margin-left:6px;font-size:12px;transition:.2s}
+nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
+
+.page{display:none;padding:24px;max-width:900px;margin:0 auto}
+.page.active{display:block}
+
+.doc-wrapper{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.1);padding:32px 40px;margin-bottom:20px}
+
+/* Cabeçalho do documento */
+.doc-header{border-bottom:3px solid #1a56a0;padding-bottom:16px;margin-bottom:20px}
+.doc-title{font-size:18px;font-weight:700;color:#1a56a0;text-align:center;margin-bottom:4px}
+.doc-subtitle{font-size:12px;color:#718096;text-align:center}
+
+/* Campos */
+.field-row{display:flex;gap:16px;margin-bottom:12px}
+.field-group{display:flex;flex-direction:column;gap:4px;flex:1}
+.field-group.w-auto{flex:0 0 auto}
+.field-group label{font-size:11px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.4px}
+.field-group input[type=text],
+.field-group input[type=date],
+.field-group select,
+.field-group textarea{border:1px solid #cbd5e0;border-radius:6px;padding:7px 10px;font-size:13px;width:100%;background:#fafafa;font-family:inherit}
+.field-group input:focus,
+.field-group select:focus,
+.field-group textarea:focus{outline:none;border-color:#1a56a0;background:#fff}
+.field-group textarea{resize:vertical;min-height:80px}
+
+.section-label{font-size:11px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0}
+
+/* Tabela de medicamentos */
+.med-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+.med-table th{background:#1a56a0;color:#fff;padding:7px 10px;text-align:left;font-size:11px}
+.med-table td{padding:6px 10px;border-bottom:1px solid #e8ecf0;vertical-align:middle}
+.med-table td input{border:1px solid #cbd5e0;border-radius:4px;padding:4px 6px;font-size:12px;width:100%;background:#fafafa}
+.med-table .btn-remove{background:#e53e3e;color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px}
+.btn-add{background:#ebf4ff;color:#1a56a0;border:1.5px dashed #90cdf4;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600;width:100%;margin-top:4px;transition:.15s}
+.btn-add:hover{background:#bee3f8}
+
+/* Checkboxes de exames */
+.exam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;margin-bottom:8px}
+.exam-item{display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;cursor:pointer;transition:.15s}
+.exam-item:hover{border-color:#90cdf4;background:#ebf8ff}
+.exam-item input[type=checkbox]{cursor:pointer;width:14px;height:14px;accent-color:#1a56a0}
+.exam-item label{font-size:12px;cursor:pointer;color:#2d3748}
+.exam-item.checked{border-color:#1a56a0;background:#ebf4ff}
+
+/* Linha assinatura */
+.signature-line{margin-top:40px;border-top:1px solid #2d3748;width:260px;padding-top:6px;font-size:11px;color:#4a5568;text-align:center}
+
+/* Botões de ação */
+.action-bar{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+.btn-print{background:#fff;color:#1a56a0;border:2px solid #1a56a0;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
+.btn-print:hover{background:#ebf4ff}
+.btn-word{background:#1a56a0;color:#fff;border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:.2s;display:flex;align-items:center;gap:6px}
+.btn-word:hover{background:#154080}
+.btn-clear{background:#fff;color:#e53e3e;border:2px solid #e53e3e;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-clear:hover{background:#fff5f5}
+
+/* Badge CID */
+.cid-tag{display:inline-block;background:#ebf4ff;color:#1a56a0;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;border:1px solid #90cdf4;margin-right:4px;margin-bottom:4px}
+
+/* Print */
+@media print{
+  header,nav,.action-bar,.btn-add,.btn-remove,#print-hide{display:none!important}
+  body{background:#fff}
+  .page{display:block!important;padding:0;max-width:100%}
+  .doc-wrapper{box-shadow:none;border-radius:0;padding:20px}
+  .field-group input,.field-group select,.field-group textarea{border:none;border-bottom:1px solid #aaa;border-radius:0;background:transparent}
+  .med-table td input{border:none;border-bottom:1px solid #aaa;background:transparent}
+  .exam-item{border:none;background:none;padding:2px 0}
+  .exam-item:not(.checked){opacity:.3}
+  @page{size:A4;margin:2cm 2.5cm}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 Documentos Ambulatoriais – Reumatologia</h1>
+  <nav>
+    <button class="active" onclick="showPage('relatorio',this)">Relatório Médico</button>
+    <button onclick="showPage('receita',this)">Receita Médica</button>
+    <button onclick="showPage('exames-lab',this)">Exames Laboratoriais</button>
+    <button onclick="showPage('exames-img',this)">Exames de Imagem</button>
+  </nav>
+</header>
+
+<!-- ======================== RELATÓRIO MÉDICO ======================== -->
+<div id="relatorio" class="page active">
+  <div class="doc-wrapper">
+    <div class="doc-header">
+      <div class="doc-title">RELATÓRIO MÉDICO</div>
+      <div class="doc-subtitle">Ambulatório de Reumatologia</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label>Nome do Paciente</label>
+        <input type="text" id="rel-nome" placeholder="Nome completo">
+      </div>
+      <div class="field-group w-auto" style="flex:0 0 120px">
+        <label>Data de Nascimento</label>
+        <input type="date" id="rel-nascimento">
+      </div>
+      <div class="field-group w-auto" style="flex:0 0 80px">
+        <label>Idade</label>
+        <input type="text" id="rel-idade" placeholder="anos">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>Número do Prontuário / RG / CPF</label>
+        <input type="text" id="rel-prontuario" placeholder="">
+      </div>
+      <div class="field-group w-auto" style="flex:0 0 160px">
+        <label>Data da Consulta</label>
+        <input type="date" id="rel-data">
+      </div>
+    </div>
+
+    <div class="section-label">Diagnóstico / CID-10</div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>Diagnóstico Principal</label>
+        <input type="text" id="rel-diagnostico" placeholder="Ex: Artrite Reumatoide – M05.8">
+      </div>
+      <div class="field-group">
+        <label>Diagnósticos Secundários</label>
+        <input type="text" id="rel-diagnostico2" placeholder="Ex: Osteoporose – M81.0">
+      </div>
+    </div>
+
+    <div class="section-label">Anamnese / Histórico Atual</div>
+    <textarea id="rel-anamnese" rows="5" placeholder="Queixa principal, evolução da doença, sintomas atuais..."></textarea>
+
+    <div class="section-label">Exame Físico</div>
+    <textarea id="rel-exfisico" rows="4" placeholder="PA: ___x___ mmHg  |  FC: ___ bpm  |  FR: ___ irpm  |  T: ___°C  |  Peso: ___ kg&#10;&#10;Articular: &#10;Extra-articular: "></textarea>
+
+    <div class="section-label">Exames Complementares Relevantes</div>
+    <textarea id="rel-exames" rows="4" placeholder="Resultados laboratoriais e de imagem recentes..."></textarea>
+
+    <div class="section-label">Conduta / Plano Terapêutico</div>
+    <textarea id="rel-conduta" rows="5" placeholder="Medicações prescritas, orientações, encaminhamentos, próxima consulta..."></textarea>
+
+    <div class="section-label">Observações</div>
+    <textarea id="rel-obs" rows="3" placeholder="Informações adicionais relevantes..."></textarea>
+
+    <div class="field-row" style="margin-top:24px">
+      <div class="field-group">
+        <label>Médico(a) Responsável</label>
+        <input type="text" id="rel-medico" placeholder="Nome do médico">
+      </div>
+      <div class="field-group" style="flex:0 0 180px">
+        <label>CRM</label>
+        <input type="text" id="rel-crm" placeholder="CRM/UF 00000">
+      </div>
+    </div>
+
+    <div class="signature-line">Assinatura e Carimbo</div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-clear" onclick="clearForm('relatorio')">Limpar</button>
+    <button class="btn-print" onclick="printDoc('relatorio')">🖨️ Imprimir</button>
+    <button class="btn-word" onclick="gerarWordRelatorio()">⬇️ Baixar Word (.docx)</button>
+  </div>
+</div>
+
+<!-- ======================== RECEITA MÉDICA ======================== -->
+<div id="receita" class="page">
+  <div class="doc-wrapper">
+    <div class="doc-header">
+      <div class="doc-title">RECEITA MÉDICA</div>
+      <div class="doc-subtitle">Ambulatório de Reumatologia</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label>Nome do Paciente</label>
+        <input type="text" id="rx-nome" placeholder="Nome completo">
+      </div>
+      <div class="field-group w-auto" style="flex:0 0 160px">
+        <label>Data</label>
+        <input type="date" id="rx-data">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>Endereço</label>
+        <input type="text" id="rx-endereco" placeholder="Rua, número, cidade">
+      </div>
+      <div class="field-group" style="flex:0 0 80px">
+        <label>Idade</label>
+        <input type="text" id="rx-idade" placeholder="anos">
+      </div>
+    </div>
+
+    <div class="section-label">Prescrição</div>
+    <table class="med-table" id="med-table">
+      <thead>
+        <tr>
+          <th style="width:30px">#</th>
+          <th>Medicamento e Concentração</th>
+          <th style="width:160px">Posologia</th>
+          <th style="width:130px">Via / Duração</th>
+          <th style="width:40px"></th>
+        </tr>
+      </thead>
+      <tbody id="med-tbody">
+        <tr>
+          <td>1</td>
+          <td><input type="text" placeholder="Ex: Metotrexato 10 mg"></td>
+          <td><input type="text" placeholder="Ex: 1 cp 1x/semana"></td>
+          <td><input type="text" placeholder="Ex: VO / contínuo"></td>
+          <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <button class="btn-add" onclick="addMed()">+ Adicionar Medicamento</button>
+
+    <div class="section-label">Orientações ao Paciente</div>
+    <textarea id="rx-orientacoes" rows="3" placeholder="Monitorizar efeitos adversos, retornar em caso de..."></textarea>
+
+    <div class="section-label">Observações / Uso Contínuo</div>
+    <textarea id="rx-obs" rows="2" placeholder="Ex: Medicação de uso contínuo. Validade da receita: 30 dias."></textarea>
+
+    <div class="field-row" style="margin-top:24px">
+      <div class="field-group">
+        <label>Médico(a) Responsável</label>
+        <input type="text" id="rx-medico" placeholder="Nome do médico">
+      </div>
+      <div class="field-group" style="flex:0 0 180px">
+        <label>CRM</label>
+        <input type="text" id="rx-crm" placeholder="CRM/UF 00000">
+      </div>
+    </div>
+    <div class="signature-line">Assinatura e Carimbo</div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-clear" onclick="clearForm('receita')">Limpar</button>
+    <button class="btn-print" onclick="printDoc('receita')">🖨️ Imprimir</button>
+    <button class="btn-word" onclick="gerarWordReceita()">⬇️ Baixar Word (.docx)</button>
+  </div>
+</div>
+
+<!-- ======================== EXAMES LABORATORIAIS ======================== -->
+<div id="exames-lab" class="page">
+  <div class="doc-wrapper">
+    <div class="doc-header">
+      <div class="doc-title">SOLICITAÇÃO DE EXAMES LABORATORIAIS</div>
+      <div class="doc-subtitle">Ambulatório de Reumatologia</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label>Nome do Paciente</label>
+        <input type="text" id="lab-nome" placeholder="Nome completo">
+      </div>
+      <div class="field-group w-auto" style="flex:0 0 160px">
+        <label>Data</label>
+        <input type="date" id="lab-data">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
+        <input type="text" id="lab-cid" placeholder="Ex: Artrite Reumatoide – M05.8">
+      </div>
+      <div class="field-group" style="flex:0 0 140px">
+        <label>Convênio / Particular</label>
+        <input type="text" id="lab-convenio" placeholder="SUS / convênio">
+      </div>
+    </div>
+
+    <div class="section-label">Hemograma e Coagulação</div>
+    <div class="exam-grid" id="lab-hemo"></div>
+
+    <div class="section-label">Bioquímica / Função Renal e Hepática</div>
+    <div class="exam-grid" id="lab-bio"></div>
+
+    <div class="section-label">Provas de Atividade Inflamatória</div>
+    <div class="exam-grid" id="lab-inflam"></div>
+
+    <div class="section-label">Sorologias e Autoanticorpos</div>
+    <div class="exam-grid" id="lab-sorologia"></div>
+
+    <div class="section-label">Metabolismo Ósseo e Vitaminas</div>
+    <div class="exam-grid" id="lab-osso"></div>
+
+    <div class="section-label">Outros Exames</div>
+    <div class="exam-grid" id="lab-outros"></div>
+
+    <div class="section-label">Exames Adicionais (texto livre)</div>
+    <textarea id="lab-adicional" rows="3" placeholder="Outros exames não listados acima..."></textarea>
+
+    <div class="section-label">Indicação Clínica / Observações</div>
+    <textarea id="lab-indicacao" rows="2" placeholder="Justificativa clínica para os exames solicitados..."></textarea>
+
+    <div class="field-row" style="margin-top:24px">
+      <div class="field-group">
+        <label>Médico(a) Responsável</label>
+        <input type="text" id="lab-medico" placeholder="Nome do médico">
+      </div>
+      <div class="field-group" style="flex:0 0 180px">
+        <label>CRM</label>
+        <input type="text" id="lab-crm" placeholder="CRM/UF 00000">
+      </div>
+    </div>
+    <div class="signature-line">Assinatura e Carimbo</div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-clear" onclick="clearForm('exames-lab')">Limpar</button>
+    <button class="btn-print" onclick="printDoc('exames-lab')">🖨️ Imprimir</button>
+    <button class="btn-word" onclick="gerarWordLab()">⬇️ Baixar Word (.docx)</button>
+  </div>
+</div>
+
+<!-- ======================== EXAMES DE IMAGEM ======================== -->
+<div id="exames-img" class="page">
+  <div class="doc-wrapper">
+    <div class="doc-header">
+      <div class="doc-title">SOLICITAÇÃO DE EXAMES DE IMAGEM</div>
+      <div class="doc-subtitle">Ambulatório de Reumatologia</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label>Nome do Paciente</label>
+        <input type="text" id="img-nome" placeholder="Nome completo">
+      </div>
+      <div class="field-group w-auto" style="flex:0 0 160px">
+        <label>Data</label>
+        <input type="date" id="img-data">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
+        <input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45">
+      </div>
+      <div class="field-group" style="flex:0 0 140px">
+        <label>Convênio / Particular</label>
+        <input type="text" id="img-convenio" placeholder="SUS / convênio">
+      </div>
+    </div>
+
+    <div class="section-label">Radiografia (RX)</div>
+    <div class="exam-grid" id="img-rx"></div>
+
+    <div class="section-label">Ultrassonografia (USG)</div>
+    <div class="exam-grid" id="img-usg"></div>
+
+    <div class="section-label">Tomografia Computadorizada (TC)</div>
+    <div class="exam-grid" id="img-tc"></div>
+
+    <div class="section-label">Ressonância Magnética (RM)</div>
+    <div class="exam-grid" id="img-rm"></div>
+
+    <div class="section-label">Densitometria e Outros</div>
+    <div class="exam-grid" id="img-outros"></div>
+
+    <div class="section-label">Exames Adicionais (texto livre)</div>
+    <textarea id="img-adicional" rows="3" placeholder="Outros exames de imagem não listados acima, com especificação do segmento/lado..."></textarea>
+
+    <div class="section-label">Indicação Clínica / Quesitos</div>
+    <textarea id="img-indicacao" rows="3" placeholder="Justificativa clínica e quesitos específicos para o laudo..."></textarea>
+
+    <div class="field-row" style="margin-top:24px">
+      <div class="field-group">
+        <label>Médico(a) Responsável</label>
+        <input type="text" id="img-medico" placeholder="Nome do médico">
+      </div>
+      <div class="field-group" style="flex:0 0 180px">
+        <label>CRM</label>
+        <input type="text" id="img-crm" placeholder="CRM/UF 00000">
+      </div>
+    </div>
+    <div class="signature-line">Assinatura e Carimbo</div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-clear" onclick="clearForm('exames-img')">Limpar</button>
+    <button class="btn-print" onclick="printDoc('exames-img')">🖨️ Imprimir</button>
+    <button class="btn-word" onclick="gerarWordImg()">⬇️ Baixar Word (.docx)</button>
+  </div>
+</div>
+
+<script>
+// ─── Dados de exames ───────────────────────────────────────────────────────────
+const EXAMES_LAB = {
+  'lab-hemo': ['Hemograma completo','Leucócitos com diferencial','Plaquetas','Reticulócitos','TAP / INR','TTPA','Fibrinogênio'],
+  'lab-bio':  ['Ureia','Creatinina','TGO (AST)','TGP (ALT)','GGT','Fosfatase Alcalina','Bilirrubinas totais e frações','Proteínas totais e frações','Albumina','Glicemia jejum','HbA1c','LDH','CK total','Ácido úrico','Colesterol total e frações','Triglicerídeos','TSH','T4 livre'],
+  'lab-inflam':['PCR (proteína C reativa)','VHS (velocidade de hemossedimentação)','Ferritina','Alfa-1 glicoproteína ácida','Fibrinogênio','DHL','SAA (proteína sérica amiloide A)'],
+  'lab-sorologia':['FAN (ANA)','Anti-DNA nativo','Anti-Sm','Anti-Ro/SSA','Anti-La/SSB','Anti-Jo-1','Anti-SCl-70','Anti-centrômero','ANCA (c e p)','Fator Reumatoide','Anti-CCP','Complemento (C3, C4, CH50)','Crioglobulinas','Anticardiolipina IgG e IgM','Anti-beta2-glicoproteína I','HLA-B27','Anticorpos anti-TPO','Sorology HIV','HBsAg','Anti-HBc total','Anti-HCV','VDRL / FTA-ABS','Toxoplasmose IgG/IgM','CMV IgG/IgM','EBV (VCA IgG/IgM)','Quantiféron (IGRA) / PPD'],
+  'lab-osso': ['Cálcio total','Cálcio ionizado','Fósforo','Fosfatase alcalina óssea','PTH intacto','25-OH Vitamina D','Vitamina B12','Ácido fólico','Magnésio','Zinco'],
+  'lab-outros':['Urina tipo 1 (EQU)','Urina 24h – Proteinúria','Urocultura','Pesquisa de BAAR – escarro','Gram e cultura de secreção','Líquido articular (análise + cultura)','Biopsia de pele','Biopsia muscular','Capilaroscopia periungueal','Eletroforese de proteínas','IgG, IgA, IgM séricos']
+};
+
+const EXAMES_IMG = {
+  'img-rx': ['RX de tórax PA e perfil','RX de coluna cervical (PA, perfil, oblíquas)','RX de coluna lombar (PA, perfil)','RX de coluna total (PA e perfil)','RX de sacroilíacas','RX de mãos e punhos bilaterais','RX de pés bilaterais','RX de quadril (AP da bacia)','RX de joelhos (AP e perfil)','RX de ombros bilaterais','RX de tornozelos bilaterais'],
+  'img-usg': ['USG de articulações de mãos e punhos','USG de ombros bilaterais','USG de quadril bilateral','USG de joelhos bilaterais','USG de tornozelos bilaterais','USG de partes moles','USG abdominal total','USG de glândulas salivares','USG Doppler de vasos periféricos','USG de tireoide','Ecocardiograma'],
+  'img-tc':  ['TC de tórax de alta resolução (TCAR)','TC de tórax com contraste','TC de abdome e pelve','TC de coluna cervical','TC de coluna lombar','TC de sacroilíacas','TC de crânio','TC de seios da face','Angiotomografia'],
+  'img-rm':  ['RM de sacroilíacas com gadolínio','RM de coluna cervical','RM de coluna dorsal','RM de coluna lombar','RM de mãos e punhos bilaterais','RM de ombros bilaterais','RM de quadril bilateral','RM de joelhos bilaterais','RM de tornozelos bilaterais','RM de crânio','RM de encéfalo com gadolínio','RM de músculo (corpo inteiro)'],
+  'img-outros':['Densitometria óssea (coluna e fêmur)','Densitometria óssea de corpo total','Cintilografia óssea','PET-CT','Capilaroscopia periungueal','Manometria esofágica','Radiografia de pequenas articulações']
+};
+
+// ─── Renderizar checkboxes ─────────────────────────────────────────────────────
+function renderExams(data) {
+  Object.entries(data).forEach(([id, list]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = list.map(name => `
+      <div class="exam-item" onclick="toggleExam(this)">
+        <input type="checkbox" onclick="event.stopPropagation(); toggleExam(this.parentElement)">
+        <label>${name}</label>
+      </div>`).join('');
+  });
+}
+renderExams(EXAMES_LAB);
+renderExams(EXAMES_IMG);
+
+function toggleExam(el) {
+  const cb = el.querySelector('input[type=checkbox]');
+  cb.checked = !cb.checked;
+  el.classList.toggle('checked', cb.checked);
+}
+
+// ─── Navegação ─────────────────────────────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── Limpar formulário ─────────────────────────────────────────────────────────
+function clearForm(pageId) {
+  const page = document.getElementById(pageId);
+  page.querySelectorAll('input,textarea,select').forEach(el => el.value = '');
+  page.querySelectorAll('.exam-item').forEach(el => {
+    el.classList.remove('checked');
+    el.querySelector('input').checked = false;
+  });
+  // reset tabela de medicamentos para 1 linha
+  if (pageId === 'receita') {
+    const tbody = document.getElementById('med-tbody');
+    tbody.innerHTML = `<tr>
+      <td>1</td>
+      <td><input type="text" placeholder="Ex: Metotrexato 10 mg"></td>
+      <td><input type="text" placeholder="Ex: 1 cp 1x/semana"></td>
+      <td><input type="text" placeholder="Ex: VO / contínuo"></td>
+      <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>
+    </tr>`;
+  }
+}
+
+// ─── Impressão ─────────────────────────────────────────────────────────────────
+function printDoc(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  document.getElementById(pageId).style.display = 'block';
+  window.print();
+  document.querySelectorAll('.page').forEach(p => p.style.display = '');
+  document.querySelectorAll('.page.active').forEach(p => p.style.display = 'block');
+  const active = document.querySelector('.page.active');
+  if (!active) document.getElementById(pageId).style.display = 'block';
+}
+
+// ─── Medicamentos ──────────────────────────────────────────────────────────────
+function addMed() {
+  const tbody = document.getElementById('med-tbody');
+  const n = tbody.rows.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${n}</td>
+    <td><input type="text" placeholder="Medicamento e concentração"></td>
+    <td><input type="text" placeholder="Posologia"></td>
+    <td><input type="text" placeholder="Via / Duração"></td>
+    <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function removeMed(btn) {
+  const tbody = document.getElementById('med-tbody');
+  if (tbody.rows.length <= 1) return;
+  btn.closest('tr').remove();
+  [...tbody.rows].forEach((r, i) => r.cells[0].textContent = i + 1);
+}
+
+// ─── Helpers para Word ─────────────────────────────────────────────────────────
+function v(id) { return (document.getElementById(id)?.value || '').trim(); }
+
+function selectedExams(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return [];
+  return [...el.querySelectorAll('.exam-item.checked label')].map(l => l.textContent);
+}
+
+function labSections() {
+  return [
+    { title: 'Hemograma e Coagulação', id: 'lab-hemo' },
+    { title: 'Bioquímica / Função Renal e Hepática', id: 'lab-bio' },
+    { title: 'Provas de Atividade Inflamatória', id: 'lab-inflam' },
+    { title: 'Sorologias e Autoanticorpos', id: 'lab-sorologia' },
+    { title: 'Metabolismo Ósseo e Vitaminas', id: 'lab-osso' },
+    { title: 'Outros Exames', id: 'lab-outros' },
+  ];
+}
+
+function imgSections() {
+  return [
+    { title: 'Radiografia (RX)', id: 'img-rx' },
+    { title: 'Ultrassonografia (USG)', id: 'img-usg' },
+    { title: 'Tomografia Computadorizada (TC)', id: 'img-tc' },
+    { title: 'Ressonância Magnética (RM)', id: 'img-rm' },
+    { title: 'Densitometria e Outros', id: 'img-outros' },
+  ];
+}
+
+// ─── Gerar Word ────────────────────────────────────────────────────────────────
+function makeDoc(paragraphs) {
+  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, ShadingType } = docx;
+
+  const children = paragraphs.map(p => {
+    if (p.type === 'heading') {
+      return new Paragraph({
+        text: p.text,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 80 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '1a56a0' } },
+        run: { color: '1a56a0', bold: true, size: 24 }
+      });
+    }
+    if (p.type === 'title') {
+      return new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 60 },
+        children: [new TextRun({ text: p.text, bold: true, size: 32, color: '1a56a0' })]
+      });
+    }
+    if (p.type === 'subtitle') {
+      return new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+        children: [new TextRun({ text: p.text, size: 20, color: '718096' })]
+      });
+    }
+    if (p.type === 'label-value') {
+      return new Paragraph({
+        spacing: { after: 60 },
+        children: [
+          new TextRun({ text: p.label + ': ', bold: true, size: 22 }),
+          new TextRun({ text: p.value || '—', size: 22 })
+        ]
+      });
+    }
+    if (p.type === 'multiline') {
+      const lines = (p.value || '—').split('\n');
+      return new Paragraph({
+        spacing: { after: 60 },
+        children: [
+          new TextRun({ text: p.label + ':', bold: true, size: 22, break: 0 }),
+          ...lines.flatMap((l, i) => [
+            new TextRun({ text: '', break: 1 }),
+            new TextRun({ text: l || ' ', size: 22 })
+          ])
+        ]
+      });
+    }
+    if (p.type === 'bullet') {
+      return new Paragraph({
+        bullet: { level: 0 },
+        spacing: { after: 40 },
+        children: [new TextRun({ text: p.text, size: 22 })]
+      });
+    }
+    if (p.type === 'separator') {
+      return new Paragraph({
+        spacing: { before: 200, after: 200 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'cccccc' } },
+        children: []
+      });
+    }
+    if (p.type === 'signature') {
+      return new Paragraph({
+        spacing: { before: 600 },
+        border: { top: { style: BorderStyle.SINGLE, size: 6, color: '2d3748' } },
+        children: [new TextRun({ text: p.text || 'Assinatura e Carimbo', size: 18, color: '4a5568' })]
+      });
+    }
+    return new Paragraph({
+      spacing: { after: 60 },
+      children: [new TextRun({ text: p.text || '', size: 22 })]
+    });
+  });
+
+  return new Document({ sections: [{ children }] });
+}
+
+async function downloadDocx(doc, filename) {
+  const { Packer } = docx;
+  const blob = await Packer.toBlob(doc);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ─── Relatório Word ────────────────────────────────────────────────────────────
+async function gerarWordRelatorio() {
+  const paras = [
+    { type: 'title', text: 'RELATÓRIO MÉDICO' },
+    { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+    { type: 'label-value', label: 'Paciente', value: v('rel-nome') },
+    { type: 'label-value', label: 'Data de Nascimento', value: v('rel-nascimento') },
+    { type: 'label-value', label: 'Idade', value: v('rel-idade') },
+    { type: 'label-value', label: 'Prontuário / Documento', value: v('rel-prontuario') },
+    { type: 'label-value', label: 'Data da Consulta', value: v('rel-data') },
+    { type: 'separator' },
+    { type: 'heading', text: 'Diagnóstico / CID-10' },
+    { type: 'label-value', label: 'Diagnóstico Principal', value: v('rel-diagnostico') },
+    { type: 'label-value', label: 'Diagnósticos Secundários', value: v('rel-diagnostico2') },
+    { type: 'heading', text: 'Anamnese / Histórico Atual' },
+    { type: 'multiline', label: '', value: v('rel-anamnese') },
+    { type: 'heading', text: 'Exame Físico' },
+    { type: 'multiline', label: '', value: v('rel-exfisico') },
+    { type: 'heading', text: 'Exames Complementares Relevantes' },
+    { type: 'multiline', label: '', value: v('rel-exames') },
+    { type: 'heading', text: 'Conduta / Plano Terapêutico' },
+    { type: 'multiline', label: '', value: v('rel-conduta') },
+    ...(v('rel-obs') ? [{ type: 'heading', text: 'Observações' }, { type: 'multiline', label: '', value: v('rel-obs') }] : []),
+    { type: 'separator' },
+    { type: 'label-value', label: 'Médico(a)', value: v('rel-medico') },
+    { type: 'label-value', label: 'CRM', value: v('rel-crm') },
+    { type: 'signature', text: v('rel-medico') + (v('rel-crm') ? ' — ' + v('rel-crm') : '') },
+  ];
+  const doc = makeDoc(paras);
+  const nome = v('rel-nome').replace(/\s+/g,'-') || 'paciente';
+  await downloadDocx(doc, `relatorio-${nome}.docx`);
+}
+
+// ─── Receita Word ──────────────────────────────────────────────────────────────
+async function gerarWordReceita() {
+  const rows = [...document.getElementById('med-tbody').rows];
+  const meds = rows.map(r => {
+    const cells = r.querySelectorAll('td input');
+    return { med: cells[0]?.value||'', pos: cells[1]?.value||'', via: cells[2]?.value||'' };
+  });
+
+  const paras = [
+    { type: 'title', text: 'RECEITA MÉDICA' },
+    { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+    { type: 'label-value', label: 'Paciente', value: v('rx-nome') },
+    { type: 'label-value', label: 'Idade', value: v('rx-idade') },
+    { type: 'label-value', label: 'Endereço', value: v('rx-endereco') },
+    { type: 'label-value', label: 'Data', value: v('rx-data') },
+    { type: 'separator' },
+    { type: 'heading', text: 'Prescrição' },
+    ...meds.filter(m=>m.med).map((m,i) => ({
+      type: 'text',
+      text: `${i+1}. ${m.med}  |  ${m.pos}  |  ${m.via}`
+    })),
+    ...(v('rx-orientacoes') ? [{ type: 'heading', text: 'Orientações ao Paciente' }, { type: 'multiline', label:'', value: v('rx-orientacoes') }] : []),
+    ...(v('rx-obs') ? [{ type: 'heading', text: 'Observações' }, { type: 'multiline', label:'', value: v('rx-obs') }] : []),
+    { type: 'separator' },
+    { type: 'label-value', label: 'Médico(a)', value: v('rx-medico') },
+    { type: 'label-value', label: 'CRM', value: v('rx-crm') },
+    { type: 'signature', text: v('rx-medico') + (v('rx-crm') ? ' — ' + v('rx-crm') : '') },
+  ];
+  const doc = makeDoc(paras);
+  const nome = v('rx-nome').replace(/\s+/g,'-') || 'paciente';
+  await downloadDocx(doc, `receita-${nome}.docx`);
+}
+
+// ─── Exames Lab Word ───────────────────────────────────────────────────────────
+async function gerarWordLab() {
+  const sections = labSections();
+  const paras = [
+    { type: 'title', text: 'SOLICITAÇÃO DE EXAMES LABORATORIAIS' },
+    { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+    { type: 'label-value', label: 'Paciente', value: v('lab-nome') },
+    { type: 'label-value', label: 'Data', value: v('lab-data') },
+    { type: 'label-value', label: 'Diagnóstico / CID', value: v('lab-cid') },
+    { type: 'label-value', label: 'Convênio', value: v('lab-convenio') },
+    { type: 'separator' },
+  ];
+  sections.forEach(sec => {
+    const exams = selectedExams(sec.id);
+    if (exams.length) {
+      paras.push({ type: 'heading', text: sec.title });
+      exams.forEach(e => paras.push({ type: 'bullet', text: e }));
+    }
+  });
+  if (v('lab-adicional')) {
+    paras.push({ type: 'heading', text: 'Exames Adicionais' });
+    paras.push({ type: 'multiline', label: '', value: v('lab-adicional') });
+  }
+  if (v('lab-indicacao')) {
+    paras.push({ type: 'heading', text: 'Indicação Clínica' });
+    paras.push({ type: 'multiline', label: '', value: v('lab-indicacao') });
+  }
+  paras.push({ type: 'separator' });
+  paras.push({ type: 'label-value', label: 'Médico(a)', value: v('lab-medico') });
+  paras.push({ type: 'label-value', label: 'CRM', value: v('lab-crm') });
+  paras.push({ type: 'signature', text: v('lab-medico') + (v('lab-crm') ? ' — ' + v('lab-crm') : '') });
+
+  const doc = makeDoc(paras);
+  const nome = v('lab-nome').replace(/\s+/g,'-') || 'paciente';
+  await downloadDocx(doc, `exames-lab-${nome}.docx`);
+}
+
+// ─── Exames Imagem Word ────────────────────────────────────────────────────────
+async function gerarWordImg() {
+  const sections = imgSections();
+  const paras = [
+    { type: 'title', text: 'SOLICITAÇÃO DE EXAMES DE IMAGEM' },
+    { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+    { type: 'label-value', label: 'Paciente', value: v('img-nome') },
+    { type: 'label-value', label: 'Data', value: v('img-data') },
+    { type: 'label-value', label: 'Diagnóstico / CID', value: v('img-cid') },
+    { type: 'label-value', label: 'Convênio', value: v('img-convenio') },
+    { type: 'separator' },
+  ];
+  sections.forEach(sec => {
+    const exams = selectedExams(sec.id);
+    if (exams.length) {
+      paras.push({ type: 'heading', text: sec.title });
+      exams.forEach(e => paras.push({ type: 'bullet', text: e }));
+    }
+  });
+  if (v('img-adicional')) {
+    paras.push({ type: 'heading', text: 'Exames Adicionais' });
+    paras.push({ type: 'multiline', label: '', value: v('img-adicional') });
+  }
+  if (v('img-indicacao')) {
+    paras.push({ type: 'heading', text: 'Indicação Clínica / Quesitos' });
+    paras.push({ type: 'multiline', label: '', value: v('img-indicacao') });
+  }
+  paras.push({ type: 'separator' });
+  paras.push({ type: 'label-value', label: 'Médico(a)', value: v('img-medico') });
+  paras.push({ type: 'label-value', label: 'CRM', value: v('img-crm') });
+  paras.push({ type: 'signature', text: v('img-medico') + (v('img-crm') ? ' — ' + v('img-crm') : '') });
+
+  const doc = makeDoc(paras);
+  const nome = v('img-nome').replace(/\s+/g,'-') || 'paciente';
+  await downloadDocx(doc, `exames-imagem-${nome}.docx`);
+}
+
+// ─── Datas default ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const hoje = new Date().toISOString().split('T')[0];
+  ['rel-data','rx-data','lab-data','img-data'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = hoje;
+  });
+});
+</script>
+</body>
+</html>
