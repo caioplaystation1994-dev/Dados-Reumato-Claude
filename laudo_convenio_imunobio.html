@@ -247,6 +247,12 @@ header h1{font-size:15px;font-weight:700}
               <span class="pill" onclick="setPill(this,'ar_cid','neg');document.getElementById('p_cid').value='M06.0 — Artrite Reumatoide soronegativa'">Soronegativa (M06.0)</span>
             </div>
           </div>
+          <div id="ea_cid_selector" style="display:none;margin-top:6px">
+            <div class="pill-group">
+              <span class="pill selected" onclick="setPill(this,'ea_cid','m45');document.getElementById('p_cid').value='M45 — Espondilite Anquilosante'">Axial (M45)</span>
+              <span class="pill" onclick="setPill(this,'ea_cid','m46');document.getElementById('p_cid').value='M46.8 — Espondiloartrite axial + periférica'">Axial + Periférica (M46.8)</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1182,6 +1188,8 @@ function selectDisease(d) {
   document.getElementById('p_cid').value=D_CID[d];
   const cidSel=document.getElementById('ar_cid_selector');
   if(cidSel) cidSel.style.display=d==='ar'?'':'none';
+  const eaCidSel=document.getElementById('ea_cid_selector');
+  if(eaCidSel) eaCidSel.style.display=d==='ea'?'':'none';
   document.getElementById('p_data_laudo').value=new Date().toISOString().split('T')[0];
   if(d==='ea') buildBASDAI();
   if(d==='dm') buildMMT8();
@@ -1228,6 +1236,16 @@ function calcAge() {
 function fmtDate(s) {
   if(!s) return '—';
   try{return new Date(s+'T12:00:00').toLocaleDateString('pt-BR');}catch(e){return s;}
+}
+function calcDuracao(inicio) {
+  if(!inicio) return '';
+  const ms = Date.now() - new Date(inicio+'T12:00:00').getTime();
+  const dias = Math.floor(ms/86400000);
+  if(dias<30) return `${dias} dia${dias!==1?'s':''}`;
+  const meses = Math.floor(dias/30.44);
+  if(meses<24) return `${meses} ${meses===1?'mês':'meses'}`;
+  const anos = Math.floor(meses/12);
+  return `${anos} ano${anos!==1?'s':''}`;
 }
 
 function marcarSorologiasNegativas() {
@@ -1747,10 +1765,19 @@ function narrative() {
     if(f.anticcp) atv+=`Anti-CCP: ${f.anticcp==='neg'?'negativo':f.anticcp==='pos_baixo'?'positivo (baixo título)':'positivo (alto título)'}.`;
     if(f.ar_fev1||f.ar_cvf||f.ar_dlco) atv+=` Espirometria${f.ar_espiro_data?' ('+fmtDate(f.ar_espiro_data)+')':''}: FEV1 ${f.ar_fev1||'—'}%, CVF ${f.ar_cvf||'—'}%, FEV1/CVF ${f.ar_fev1cvf||'—'}, DLCO ${f.ar_dlco||'—'}%.${f.ar_espiro_laudo?' '+f.ar_espiro_laudo+'.':''}`;
   } else if(d==='ea'){
-    atv=`BASDAI: ${f.basdai||'—'}/10 (${f.basdai_class||'não calculado'}). ASDAS-PCR: ${f.asdas||'—'} (${f.asdas_class||'não calculado'}). `;
-    if(f.hlab27) atv+=`HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}. `;
-    if(f.ea_tipo) atv+=`Classificação: ${f.ea_tipo==='rad'?'espondiloartrite axial radiográfica (critérios de Nova York modificados)':'espondiloartrite axial não-radiográfica (nr-axSpA)'}.`;
-    if(f.ea_rnm) atv+=` RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}.`;
+    // Build combined EA paragraph weaving diagnosis + activity + current meds
+    const eaTipoTxt = f.ea_tipo==='rad'?'espondiloartrite axial radiográfica':f.ea_tipo==='nrad'?'espondiloartrite axial não-radiográfica (nr-axSpA)':'espondiloartrite axial';
+    const cidTxt = (document.getElementById('p_cid')?.value||'').includes('M46.8') ? 'espondiloartrite axial + periférica' : eaTipoTxt;
+    const meds_atuais = dmards.filter(x=>x.med&&!x.fim);
+    const medsTxt = meds_atuais.length>0 ? meds_atuais.map(x=>`${x.med}${x.dose?' '+x.dose:''}${x.inicio?' há '+calcDuracao(x.inicio):''}` ).join(' e ') : '';
+    const basdaiTxt = f.basdai ? `BASDAI ${parseFloat(f.basdai).toFixed(1)}/10` : '';
+    const asdasTxt = f.asdas ? `ASDAS-PCR ${parseFloat(f.asdas).toFixed(2)}` : '';
+    const scoresTxt = [basdaiTxt,asdasTxt].filter(Boolean).join(' / ');
+    intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${cidTxt}${f.duracao?', com '+f.duracao+' de evolução':''}, ${medsTxt?'mantendo atividade de doença apesar do uso de '+medsTxt:''}.`.replace(/,\s*\.$/, '.').replace(/\s+/g,' ');
+    atv = scoresTxt || '';
+    if(f.hlab27) atv+=`${atv?' | ':''}HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}`;
+    if(f.ea_tipo) atv+=`${atv?'. ':''}Classificação: ${f.ea_tipo==='rad'?'espondiloartrite axial radiográfica (critérios de Nova York modificados)':'espondiloartrite axial não-radiográfica (nr-axSpA)'}`;
+    if(f.ea_rnm) atv+=`. RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}`;
   } else if(d==='aps'){
     atv=`DAPSA: ${f.dapsa||'—'} (${f.dapsa_class||'não calculado'}). `;
     if(f.aps_dom) atv+=`Domínios clínicos: ${f.aps_dom}. `;
@@ -1838,30 +1865,33 @@ function buildPreview() {
       groupedExamRows+=`<tr><td style="color:#2d3748">${it.l}</td><td>${it.r}</td></tr>`;
     });
   });
+  const sep='<div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>';
+  const cidVal=document.getElementById('p_cid').value||'—';
+  // For EA: intro already contains the combined paragraph; atv holds scores/extra
+  // For other diseases: show intro + atv separately
+  const clinicoPar = disease==='ea'
+    ? `<p style="line-height:1.7">${n.intro}${n.atv?' <span style="white-space:nowrap;font-weight:600">(${n.atv})</span>':''}</p>`
+    : `<p style="line-height:1.7">${n.intro}</p>${n.atv?`<p style="margin-top:6px;line-height:1.7">${n.atv}</p>`:''}`;
   document.getElementById('preview-box').innerHTML=`
     <div class="rpt-header">
       <div class="rpt-title">LAUDO MÉDICO — SOLICITAÇÃO DE MEDICAMENTO ESPECIAL</div>
       <div class="rpt-sub">${D_DUT[disease]||''}</div>
     </div>
-    <table><tr><td><b>Nome:</b> ${f.nome||'—'}</td><td><b>DN:</b> ${dnFmt}${f.idade?' ('+f.idade+')':''}</td><td><b>Sexo:</b> ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}</td></tr>
-    <tr><td colspan="3"><b>CID-10:</b> ${document.getElementById('p_cid').value||'—'}</td></tr></table>
-    <div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>
-    <p>${n.intro}</p>
-    <p style="margin-top:6px">${n.atv}</p>
-    <div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>
-    ${dmardRows?`<table><tr><td colspan="5" style="font-weight:600;color:#4a5568;font-size:11px;padding-bottom:4px">HISTÓRICO DE TRATAMENTO</td></tr><tr><td><b>Medicamento</b></td><td><b>Dose</b></td><td><b>Início</b></td><td><b>Suspensão</b></td><td><b>Motivo</b></td></tr>${dmardRows}</table>`:''}
+    <table><tr><td><b>Nome:</b> ${f.nome||'—'}</td>${dnFmt&&dnFmt!=='—'?`<td><b>DN:</b> ${dnFmt}${f.idade?' ('+f.idade+')':''}</td>`:''}<td><b>Sexo:</b> ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}</td></tr>
+    <tr><td colspan="3"><b>CID-10:</b> ${cidVal}</td></tr></table>
+    ${sep}
+    ${clinicoPar}
+    ${dmardRows?sep+`<table>${dmardRows}</table>`:''}
     ${n.bioAntTxt?`<pre style="font-size:12px;white-space:pre-wrap;margin-top:8px">${n.bioAntTxt}</pre>`:''}
-    <div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>
-    ${groupedExamRows?`<table><tr><td colspan="2" style="font-weight:600;color:#4a5568;font-size:11px;padding-bottom:4px">EXAMES PRÉ-AUTORIZAÇÃO</td></tr>${groupedExamRows}</table>`:''}
+    ${groupedExamRows?sep+`<table>${groupedExamRows}</table>`:''}
     ${tbTxt}
-    ${imagens.filter(i=>i.tipo).length>0?`<table style="margin-top:6px"><tr><td colspan="3" style="font-weight:600;color:#4a5568;font-size:11px;padding-bottom:4px">EXAMES DE IMAGEM</td></tr>${imagens.filter(i=>i.tipo).map(i=>`<tr><td>${i.tipo}</td><td>${i.laudo||'—'}</td><td>${fmtDate(i.data)||'—'}</td></tr>`).join('')}</table>`:''}
-    <div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>
+    ${imagens.filter(i=>i.tipo).length>0?`<table style="margin-top:6px">${imagens.filter(i=>i.tipo).map(i=>`<tr><td>${i.tipo}</td><td>${i.laudo||''}</td><td>${fmtDate(i.data)||''}</td></tr>`).join('')}</table>`:''}
+    ${sep}
     <table>
-      <tr><td colspan="2" style="font-weight:600;color:#4a5568;font-size:11px;padding-bottom:4px">MEDICAMENTO SOLICITADO</td></tr>
       <tr><td><b>Medicamento:</b> ${f.med_nome||'—'}</td><td><b>Via:</b> ${f.med_via||'—'}</td></tr>
       <tr><td colspan="2"><b>Posologia:</b> ${f.med_posologia||'—'}</td></tr>
       ${f.med_justificativa?`<tr><td colspan="2"><b>Justificativa:</b> ${f.med_justificativa}</td></tr>`:''}
-      <tr><td colspan="2"><b>Fundamentação normativa:</b> ${D_DUT[disease]||''}</td></tr>
+      <tr><td colspan="2" style="font-size:10px;color:#888"><i>${D_DUT[disease]||''}</i></td></tr>
     </table>
     <div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px;font-size:11px;color:#4a5568">
       <p>Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos estabelecidos para uso do medicamento solicitado.</p>
