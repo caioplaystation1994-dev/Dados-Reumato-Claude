@@ -495,27 +495,15 @@ body{padding-bottom:60px}
       </div>
     </div>
 
-    <div class="section-label">Radiografia (RX)</div>
-    <div class="exam-grid-img" id="img-rx"></div>
-
-    <div class="section-label">Ultrassonografia (USG)</div>
-    <div class="exam-grid-img" id="img-usg"></div>
-
-    <div class="section-label">Tomografia Computadorizada (TC)</div>
-    <div class="exam-grid-img" id="img-tc"></div>
-
-    <div class="section-label">Ressonância Magnética (RM)</div>
-    <div class="exam-grid-img" id="img-rm"></div>
-
-    <div class="section-label">Densitometria e Outros</div>
-    <div class="exam-grid-img" id="img-outros"></div>
+    <div class="section-label">Exames de Imagem</div>
+    <div class="pacotes-grid" id="pacotes-img"></div>
 
     <div class="section-label">Exames Adicionais (texto livre)</div>
     <div class="field-group">
       <textarea id="img-adicional" class="short" placeholder="Outros exames de imagem, com especificação do segmento/lado..."></textarea>
     </div>
 
-    <div class="section-label">Indicação Clínica / Quesitos</div>
+    <div class="section-label print-se-preenchido" data-textarea="img-indicacao">Indicação Clínica / Quesitos</div>
     <div class="field-group">
       <textarea id="img-indicacao" class="short" placeholder="Justificativa clínica e quesitos específicos para o laudo..."></textarea>
     </div>
@@ -612,13 +600,28 @@ const PACOTES_LAB = [
 ];
 
 // ─── Exames de imagem (grade simples) ─────────────────────────────────────────
-const EXAMES_IMG = {
-  'img-rx': ['RX de tórax PA e perfil','RX de coluna cervical (PA, perfil, oblíquas)','RX de coluna lombar (PA, perfil)','RX de coluna total (PA e perfil)','RX de sacroilíacas','RX de mãos e punhos bilaterais','RX de pés bilaterais','RX de quadril (AP da bacia)','RX de joelhos (AP e perfil)','RX de ombros bilaterais','RX de tornozelos bilaterais'],
-  'img-usg': ['USG de articulações de mãos e punhos','USG de ombros bilaterais','USG de quadril bilateral','USG de joelhos bilaterais','USG de tornozelos bilaterais','USG de partes moles','USG abdominal total','USG de glândulas salivares','USG Doppler de vasos periféricos','USG de tireoide','Ecocardiograma'],
-  'img-tc':  ['TC de tórax de alta resolução (TCAR)','TC de tórax com contraste','TC de abdome e pelve','TC de coluna cervical','TC de coluna lombar','TC de sacroilíacas','TC de crânio','TC de seios da face','Angiotomografia'],
-  'img-rm':  ['RM de articulações sacroilíacas','RM de coluna lombar','RM de coluna dorsal','RM de coluna cervical','AngioRM arterial de tórax','AngioRM arterial de crânio','AngioRM venosa de crânio','RM de crânio','AngioRM de aorta torácica','AngioRM de aorta abdominal','RM de coxa direita','RM de coxa esquerda'],
-  'img-outros':['Densitometria óssea (coluna e fêmur)','Densitometria óssea de corpo total','Cintilografia óssea','PET-CT','Capilaroscopia periungueal','Manometria esofágica']
-};
+const PACOTES_IMG = [
+  {
+    id: 'ipkg-rx', titulo: 'Radiografia (RX)',
+    exames: ['RX de tórax PA e perfil','RX de coluna cervical (PA, perfil, oblíquas)','RX de coluna lombar (PA, perfil)','RX de coluna total (PA e perfil)','RX de sacroilíacas','RX de mãos e punhos bilaterais','RX de pés bilaterais','RX de quadril (AP da bacia)','RX de joelhos (AP e perfil)','RX de ombros bilaterais','RX de tornozelos bilaterais']
+  },
+  {
+    id: 'ipkg-usg', titulo: 'Ultrassonografia (USG)',
+    exames: ['USG de articulações de mãos e punhos','USG de ombros bilaterais','USG de quadril bilateral','USG de joelhos bilaterais','USG de tornozelos bilaterais','USG de partes moles','USG abdominal total','USG de glândulas salivares','USG Doppler de vasos periféricos','USG de tireoide','Ecocardiograma']
+  },
+  {
+    id: 'ipkg-tc', titulo: 'Tomografia Computadorizada (TC)',
+    exames: ['TC de tórax de alta resolução (TCAR)','TC de tórax com contraste','TC de abdome e pelve','TC de coluna cervical','TC de coluna lombar','TC de sacroilíacas','TC de crânio','TC de seios da face','Angiotomografia']
+  },
+  {
+    id: 'ipkg-rm', titulo: 'Ressonância Magnética (RM)',
+    exames: ['RM de articulações sacroilíacas','RM de coluna lombar','RM de coluna dorsal','RM de coluna cervical','AngioRM arterial de tórax','AngioRM arterial de crânio','AngioRM venosa de crânio','RM de crânio','AngioRM de aorta torácica','AngioRM de aorta abdominal','RM de coxa direita','RM de coxa esquerda']
+  },
+  {
+    id: 'ipkg-outros', titulo: 'Densitometria e Outros',
+    exames: ['Densitometria óssea (coluna e fêmur)','Densitometria óssea de corpo total','Cintilografia óssea','PET-CT','Capilaroscopia periungueal','Manometria esofágica']
+  }
+];
 
 // ─── Renderizar pacotes laboratoriais ─────────────────────────────────────────
 function renderPacotes() {
@@ -697,23 +700,35 @@ function expandPacote(pkgId) {
   toggle.textContent = hidden ? '▼' : '▶';
 }
 
-// ─── Renderizar checkboxes de imagem ──────────────────────────────────────────
-function renderImgExams() {
-  Object.entries(EXAMES_IMG).forEach(([id, list]) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = list.map(name => `
-      <div class="exam-item" onclick="toggleExam(this)">
-        <input type="checkbox" onclick="event.stopPropagation(); toggleExam(this.parentElement)">
-        <label>${name}</label>
-      </div>`).join('');
-  });
+// ─── Renderizar pacotes de imagem ─────────────────────────────────────────────
+function renderPacotesImg() {
+  const container = document.getElementById('pacotes-img');
+  if (!container) return;
+  container.innerHTML = PACOTES_IMG.map(pkg => `
+    <div class="pacote" id="${pkg.id}">
+      <div class="pacote-header" onclick="togglePacote('${pkg.id}')">
+        <input type="checkbox" class="pacote-check" id="${pkg.id}-cb"
+          onclick="event.stopPropagation(); togglePacoteCb('${pkg.id}')">
+        <span class="pacote-titulo">${pkg.titulo}</span>
+        <span class="pacote-toggle" onclick="event.stopPropagation(); expandPacote('${pkg.id}')">▼</span>
+      </div>
+      <div class="pacote-items" id="${pkg.id}-items">
+        ${pkg.exames.map((e, i) => `
+          <div class="exam-item" id="${pkg.id}-exam-${i}" onclick="toggleExamItem('${pkg.id}',${i})">
+            <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${pkg.id}',${i})">
+            <label>${e}</label>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
 }
 
-function toggleExam(el) {
-  const cb = el.querySelector('input[type=checkbox]');
-  cb.checked = !cb.checked;
-  el.classList.toggle('checked', cb.checked);
+function selectedImgFromPacotes() {
+  const result = [];
+  PACOTES_IMG.forEach(pkg => {
+    const items = [...document.querySelectorAll(`#${pkg.id}-items .exam-item.checked label`)].map(l => l.textContent);
+    if (items.length) result.push({ titulo: pkg.titulo, exames: items });
+  });
+  return result;
 }
 
 // ─── Navegação ─────────────────────────────────────────────────────────────────
@@ -730,12 +745,22 @@ function clearForm(pageId) {
   page.querySelectorAll('input[type=text],input[type=date],textarea,select').forEach(el => {
     if (!el.classList.contains('pacote-check')) el.value = '';
   });
-  // checkboxes de imagem
+  // checkboxes (lab e imagem)
   page.querySelectorAll('.exam-item').forEach(el => {
     el.classList.remove('checked');
     const cb = el.querySelector('input[type=checkbox]');
     if (cb) cb.checked = false;
   });
+  // pacotes de imagem
+  if (pageId === 'exames-img') {
+    PACOTES_IMG.forEach(pkg => {
+      const pkgEl = document.getElementById(pkg.id);
+      if (!pkgEl) return;
+      pkgEl.classList.remove('selected');
+      const pkgCb = document.getElementById(pkg.id + '-cb');
+      if (pkgCb) { pkgCb.checked = false; pkgCb.indeterminate = false; }
+    });
+  }
   // pacotes lab
   if (pageId === 'exames-lab') {
     PACOTES_LAB.forEach(pkg => {
@@ -769,14 +794,6 @@ function prepararImpressao(ids) {
     const temMarcado = pkg.querySelectorAll('.exam-item.checked').length > 0;
     pkg.classList.toggle('sem-selecao', !temMarcado);
   });
-  document.querySelectorAll('.exam-grid-img').forEach(grid => {
-    const temMarcado = grid.querySelectorAll('.exam-item.checked').length > 0;
-    grid.classList.toggle('section-img-vazia', !temMarcado);
-    const label = grid.previousElementSibling;
-    if (label?.classList.contains('section-label')) {
-      label.classList.toggle('section-img-vazia', !temMarcado);
-    }
-  });
   // Cabeçalhos de seção condicionais (só aparecem se textarea preenchida)
   document.querySelectorAll('.section-label.print-se-preenchido').forEach(label => {
     const taId = label.dataset.textarea;
@@ -793,7 +810,6 @@ function prepararImpressao(ids) {
 function limparImpressao() {
   DOCS.forEach(id => document.getElementById(id).classList.remove('print-selected'));
   document.querySelectorAll('.pacote').forEach(p => p.classList.remove('sem-selecao'));
-  document.querySelectorAll('.section-img-vazia').forEach(el => el.classList.remove('section-img-vazia'));
   document.querySelectorAll('.oculto-impressao').forEach(el => el.classList.remove('oculto-impressao'));
   if (document._tituloOriginal !== undefined) {
     document.title = document._tituloOriginal;
@@ -1044,13 +1060,7 @@ async function gerarWordLab() {
 }
 
 async function gerarWordImg() {
-  const sections = [
-    { title: 'Radiografia (RX)', id: 'img-rx' },
-    { title: 'Ultrassonografia (USG)', id: 'img-usg' },
-    { title: 'Tomografia Computadorizada (TC)', id: 'img-tc' },
-    { title: 'Ressonância Magnética (RM)', id: 'img-rm' },
-    { title: 'Densitometria e Outros', id: 'img-outros' },
-  ];
+  const sections = selectedImgFromPacotes();
   const paras = [
     { type: 'title', text: 'SOLICITAÇÃO DE EXAMES DE IMAGEM' },
     { type: 'subtitle', text: localAtual() },
@@ -1060,11 +1070,8 @@ async function gerarWordImg() {
     { type: 'separator' },
   ];
   sections.forEach(sec => {
-    const exams = selectedExamsImg(sec.id);
-    if (exams.length) {
-      paras.push({ type: 'heading', text: sec.title });
-      exams.forEach(e => paras.push({ type: 'bullet', text: e }));
-    }
+    paras.push({ type: 'heading', text: sec.titulo });
+    sec.exames.forEach(e => paras.push({ type: 'bullet', text: e }));
   });
   if (v('img-adicional')) {
     paras.push({ type: 'heading', text: 'Exames Adicionais' });
@@ -1127,7 +1134,7 @@ function localAtual() {
 // ─── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   renderPacotes();
-  renderImgExams();
+  renderPacotesImg();
   atualizarLocal();
   const hoje = new Date().toISOString().split('T')[0];
   ['rel-data','rx-data','lab-data','img-data'].forEach(id => {
