@@ -323,6 +323,10 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
 
     <div class="pacotes-grid" id="pacotes-lab"></div>
 
+    <div id="hlab27-aviso" style="display:none;background:#fffbeb;border:1.5px solid #f6ad55;border-radius:8px;padding:10px 14px;margin-top:4px;font-size:12px;color:#7b341e">
+      ⚠️ <strong>HLA-B27</strong> selecionado — será gerado um <strong>arquivo .docx separado</strong> com a solicitação e indicação clínica específica para espondiloartrite.
+    </div>
+
     <div class="section-label">Exames Adicionais (texto livre)</div>
     <div class="field-group">
       <textarea id="lab-adicional" class="short" placeholder="Outros exames não listados acima..."></textarea>
@@ -483,7 +487,18 @@ const PACOTES_LAB = [
   },
   {
     id: 'pkg-osseo', titulo: 'Perfil Ósseo',
-    exames: ['Hemograma','Creatinina','Ureia']
+    exames: [
+      'Hemograma','Creatinina','Ureia',
+      'Sódio','Potássio','Cálcio',
+      'Proteínas totais e frações','Fósforo','Fosfatase Alcalina',
+      'Gama GT','TGP (ALT)','TGO (AST)',
+      'PTH','TSH','T4 livre','Urina tipo 1'
+    ]
+  },
+  {
+    id: 'pkg-hlab27', titulo: 'HLA-B27',
+    exames: ['HLA-B27'],
+    relatorio: 'Paciente em investigação de espondiloartrite axial e periférica, solicito HLA-B27 para complementar investigação diagnóstica.\nCID: M45'
   }
 ];
 
@@ -517,18 +532,25 @@ function renderPacotes() {
     </div>`).join('');
 }
 
+function atualizarAvisoHla() {
+  const aviso = document.getElementById('hlab27-aviso');
+  if (!aviso) return;
+  const algum = [...document.querySelectorAll('#pkg-hlab27-items .exam-item')].some(el => el.classList.contains('checked'));
+  aviso.style.display = algum ? '' : 'none';
+}
+
 function togglePacote(pkgId) {
   const cb = document.getElementById(pkgId + '-cb');
   const novoEstado = !cb.checked;
   cb.checked = novoEstado;
   const pacote = document.getElementById(pkgId);
   pacote.classList.toggle('selected', novoEstado);
-  // marcar/desmarcar todos os exames internos
   document.querySelectorAll(`#${pkgId}-items .exam-item`).forEach(el => {
     const c = el.querySelector('input[type=checkbox]');
     c.checked = novoEstado;
     el.classList.toggle('checked', novoEstado);
   });
+  atualizarAvisoHla();
 }
 
 function togglePacoteCb(pkgId) {
@@ -540,6 +562,7 @@ function togglePacoteCb(pkgId) {
     c.checked = cb.checked;
     el.classList.toggle('checked', cb.checked);
   });
+  atualizarAvisoHla();
 }
 
 function toggleExamItem(pkgId, idx) {
@@ -547,7 +570,6 @@ function toggleExamItem(pkgId, idx) {
   const cb = el.querySelector('input[type=checkbox]');
   cb.checked = !cb.checked;
   el.classList.toggle('checked', cb.checked);
-  // atualizar estado do pacote
   const items = [...document.querySelectorAll(`#${pkgId}-items .exam-item`)];
   const algum = items.some(i => i.classList.contains('checked'));
   const todos = items.every(i => i.classList.contains('checked'));
@@ -555,6 +577,7 @@ function toggleExamItem(pkgId, idx) {
   pkgCb.checked = todos;
   pkgCb.indeterminate = algum && !todos;
   document.getElementById(pkgId).classList.toggle('selected', algum);
+  atualizarAvisoHla();
 }
 
 function expandPacote(pkgId) {
@@ -791,33 +814,67 @@ async function gerarWordReceita() {
 }
 
 async function gerarWordLab() {
-  const sections = selectedLabFromPacotes();
-  const paras = [
-    { type: 'title', text: 'SOLICITAÇÃO DE EXAMES LABORATORIAIS' },
-    { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
-    { type: 'label-value', label: 'Paciente', value: v('lab-nome') },
-    { type: 'label-value', label: 'Data', value: v('lab-data') },
-    { type: 'label-value', label: 'Diagnóstico / CID', value: v('lab-cid') },
-    { type: 'label-value', label: 'Convênio', value: v('lab-convenio') },
-    { type: 'separator' },
-  ];
-  sections.forEach(sec => {
-    paras.push({ type: 'heading', text: sec.titulo });
-    sec.exames.forEach(e => paras.push({ type: 'bullet', text: e }));
-  });
-  if (v('lab-adicional')) {
-    paras.push({ type: 'heading', text: 'Exames Adicionais' });
-    paras.push({ type: 'multiline', value: v('lab-adicional') });
+  const allSections = selectedLabFromPacotes();
+  // Separar HLA-B27 das demais seções
+  const hlaSection = allSections.find(s => s.titulo === 'HLA-B27');
+  const sections = allSections.filter(s => s.titulo !== 'HLA-B27');
+
+  const nomePaciente = v('lab-nome') || 'paciente';
+  const medico = v('lab-medico');
+  const crm = v('lab-crm');
+  const assinatura = medico + (crm ? ' — ' + crm : '');
+
+  // Documento principal (sem HLA-B27)
+  if (sections.length || v('lab-adicional') || v('lab-indicacao')) {
+    const paras = [
+      { type: 'title', text: 'SOLICITAÇÃO DE EXAMES LABORATORIAIS' },
+      { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+      { type: 'label-value', label: 'Paciente', value: nomePaciente },
+      { type: 'label-value', label: 'Data', value: v('lab-data') },
+      { type: 'label-value', label: 'Diagnóstico / CID', value: v('lab-cid') },
+      { type: 'label-value', label: 'Convênio', value: v('lab-convenio') },
+      { type: 'separator' },
+    ];
+    sections.forEach(sec => {
+      paras.push({ type: 'heading', text: sec.titulo });
+      sec.exames.forEach(e => paras.push({ type: 'bullet', text: e }));
+    });
+    if (v('lab-adicional')) {
+      paras.push({ type: 'heading', text: 'Exames Adicionais' });
+      paras.push({ type: 'multiline', value: v('lab-adicional') });
+    }
+    if (v('lab-indicacao')) {
+      paras.push({ type: 'heading', text: 'Indicação Clínica' });
+      paras.push({ type: 'multiline', value: v('lab-indicacao') });
+    }
+    paras.push({ type: 'separator' });
+    paras.push({ type: 'label-value', label: 'Médico(a)', value: medico });
+    paras.push({ type: 'label-value', label: 'CRM', value: crm });
+    paras.push({ type: 'signature', text: assinatura });
+    await downloadDocx(makeDoc(paras), `exames-lab-${nomePaciente.replace(/\s+/g,'-')}.docx`);
   }
-  if (v('lab-indicacao')) {
-    paras.push({ type: 'heading', text: 'Indicação Clínica' });
-    paras.push({ type: 'multiline', value: v('lab-indicacao') });
+
+  // Documento separado para HLA-B27
+  if (hlaSection) {
+    const relatorio = PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
+    const parasHla = [
+      { type: 'title', text: 'SOLICITAÇÃO DE EXAME LABORATORIAL' },
+      { type: 'subtitle', text: 'Ambulatório de Reumatologia' },
+      { type: 'label-value', label: 'Paciente', value: nomePaciente },
+      { type: 'label-value', label: 'Data', value: v('lab-data') },
+      { type: 'label-value', label: 'Convênio', value: v('lab-convenio') },
+      { type: 'separator' },
+      { type: 'heading', text: 'Exame Solicitado' },
+      { type: 'bullet', text: 'HLA-B27' },
+      { type: 'heading', text: 'Indicação Clínica' },
+      { type: 'multiline', value: relatorio },
+      { type: 'separator' },
+      { type: 'label-value', label: 'Médico(a)', value: medico },
+      { type: 'label-value', label: 'CRM', value: crm },
+      { type: 'signature', text: assinatura },
+    ];
+    await downloadDocx(makeDoc(parasHla), `HLA-B27-${nomePaciente.replace(/\s+/g,'-')}.docx`);
   }
-  paras.push({ type: 'separator' });
-  paras.push({ type: 'label-value', label: 'Médico(a)', value: v('lab-medico') });
-  paras.push({ type: 'label-value', label: 'CRM', value: v('lab-crm') });
-  paras.push({ type: 'signature', text: v('lab-medico') + (v('lab-crm') ? ' — ' + v('lab-crm') : '') });
-  await downloadDocx(makeDoc(paras), `exames-lab-${(v('lab-nome')||'paciente').replace(/\s+/g,'-')}.docx`);
 }
 
 async function gerarWordImg() {
