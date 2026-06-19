@@ -1929,14 +1929,13 @@ function buildPreview() {
     ${tbTxt}
     ${imagens.filter(i=>i.tipo).length>0?`<div style="margin-top:6px">${imagens.filter(i=>i.tipo).map(i=>`<p style="margin:3px 0"><b>${i.tipo}:</b> ${i.laudo||''}${i.data?' ('+fmtDate(i.data)+')':''}</p>`).join('')}</div>`:''}
     ${sep}
-    <p style="line-height:1.8"><b>${f.med_nome||'—'}</b> — via ${f.med_via||'—'}</p>
-    <p style="white-space:pre-wrap;font-size:12px;line-height:1.7">${f.med_posologia||'—'}</p>
+    <p style="line-height:1.8">Dessa forma, solicito a introdução de <b>${f.med_nome||'—'}</b> via ${f.med_via||'—'}, conforme posologia abaixo:</p>
+    <p style="white-space:pre-wrap;font-size:12px;line-height:1.7;margin-top:6px">${f.med_posologia||'—'}</p>
     ${f.med_justificativa?`<p style="margin-top:6px;font-size:12px;color:#444"><i>${f.med_justificativa}</i></p>`:''}
     <p style="font-size:10px;color:#888;margin-top:6px"><i>${D_DUT[disease]||''}</i></p>
-    <div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px;font-size:11px;color:#4a5568">
-      <p>Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos estabelecidos para uso do medicamento solicitado.</p>
-      <br><p style="margin-top:24px">_______________________________</p>
-      <p><b>Dr(a). ${f.medico||'_______________'}</b></p>
+    <div style="margin-top:32px;padding-top:16px;font-size:11px;color:#4a5568">
+      <p style="margin-bottom:4px">Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos estabelecidos para uso do medicamento solicitado.</p>
+      <p style="margin-top:32px;border-top:1px solid #4a5568;padding-top:4px;display:inline-block;min-width:220px"><b>Dr(a). ${f.medico||'_______________'}</b></p>
       <p>CRM: ${f.crm||'_______________'}</p>
       <p>${f.cidade||'_______________'}, ${dataL}</p>
     </div>`;
@@ -2015,8 +2014,8 @@ function genPDF() {
   }
 
   y+=4;
-  addText(`Medicamento: ${f.med_nome||'—'}     Via: ${f.med_via||'—'}`);
-  addText(`Posologia: ${f.med_posologia||'—'}`);
+  addText(`Dessa forma, solicito a introdução de ${f.med_nome||'—'} via ${f.med_via||'—'}, conforme posologia abaixo:`);
+  addText(f.med_posologia||'—',9);
   if(f.med_justificativa) addText(`Justificativa: ${f.med_justificativa}`);
   addText(`Fundamentação: ${D_DUT[disease]||''}`,9,'italic',[80,80,80]);
 
@@ -2077,9 +2076,8 @@ function genDOCX() {
   Object.entries(docxExamsByDate).forEach(([dt,items])=>children.push(p(`${dt} — ${items.join(' / ')}`)));
   const imgRowsW=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
   if(imgRowsW.length>0) children.push(tbl(['Exame de Imagem','Laudo','Data'],imgRowsW));
-  children.push(b('Medicamento: ',f.med_nome));
-  children.push(b('Via de administração: ',f.med_via));
-  children.push(b('Posologia: ',f.med_posologia));
+  children.push(p(`Dessa forma, solicito a introdução de ${f.med_nome||'—'} via ${f.med_via||'—'}, conforme posologia abaixo:`));
+  children.push(p(f.med_posologia||'—'));
   if(f.med_justificativa) children.push(b('Justificativa: ',f.med_justificativa));
   children.push(b('Fundamentação normativa: ',D_DUT[disease]||''));
   children.push(new Paragraph({spacing:{before:600}}));
