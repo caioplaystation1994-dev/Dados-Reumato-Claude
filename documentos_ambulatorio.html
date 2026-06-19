@@ -144,6 +144,10 @@ body{padding-bottom:60px}
   /* Textareas vazias não imprimem */
   .field-group textarea:placeholder-shown{display:none!important}
 
+  /* Cabeçalhos condicionais */
+  .no-print{display:none!important}
+  .section-label.oculto-impressao{display:none!important}
+
   /* Seções de imagem vazias */
   .section-img-vazia{display:none!important}
   .exam-grid-img{display:flex;flex-wrap:wrap;gap:4px}
@@ -226,10 +230,6 @@ body{padding-bottom:60px}
       </div>
     </div>
     <div class="field-row">
-      <div class="field-group">
-        <label>Número do Prontuário / RG / CPF</label>
-        <input type="text" id="rel-prontuario">
-      </div>
       <div class="field-group w-auto" style="flex:0 0 160px">
         <label>Data da Consulta</label>
         <input type="date" id="rel-data">
@@ -242,33 +242,29 @@ body{padding-bottom:60px}
         <label>Diagnóstico Principal</label>
         <input type="text" id="rel-diagnostico" placeholder="Ex: Artrite Reumatoide – M05.8">
       </div>
-      <div class="field-group">
-        <label>Diagnósticos Secundários</label>
-        <input type="text" id="rel-diagnostico2" placeholder="Ex: Osteoporose – M81.0">
-      </div>
     </div>
 
-    <div class="section-label">Anamnese / Histórico Atual</div>
+    <div class="section-label no-print">Anamnese / Histórico Atual</div>
     <div class="field-group">
       <textarea id="rel-anamnese" class="tall" placeholder="Queixa principal, evolução da doença, sintomas atuais..."></textarea>
     </div>
 
-    <div class="section-label">Exame Físico</div>
+    <div class="section-label print-se-preenchido" data-textarea="rel-exfisico">Exame Físico</div>
     <div class="field-group">
       <textarea id="rel-exfisico" class="tall" placeholder="PA: ___x___ mmHg  |  FC: ___ bpm  |  FR: ___ irpm  |  T: ___°C  |  Peso: ___ kg&#10;&#10;Articular: &#10;Extra-articular: "></textarea>
     </div>
 
-    <div class="section-label">Exames Complementares Relevantes</div>
+    <div class="section-label print-se-preenchido" data-textarea="rel-exames">Exames Complementares Relevantes</div>
     <div class="field-group">
       <textarea id="rel-exames" class="tall" placeholder="Resultados laboratoriais e de imagem recentes..."></textarea>
     </div>
 
-    <div class="section-label">Conduta / Plano Terapêutico</div>
+    <div class="section-label print-se-preenchido" data-textarea="rel-conduta">Conduta / Plano Terapêutico</div>
     <div class="field-group">
       <textarea id="rel-conduta" class="tall" placeholder="Medicações prescritas, orientações, encaminhamentos, próxima consulta..."></textarea>
     </div>
 
-    <div class="section-label">Observações</div>
+    <div class="section-label print-se-preenchido" data-textarea="rel-obs">Observações</div>
     <div class="field-group">
       <textarea id="rel-obs" class="short" placeholder="Informações adicionais relevantes..."></textarea>
     </div>
@@ -746,6 +742,14 @@ function prepararImpressao(ids) {
       label.classList.toggle('section-img-vazia', !temMarcado);
     }
   });
+  // Cabeçalhos de seção condicionais (só aparecem se textarea preenchida)
+  document.querySelectorAll('.section-label.print-se-preenchido').forEach(label => {
+    const taId = label.dataset.textarea;
+    const ta = taId ? document.getElementById(taId) : null;
+    const vazio = !ta || ta.value.trim() === '';
+    label.classList.toggle('oculto-impressao', vazio);
+  });
+
   // Zera título para não aparecer no cabeçalho do browser na impressão
   document._tituloOriginal = document.title;
   document.title = ' ';
@@ -755,6 +759,7 @@ function limparImpressao() {
   DOCS.forEach(id => document.getElementById(id).classList.remove('print-selected'));
   document.querySelectorAll('.pacote').forEach(p => p.classList.remove('sem-selecao'));
   document.querySelectorAll('.section-img-vazia').forEach(el => el.classList.remove('section-img-vazia'));
+  document.querySelectorAll('.oculto-impressao').forEach(el => el.classList.remove('oculto-impressao'));
   if (document._tituloOriginal !== undefined) {
     document.title = document._tituloOriginal;
     delete document._tituloOriginal;
@@ -872,12 +877,10 @@ async function gerarWordRelatorio() {
     { type: 'label-value', label: 'Paciente', value: v('rel-nome') },
     { type: 'label-value', label: 'Data de Nascimento', value: v('rel-nascimento') },
     { type: 'label-value', label: 'Idade', value: v('rel-idade') },
-    { type: 'label-value', label: 'Prontuário / Documento', value: v('rel-prontuario') },
     { type: 'label-value', label: 'Data da Consulta', value: v('rel-data') },
     { type: 'separator' },
     { type: 'heading', text: 'Diagnóstico / CID-10' },
     { type: 'label-value', label: 'Diagnóstico Principal', value: v('rel-diagnostico') },
-    { type: 'label-value', label: 'Diagnósticos Secundários', value: v('rel-diagnostico2') },
     { type: 'heading', text: 'Anamnese / Histórico Atual' },
     { type: 'multiline', value: v('rel-anamnese') },
     { type: 'heading', text: 'Exame Físico' },
