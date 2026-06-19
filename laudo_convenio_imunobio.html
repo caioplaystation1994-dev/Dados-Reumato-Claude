@@ -1069,36 +1069,36 @@ const MED_OPTS = {
 // vias: array = múltiplas opções para seletor; string = via única
 // pesoDep: true = posologia calculada com peso do paciente
 const MED_INFO = {
-  'Adalimumabe':{via:'Subcutânea (SC)',pos:'40 mg SC a cada 14 dias'},
-  'Etanercepte':{via:'Subcutânea (SC)',pos:'50 mg SC uma vez por semana'},
-  'Infliximabe':{via:'Endovenosa (EV)',pos:'3–5 mg/kg EV nas semanas 0, 2, 6 e a seguir a cada 8 semanas',pesoDep:true,posPeso:(kg)=>`${(3*kg).toFixed(0)}–${(5*kg).toFixed(0)} mg EV nas semanas 0, 2, 6 e a cada 8 semanas (3–5 mg/kg; peso: ${kg} kg)`},
-  'Certolizumabe pegol':{via:'Subcutânea (SC)',pos:'400 mg SC nas semanas 0, 2 e 4 (ataque), depois 200 mg a cada 2 semanas'},
-  'Golimumabe':{via:['Subcutânea (SC)','Endovenosa (EV)'],pos:{sc:'50 mg SC mensalmente',ev:'2 mg/kg EV nas semanas 0, 4 e depois a cada 8 semanas',evPeso:(kg)=>`${(2*kg).toFixed(0)} mg EV nas semanas 0, 4 e depois a cada 8 semanas (2 mg/kg; peso: ${kg} kg)`},pesoDep:true},
-  'Tocilizumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'8 mg/kg EV a cada 4 semanas',evPeso:(kg)=>`${(8*kg).toFixed(0)} mg EV a cada 4 semanas (8 mg/kg; peso: ${kg} kg)`,sc:'162 mg SC semanalmente'},pesoDep:true},
-  'Abatacepte':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois a cada 4 semanas',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois a cada 4 semanas (10 mg/kg; peso: ${kg} kg)`,sc:'125 mg SC semanalmente'},pesoDep:true},
-  'Rituximabe':{via:'Endovenosa (EV)',pos:'1000 mg EV, 2 doses com intervalo de 15 dias (protocolo AR/vasculite)'},
-  'Baricitinibe':{via:'Oral (VO)',pos:'2–4 mg VO uma vez ao dia (ajustar conforme TFG)'},
-  'Tofacitinibe':{via:'Oral (VO)',pos:'5 mg VO duas vezes ao dia (ou 11 mg liberação prolongada uma vez ao dia)'},
-  'Upadacitinibe':{via:'Oral (VO)',pos:'15 mg VO uma vez ao dia'},
-  'Secuquinumabe':{via:'Subcutânea (SC)',pos:'150–300 mg SC nas semanas 0, 1, 2, 3, 4 (ataque), depois mensalmente'},
-  'Ixequizumabe':{via:'Subcutânea (SC)',pos:'160 mg SC (ataque), depois 80 mg a cada 2 semanas por 12 semanas, depois 80 mg mensalmente'},
-  'Ustequinumabe':{via:['Endovenosa (EV) — Ataque','Subcutânea (SC) — Manutenção'],pos:{ev:'Ataque: dose única EV peso-dependente (260 mg se ≤55 kg; 390 mg se 55–85 kg; 520 mg se >85 kg). Manutenção: 90 mg SC a cada 12 semanas a partir da semana 16.',evPeso:(kg)=>`Ataque: ${kg<=55?260:kg<=85?390:520} mg EV dose única (peso: ${kg} kg). Manutenção: 90 mg SC a cada 12 semanas a partir da semana 16.`,sc:'90 mg SC a cada 12 semanas (manutenção; após ataque EV prévio)'},pesoDep:true},
-  'Guselcumabe':{via:'Subcutânea (SC)',pos:'100 mg SC nas semanas 0, 4 e depois a cada 8 semanas'},
-  'Risanquizumabe':{via:['Endovenosa (EV) — Indução','Subcutânea (SC) — Manutenção'],pos:{ev:'Indução: 600 mg EV nas semanas 0, 4 e 8 (total de 3 infusões). Manutenção: 360 mg SC a cada 8 semanas a partir da semana 16.',sc:'360 mg SC a cada 8 semanas (manutenção; após indução EV prévia)'}},
-  'Bimekizumabe':{via:'Subcutânea (SC)',pos:'320 mg SC a cada 4 semanas nas primeiras 16 semanas (ataque), depois 320 mg SC a cada 8 semanas (manutenção)'},
-  'Apremilaste':{via:'Oral (VO)',pos:'30 mg VO duas vezes ao dia (após titulação gradual de 5 dias)'},
-  'Belimumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois mensalmente',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois mensalmente (10 mg/kg; peso: ${kg} kg)`,sc:'200 mg SC semanalmente'},pesoDep:true},
-  'Anifrolumabe':{via:'Endovenosa (EV)',pos:'300 mg EV a cada 4 semanas'},
-  'Mepolizumabe':{via:'Subcutânea (SC)',pos:'300 mg SC a cada 4 semanas'},
-  'Imunoglobulina Humana IV (IVIG)':{via:'Endovenosa (EV)',pos:'2 g/kg EV divididos em 2–5 dias por ciclo',pesoDep:true,posPeso:(kg)=>`${(2*kg).toFixed(0)} g EV divididos em 2–5 dias por ciclo (2 g/kg; peso: ${kg} kg), repetir mensalmente por 3–6 meses`},
+  'Adalimumabe':{via:'Subcutânea (SC)',pos:'Uso subcutâneo contínuo\n\nAdalimumabe 40 mg/0,8 mL (seringa ou caneta pré-preenchida)\nAdministrar 40 mg (1 seringa) via subcutânea, 1x a cada 14 dias, por tempo indeterminado.\nRotacionar os locais de aplicação (abdome, coxa ou braço).'},
+  'Etanercepte':{via:'Subcutânea (SC)',pos:'Uso subcutâneo contínuo\n\nEtanercepte 50 mg/mL (seringa pré-preenchida)\nAdministrar 50 mg (1 seringa) via subcutânea, 1x por semana, por tempo indeterminado.\nRotacionar os locais de aplicação.'},
+  'Infliximabe':{via:'Endovenosa (EV)',pos:'Uso endovenoso em regime de indução e manutenção\n\nInfliximabe 100 mg/frasco (pó liofilizado para reconstituição)\nEsquema:\n— Semana 0: dose inicial EV (conforme peso)\n— Semana 2: segunda dose EV\n— Semana 6: terceira dose EV\n— A partir daí: manutenção a cada 8 semanas\nInfundir diluído em SF 0,9% por no mínimo 2 horas, com pré-medicação.',pesoDep:true,posPeso:(kg)=>`Uso endovenoso em regime de indução e manutenção\n\nInfliximabe 100 mg/frasco (pó liofilizado)\nDose calculada: ${(3*kg).toFixed(0)}–${(5*kg).toFixed(0)} mg EV (3–5 mg/kg × ${kg} kg)\nEsquema:\n— Semana 0: ${(3*kg).toFixed(0)}–${(5*kg).toFixed(0)} mg EV\n— Semana 2: ${(3*kg).toFixed(0)}–${(5*kg).toFixed(0)} mg EV\n— Semana 6: ${(3*kg).toFixed(0)}–${(5*kg).toFixed(0)} mg EV\n— Manutenção: a cada 8 semanas\nInfundir em SF 0,9% por no mínimo 2 horas, com pré-medicação.`},
+  'Certolizumabe pegol':{via:'Subcutânea (SC)',pos:'Uso subcutâneo em regime de indução e manutenção\n\nCertolizumabe pegol 200 mg/mL (seringa pré-preenchida)\nIndução:\n— Semana 0: 400 mg SC (2 seringas de 200 mg)\n— Semana 2: 400 mg SC (2 seringas)\n— Semana 4: 400 mg SC (2 seringas)\nManutenção:\n— 200 mg SC a cada 2 semanas, por tempo indeterminado.'},
+  'Golimumabe':{via:['Subcutânea (SC)','Endovenosa (EV)'],pos:{sc:'Uso subcutâneo contínuo\n\nGolimumabe 50 mg/0,5 mL (seringa ou caneta pré-preenchida)\nAdministrar 50 mg (1 seringa) via subcutânea, 1x por mês (a cada 4 semanas), por tempo indeterminado.',ev:'Uso endovenoso em regime de indução e manutenção\n\nGolimumabe 50 mg/4 mL (concentrado para infusão)\nDose: 2 mg/kg EV\nEsquema:\n— Semana 0: dose inicial EV\n— Semana 4: segunda dose EV\n— Manutenção: a cada 8 semanas\nInfundir diluído em SF 0,9% por 30 minutos.',evPeso:(kg)=>`Uso endovenoso em regime de indução e manutenção\n\nGolimumabe 50 mg/4 mL (concentrado para infusão)\nDose calculada: ${(2*kg).toFixed(0)} mg EV (2 mg/kg × ${kg} kg)\nEsquema:\n— Semana 0: ${(2*kg).toFixed(0)} mg EV\n— Semana 4: ${(2*kg).toFixed(0)} mg EV\n— Manutenção: ${(2*kg).toFixed(0)} mg EV a cada 8 semanas\nInfundir em SF 0,9% por 30 minutos.`},pesoDep:true},
+  'Tocilizumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'Uso endovenoso contínuo\n\nTocilizumabe 20 mg/mL (concentrado para infusão)\nDose: 8 mg/kg EV a cada 4 semanas\nInfundir diluído em SF 0,9% (volume final 100 mL) por 60 minutos.',evPeso:(kg)=>`Uso endovenoso contínuo\n\nTocilizumabe 20 mg/mL (concentrado para infusão)\nDose calculada: ${(8*kg).toFixed(0)} mg EV (8 mg/kg × ${kg} kg), a cada 4 semanas\nInfundir diluído em SF 0,9% (volume final 100 mL) por 60 minutos.`,sc:'Uso subcutâneo contínuo\n\nTocilizumabe 162 mg/0,9 mL (seringa pré-preenchida)\nAdministrar 162 mg (1 seringa) via subcutânea, 1x por semana, por tempo indeterminado.'},pesoDep:true},
+  'Abatacepte':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'Uso endovenoso em regime de indução e manutenção\n\nAbatacepte 250 mg/frasco (pó liofilizado)\nDose: 10 mg/kg EV\nEsquema:\n— Semana 0, 2, 4: doses de indução\n— Manutenção: a cada 4 semanas\nInfundir em SF 0,9% por 30 minutos.',evPeso:(kg)=>`Uso endovenoso em regime de indução e manutenção\n\nAbatacepte 250 mg/frasco (pó liofilizado)\nDose calculada: ${(10*kg).toFixed(0)} mg EV (10 mg/kg × ${kg} kg)\nEsquema:\n— Semana 0: ${(10*kg).toFixed(0)} mg EV\n— Semana 2: ${(10*kg).toFixed(0)} mg EV\n— Semana 4: ${(10*kg).toFixed(0)} mg EV\n— Manutenção: ${(10*kg).toFixed(0)} mg EV a cada 4 semanas\nInfundir em SF 0,9% por 30 minutos.`,sc:'Uso subcutâneo contínuo\n\nAbatacepte 125 mg/mL (seringa pré-preenchida)\nAdministrar 125 mg (1 seringa) via subcutânea, 1x por semana, por tempo indeterminado.'},pesoDep:true},
+  'Rituximabe':{via:'Endovenosa (EV)',pos:'Uso endovenoso em ciclos\n\nRituximabe 500 mg/50 mL ou 100 mg/10 mL (concentrado para infusão)\nEsquema padrão (AR/vasculite):\n— Dose 1: 1000 mg EV\n— Dose 2: 1000 mg EV (intervalo de 15 dias após a dose 1)\nPré-medicação obrigatória: metilprednisolona 100 mg EV + anti-histamínico + paracetamol.\nRetratamento conforme atividade clínica (geralmente a cada 6–12 meses).'},
+  'Baricitinibe':{via:'Oral (VO)',pos:'Uso oral contínuo\n\nBaricitinibe 2 mg ou 4 mg (comprimido revestido)\nAdministrar 4 mg VO, 1x ao dia, preferencialmente no mesmo horário.\nPode ser reduzido para 2 mg/dia em pacientes com TFG 30–60 mL/min ou maiores de 75 anos.\nNão partir ou mastigar o comprimido.'},
+  'Tofacitinibe':{via:'Oral (VO)',pos:'Uso oral contínuo\n\nTofacitinibe 5 mg (comprimido)\nAdministrar 5 mg VO, 2x ao dia (manhã e noite), por tempo indeterminado.\nAlternativa de liberação prolongada: 11 mg VO, 1x ao dia.\nEvitar uso com inibidores potentes do CYP3A4.'},
+  'Upadacitinibe':{via:'Oral (VO)',pos:'Uso oral contínuo\n\nUpadacitinibe 15 mg (cápsula de liberação prolongada)\nAdministrar 15 mg VO, 1x ao dia, preferencialmente no mesmo horário.\nNão partir, mastigar ou abrir a cápsula.'},
+  'Secuquinumabe':{via:'Subcutânea (SC)',pos:'Uso subcutâneo em regime de indução e manutenção\n\nSecuquinumabe 150 mg/mL ou 300 mg/2 mL (caneta ou seringa pré-preenchida)\nIndução (dose de 300 mg):\n— Semanas 0, 1, 2, 3 e 4: 300 mg SC (2 injeções de 150 mg)\nManutenção:\n— 300 mg SC a cada 4 semanas, por tempo indeterminado.\n(Considerar 150 mg/mês em EA sem psoríase cutânea associada.)'},
+  'Ixequizumabe':{via:'Subcutânea (SC)',pos:'Uso subcutâneo em regime de indução e manutenção\n\nIxequizumabe 80 mg/mL (caneta pré-preenchida)\nIndução:\n— Semana 0: 160 mg SC (2 injeções de 80 mg)\nFase intermediária:\n— Semanas 2, 4, 6, 8, 10 e 12: 80 mg SC a cada 2 semanas\nManutenção:\n— 80 mg SC a cada 4 semanas, por tempo indeterminado.'},
+  'Ustequinumabe':{via:['Endovenosa (EV) — Ataque','Subcutânea (SC) — Manutenção'],pos:{ev:'Uso endovenoso (ataque) seguido de subcutâneo (manutenção)\n\nUstequinumabe 5 mg/mL (concentrado para infusão)\nDose de ataque EV (única):\n— ≤55 kg: 260 mg EV\n— 55–85 kg: 390 mg EV\n— >85 kg: 520 mg EV\nInfundir em SF 0,9% por no mínimo 1 hora.\n\nManutenção (SC):\n— 90 mg SC a cada 12 semanas, iniciando na semana 16.',evPeso:(kg)=>`Uso endovenoso (ataque) seguido de subcutâneo (manutenção)\n\nUstequinumabe — Dose de ataque EV (única):\n${kg<=55?'260':kg<=85?'390':'520'} mg EV (peso: ${kg} kg — ${kg<=55?'≤55 kg':kg<=85?'55–85 kg':'>85 kg'})\nInfundir em SF 0,9% por no mínimo 1 hora.\n\nManutenção SC (a partir da semana 16):\nUstequinumabe 90 mg/mL (seringa pré-preenchida)\nAdministrar 90 mg (1 seringa) via subcutânea, a cada 12 semanas, por tempo indeterminado.`,sc:'Uso subcutâneo de manutenção\n\nUstequinumabe 90 mg/mL (seringa pré-preenchida)\nAdministrar 90 mg (1 seringa) via subcutânea, a cada 12 semanas, por tempo indeterminado.\n(Indicado após dose de ataque EV prévia.)'},pesoDep:true},
+  'Guselcumabe':{via:'Subcutânea (SC)',pos:'Uso subcutâneo em regime de indução e manutenção\n\nGuselcumabe 100 mg/mL (seringa pré-preenchida)\nIndução:\n— Semana 0: 100 mg SC\n— Semana 4: 100 mg SC\nManutenção:\n— 100 mg SC a cada 8 semanas, por tempo indeterminado.'},
+  'Risanquizumabe':{via:['Endovenosa (EV) — Indução','Subcutânea (SC) — Manutenção'],pos:{ev:'Uso endovenoso (indução) seguido de subcutâneo (manutenção)\n\nRisanquizumabe 600 mg/10 mL (concentrado para infusão)\nIndução EV (3 infusões):\n— Semana 0: 600 mg EV\n— Semana 4: 600 mg EV\n— Semana 8: 600 mg EV\nInfundir em SF 0,9% por 60 minutos.\n\nManutenção SC (a partir da semana 16):\nRisanquizumabe 360 mg/2,4 mL (seringa pré-preenchida)\nAdministrar 360 mg SC (3 injeções de 120 mg) a cada 8 semanas.',sc:'Uso subcutâneo de manutenção\n\nRisanquizumabe 360 mg/2,4 mL (seringa pré-preenchida)\nAdministrar 360 mg SC (3 injeções de 120 mg) a cada 8 semanas, por tempo indeterminado.\n(Indicado após indução EV prévia com 3 doses nas semanas 0, 4 e 8.)'}},
+  'Bimekizumabe':{via:'Subcutânea (SC)',pos:'Uso subcutâneo em regime de ataque e manutenção\n\nBimekizumabe 160 mg/mL (seringa pré-preenchida)\nAtaque:\n— 320 mg SC (2 injeções de 160 mg) a cada 4 semanas, pelas primeiras 16 semanas\nManutenção:\n— 320 mg SC a cada 8 semanas, por tempo indeterminado.'},
+  'Apremilaste':{via:'Oral (VO)',pos:'Uso oral contínuo (com titulação inicial)\n\nApremilaste 30 mg (comprimido)\nTitulação nos primeiros 5 dias:\n— Dia 1 manhã: 10 mg | Dia 1 noite: 10 mg\n— Dia 2 manhã: 10 mg | Dia 2 noite: 20 mg\n— Dia 3 manhã: 20 mg | Dia 3 noite: 20 mg\n— Dia 4 manhã: 20 mg | Dia 4 noite: 30 mg\n— Dia 5 manhã: 30 mg | Dia 5 noite: 30 mg\nManutenção: 30 mg VO, 2x ao dia, por tempo indeterminado.'},
+  'Belimumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'Uso endovenoso em regime de indução e manutenção\n\nBelimumabe 120 mg ou 400 mg (pó liofilizado para reconstituição)\nDose: 10 mg/kg EV\nEsquema:\n— Semanas 0, 2 e 4: doses de indução\n— Manutenção: a cada 4 semanas\nInfundir em SF 0,9% (100 mL) por 60 minutos.',evPeso:(kg)=>`Uso endovenoso em regime de indução e manutenção\n\nBelimumabe — Dose calculada: ${(10*kg).toFixed(0)} mg EV (10 mg/kg × ${kg} kg)\nEsquema:\n— Semana 0: ${(10*kg).toFixed(0)} mg EV\n— Semana 2: ${(10*kg).toFixed(0)} mg EV\n— Semana 4: ${(10*kg).toFixed(0)} mg EV\n— Manutenção: ${(10*kg).toFixed(0)} mg EV a cada 4 semanas\nInfundir em SF 0,9% (100 mL) por 60 minutos.`,sc:'Uso subcutâneo contínuo\n\nBelimumabe 200 mg/mL (seringa pré-preenchida)\nAdministrar 200 mg (1 seringa) via subcutânea, 1x por semana, por tempo indeterminado.'},pesoDep:true},
+  'Anifrolumabe':{via:'Endovenosa (EV)',pos:'Uso endovenoso contínuo\n\nAnifrolumabe 300 mg/2 mL (concentrado para infusão)\nAdministrar 300 mg EV a cada 4 semanas, por tempo indeterminado.\nInfundir diluído em SF 0,9% (100 mL) por 30 minutos.'},
+  'Mepolizumabe':{via:'Subcutânea (SC)',pos:'Uso subcutâneo contínuo\n\nMepolizumabe 300 mg (pó liofilizado — reconstituir com 3,8 mL de água estéril)\nAdministrar 300 mg SC (3 injeções de 100 mg) a cada 4 semanas, por tempo indeterminado.\nAplicar em locais diferentes (abdome, coxa ou braço).'},
+  'Imunoglobulina Humana IV (IVIG)':{via:'Endovenosa (EV)',pos:'Uso endovenoso em ciclos mensais\n\nImunoglobulina Humana Endovenosa 5% ou 10% (frasco-ampola)\nDose: 2 g/kg EV por ciclo, dividida em 2–5 dias consecutivos\nRealizar 1 ciclo mensal por 3–6 meses, com reavaliação clínica subsequente.\nMonitorar função renal e sinais de hemólise.',pesoDep:true,posPeso:(kg)=>`Uso endovenoso em ciclos mensais\n\nImunoglobulina Humana Endovenosa 5% ou 10% (frasco-ampola)\nDose calculada: ${(2*kg).toFixed(0)} g EV por ciclo (2 g/kg × ${kg} kg)\nDividir em 2–5 dias consecutivos (${(2*kg/5).toFixed(0)}–${(2*kg/2).toFixed(0)} g/dia)\nRealizar 1 ciclo mensal por 3–6 meses, com reavaliação clínica subsequente.`},
   'Outro':{via:'',pos:''},
-  'Ácido zoledrônico':{via:'Endovenosa (EV)',pos:'5 mg EV em dose única anual (infusão de 15 min)'},
-  'Denosumabe':{via:'Subcutânea (SC)',pos:'60 mg SC a cada 6 meses'},
-  'Teriparatida':{via:'Subcutânea (SC)',pos:'20 mcg SC 1x/dia por até 24 meses'},
-  'Romosozumabe':{via:'Subcutânea (SC)',pos:'210 mg SC (2 injeções de 105 mg) 1x/mês por 12 meses'},
-  'Alendronato':{via:'Via oral',pos:'70 mg VO 1x/semana'},
-  'Risedronato':{via:'Via oral',pos:'35 mg VO 1x/semana'},
-  'Ibandronato':{via:'Via oral',pos:'150 mg VO 1x/mês'}
+  'Ácido zoledrônico':{via:'Endovenosa (EV)',pos:'Uso endovenoso anual\n\nÁcido zoledrônico 5 mg/100 mL (solução pronta para infusão)\nAdministrar 5 mg EV em dose única anual.\nInfundir por no mínimo 15 minutos.\nAssegurar hidratação adequada antes da infusão.\nSuplementar cálcio 1000–1200 mg/dia e vitamina D 800–1000 UI/dia concomitantemente.'},
+  'Denosumabe':{via:'Subcutânea (SC)',pos:'Uso subcutâneo semestral\n\nDenosumabe 60 mg/mL (seringa pré-preenchida)\nAdministrar 60 mg (1 seringa) via subcutânea, 1x a cada 6 meses, por tempo indeterminado.\nSupplementar cálcio 1000–1200 mg/dia e vitamina D 800–1000 UI/dia concomitantemente.\nNão interromper abruptamente (risco de rebote com fraturas vertebrais múltiplas).'},
+  'Teriparatida':{via:'Subcutânea (SC)',pos:'Uso subcutâneo diário por até 24 meses\n\nTeriparatida 250 mcg/mL (caneta injetora 3 mL)\nAdministrar 20 mcg (80 µL) via subcutânea, 1x ao dia, no abdome ou coxa.\nDuração máxima: 24 meses (uso único na vida).\nArmazenar na geladeira (2–8 °C). Aplicar logo após retirar da geladeira.'},
+  'Romosozumabe':{via:'Subcutânea (SC)',pos:'Uso subcutâneo mensal por 12 meses\n\nRomosozumabe 105 mg/1,17 mL (seringa pré-preenchida)\nAdministrar 210 mg SC (2 injeções de 105 mg em locais diferentes), 1x por mês.\nDuração: 12 meses consecutivos.\nApós completar 12 doses, prosseguir com antirreabsortivo (denosumabe ou bisfosfonato).'},
+  'Alendronato':{via:'Oral (VO)',pos:'Uso oral semanal\n\nAlendronato 70 mg (comprimido)\nAdministrar 70 mg VO, 1x por semana, sempre no mesmo dia da semana.\nTomar em jejum, com copo cheio de água (200 mL), 30 minutos antes de qualquer alimento ou medicamento.\nPermanecer sentado ou em pé por pelo menos 30 minutos após a ingestão.'},
+  'Risedronato':{via:'Oral (VO)',pos:'Uso oral semanal\n\nRisedronato 35 mg (comprimido)\nAdministrar 35 mg VO, 1x por semana, sempre no mesmo dia.\nTomar em jejum, com copo cheio de água, 30 minutos antes de qualquer alimento.\nPermanecer sentado ou em pé por pelo menos 30 minutos após a ingestão.'},
+  'Ibandronato':{via:'Oral (VO)',pos:'Uso oral mensal\n\nIbandronato 150 mg (comprimido)\nAdministrar 150 mg VO, 1x por mês, sempre no mesmo dia do mês.\nTomar em jejum, com copo cheio de água, 60 minutos antes de qualquer alimento.\nPermanecer sentado ou em pé por pelo menos 60 minutos após a ingestão.'}
 };
 const DMARD_OPTS = {
   ar:['Metotrexato (MTX)','Hidroxicloroquina','Sulfassalazina','Leflunomida','Azatioprina','Outro'],
@@ -1881,27 +1881,38 @@ function buildPreview() {
   const n=narrative(); const f=fd;
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
   const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
-  const examRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
-    .map(e=>`<tr><td>${e.l}</td><td>${exams[e.id].result||'—'}</td><td>${e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—'}</td></tr>`).join('');
+  const cidVal=document.getElementById('p_cid').value||'—';
   const tbTxt = fd.tb_igra_positivo ? `<p style="background:#fffbeb;border:1px solid #f6ad55;padding:8px 12px;border-radius:6px;font-size:11px;margin-top:6px"><b>⚠️ IGRA/PPD Positivo.</b> Profilaxia de TB: ${fd.tb_profilaxia_med||'não registrada'}${fd.tb_profilaxia_inicio?' — iniciada em '+fmtDate(fd.tb_profilaxia_inicio):''}. Status: ${fd.tb_profilaxia_status||'—'}.</p>` : '';
-  const dmardRows=dmards.filter(x=>x.med)
-    .map(x=>`<tr><td>${x.med}</td><td>${x.dose||'—'}</td><td>${fmtDate(x.inicio)||'—'}</td><td>${fmtDate(x.fim)||'em uso'}</td><td>${x.motivo||'—'}</td></tr>`).join('');
-  // Group exams by date as flowing text paragraphs
+  const colHdr='<tr style="font-size:10px;color:#888;border-bottom:1px solid #e2e8f0"><td>Medicamento</td><td>Dose</td><td>Início</td><td>Suspensão</td><td>Motivo</td></tr>';
+  // All diseases: intro paragraph + scores on separate line
+  const clinicoPar = `<p style="line-height:1.7">${n.intro}</p>${n.atv?`<p style="margin-top:4px;font-size:12px;color:#1a56a0;font-weight:600">${n.atv}</p>`:''}`;
+
+  // Split dmards into current (no fim) and previous (with fim)
+  const dmardAtual = dmards.filter(x=>x.med&&!x.fim);
+  const dmardPrevio = dmards.filter(x=>x.med&&x.fim);
+  const makeRow = x=>`<tr><td>${x.med}</td><td>${x.dose||'—'}</td><td>${fmtDate(x.inicio)||'—'}</td><td>${fmtDate(x.fim)||'em uso'}</td><td>${x.motivo||'—'}</td></tr>`;
+  const dmardAtualRows = dmardAtual.map(makeRow).join('');
+  const dmardPrevioRows = dmardPrevio.map(makeRow).join('');
+
+  // Separate IGRA, RX, and other exams regardless of date
+  const igraExam = EXAMES_BASE.find(e=>e.id==='ppd');
+  const rxExam   = EXAMES_BASE.find(e=>e.id==='rx_torax');
+  const igraTxt  = (igraExam&&exams['ppd']&&exams['ppd'].result) ? `<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#888">${fmtDate(exams['ppd'].date)||'s/d'} — </span>${igraExam.l}: ${exams['ppd'].result}</p>` : '';
+  const rxTxt    = (rxExam&&exams['rx_torax']&&exams['rx_torax'].result)  ? `<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#888">${fmtDate(exams['rx_torax'].date)||'s/d'} — </span>${rxExam.l}: ${exams['rx_torax'].result}</p>` : '';
+
+  // Group remaining lab exams by date as flowing text
+  const otherExamIds = new Set(['ppd','rx_torax']);
   const examsByDate = {};
-  EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result).forEach(e=>{
-    const dt = e.ownDate ? (fmtDate(exams[e.id].date)||'s/d') : (fmtDate(examDateGlobal)||'s/d');
+  EXAMES_BASE.filter(e=>!otherExamIds.has(e.id)&&exams[e.id]&&exams[e.id].result).forEach(e=>{
+    const dt = fmtDate(examDateGlobal)||'s/d';
     if(!examsByDate[dt]) examsByDate[dt]=[];
-    examsByDate[dt].push({l:e.l,r:exams[e.id].result});
+    examsByDate[dt].push(`${e.l}: ${exams[e.id].result}`);
   });
   let groupedExamRows='';
   Object.entries(examsByDate).forEach(([dt,items])=>{
-    const inline = items.map(it=>`${it.l}: ${it.r}`).join(' / ');
-    groupedExamRows+=`<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#888">${dt} — </span>${inline}</p>`;
+    groupedExamRows+=`<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#888">${dt} — </span>${items.join(' / ')}</p>`;
   });
   const sep='<div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>';
-  const cidVal=document.getElementById('p_cid').value||'—';
-  // All diseases now use combined paragraph: intro weaves patient + diagnosis + meds; atv holds scores/extra
-  const clinicoPar = `<p style="line-height:1.7">${n.intro}${n.atv?' <span style="font-weight:600">(${n.atv})</span>':''}</p>`;
   document.getElementById('preview-box').innerHTML=`
     <div class="rpt-header">
       <div class="rpt-title">LAUDO MÉDICO — SOLICITAÇÃO DE MEDICAMENTO ESPECIAL</div>
@@ -1911,18 +1922,17 @@ function buildPreview() {
     <tr><td colspan="3"><b>CID-10:</b> ${cidVal}</td></tr></table>
     ${sep}
     ${clinicoPar}
-    ${dmardRows?sep+`<table>${dmardRows}</table>`:''}
-    ${n.bioAntTxt?`<pre style="font-size:12px;white-space:pre-wrap;margin-top:8px">${n.bioAntTxt}</pre>`:''}
-    ${groupedExamRows?sep+`<div>${groupedExamRows}</div>`:''}
+    ${dmardAtualRows?sep+`<p style="font-size:10px;color:#888;font-weight:600;margin-bottom:2px">MEDICAÇÕES DE USO ATUAL</p><table>${colHdr}${dmardAtualRows}</table>`:''}
+    ${dmardPrevioRows?`<p style="font-size:10px;color:#888;font-weight:600;margin:8px 0 2px">MEDICAÇÕES DE USO PRÉVIO</p><table>${colHdr}${dmardPrevioRows}</table>`:''}
+    ${n.bioAntTxt?`<p style="font-size:10px;color:#888;font-weight:600;margin:8px 0 2px">BIOLÓGICOS ANTERIORES</p><pre style="font-size:12px;white-space:pre-wrap;margin:0">${n.bioAntTxt}</pre>`:''}
+    ${(igraTxt||rxTxt||groupedExamRows)?sep+'<div>'+igraTxt+rxTxt+groupedExamRows+'</div>':''}
     ${tbTxt}
-    ${imagens.filter(i=>i.tipo).length>0?`<table style="margin-top:6px">${imagens.filter(i=>i.tipo).map(i=>`<tr><td>${i.tipo}</td><td>${i.laudo||''}</td><td>${fmtDate(i.data)||''}</td></tr>`).join('')}</table>`:''}
+    ${imagens.filter(i=>i.tipo).length>0?`<div style="margin-top:6px">${imagens.filter(i=>i.tipo).map(i=>`<p style="margin:3px 0"><b>${i.tipo}:</b> ${i.laudo||''}${i.data?' ('+fmtDate(i.data)+')':''}</p>`).join('')}</div>`:''}
     ${sep}
-    <table>
-      <tr><td><b>Medicamento:</b> ${f.med_nome||'—'}</td><td><b>Via:</b> ${f.med_via||'—'}</td></tr>
-      <tr><td colspan="2"><b>Posologia:</b> ${f.med_posologia||'—'}</td></tr>
-      ${f.med_justificativa?`<tr><td colspan="2"><b>Justificativa:</b> ${f.med_justificativa}</td></tr>`:''}
-      <tr><td colspan="2" style="font-size:10px;color:#888"><i>${D_DUT[disease]||''}</i></td></tr>
-    </table>
+    <p style="line-height:1.8"><b>${f.med_nome||'—'}</b> — via ${f.med_via||'—'}</p>
+    <p style="white-space:pre-wrap;font-size:12px;line-height:1.7">${f.med_posologia||'—'}</p>
+    ${f.med_justificativa?`<p style="margin-top:6px;font-size:12px;color:#444"><i>${f.med_justificativa}</i></p>`:''}
+    <p style="font-size:10px;color:#888;margin-top:6px"><i>${D_DUT[disease]||''}</i></p>
     <div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px;font-size:11px;color:#4a5568">
       <p>Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos estabelecidos para uso do medicamento solicitado.</p>
       <br><p style="margin-top:24px">_______________________________</p>
@@ -1966,20 +1976,31 @@ function genPDF() {
   addText(`CID-10: ${document.getElementById('p_cid').value||'—'}`);
 
   y+=4;
-  addText(n.intro+(n.atv?' ('+n.atv+')':''));
+  addText(n.intro);
+  if(n.atv) addText(n.atv,9,'bold',[26,86,160]);
 
   y+=4;
-  const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—',fmtDate(x.fim)||'em uso',x.motivo||'—']);
-  if(dRows.length>0){
-    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Medicamento','Dose','Início','Suspensão','Motivo']],body:dRows,
+  const dRowsAtual=dmards.filter(x=>x.med&&!x.fim).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—','em uso',x.motivo||'—']);
+  const dRowsPrevio=dmards.filter(x=>x.med&&x.fim).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—',fmtDate(x.fim)||'—',x.motivo||'—']);
+  if(dRowsAtual.length>0){
+    addText('MEDICAÇÕES DE USO ATUAL',8,'bold',[26,86,160]);
+    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Medicamento','Dose','Início','Suspensão','Motivo']],body:dRowsAtual,
+      styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]},alternateRowStyles:{fillColor:[240,244,248]}});
+    y=doc.lastAutoTable.finalY+4;
+  }
+  if(dRowsPrevio.length>0){
+    addText('MEDICAÇÕES DE USO PRÉVIO',8,'bold',[26,86,160]);
+    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Medicamento','Dose','Início','Suspensão','Motivo']],body:dRowsPrevio,
       styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]},alternateRowStyles:{fillColor:[240,244,248]}});
     y=doc.lastAutoTable.finalY+4;
   }
 
   y+=4;
+  if(exams['ppd']&&exams['ppd'].result) addText(`${fmtDate(exams['ppd'].date)||'s/d'} — PPD ou IGRA (Quantiferon-TB): ${exams['ppd'].result}`,9);
+  if(exams['rx_torax']&&exams['rx_torax'].result) addText(`${fmtDate(exams['rx_torax'].date)||'s/d'} — Radiografia de tórax: ${exams['rx_torax'].result}`,9);
   const pdfExamsByDate={};
-  EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result).forEach(e=>{
-    const dt=e.ownDate?(fmtDate(exams[e.id].date)||'s/d'):(fmtDate(examDateGlobal)||'s/d');
+  EXAMES_BASE.filter(e=>e.id!=='ppd'&&e.id!=='rx_torax'&&exams[e.id]&&exams[e.id].result).forEach(e=>{
+    const dt=fmtDate(examDateGlobal)||'s/d';
     if(!pdfExamsByDate[dt]) pdfExamsByDate[dt]=[];
     pdfExamsByDate[dt].push(`${e.l}: ${exams[e.id].result}`);
   });
@@ -2031,10 +2052,11 @@ function genDOCX() {
       ...rows.map(row=>new TableRow({children:row.map(cell=>new TableCell({children:[new Paragraph({children:[new TextRun({text:String(cell||'—'),size:18})],spacing:{after:0}})]}))}))]
   });
 
-  const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—',fmtDate(x.fim)||'em uso',x.motivo||'—']);
+  const dRowsAtualD=dmards.filter(x=>x.med&&!x.fim).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—','em uso',x.motivo||'—']);
+  const dRowsPrevioD=dmards.filter(x=>x.med&&x.fim).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—',fmtDate(x.fim)||'—',x.motivo||'—']);
   const docxExamsByDate={};
-  EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result).forEach(e=>{
-    const dt=e.ownDate?(fmtDate(exams[e.id].date)||'s/d'):(fmtDate(examDateGlobal)||'s/d');
+  EXAMES_BASE.filter(e=>e.id!=='ppd'&&e.id!=='rx_torax'&&exams[e.id]&&exams[e.id].result).forEach(e=>{
+    const dt=fmtDate(examDateGlobal)||'s/d';
     if(!docxExamsByDate[dt]) docxExamsByDate[dt]=[];
     docxExamsByDate[dt].push(`${e.l}: ${exams[e.id].result}`);
   });
@@ -2045,9 +2067,13 @@ function genDOCX() {
     b('Nome: ',f.nome), b('Data de nascimento: ',`${dnFmt}${f.idade?' ('+f.idade+')':''}`),
     b('Sexo: ',f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'),
     b('CID-10: ',document.getElementById('p_cid').value||'—'),
-    p(n.intro+(n.atv?' ('+n.atv+')':'')),
+    p(n.intro),
+    ...(n.atv?[p(n.atv)]:[]),
   ];
-  if(dRows.length>0) children.push(tbl(['Medicamento','Dose','Início','Suspensão','Motivo'],dRows));
+  if(dRowsAtualD.length>0){children.push(p('MEDICAÇÕES DE USO ATUAL'));children.push(tbl(['Medicamento','Dose','Início','Suspensão','Motivo'],dRowsAtualD));}
+  if(dRowsPrevioD.length>0){children.push(p('MEDICAÇÕES DE USO PRÉVIO'));children.push(tbl(['Medicamento','Dose','Início','Suspensão','Motivo'],dRowsPrevioD));}
+  if(exams['ppd']&&exams['ppd'].result) children.push(p(`${fmtDate(exams['ppd'].date)||'s/d'} — PPD ou IGRA (Quantiferon-TB): ${exams['ppd'].result}`));
+  if(exams['rx_torax']&&exams['rx_torax'].result) children.push(p(`${fmtDate(exams['rx_torax'].date)||'s/d'} — Radiografia de tórax: ${exams['rx_torax'].result}`));
   Object.entries(docxExamsByDate).forEach(([dt,items])=>children.push(p(`${dt} — ${items.join(' / ')}`)));
   const imgRowsW=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
   if(imgRowsW.length>0) children.push(tbl(['Exame de Imagem','Laudo','Data'],imgRowsW));
