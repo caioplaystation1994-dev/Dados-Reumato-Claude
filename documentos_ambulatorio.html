@@ -50,6 +50,14 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
 .btn-add{background:#ebf4ff;color:#1a56a0;border:1.5px dashed #90cdf4;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600;width:100%;margin-top:4px;transition:.15s}
 .btn-add:hover{background:#bee3f8}
 
+/* Atalhos de medicamentos */
+.med-atalhos{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.atalho-grupo{background:#f7faff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px}
+.atalho-titulo{font-size:10px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px}
+.atalho-btns{display:flex;flex-wrap:wrap;gap:6px}
+.btn-atalho{background:#fff;border:1.5px solid #bee3f8;color:#1a56a0;border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;transition:.15s;font-weight:500}
+.btn-atalho:hover{background:#1a56a0;color:#fff;border-color:#1a56a0}
+
 /* ── Pacotes de exames ───────────────────────────────── */
 .pacotes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:8px}
 
@@ -147,6 +155,8 @@ body{padding-bottom:60px}
   /* Cabeçalhos condicionais */
   .no-print{display:none!important}
   .section-label.oculto-impressao{display:none!important}
+  .med-atalhos{display:none!important}
+  .med-table thead{display:none!important}
 
   /* Seções de imagem vazias */
   .section-img-vazia{display:none!important}
@@ -319,12 +329,37 @@ body{padding-bottom:60px}
       </div>
     </div>
 
+    <div class="section-label">Atalhos de Medicamentos</div>
+    <div class="med-atalhos">
+      <div class="atalho-grupo">
+        <span class="atalho-titulo">csDMARDs</span>
+        <div class="atalho-btns">
+          <button class="btn-atalho" onclick="addMedNome('Metotrexato')">Metotrexato</button>
+          <button class="btn-atalho" onclick="addMedNome('Leflunomida')">Leflunomida</button>
+          <button class="btn-atalho" onclick="addMedNome('Hidroxicloroquina')">Hidroxicloroquina</button>
+          <button class="btn-atalho" onclick="addMedNome('Sulfassalazina')">Sulfassalazina</button>
+          <button class="btn-atalho" onclick="addMedNome('Azatioprina')">Azatioprina</button>
+          <button class="btn-atalho" onclick="addMedNome('Mofetilmicofenolato')">Mofetilmicofenolato</button>
+          <button class="btn-atalho" onclick="addMedNome('Ciclofosfamida')">Ciclofosfamida</button>
+          <button class="btn-atalho" onclick="addMedNome('Clorambucila')">Clorambucila</button>
+        </div>
+      </div>
+      <div class="atalho-grupo">
+        <span class="atalho-titulo">AINEs / Outros</span>
+        <div class="atalho-btns">
+          <button class="btn-atalho" onclick="addMedNome('Naproxeno')">Naproxeno</button>
+          <button class="btn-atalho" onclick="addMedNome('Meloxicam')">Meloxicam</button>
+          <button class="btn-atalho" onclick="addMedNome('Tandrilax')">Tandrilax</button>
+        </div>
+      </div>
+    </div>
+
     <div class="section-label">Prescrição</div>
     <table class="med-table" id="med-table">
       <thead>
         <tr>
           <th style="width:30px">#</th>
-          <th>Medicamento e Concentração</th>
+          <th>Medicamento</th>
           <th style="width:180px">Posologia</th>
           <th style="width:150px">Via / Duração</th>
           <th style="width:40px"></th>
@@ -333,21 +368,21 @@ body{padding-bottom:60px}
       <tbody id="med-tbody">
         <tr>
           <td>1</td>
-          <td><input type="text" placeholder="Ex: Metotrexato 10 mg"></td>
+          <td><input type="text" placeholder="Nome e dose"></td>
           <td><input type="text" placeholder="Ex: 1 cp 1x/semana"></td>
           <td><input type="text" placeholder="Ex: VO / contínuo"></td>
           <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>
         </tr>
       </tbody>
     </table>
-    <button class="btn-add" onclick="addMed()">+ Adicionar Medicamento</button>
+    <button class="btn-add" onclick="addMed()">+ Adicionar linha</button>
 
-    <div class="section-label">Orientações ao Paciente</div>
+    <div class="section-label print-se-preenchido" data-textarea="rx-orientacoes">Orientações ao Paciente</div>
     <div class="field-group">
       <textarea id="rx-orientacoes" class="tall" placeholder="Monitorizar efeitos adversos, retornar em caso de..."></textarea>
     </div>
 
-    <div class="section-label">Observações / Uso Contínuo</div>
+    <div class="section-label print-se-preenchido" data-textarea="rx-obs">Observações / Uso Contínuo</div>
     <div class="field-group">
       <textarea id="rx-obs" class="short" placeholder="Ex: Medicação de uso contínuo. Validade da receita: 30 dias."></textarea>
     </div>
@@ -774,6 +809,29 @@ function printDoc(pageId) {
 }
 
 // ─── Medicamentos ──────────────────────────────────────────────────────────────
+function addMedNome(nome) {
+  const tbody = document.getElementById('med-tbody');
+  // Tenta preencher a última linha vazia primeiro
+  const linhas = [...tbody.rows];
+  const vazia = linhas.find(r => r.querySelectorAll('td input')[0]?.value.trim() === '');
+  if (vazia) {
+    vazia.querySelectorAll('td input')[0].value = nome;
+    vazia.querySelectorAll('td input')[0].focus();
+    return;
+  }
+  // Senão adiciona nova linha
+  const n = tbody.rows.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${n}</td>
+    <td><input type="text" value="${nome}"></td>
+    <td><input type="text" placeholder="Posologia"></td>
+    <td><input type="text" placeholder="Via / Duração"></td>
+    <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>`;
+  tbody.appendChild(tr);
+  tr.querySelectorAll('td input')[1].focus();
+}
+
 function addMed() {
   const tbody = document.getElementById('med-tbody');
   const n = tbody.rows.length + 1;
