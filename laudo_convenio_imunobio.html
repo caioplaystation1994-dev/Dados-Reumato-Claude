@@ -423,10 +423,17 @@ header h1{font-size:15px;font-weight:700}
         <div class="section-title">Atividade de Doença — BASDAI (0–10)</div>
         <div style="font-size:12px;color:#718096;margin-bottom:12px">Deslize cada item de 0 (nenhum) a 10 (máximo)</div>
         <div id="basdai-sliders"></div>
-        <div class="score-display">
-          <div class="score-val" id="basdai_result">—</div>
-          <div class="score-label">BASDAI</div>
-          <div id="basdai_class" class="score-class cls-inactive">Não calculado</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="score-display">
+            <div class="score-val" id="basdai_result">—</div>
+            <div class="score-label">BASDAI</div>
+            <div id="basdai_class" class="score-class cls-inactive">Não calculado</div>
+          </div>
+          <div class="score-display">
+            <div class="score-val" id="asdas_result">—</div>
+            <div class="score-label">ASDAS-PCR</div>
+            <div id="asdas_class" class="score-class cls-inactive">Não calculado</div>
+          </div>
         </div>
       </div>
       <div class="section-card">
@@ -449,7 +456,7 @@ header h1{font-size:15px;font-weight:700}
           </div>
           <div class="field-group">
             <label>PCR (mg/L)</label>
-            <input type="number" id="ea_pcr" min="0" step="0.1" oninput="fd.ea_pcr=this.value">
+            <input type="number" id="ea_pcr" min="0" step="0.1" oninput="fd.ea_pcr=this.value;updASDAS()">
           </div>
           <div class="field-group">
             <label>VHS (mm/h)</label>
@@ -887,15 +894,6 @@ header h1{font-size:15px;font-weight:700}
       <div class="section-title">Histórico de Tratamento</div>
       <div style="font-size:12px;color:#718096;margin-bottom:12px">Documente todos os medicamentos utilizados anteriormente. A DUT 65 exige comprovação de falha ao tratamento convencional.</div>
       <table class="dmard-table">
-        <thead>
-          <tr>
-            <th style="width:32%">Medicamento</th>
-            <th style="width:18%">Dose</th>
-            <th style="width:18%">Duração</th>
-            <th style="width:24%">Motivo de suspensão</th>
-            <th style="width:8%"></th>
-          </tr>
-        </thead>
         <tbody id="dmard-tbody"></tbody>
       </table>
       <button class="btn-add" onclick="addDmard()">+ Adicionar medicamento</button>
@@ -1340,6 +1338,24 @@ function updBASDAI() {
   if(s>=4){cl.className='score-class cls-active';cl.textContent='Doença Ativa (≥4)';}
   else{cl.className='score-class cls-inactive';cl.textContent='Doença Inativa (<4)';}
   fd.basdai_class=cl.textContent;
+  updASDAS();
+}
+
+function updASDAS() {
+  const v=BASDAI_Q.map((_,i)=>parseFloat(document.getElementById('bq'+i)?.value)||0);
+  const pcr=parseFloat(fd.ea_pcr)||0;
+  const rigAvg=(v[4]+v[5])/2;
+  const score=0.121*v[1]+0.058*v[2]+0.110*v[3]+0.073*rigAvg+0.579*Math.log(pcr+1);
+  fd.asdas=score.toFixed(2);
+  const el=document.getElementById('asdas_result');
+  const cl=document.getElementById('asdas_class');
+  if(!el||!cl) return;
+  el.textContent=score.toFixed(2);
+  if(score<1.3){cl.className='score-class cls-inactive';cl.textContent='Inatividade (<1,3)';}
+  else if(score<2.1){cl.className='score-class cls-low';cl.textContent='Atividade Baixa (1,3–2,1)';}
+  else if(score<3.5){cl.className='score-class cls-high';cl.textContent='Atividade Alta (2,1–3,5)';}
+  else{cl.className='score-class cls-active';cl.textContent='Atividade Muito Alta (≥3,5)';}
+  fd.asdas_class=cl.textContent;
 }
 
 function buildSLEDAI() {
@@ -1430,7 +1446,7 @@ const DMARD_DEFAULT_DOSE = {
 
 function addDmard(data) {
   const idx=dmards.length;
-  const d=data||{med:'',dose:'',dur:'',motivo:''};
+  const d=data||{med:'',dose:'',inicio:'',fim:'',motivo:''};
   dmards.push(d);
   const tb=document.getElementById('dmard-tbody');
   const tr=document.createElement('tr');
@@ -1438,8 +1454,9 @@ function addDmard(data) {
   const opts=(DMARD_OPTS[disease]||['Outro']).map(o=>`<option value="${o}"${d.med===o?' selected':''}>${o}</option>`).join('');
   const mots=MOTIVOS.map(o=>`<option value="${o}"${d.motivo===o?' selected':''}>${o}</option>`).join('');
   tr.innerHTML=`<td><select onchange="dmards[${idx}].med=this.value;var def=DMARD_DEFAULT_DOSE[this.value];if(def){dmards[${idx}].dose=def;document.getElementById('dose${idx}').value=def;}else{dmards[${idx}].dose='';document.getElementById('dose${idx}').value='';}updDutMsg()"><option value="">Selecione...</option>${opts}</select></td>
-    <td><input type="text" id="dose${idx}" placeholder="Ex: 20mg/sem" value="${d.dose}" oninput="dmards[${idx}].dose=this.value"></td>
-    <td><input type="text" placeholder="Ex: 6 meses" value="${d.dur}" oninput="dmards[${idx}].dur=this.value"></td>
+    <td><input type="text" id="dose${idx}" placeholder="dose" value="${d.dose||''}" oninput="dmards[${idx}].dose=this.value"></td>
+    <td><input type="date" value="${d.inicio||''}" oninput="dmards[${idx}].inicio=this.value" style="font-size:11px"></td>
+    <td><input type="date" value="${d.fim||''}" oninput="dmards[${idx}].fim=this.value" style="font-size:11px"></td>
     <td><select onchange="dmards[${idx}].motivo=this.value"><option value="">Motivo...</option>${mots}</select></td>
     <td><button class="btn-danger" onclick="rmDmard(${idx})">✕</button></td>`;
   tb.appendChild(tr);
@@ -1730,7 +1747,7 @@ function narrative() {
     if(f.anticcp) atv+=`Anti-CCP: ${f.anticcp==='neg'?'negativo':f.anticcp==='pos_baixo'?'positivo (baixo título)':'positivo (alto título)'}.`;
     if(f.ar_fev1||f.ar_cvf||f.ar_dlco) atv+=` Espirometria${f.ar_espiro_data?' ('+fmtDate(f.ar_espiro_data)+')':''}: FEV1 ${f.ar_fev1||'—'}%, CVF ${f.ar_cvf||'—'}%, FEV1/CVF ${f.ar_fev1cvf||'—'}, DLCO ${f.ar_dlco||'—'}%.${f.ar_espiro_laudo?' '+f.ar_espiro_laudo+'.':''}`;
   } else if(d==='ea'){
-    atv=`BASDAI: ${f.basdai||'—'}/10 (${f.basdai_class||'não calculado'}). `;
+    atv=`BASDAI: ${f.basdai||'—'}/10 (${f.basdai_class||'não calculado'}). ASDAS-PCR: ${f.asdas||'—'} (${f.asdas_class||'não calculado'}). `;
     if(f.hlab27) atv+=`HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}. `;
     if(f.ea_tipo) atv+=`Classificação: ${f.ea_tipo==='rad'?'espondiloartrite axial radiográfica (critérios de Nova York modificados)':'espondiloartrite axial não-radiográfica (nr-axSpA)'}.`;
     if(f.ea_rnm) atv+=` RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}.`;
@@ -1772,7 +1789,7 @@ function narrative() {
   if(fd.tb_igra_positivo) atv += ` IGRA/PPD positivo. Profilaxia para TB latente: ${fd.tb_profilaxia_med||'não registrada'} — ${fd.tb_profilaxia_status||'status não informado'}.`;
   const trat=dmards.filter(x=>x.med).length===0
     ?'Nenhum medicamento convencional registrado.'
-    :dmards.filter(x=>x.med).map(x=>`${x.med}${x.dose?' '+x.dose:''}${x.dur?' por '+x.dur:''}${x.motivo?' ('+x.motivo+')':''}`).join('; ')+'.';
+    :dmards.filter(x=>x.med).map(x=>`${x.med}${x.dose?' '+x.dose:''}${x.inicio?' (início: '+fmtDate(x.inicio):''}${x.fim?', suspensão: '+fmtDate(x.fim):''}${x.inicio||x.fim?')':''}${x.motivo?' — '+x.motivo:''}`).join('; ')+'.';
   let bioAntTxt = '';
   if(bioAnteriores.length>0){
     const lines = bioAnteriores.filter(b=>b.med).map(b=>{
@@ -1806,31 +1823,41 @@ function buildPreview() {
     .map(e=>`<tr><td>${e.l}</td><td>${exams[e.id].result||'—'}</td><td>${e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—'}</td></tr>`).join('');
   const tbTxt = fd.tb_igra_positivo ? `<p style="background:#fffbeb;border:1px solid #f6ad55;padding:8px 12px;border-radius:6px;font-size:11px;margin-top:6px"><b>⚠️ IGRA/PPD Positivo.</b> Profilaxia de TB: ${fd.tb_profilaxia_med||'não registrada'}${fd.tb_profilaxia_inicio?' — iniciada em '+fmtDate(fd.tb_profilaxia_inicio):''}. Status: ${fd.tb_profilaxia_status||'—'}.</p>` : '';
   const dmardRows=dmards.filter(x=>x.med)
-    .map(x=>`<tr><td>${x.med}</td><td>${x.dose||'—'}</td><td>${x.dur||'—'}</td><td>${x.motivo||'—'}</td></tr>`).join('');
-  const critRows=crit.map(c=>`<tr><td>${c.pass?'✅':'⚠️'}</td><td>${c.l}</td></tr>`).join('');
+    .map(x=>`<tr><td>${x.med}</td><td>${x.dose||'—'}</td><td>${fmtDate(x.inicio)||'—'}</td><td>${fmtDate(x.fim)||'em uso'}</td><td>${x.motivo||'—'}</td></tr>`).join('');
+  // Group exams by date for display
+  const examsByDate = {};
+  EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result).forEach(e=>{
+    const dt = e.ownDate ? (fmtDate(exams[e.id].date)||'—') : (fmtDate(examDateGlobal)||'—');
+    if(!examsByDate[dt]) examsByDate[dt]=[];
+    examsByDate[dt].push({l:e.l,r:exams[e.id].result});
+  });
+  let groupedExamRows='';
+  Object.entries(examsByDate).forEach(([dt,items])=>{
+    groupedExamRows+=`<tr><td colspan="2" style="font-size:10px;color:#888;padding-top:6px;padding-bottom:2px">${dt}</td></tr>`;
+    items.forEach(it=>{
+      groupedExamRows+=`<tr><td style="color:#2d3748">${it.l}</td><td>${it.r}</td></tr>`;
+    });
+  });
   document.getElementById('preview-box').innerHTML=`
     <div class="rpt-header">
       <div class="rpt-title">LAUDO MÉDICO — SOLICITAÇÃO DE MEDICAMENTO ESPECIAL</div>
       <div class="rpt-sub">${D_DUT[disease]||''}</div>
     </div>
-    <h2>Identificação do Paciente</h2>
     <table><tr><td><b>Nome:</b> ${f.nome||'—'}</td><td><b>DN:</b> ${dnFmt}${f.idade?' ('+f.idade+')':''}</td><td><b>Sexo:</b> ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}</td></tr>
     <tr><td colspan="3"><b>CID-10:</b> ${document.getElementById('p_cid').value||'—'}</td></tr></table>
-    <h2>Médico Responsável</h2>
-    <table><tr><td><b>Dr(a).</b> ${f.medico||'—'}</td><td><b>CRM:</b> ${f.crm||'—'}</td><td><b>Data:</b> ${dataL}</td></tr></table>
-    <h2>1. Diagnóstico e Justificativa Clínica</h2><p>${n.intro}</p>
-    <h2>2. Atividade de Doença</h2><p>${n.atv}</p>
-    <h2>3. Histórico de Tratamento</h2>
-    ${dmardRows?`<table><tr><th>Medicamento</th><th>Dose</th><th>Duração</th><th>Motivo de suspensão</th></tr>${dmardRows}</table>`:'<p>Nenhum medicamento registrado.</p>'}
+    <div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>
+    <p>${n.intro}</p>
+    <p style="margin-top:6px">${n.atv}</p>
+    <div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>
+    ${dmardRows?`<table><tr><td colspan="5" style="font-weight:600;color:#4a5568;font-size:11px;padding-bottom:4px">HISTÓRICO DE TRATAMENTO</td></tr><tr><td><b>Medicamento</b></td><td><b>Dose</b></td><td><b>Início</b></td><td><b>Suspensão</b></td><td><b>Motivo</b></td></tr>${dmardRows}</table>`:''}
     ${n.bioAntTxt?`<pre style="font-size:12px;white-space:pre-wrap;margin-top:8px">${n.bioAntTxt}</pre>`:''}
-    <h2>4. Exames Pré-Autorização</h2>
-    ${examRows?`<table><tr><th>Exame</th><th>Resultado</th><th>Data</th></tr>${examRows}</table>`:'<p>Nenhum exame laboratorial registrado.</p>'}
+    <div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>
+    ${groupedExamRows?`<table><tr><td colspan="2" style="font-weight:600;color:#4a5568;font-size:11px;padding-bottom:4px">EXAMES PRÉ-AUTORIZAÇÃO</td></tr>${groupedExamRows}</table>`:''}
     ${tbTxt}
-    ${imagens.filter(i=>i.tipo).length>0?`<h3 style="margin:10px 0 6px">Exames de Imagem</h3><table><tr><th>Exame</th><th>Laudo</th><th>Data</th></tr>${imagens.filter(i=>i.tipo).map(i=>`<tr><td>${i.tipo}</td><td>${i.laudo||'—'}</td><td>${fmtDate(i.data)||'—'}</td></tr>`).join('')}</table>`:''}
-    <h2>5. Critérios ANS/DUT Atendidos</h2>
-    <table>${critRows}</table>
-    <h2>6. Medicamento Solicitado</h2>
+    ${imagens.filter(i=>i.tipo).length>0?`<table style="margin-top:6px"><tr><td colspan="3" style="font-weight:600;color:#4a5568;font-size:11px;padding-bottom:4px">EXAMES DE IMAGEM</td></tr>${imagens.filter(i=>i.tipo).map(i=>`<tr><td>${i.tipo}</td><td>${i.laudo||'—'}</td><td>${fmtDate(i.data)||'—'}</td></tr>`).join('')}</table>`:''}
+    <div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>
     <table>
+      <tr><td colspan="2" style="font-weight:600;color:#4a5568;font-size:11px;padding-bottom:4px">MEDICAMENTO SOLICITADO</td></tr>
       <tr><td><b>Medicamento:</b> ${f.med_nome||'—'}</td><td><b>Via:</b> ${f.med_via||'—'}</td></tr>
       <tr><td colspan="2"><b>Posologia:</b> ${f.med_posologia||'—'}</td></tr>
       ${f.med_justificativa?`<tr><td colspan="2"><b>Justificativa:</b> ${f.med_justificativa}</td></tr>`:''}
@@ -1875,25 +1902,24 @@ function genPDF() {
   y=22;
   addText(D_DUT[disease]||'',8,'italic',[100,100,100]);y+=2;
 
-  addSec('IDENTIFICAÇÃO DO PACIENTE');
   addText(`Nome: ${f.nome||'—'}     DN: ${dnFmt}${f.idade?' ('+f.idade+')':''}     Sexo: ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}`);
   addText(`CID-10: ${document.getElementById('p_cid').value||'—'}`);
 
-  addSec('1. DIAGNÓSTICO E JUSTIFICATIVA CLÍNICA');
+  y+=4;
   addText(n.intro);
 
-  addSec('2. ATIVIDADE DE DOENÇA');
+  y+=4;
   addText(n.atv);
 
-  addSec('3. HISTÓRICO DE TRATAMENTO CONVENCIONAL');
-  const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',x.dur||'—',x.motivo||'—']);
+  y+=4;
+  const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—',fmtDate(x.fim)||'em uso',x.motivo||'—']);
   if(dRows.length>0){
-    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Medicamento','Dose','Duração','Motivo']],body:dRows,
+    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Medicamento','Dose','Início','Suspensão','Motivo']],body:dRows,
       styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]},alternateRowStyles:{fillColor:[240,244,248]}});
     y=doc.lastAutoTable.finalY+4;
   } else addText('Nenhum medicamento convencional registrado.');
 
-  addSec('4. EXAMES PRÉ-AUTORIZAÇÃO');
+  y+=4;
   const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
     .map(e=>[e.l,exams[e.id].result||'—',e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—']);
   if(eRows.length>0){
@@ -1909,10 +1935,7 @@ function genPDF() {
     y=doc.lastAutoTable.finalY+4;
   }
 
-  addSec('5. CRITÉRIOS ANS/DUT ATENDIDOS');
-  crit.forEach(c=>addText((c.pass?'✓  ':'⚠  ')+c.l,9));
-
-  addSec('6. MEDICAMENTO SOLICITADO');
+  y+=4;
   addText(`Medicamento: ${f.med_nome||'—'}     Via: ${f.med_via||'—'}`);
   addText(`Posologia: ${f.med_posologia||'—'}`);
   if(f.med_justificativa) addText(`Justificativa: ${f.med_justificativa}`);
@@ -1950,31 +1973,25 @@ function genDOCX() {
       ...rows.map(row=>new TableRow({children:row.map(cell=>new TableCell({children:[new Paragraph({children:[new TextRun({text:String(cell||'—'),size:18})],spacing:{after:0}})]}))}))]
   });
 
-  const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',x.dur||'—',x.motivo||'—']);
+  const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',fmtDate(x.inicio)||'—',fmtDate(x.fim)||'em uso',x.motivo||'—']);
   const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
     .map(e=>[e.l,exams[e.id].result||'—',e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—']);
 
   const children=[
     h1('LAUDO MÉDICO — SOLICITAÇÃO DE MEDICAMENTO ESPECIAL'),
     p(D_DUT[disease]||''),
-    h2('IDENTIFICAÇÃO DO PACIENTE'),
     b('Nome: ',f.nome), b('Data de nascimento: ',`${dnFmt}${f.idade?' ('+f.idade+')':''}`),
     b('Sexo: ',f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'),
     b('CID-10: ',document.getElementById('p_cid').value||'—'),
-    h2('1. DIAGNÓSTICO E JUSTIFICATIVA CLÍNICA'), p(n.intro),
-    h2('2. ATIVIDADE DE DOENÇA'), p(n.atv),
-    h2('3. HISTÓRICO DE TRATAMENTO CONVENCIONAL'),
+    p(n.intro),
+    p(n.atv),
   ];
-  if(dRows.length>0) children.push(tbl(['Medicamento','Dose','Duração','Motivo de suspensão'],dRows));
+  if(dRows.length>0) children.push(tbl(['Medicamento','Dose','Início','Suspensão','Motivo'],dRows));
   else children.push(p('Nenhum medicamento convencional registrado.'));
-  children.push(h2('4. EXAMES PRÉ-AUTORIZAÇÃO'));
   if(eRows.length>0) children.push(tbl(['Exame','Resultado','Data'],eRows));
   else children.push(p('Nenhum exame laboratorial registrado.'));
   const imgRowsW=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
   if(imgRowsW.length>0){children.push(p('Exames de Imagem:'));children.push(tbl(['Exame','Laudo','Data'],imgRowsW));}
-  children.push(h2('5. CRITÉRIOS ANS/DUT ATENDIDOS'));
-  crit.forEach(c=>children.push(p((c.pass?'✓  ':'⚠  ')+c.l)));
-  children.push(h2('6. MEDICAMENTO SOLICITADO'));
   children.push(b('Medicamento: ',f.med_nome));
   children.push(b('Via de administração: ',f.med_via));
   children.push(b('Posologia: ',f.med_posologia));
