@@ -592,12 +592,12 @@ header h1{font-size:15px;font-weight:700}
     <!-- LES -->
     <div id="diag-les" style="display:none">
       <div class="section-card">
-        <div class="section-title">Atividade de Doença — SLEDAI-2K</div>
+        <div class="section-title">Atividade de Doença — SLEDAI</div>
         <div style="font-size:12px;color:#718096;margin-bottom:10px">Marque as manifestações presentes nos últimos 10 dias. Clique no item para selecionar.</div>
         <div class="sledai-grid" id="sledai-items"></div>
         <div class="score-display" style="margin-top:12px">
           <div class="score-val" id="sledai_result">0</div>
-          <div class="score-label">SLEDAI-2K (0–105)</div>
+          <div class="score-label">SLEDAI (0–105)</div>
           <div id="sledai_class" class="score-class cls-inactive">Sem atividade</div>
         </div>
       </div>
@@ -1813,7 +1813,7 @@ function validate() {
     r.push({pass:dmards.some(x=>x.med&&x.motivo),l:'Falha a DMARD convencional documentada',det:'Pelo menos 1 DMARD com motivo de suspensão'});
   } else if(d==='les') {
     const v=parseInt(fd.sledai||0);
-    r.push({pass:v>=6,l:`SLEDAI-2K ≥ 6 (atual: ${v} — ${fd.sledai_class||'não calculado'})`,det:'Atividade moderada-grave para indicação de belimumabe/anifrolumabe'});
+    r.push({pass:v>=6,l:`SLEDAI ≥ 6 (atual: ${v} — ${fd.sledai_class||'não calculado'})`,det:'Atividade moderada-grave para indicação de belimumabe/anifrolumabe'});
     r.push({pass:dmards.some(x=>x.med&&x.motivo),l:'Falha a imunossupressor convencional documentada',det:'HCQ + pelo menos 1 imunossupressor com motivo de suspensão'});
   } else if(d==='vasc') {
     r.push({pass:(fd.vasc_bvas&&+fd.vasc_bvas>0)||dmards.length>0,l:`Doença ativa ou refratária documentada (BVAS: ${fd.vasc_bvas||'—'})`,det:'BVAS > 0 ou falha a tratamento convencional prévio'});
@@ -1894,7 +1894,7 @@ function narrative() {
     if(f.aps_tcar_laudo) extras.push(`TCAR${f.aps_tcar_data?' ('+fmtDate(f.aps_tcar_data)+')':''}: ${f.aps_tcar_laudo}`);
     if(f.aps_fev1||f.aps_cvf||f.aps_dlco) espiro=`Espirometria${f.aps_espiro_data?' ('+fmtDate(f.aps_espiro_data)+')':''}: FEV1 ${f.aps_fev1||'—'}%, CVF ${f.aps_cvf||'—'}%, FEV1/CVF ${f.aps_fev1cvf||'—'}, DLCO ${f.aps_dlco||'—'}%${f.aps_espiro_laudo?'. '+f.aps_espiro_laudo:''}`;
   } else if(d==='les'){
-    const scores = f.sledai!==undefined ? `SLEDAI-2K ${f.sledai}` : '';
+    const scores = f.sledai!==undefined ? `SLEDAI ${f.sledai}` : '';
     const manif = f.sledai_active ? `com manifestações ativas de ${f.sledai_active}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Lúpus Eritematoso Sistêmico${manif?' '+manif:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores;
@@ -2041,7 +2041,6 @@ function buildPreview() {
     ${f.med_justificativa?`<p style="margin-top:6px;font-size:12px;color:#444"><i>${f.med_justificativa}</i></p>`:''}
     <p style="font-size:10px;color:#888;margin-top:6px"><i>${D_DUT[disease]||''}</i></p>
     <div style="margin-top:32px;padding-top:16px;font-size:11px;color:#4a5568">
-      <p style="margin-bottom:4px">Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos estabelecidos para uso do medicamento solicitado.</p>
       <p style="margin-top:32px;border-top:1px solid #4a5568;padding-top:4px;display:inline-block;min-width:220px"><b>Dr(a). ${f.medico||'_______________'}</b></p>
       <p>CRM: ${f.crm||'_______________'}</p>
       <p>${f.cidade||'_______________'}, ${dataL}</p>
@@ -2131,7 +2130,6 @@ function genPDF() {
   y=Math.max(y+10,235);
   if(y>265){doc.addPage();y=25;}
   doc.setDrawColor(180,180,180);doc.line(M,y,M+80,y);y+=4;
-  addText('Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos para uso do medicamento solicitado.',9,'italic');
   y+=6;doc.line(M,y,M+70,y);y+=5;
   addText(`Dr(a). ${f.medico||'_______________'}`,10,'bold');
   addText(`CRM: ${f.crm||'_______________'}`);
@@ -2192,7 +2190,6 @@ function genDOCX() {
   if(f.med_justificativa) children.push(b('Justificativa: ',f.med_justificativa));
   children.push(b('Fundamentação normativa: ',D_DUT[disease]||''));
   children.push(new Paragraph({spacing:{before:600}}));
-  children.push(p('Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos para uso do medicamento solicitado.'));
   children.push(new Paragraph({spacing:{before:500}}));
   children.push(p('_______________________________'));
   children.push(b('Dr(a). ',f.medico||'_______________'));
@@ -2792,7 +2789,7 @@ function fillDemoLES() {
   ]);
 
   _fillMed('Anifrolumabe', 62,
-    'Paciente com LES com comprometimento renal (nefrite lúpica em atividade — proteinúria 1,6 g/24h, cilindrúria, complemento consumido), artrite e rash cutâneo, SLEDAI-2K 14, refratária a antimalárico, micofenolato e com falha a belimumabe. Indicação de anifrolumabe conforme DUT 65.6.');
+    'Paciente com LES com comprometimento renal (nefrite lúpica em atividade — proteinúria 1,6 g/24h, cilindrúria, complemento consumido), artrite e rash cutâneo, SLEDAI 14, refratária a antimalárico, micofenolato e com falha a belimumabe. Indicação de anifrolumabe conforme DUT 65.6.');
 }
 
 // ── VASC ──────────────────────────────────────────────────────────────────────
