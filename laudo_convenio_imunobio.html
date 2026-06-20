@@ -483,6 +483,24 @@ header h1{font-size:15px;font-weight:700}
           </div>
         </div>
       </div>
+      <div class="section-card" style="margin-top:12px">
+        <div class="section-title">Função Pulmonar (se disponível)</div>
+        <div class="field-grid">
+          <div class="field-group"><label>FEV1 (% do previsto)</label><input type="number" id="ea_fev1" min="0" max="200" placeholder="Ex: 78" oninput="fd.ea_fev1=this.value"></div>
+          <div class="field-group"><label>CVF (% do previsto)</label><input type="number" id="ea_cvf" min="0" max="200" placeholder="Ex: 82" oninput="fd.ea_cvf=this.value"></div>
+          <div class="field-group"><label>Relação FEV1/CVF</label><input type="number" id="ea_fev1cvf" min="0" max="1" step="0.01" placeholder="Ex: 0.75" oninput="fd.ea_fev1cvf=this.value"></div>
+          <div class="field-group"><label>DLCO (% do previsto)</label><input type="number" id="ea_dlco" min="0" max="200" placeholder="Ex: 65" oninput="fd.ea_dlco=this.value"></div>
+          <div class="field-group"><label>Data da espirometria</label><input type="date" id="ea_espiro_data" oninput="fd.ea_espiro_data=this.value"></div>
+          <div class="field-group" style="grid-column:span 2"><label>Laudo / observações</label><input type="text" id="ea_espiro_laudo" placeholder="Ex: Distúrbio obstrutivo leve" oninput="fd.ea_espiro_laudo=this.value"></div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🫁 TC de Tórax de Alta Resolução (TCAR)</h4>
+        <div style="display:grid;grid-template-columns:1fr 160px;gap:12px">
+          <div><label>Laudo resumido</label><textarea id="ea_tcar_laudo" rows="3" placeholder="ex: Sem alterações intersticiais. Parênquima pulmonar preservado." onchange="fd.ea_tcar_laudo=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea></div>
+          <div><label>Data do exame</label><input type="date" id="ea_tcar_data" onchange="fd.ea_tcar_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+        </div>
+      </div>
     </div>
 
     <!-- APS -->
@@ -549,6 +567,24 @@ header h1{font-size:15px;font-weight:700}
             <label>Data do diagnóstico</label>
             <input type="date" id="aps_dur" oninput="fd.data_diag=this.value">
           </div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <div class="section-title">Função Pulmonar (se disponível)</div>
+        <div class="field-grid">
+          <div class="field-group"><label>FEV1 (% do previsto)</label><input type="number" id="aps_fev1" min="0" max="200" placeholder="Ex: 78" oninput="fd.aps_fev1=this.value"></div>
+          <div class="field-group"><label>CVF (% do previsto)</label><input type="number" id="aps_cvf" min="0" max="200" placeholder="Ex: 82" oninput="fd.aps_cvf=this.value"></div>
+          <div class="field-group"><label>Relação FEV1/CVF</label><input type="number" id="aps_fev1cvf" min="0" max="1" step="0.01" placeholder="Ex: 0.75" oninput="fd.aps_fev1cvf=this.value"></div>
+          <div class="field-group"><label>DLCO (% do previsto)</label><input type="number" id="aps_dlco" min="0" max="200" placeholder="Ex: 65" oninput="fd.aps_dlco=this.value"></div>
+          <div class="field-group"><label>Data da espirometria</label><input type="date" id="aps_espiro_data" oninput="fd.aps_espiro_data=this.value"></div>
+          <div class="field-group" style="grid-column:span 2"><label>Laudo / observações</label><input type="text" id="aps_espiro_laudo" placeholder="Ex: Dentro dos limites da normalidade" oninput="fd.aps_espiro_laudo=this.value"></div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🫁 TC de Tórax de Alta Resolução (TCAR)</h4>
+        <div style="display:grid;grid-template-columns:1fr 160px;gap:12px">
+          <div><label>Laudo resumido</label><textarea id="aps_tcar_laudo" rows="3" placeholder="ex: Sem alterações intersticiais. Parênquima pulmonar preservado." onchange="fd.aps_tcar_laudo=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea></div>
+          <div><label>Data do exame</label><input type="date" id="aps_tcar_data" onchange="fd.aps_tcar_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
         </div>
       </div>
     </div>
@@ -627,6 +663,24 @@ header h1{font-size:15px;font-weight:700}
           <span id="les_ch50_alert"></span></div>
         </div>
       </div>
+      <div class="section-card" style="margin-top:12px">
+        <div class="section-title">Função Pulmonar (se disponível)</div>
+        <div class="field-grid">
+          <div class="field-group"><label>FEV1 (% do previsto)</label><input type="number" id="les_fev1" min="0" max="200" placeholder="Ex: 78" oninput="fd.les_fev1=this.value"></div>
+          <div class="field-group"><label>CVF (% do previsto)</label><input type="number" id="les_cvf" min="0" max="200" placeholder="Ex: 82" oninput="fd.les_cvf=this.value"></div>
+          <div class="field-group"><label>Relação FEV1/CVF</label><input type="number" id="les_fev1cvf" min="0" max="1" step="0.01" placeholder="Ex: 0.75" oninput="fd.les_fev1cvf=this.value"></div>
+          <div class="field-group"><label>DLCO (% do previsto)</label><input type="number" id="les_dlco" min="0" max="200" placeholder="Ex: 65" oninput="fd.les_dlco=this.value"></div>
+          <div class="field-group"><label>Data da espirometria</label><input type="date" id="les_espiro_data" oninput="fd.les_espiro_data=this.value"></div>
+          <div class="field-group" style="grid-column:span 2"><label>Laudo / observações</label><input type="text" id="les_espiro_laudo" placeholder="Ex: Distúrbio restritivo leve" oninput="fd.les_espiro_laudo=this.value"></div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🫁 TC de Tórax de Alta Resolução (TCAR)</h4>
+        <div style="display:grid;grid-template-columns:1fr 160px;gap:12px">
+          <div><label>Laudo resumido</label><textarea id="les_tcar_laudo" rows="3" placeholder="ex: Derrame pleural bilateral leve. Sem consolidações ou nódulos." onchange="fd.les_tcar_laudo=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea></div>
+          <div><label>Data do exame</label><input type="date" id="les_tcar_data" onchange="fd.les_tcar_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+        </div>
+      </div>
     </div>
 
     <!-- VASC -->
@@ -703,6 +757,24 @@ header h1{font-size:15px;font-weight:700}
           <input type="number" step="0.01" id="vasc_prot_creat" placeholder="ex: 0.5" onchange="fd.vasc_prot_creat=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
           <div><label>EAS — cilindros</label>
           <input type="text" id="vasc_cilindros" placeholder="ex: cilindros hemáticos presentes" onchange="fd.vasc_cilindros=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <div class="section-title">Função Pulmonar (se disponível)</div>
+        <div class="field-grid">
+          <div class="field-group"><label>FEV1 (% do previsto)</label><input type="number" id="vasc_fev1" min="0" max="200" placeholder="Ex: 78" oninput="fd.vasc_fev1=this.value"></div>
+          <div class="field-group"><label>CVF (% do previsto)</label><input type="number" id="vasc_cvf" min="0" max="200" placeholder="Ex: 82" oninput="fd.vasc_cvf=this.value"></div>
+          <div class="field-group"><label>Relação FEV1/CVF</label><input type="number" id="vasc_fev1cvf" min="0" max="1" step="0.01" placeholder="Ex: 0.75" oninput="fd.vasc_fev1cvf=this.value"></div>
+          <div class="field-group"><label>DLCO (% do previsto)</label><input type="number" id="vasc_dlco" min="0" max="200" placeholder="Ex: 65" oninput="fd.vasc_dlco=this.value"></div>
+          <div class="field-group"><label>Data da espirometria</label><input type="date" id="vasc_espiro_data" oninput="fd.vasc_espiro_data=this.value"></div>
+          <div class="field-group" style="grid-column:span 2"><label>Laudo / observações</label><input type="text" id="vasc_espiro_laudo" placeholder="Ex: Distúrbio restritivo moderado" oninput="fd.vasc_espiro_laudo=this.value"></div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🫁 TC de Tórax de Alta Resolução (TCAR)</h4>
+        <div style="display:grid;grid-template-columns:1fr 160px;gap:12px">
+          <div><label>Laudo resumido</label><textarea id="vasc_tcar_laudo" rows="3" placeholder="ex: Nódulos pulmonares bilaterais com escavação central. Opacidades em vidro fosco perihilares." onchange="fd.vasc_tcar_laudo=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea></div>
+          <div><label>Data do exame</label><input type="date" id="vasc_tcar_data" onchange="fd.vasc_tcar_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
         </div>
       </div>
     </div>
@@ -886,6 +958,24 @@ header h1{font-size:15px;font-weight:700}
           <input type="date" id="op_dxa2_data" onchange="fd.op_dxa2_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
         </div>
         <div id="delta_dxa_result" style="margin-top:10px;font-size:13px;color:#555"></div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <div class="section-title">Função Pulmonar (se disponível)</div>
+        <div class="field-grid">
+          <div class="field-group"><label>FEV1 (% do previsto)</label><input type="number" id="op_fev1" min="0" max="200" placeholder="Ex: 78" oninput="fd.op_fev1=this.value"></div>
+          <div class="field-group"><label>CVF (% do previsto)</label><input type="number" id="op_cvf" min="0" max="200" placeholder="Ex: 82" oninput="fd.op_cvf=this.value"></div>
+          <div class="field-group"><label>Relação FEV1/CVF</label><input type="number" id="op_fev1cvf" min="0" max="1" step="0.01" placeholder="Ex: 0.75" oninput="fd.op_fev1cvf=this.value"></div>
+          <div class="field-group"><label>DLCO (% do previsto)</label><input type="number" id="op_dlco" min="0" max="200" placeholder="Ex: 65" oninput="fd.op_dlco=this.value"></div>
+          <div class="field-group"><label>Data da espirometria</label><input type="date" id="op_espiro_data" oninput="fd.op_espiro_data=this.value"></div>
+          <div class="field-group" style="grid-column:span 2"><label>Laudo / observações</label><input type="text" id="op_espiro_laudo" placeholder="Ex: Dentro dos limites da normalidade" oninput="fd.op_espiro_laudo=this.value"></div>
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:12px">
+        <h4 style="margin:0 0 10px;color:#5c6bc0">🫁 TC de Tórax de Alta Resolução (TCAR)</h4>
+        <div style="display:grid;grid-template-columns:1fr 160px;gap:12px">
+          <div><label>Laudo resumido</label><textarea id="op_tcar_laudo" rows="3" placeholder="ex: Sem alterações pleuroparenquimatosas significativas. Parênquima pulmonar preservado." onchange="fd.op_tcar_laudo=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea></div>
+          <div><label>Data do exame</label><input type="date" id="op_tcar_data" onchange="fd.op_tcar_data=this.value" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box"></div>
+        </div>
       </div>
     </div>
 
@@ -1793,12 +1883,16 @@ function narrative() {
     atv = scores || '';
     if(f.hlab27) extras.push(`HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}`);
     if(f.ea_rnm) extras.push(`RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}`);
+    if(f.ea_tcar_laudo) extras.push(`TCAR${f.ea_tcar_data?' ('+fmtDate(f.ea_tcar_data)+')':''}: ${f.ea_tcar_laudo}`);
+    if(f.ea_fev1||f.ea_cvf||f.ea_dlco) espiro=`Espirometria${f.ea_espiro_data?' ('+fmtDate(f.ea_espiro_data)+')':''}: FEV1 ${f.ea_fev1||'—'}%, CVF ${f.ea_cvf||'—'}%, FEV1/CVF ${f.ea_fev1cvf||'—'}, DLCO ${f.ea_dlco||'—'}%${f.ea_espiro_laudo?'. '+f.ea_espiro_laudo:''}`;
   } else if(d==='aps'){
     const scores = f.dapsa ? `DAPSA ${f.dapsa}` : '';
     const dominios = f.aps_dom ? `com comprometimento de ${f.aps_dom}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Artrite Psoriásica${dominios?' '+dominios:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores;
     if(f.aps_pasi||f.aps_bsa) extras.push([f.aps_pasi?`PASI: ${f.aps_pasi}`:null, f.aps_bsa?`BSA: ${f.aps_bsa}%`:null].filter(Boolean).join(' | '));
+    if(f.aps_tcar_laudo) extras.push(`TCAR${f.aps_tcar_data?' ('+fmtDate(f.aps_tcar_data)+')':''}: ${f.aps_tcar_laudo}`);
+    if(f.aps_fev1||f.aps_cvf||f.aps_dlco) espiro=`Espirometria${f.aps_espiro_data?' ('+fmtDate(f.aps_espiro_data)+')':''}: FEV1 ${f.aps_fev1||'—'}%, CVF ${f.aps_cvf||'—'}%, FEV1/CVF ${f.aps_fev1cvf||'—'}, DLCO ${f.aps_dlco||'—'}%${f.aps_espiro_laudo?'. '+f.aps_espiro_laudo:''}`;
   } else if(d==='les'){
     const scores = f.sledai!==undefined ? `SLEDAI-2K ${f.sledai}` : '';
     const manif = f.sledai_active ? `com manifestações ativas de ${f.sledai_active}` : '';
@@ -1813,6 +1907,8 @@ function narrative() {
       f.les_cilindros?`EAS: ${f.les_cilindros}`:null
     ].filter(Boolean).join('. ');
     if(renal) extras.push(renal);
+    if(f.les_tcar_laudo) extras.push(`TCAR${f.les_tcar_data?' ('+fmtDate(f.les_tcar_data)+')':''}: ${f.les_tcar_laudo}`);
+    if(f.les_fev1||f.les_cvf||f.les_dlco) espiro=`Espirometria${f.les_espiro_data?' ('+fmtDate(f.les_espiro_data)+')':''}: FEV1 ${f.les_fev1||'—'}%, CVF ${f.les_cvf||'—'}%, FEV1/CVF ${f.les_fev1cvf||'—'}, DLCO ${f.les_dlco||'—'}%${f.les_espiro_laudo?'. '+f.les_espiro_laudo:''}`;
   } else if(d==='vasc'){
     const tipoNome = f.vasc_tipo==='gpa'?'Granulomatose com Poliangiite (GPA)':f.vasc_tipo==='pam'?'Poliangiite Microscópica (PAM)':f.vasc_tipo==='gepa'?'Granulomatose Eosinofílica com Poliangiite (GEPA)':'vasculite ANCA-associada';
     const orgaosTxt = f.vasc_org ? `com comprometimento de ${f.vasc_org}` : '';
@@ -1831,6 +1927,8 @@ function narrative() {
     ].filter(Boolean).join('. ');
     if(renalV) extras.push(renalV);
     if(f.vasc_biopsia_res) extras.push(`Biópsia: ${f.vasc_biopsia_res}`);
+    if(f.vasc_tcar_laudo) extras.push(`TCAR${f.vasc_tcar_data?' ('+fmtDate(f.vasc_tcar_data)+')':''}: ${f.vasc_tcar_laudo}`);
+    if(f.vasc_fev1||f.vasc_cvf||f.vasc_dlco) espiro=`Espirometria${f.vasc_espiro_data?' ('+fmtDate(f.vasc_espiro_data)+')':''}: FEV1 ${f.vasc_fev1||'—'}%, CVF ${f.vasc_cvf||'—'}%, FEV1/CVF ${f.vasc_fev1cvf||'—'}, DLCO ${f.vasc_dlco||'—'}%${f.vasc_espiro_laudo?'. '+f.vasc_espiro_laudo:''}`;
   } else if(d==='dm'){
     const sub = f.dm_subtipo==='dm'?'Dermatomiosite':f.dm_subtipo==='pm'?'Polimiosite':f.dm_subtipo==='imnm'?'Miopatia Necrosante Autoimune (IMNM)':f.dm_subtipo==='anti_sint'?'Síndrome Anti-Sintetase':f.dm_subtipo==='cadm'?'Dermatomiosite Amiopática (CADM)':'Miopatia Inflamatória Autoimune';
     const manifTxt = f.dm_manif ? `com ${f.dm_manif}` : '';
@@ -1853,6 +1951,8 @@ function narrative() {
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de osteoporose${fraturaTxt}${corticoideTxt}${fd.data_diag?', diagnóstico em '+fmtDate(fd.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = `T-score (menor valor): ${tc}`;
     if(fd.op_frax_maior) extras.push(`FRAX — risco de fratura maior: ${fd.op_frax_maior}%${fd.op_frax_quad?', fratura de quadril: '+fd.op_frax_quad+'%':''}`);
+    if(f.op_tcar_laudo) extras.push(`TCAR${f.op_tcar_data?' ('+fmtDate(f.op_tcar_data)+')':''}: ${f.op_tcar_laudo}`);
+    if(f.op_fev1||f.op_cvf||f.op_dlco) espiro=`Espirometria${f.op_espiro_data?' ('+fmtDate(f.op_espiro_data)+')':''}: FEV1 ${f.op_fev1||'—'}%, CVF ${f.op_cvf||'—'}%, FEV1/CVF ${f.op_fev1cvf||'—'}, DLCO ${f.op_dlco||'—'}%${f.op_espiro_laudo?'. '+f.op_espiro_laudo:''}`;
   }
   if(fd.tb_igra_positivo) extras.push(`IGRA/PPD positivo — Profilaxia para TB latente: ${fd.tb_profilaxia_med||'não registrada'} (${fd.tb_profilaxia_status||'status não informado'})`);
   const trat=dmards.filter(x=>x.med).length===0
