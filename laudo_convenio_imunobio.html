@@ -239,6 +239,10 @@ header h1{font-size:15px;font-weight:700}
           </div>
         </div>
         <div class="field-group">
+          <label>Peso (kg)</label>
+          <input type="number" id="pac_peso" min="1" max="300" step="0.1" placeholder="Ex: 72" oninput="fd.pac_peso=+this.value;syncPesoMed()">
+        </div>
+        <div class="field-group">
           <label>CID-10</label>
           <input type="text" id="p_cid" readonly style="background:#f0f4f8">
           <div id="ar_cid_selector" style="display:none;margin-top:6px">
@@ -1038,7 +1042,7 @@ header h1{font-size:15px;font-weight:700}
         </div>
         <div class="field-group">
           <label>Peso do paciente (kg)</label>
-          <input type="number" id="med_peso" min="1" max="300" step="0.1" placeholder="Ex: 72" oninput="fd.med_peso=+this.value;onPesoChange()">
+          <input type="number" id="med_peso" min="1" max="300" step="0.1" placeholder="Ex: 72" oninput="fd.med_peso=+this.value;if(!fd.pac_peso){fd.pac_peso=fd.med_peso;}onPesoChange()">
         </div>
         <div class="field-group" id="med_via_group">
           <label>Via de administração</label>
@@ -1579,13 +1583,65 @@ function updOP() {
 
 // ─── TABELA DE TRATAMENTO ────────────────────────────────────────────────────
 const DMARD_DEFAULT_DOSE = {
-  'Metotrexato (MTX)': '15mg/semana via oral',
-  'Leflunomida': '20mg/dia',
-  'Azatioprina': '150mg/dia',
-  'Sulfassalazina': '2g/dia',
-  'Naproxeno': '550mg de 12/12h por 6 semanas',
-  'Meloxicam': '15mg/dia por 6 semanas',
+  'Metotrexato (MTX)': '15 mg/semana via oral',
+  'Leflunomida': '20 mg/dia',
+  'Sulfassalazina': '2 g/dia',
+  'Naproxeno': '550 mg de 12/12h',
+  'Ibuprofeno': '600 mg de 8/8h',
+  'Diclofenaco': '75 mg de 12/12h',
+  'Indometacina': '50 mg de 8/8h',
+  'Celecoxibe': '200 mg/dia',
+  'Etoricoxibe': '90 mg/dia',
+  'Meloxicam': '15 mg/dia',
+  'Prednisona': '1 mg/kg/dia (dose de ataque)',
+  'Ciclofosfamida (VO)': '2 mg/kg/dia',
+  'Metotrexato (MTX)': '15 mg/semana via oral',
 };
+// Drogas com dose calculada por peso — função retorna dose arredondada p/ apresentação disponível
+const DMARD_WEIGHT_DOSE = {
+  'Azatioprina': (kg) => {
+    const raw = 2 * kg; // 2 mg/kg/dia
+    const rounded = Math.ceil(raw / 50) * 50; // arredonda p/ cima em múltiplos de 50mg (comp 50mg)
+    return `${Math.min(rounded, 200)} mg/dia`;
+  },
+  'Hidroxicloroquina': (kg) => {
+    const raw = 5 * kg; // 5 mg/kg/dia
+    const rounded = raw <= 400 ? 400 : 400; // máx 400mg — disponível como comp 400mg
+    return `${Math.min(raw <= 400 ? 400 : 400, 400)} mg/dia`;
+  },
+  'Ciclosporina': (kg) => {
+    const raw = 3 * kg; // 3 mg/kg/dia
+    const rounded = Math.ceil(raw / 25) * 25; // arredonda p/ cima em múltiplos de 25mg (caps 25/50/100mg)
+    return `${rounded} mg/dia (${Math.ceil(raw/25)*25} mg/dia = ~3 mg/kg/dia)`;
+  },
+  'Micofenolato de mofetila': (_kg) => '2 g/dia (1g de 12/12h)',
+  'Tacrolimo': (kg) => {
+    const raw = 0.1 * kg; // 0.1 mg/kg/dia
+    const rounded = Math.ceil(raw / 0.5) * 0.5; // caps de 0,5 mg
+    return `${rounded.toFixed(1)} mg/dia (~0,1 mg/kg/dia)`;
+  },
+  'Ciclofosfamida (pulsos EV)': (kg) => {
+    const raw = 15 * kg; // 15 mg/kg/pulso
+    const rounded = Math.ceil(raw / 50) * 50;
+    return `${rounded} mg EV/pulso (~15 mg/kg × ${kg} kg) mensal`;
+  },
+};
+function getDmardDose(med) {
+  const kg = fd.pac_peso || fd.med_peso || null;
+  if (kg && DMARD_WEIGHT_DOSE[med]) return DMARD_WEIGHT_DOSE[med](kg);
+  return DMARD_DEFAULT_DOSE[med] || '';
+}
+function syncPesoMed() {
+  // Sincroniza peso do tab PAC → campo de peso no tab MED
+  const medPesoEl = document.getElementById('med_peso');
+  if (medPesoEl && fd.pac_peso) { medPesoEl.value = fd.pac_peso; fd.med_peso = fd.pac_peso; onPesoChange(); }
+  // Recalcula doses de DMARDs já adicionados
+  dmards.forEach((d, idx) => {
+    if (!d.med) return;
+    const newDose = getDmardDose(d.med);
+    if (newDose) { d.dose = newDose; const el = document.getElementById('dose'+idx); if(el) el.value = newDose; }
+  });
+}
 
 function addDmard(data) {
   const idx=dmards.length;
@@ -1596,7 +1652,7 @@ function addDmard(data) {
   tr.id='dr'+idx;
   const opts=(DMARD_OPTS[disease]||['Outro']).map(o=>`<option value="${o}"${d.med===o?' selected':''}>${o}</option>`).join('');
   const mots=MOTIVOS.map(o=>`<option value="${o}"${d.motivo===o?' selected':''}>${o}</option>`).join('');
-  tr.innerHTML=`<td><select onchange="dmards[${idx}].med=this.value;var def=DMARD_DEFAULT_DOSE[this.value];if(def){dmards[${idx}].dose=def;document.getElementById('dose${idx}').value=def;}else{dmards[${idx}].dose='';document.getElementById('dose${idx}').value='';}updDutMsg()"><option value="">Selecione...</option>${opts}</select></td>
+  tr.innerHTML=`<td><select onchange="dmards[${idx}].med=this.value;var def=getDmardDose(this.value);if(def){dmards[${idx}].dose=def;document.getElementById('dose${idx}').value=def;}else{dmards[${idx}].dose='';document.getElementById('dose${idx}').value='';}updDutMsg()"><option value="">Selecione...</option>${opts}</select></td>
     <td><input type="text" id="dose${idx}" placeholder="dose" value="${d.dose||''}" oninput="dmards[${idx}].dose=this.value"></td>
     <td><input type="date" value="${d.inicio||''}" oninput="dmards[${idx}].inicio=this.value" style="font-size:11px"></td>
     <td><input type="date" value="${d.fim||''}" oninput="dmards[${idx}].fim=this.value" style="font-size:11px"></td>
@@ -2657,6 +2713,7 @@ function _fillCommonDmards(dmardList, bioList) {
 }
 
 function _fillMed(nome, peso, justificativa) {
+  setV('pac_peso', String(peso)); fd.pac_peso=peso;
   setV('med_peso', String(peso));
   const medSel=document.getElementById('med_nome');
   if(medSel){ medSel.value=nome; medSel.dispatchEvent(new Event('change')); }
