@@ -1766,6 +1766,7 @@ function narrative() {
   let intro='';
   let atv='';
   let espiro='';
+  const extras=[];
 
   if(d==='ar'){
     const serologia = [
@@ -1779,6 +1780,7 @@ function narrative() {
     ].filter(Boolean).join(' / ');
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Artrite Reumatoide${serologia?' ('+serologia+')':''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores || '';
+    if(f.ar_tcar_laudo) extras.push(`TCAR${f.ar_tcar_data?' ('+fmtDate(f.ar_tcar_data)+')':''}: ${f.ar_tcar_laudo}`);
     if(f.ar_fev1||f.ar_cvf||f.ar_dlco) espiro=`Espirometria${f.ar_espiro_data?' ('+fmtDate(f.ar_espiro_data)+')':''}: FEV1 ${f.ar_fev1||'—'}%, CVF ${f.ar_cvf||'—'}%, FEV1/CVF ${f.ar_fev1cvf||'—'}, DLCO ${f.ar_dlco||'—'}%${f.ar_espiro_laudo?'. '+f.ar_espiro_laudo:''}`;
   } else if(d==='ea'){
     const eaTipoTxt = f.ea_tipo==='rad'?'espondiloartrite axial radiográfica':f.ea_tipo==='nrad'?'espondiloartrite axial não-radiográfica (nr-axSpA)':'espondiloartrite axial';
@@ -1789,68 +1791,70 @@ function narrative() {
     ].filter(Boolean).join(' / ');
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${cidTxt}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/,\s*\.$/, '.').replace(/\s+/g,' ');
     atv = scores || '';
-    if(f.hlab27) atv+=`${atv?' | ':''}HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}`;
-    if(f.ea_rnm) atv+=`${atv?'. ':''}RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}`;
+    if(f.hlab27) extras.push(`HLA-B27: ${f.hlab27==='pos'?'positivo':f.hlab27==='neg'?'negativo':'não realizado'}`);
+    if(f.ea_rnm) extras.push(`RNM sacroilíacas${f.ea_rnm_data?' ('+fmtDate(f.ea_rnm_data)+')':''}: ${f.ea_rnm}`);
   } else if(d==='aps'){
     const scores = f.dapsa ? `DAPSA ${f.dapsa}` : '';
     const dominios = f.aps_dom ? `com comprometimento de ${f.aps_dom}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Artrite Psoriásica${dominios?' '+dominios:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores;
-    if(f.aps_pasi) atv+=`${atv?'. ':''}PASI: ${f.aps_pasi}`;
+    if(f.aps_pasi||f.aps_bsa) extras.push([f.aps_pasi?`PASI: ${f.aps_pasi}`:null, f.aps_bsa?`BSA: ${f.aps_bsa}%`:null].filter(Boolean).join(' | '));
   } else if(d==='les'){
     const scores = f.sledai!==undefined ? `SLEDAI-2K ${f.sledai}` : '';
     const manif = f.sledai_active ? `com manifestações ativas de ${f.sledai_active}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de Lúpus Eritematoso Sistêmico${manif?' '+manif:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = scores;
-    const sorol = [
-      f.les_ana?`ANA: ${f.les_ana}`:null,
-      f.les_dsdna?`Anti-dsDNA: ${f.les_dsdna}`:null,
-      (f.les_c3||f.les_c4)?`C3: ${f.les_c3||'—'} mg/dL | C4: ${f.les_c4||'—'} mg/dL`:null
-    ].filter(Boolean).join('. ');
-    if(sorol) atv+=`${atv?'. ':''}${sorol}`;
+    if(f.les_ana) extras.push(`ANA: ${f.les_ana}`);
+    if(f.les_dsdna) extras.push(`Anti-dsDNA: ${f.les_dsdna}`);
+    if(f.les_c3||f.les_c4||f.les_ch50) extras.push([f.les_c3?`C3: ${f.les_c3} mg/dL`:null, f.les_c4?`C4: ${f.les_c4} mg/dL`:null, f.les_ch50?`CH50: ${f.les_ch50}%`:null].filter(Boolean).join(' | '));
     const renal = [
       f.les_proteinuria_24h?`Proteinúria 24h: ${f.les_proteinuria_24h} mg/24h`:null,
       f.les_prot_creat?`Rel. Prot/Creat: ${f.les_prot_creat}`:null,
       f.les_cilindros?`EAS: ${f.les_cilindros}`:null
     ].filter(Boolean).join('. ');
-    if(renal) atv+=`${atv?'. ':''}${renal}`;
+    if(renal) extras.push(renal);
   } else if(d==='vasc'){
     const tipoNome = f.vasc_tipo==='gpa'?'Granulomatose com Poliangiite (GPA)':f.vasc_tipo==='pam'?'Poliangiite Microscópica (PAM)':f.vasc_tipo==='gepa'?'Granulomatose Eosinofílica com Poliangiite (GEPA)':'vasculite ANCA-associada';
     const orgaosTxt = f.vasc_org ? `com comprometimento de ${f.vasc_org}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${tipoNome}${orgaosTxt?' '+orgaosTxt:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     const ancaTxt = f.vasc_anca==='pr3'?'PR3-ANCA positivo (c-ANCA)':f.vasc_anca==='mpo'?'MPO-ANCA positivo (p-ANCA)':f.vasc_anca==='neg'?'ANCA negativo':'';
     atv = [
-      ancaTxt?(ancaTxt+(f.vasc_anca_tit?' — título: '+f.vasc_anca_tit:'')):null,
       f.vasc_bvas?`BVAS: ${f.vasc_bvas}`:null,
-      f.vasc_creat?`Creatinina: ${f.vasc_creat} mg/dL`:null
-    ].filter(Boolean).join('. ');
+      f.vasc_creat?`Creatinina: ${f.vasc_creat} mg/dL`:null,
+      f.vasc_tfg?`TFG: ${f.vasc_tfg} mL/min`:null
+    ].filter(Boolean).join(' | ');
+    if(ancaTxt) extras.push(ancaTxt+(f.vasc_anca_tit?' — título: '+f.vasc_anca_tit:''));
     const renalV = [
       f.vasc_proteinuria_24h?`Proteinúria 24h: ${f.vasc_proteinuria_24h} mg/24h`:null,
       f.vasc_prot_creat?`Rel. Prot/Creat: ${f.vasc_prot_creat}`:null,
       f.vasc_cilindros?`EAS: ${f.vasc_cilindros}`:null
     ].filter(Boolean).join('. ');
-    if(renalV) atv+=`${atv?'. ':''}${renalV}`;
+    if(renalV) extras.push(renalV);
+    if(f.vasc_biopsia_res) extras.push(`Biópsia: ${f.vasc_biopsia_res}`);
   } else if(d==='dm'){
     const sub = f.dm_subtipo==='dm'?'Dermatomiosite':f.dm_subtipo==='pm'?'Polimiosite':f.dm_subtipo==='imnm'?'Miopatia Necrosante Autoimune (IMNM)':f.dm_subtipo==='anti_sint'?'Síndrome Anti-Sintetase':f.dm_subtipo==='cadm'?'Dermatomiosite Amiopática (CADM)':'Miopatia Inflamatória Autoimune';
     const manifTxt = f.dm_manif ? `com ${f.dm_manif}` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de ${sub}${manifTxt?' '+manifTxt:''}${f.data_diag?', diagnóstico em '+fmtDate(f.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = f.mmt8!==undefined ? `MMT-8: ${f.mmt8}/80` : '';
-    atv += [
+    const enzimas = [
       f.dm_ck?`CK: ${f.dm_ck} U/L`:null,
       f.dm_aldolase?`Aldolase: ${f.dm_aldolase} U/L`:null,
-      f.dm_ac?`Anticorpos: ${f.dm_ac}`:null
-    ].filter(Boolean).map((t,i)=>i===0&&atv?'. '+t:t).join('. ');
+      f.dm_ldh?`LDH: ${f.dm_ldh} U/L`:null,
+      f.dm_tgo?`TGO: ${f.dm_tgo} U/L`:null
+    ].filter(Boolean).join(' | ');
+    if(enzimas) extras.push(enzimas);
+    if(f.dm_ac) extras.push(`Anticorpos miosite-específicos: ${f.dm_ac}`);
     if(f.dm_fev1||f.dm_cvf2||f.dm_dlco2) espiro=`Espirometria${f.dm_espiro_data?' ('+fmtDate(f.dm_espiro_data)+')':''}: FEV1 ${f.dm_fev1||'—'}%, CVF ${f.dm_cvf2||'—'}%, DLCO ${f.dm_dlco2||'—'}%${f.dm_espiro_laudo?'. '+f.dm_espiro_laudo:''}`;
-    if(f.dm_tcar_laudo) espiro+=`${espiro?'. ':''}TCAR${f.dm_tcar_data?' ('+fmtDate(f.dm_tcar_data)+')':''}: ${f.dm_tcar_laudo}`;
+    if(f.dm_tcar_laudo) extras.push(`TCAR${f.dm_tcar_data?' ('+fmtDate(f.dm_tcar_data)+')':''}: ${f.dm_tcar_laudo}`);
   } else if(d==='op'){
     const tc = fd.op_tscore_min!==undefined ? fd.op_tscore_min : '—';
     const fraturaTxt = fd.op_fraturas ? `, com história de fraturas por fragilidade (${fd.op_fraturas})` : '';
     const corticoideTxt = fd.op_corticoide ? `, em uso de corticoide (${fd.op_corticoide})` : '';
     intro = `Paciente ${nome}, ${idad}${sexo}, com diagnóstico de osteoporose${fraturaTxt}${corticoideTxt}${fd.data_diag?', diagnóstico em '+fmtDate(fd.data_diag):''}, ${apesarDe}.`.replace(/\s+/g,' ');
     atv = `T-score (menor valor): ${tc}`;
-    if(fd.op_frax_maior) atv+=`. FRAX fratura maior: ${fd.op_frax_maior}%${fd.op_frax_quad?', quadril: '+fd.op_frax_quad+'%':''}`;
+    if(fd.op_frax_maior) extras.push(`FRAX — risco de fratura maior: ${fd.op_frax_maior}%${fd.op_frax_quad?', fratura de quadril: '+fd.op_frax_quad+'%':''}`);
   }
-  if(fd.tb_igra_positivo) atv += `${atv?'. ':''}IGRA/PPD positivo — Profilaxia para TB latente: ${fd.tb_profilaxia_med||'não registrada'} (${fd.tb_profilaxia_status||'status não informado'})`;
+  if(fd.tb_igra_positivo) extras.push(`IGRA/PPD positivo — Profilaxia para TB latente: ${fd.tb_profilaxia_med||'não registrada'} (${fd.tb_profilaxia_status||'status não informado'})`);
   const trat=dmards.filter(x=>x.med).length===0
     ?''
     :dmards.filter(x=>x.med).map(x=>`${x.med}${x.dose?' '+x.dose:''}${x.inicio?' (início: '+fmtDate(x.inicio):''}${x.fim?', suspensão: '+fmtDate(x.fim):''}${x.inicio||x.fim?')':''}${x.motivo?' — '+x.motivo:''}`).join('; ')+'.';
@@ -1866,7 +1870,7 @@ function narrative() {
     if(lines.length>0) bioAntTxt = lines.join('\n');
   }
   const med=f.med_nome?`Solicita-se autorização para uso de ${f.med_nome}, via ${f.med_via||'a definir'}, na posologia: ${f.med_posologia||'a definir'}. ${D_DUT[d]}.`:'Medicamento não selecionado.';
-  return {intro,atv,espiro,trat,bioAntTxt,med};
+  return {intro,atv,espiro,extras,trat,bioAntTxt,med};
 }
 
 // ─── PRÉVIA ───────────────────────────────────────────────────────────────────
@@ -1886,8 +1890,9 @@ function buildPreview() {
   const cidVal=document.getElementById('p_cid').value||'—';
   const tbTxt = fd.tb_igra_positivo ? `<p style="background:#fffbeb;border:1px solid #f6ad55;padding:8px 12px;border-radius:6px;font-size:11px;margin-top:6px"><b>⚠️ IGRA/PPD Positivo.</b> Profilaxia de TB: ${fd.tb_profilaxia_med||'não registrada'}${fd.tb_profilaxia_inicio?' — iniciada em '+fmtDate(fd.tb_profilaxia_inicio):''}. Status: ${fd.tb_profilaxia_status||'—'}.</p>` : '';
   const colHdr='<tr style="font-size:10px;color:#888;border-bottom:1px solid #e2e8f0"><td>Medicamento</td><td>Dose</td><td>Início</td><td>Suspensão</td><td>Motivo</td></tr>';
-  // All diseases: intro paragraph + scores on separate line + espirometria on another line
-  const clinicoPar = `<p style="line-height:1.7">${n.intro}</p>${n.atv?`<p style="margin-top:4px;font-size:12px;color:#1a56a0;font-weight:600">${n.atv}</p>`:''}${n.espiro?`<p style="margin-top:4px;font-size:12px;line-height:1.6">${n.espiro}</p>`:''}`;
+  // Narrative: intro → scores (blue) → extras (one per line) → espirometria
+  const extrasHtml = (n.extras||[]).filter(Boolean).map(e=>`<p style="margin-top:4px;font-size:12px;line-height:1.6">${e}</p>`).join('');
+  const clinicoPar = `<p style="line-height:1.7">${n.intro}</p>${n.atv?`<p style="margin-top:4px;font-size:12px;color:#1a56a0;font-weight:600">${n.atv}</p>`:''}${extrasHtml}${n.espiro?`<p style="margin-top:4px;font-size:12px;line-height:1.6">${n.espiro}</p>`:''}`;
 
   // Split dmards into current (no fim) and previous (with fim)
   const dmardAtual = dmards.filter(x=>x.med&&!x.fim);
@@ -1979,6 +1984,7 @@ function genPDF() {
   y+=4;
   addText(n.intro);
   if(n.atv) addText(n.atv,9,'bold',[26,86,160]);
+  (n.extras||[]).filter(Boolean).forEach(e=>addText(e,9));
   if(n.espiro) addText(n.espiro,9);
 
   y+=4;
@@ -2071,6 +2077,7 @@ function genDOCX() {
     b('CID-10: ',document.getElementById('p_cid').value||'—'),
     p(n.intro),
     ...(n.atv?[p(n.atv)]:[]),
+    ...(n.extras||[]).filter(Boolean).map(e=>p(e)),
     ...(n.espiro?[p(n.espiro)]:[]),
   ];
   if(dRowsAtualD.length>0){children.push(p('MEDICAÇÕES DE USO ATUAL'));children.push(tbl(['Medicamento','Dose','Início','Suspensão','Motivo'],dRowsAtualD));}
