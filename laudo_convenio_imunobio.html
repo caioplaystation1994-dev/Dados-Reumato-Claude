@@ -1989,10 +1989,10 @@ function buildPreview() {
   const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
   const cidVal=document.getElementById('p_cid').value||'—';
   const tbTxt = fd.tb_igra_positivo ? `<p style="background:#fffbeb;border:1px solid #f6ad55;padding:8px 12px;border-radius:6px;font-size:11px;margin-top:6px"><b>⚠️ IGRA/PPD Positivo.</b> Profilaxia de TB: ${fd.tb_profilaxia_med||'não registrada'}${fd.tb_profilaxia_inicio?' — iniciada em '+fmtDate(fd.tb_profilaxia_inicio):''}. Status: ${fd.tb_profilaxia_status||'—'}.</p>` : '';
-  const colHdr='<tr style="font-size:10px;color:#888;border-bottom:1px solid #e2e8f0"><td>Medicamento</td><td>Dose</td><td>Início</td><td>Suspensão</td><td>Motivo</td></tr>';
+  const colHdr='<tr style="font-size:10px;color:#111;border-bottom:1px solid #e2e8f0"><td>Medicamento</td><td>Dose</td><td>Início</td><td>Suspensão</td><td>Motivo</td></tr>';
   // Narrative: intro → scores (blue) → extras (one per line) → espirometria
   const extrasHtml = (n.extras||[]).filter(Boolean).map(e=>`<p style="margin-top:4px;font-size:12px;line-height:1.6">${e}</p>`).join('');
-  const clinicoPar = `<p style="line-height:1.7">${n.intro}</p>${n.atv?`<p style="margin-top:4px;font-size:12px;color:#1a56a0;font-weight:600">${n.atv}</p>`:''}${extrasHtml}${n.espiro?`<p style="margin-top:4px;font-size:12px;line-height:1.6">${n.espiro}</p>`:''}`;
+  const clinicoPar = `<p style="line-height:1.7">${n.intro}</p>${n.atv?`<p style="margin-top:4px;font-size:12px;color:#111;font-weight:600">${n.atv}</p>`:''}${extrasHtml}${n.espiro?`<p style="margin-top:4px;font-size:12px;line-height:1.6">${n.espiro}</p>`:''}`;
 
   // Split dmards into current (no fim) and previous (with fim)
   const dmardAtual = dmards.filter(x=>x.med&&!x.fim);
@@ -2004,8 +2004,8 @@ function buildPreview() {
   // Separate IGRA, RX, and other exams regardless of date
   const igraExam = EXAMES_BASE.find(e=>e.id==='ppd');
   const rxExam   = EXAMES_BASE.find(e=>e.id==='rx_torax');
-  const igraTxt  = (igraExam&&exams['ppd']&&exams['ppd'].result) ? `<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#888">${fmtDate(exams['ppd'].date)||'s/d'} — </span>${igraExam.l}: ${exams['ppd'].result}</p>` : '';
-  const rxTxt    = (rxExam&&exams['rx_torax']&&exams['rx_torax'].result)  ? `<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#888">${fmtDate(exams['rx_torax'].date)||'s/d'} — </span>${rxExam.l}: ${exams['rx_torax'].result}</p>` : '';
+  const igraTxt  = (igraExam&&exams['ppd']&&exams['ppd'].result) ? `<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#111">${fmtDate(exams['ppd'].date)||'s/d'} — </span>${igraExam.l}: ${exams['ppd'].result}</p>` : '';
+  const rxTxt    = (rxExam&&exams['rx_torax']&&exams['rx_torax'].result)  ? `<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#111">${fmtDate(exams['rx_torax'].date)||'s/d'} — </span>${rxExam.l}: ${exams['rx_torax'].result}</p>` : '';
 
   // Group remaining lab exams by date as flowing text
   const otherExamIds = new Set(['ppd','rx_torax']);
@@ -2017,7 +2017,7 @@ function buildPreview() {
   });
   let groupedExamRows='';
   Object.entries(examsByDate).forEach(([dt,items])=>{
-    groupedExamRows+=`<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#888">${dt} — </span>${items.join(' / ')}</p>`;
+    groupedExamRows+=`<p style="margin:4px 0;line-height:1.6"><span style="font-size:10px;color:#111">${dt} — </span>${items.join(' / ')}</p>`;
   });
   const sep='<div style="margin:10px 0 4px;border-top:1px solid #e2e8f0"></div>';
   document.getElementById('preview-box').innerHTML=`
@@ -2029,9 +2029,9 @@ function buildPreview() {
     <tr><td colspan="3"><b>CID-10:</b> ${cidVal}</td></tr></table>
     ${sep}
     ${clinicoPar}
-    ${dmardAtualRows?sep+`<p style="font-size:10px;color:#888;font-weight:600;margin-bottom:2px">MEDICAÇÕES DE USO ATUAL</p><table>${colHdr}${dmardAtualRows}</table>`:''}
-    ${dmardPrevioRows?`<p style="font-size:10px;color:#888;font-weight:600;margin:8px 0 2px">MEDICAÇÕES DE USO PRÉVIO</p><table>${colHdr}${dmardPrevioRows}</table>`:''}
-    ${n.bioAntTxt?`<p style="font-size:10px;color:#888;font-weight:600;margin:8px 0 4px">BIOLÓGICOS ANTERIORES</p><div style="line-height:1.7">${n.bioAntTxt.split('\n').map(l=>`<p style="margin:2px 0">${l}</p>`).join('')}</div>`:''}
+    ${dmardAtualRows?sep+`<p style="font-size:10px;color:#111;font-weight:600;margin-bottom:2px">MEDICAÇÕES DE USO ATUAL</p><table>${colHdr}${dmardAtualRows}</table>`:''}
+    ${dmardPrevioRows?`<p style="font-size:10px;color:#111;font-weight:600;margin:8px 0 2px">MEDICAÇÕES DE USO PRÉVIO</p><table>${colHdr}${dmardPrevioRows}</table>`:''}
+    ${n.bioAntTxt?`<p style="font-size:10px;color:#111;font-weight:600;margin:8px 0 4px">BIOLÓGICOS ANTERIORES</p><div style="line-height:1.7">${n.bioAntTxt.split('\n').map(l=>`<p style="margin:2px 0">${l}</p>`).join('')}</div>`:''}
     ${(igraTxt||rxTxt||groupedExamRows)?sep+'<div>'+igraTxt+rxTxt+groupedExamRows+'</div>':''}
     ${tbTxt}
     ${imagens.filter(i=>i.tipo).length>0?`<div style="margin-top:6px">${imagens.filter(i=>i.tipo).map(i=>`<p style="margin:3px 0"><b>${i.tipo}:</b> ${i.laudo||''}${i.data?' ('+fmtDate(i.data)+')':''}</p>`).join('')}</div>`:''}
