@@ -221,7 +221,7 @@ header h1{font-size:15px;font-weight:700}
       <div class="field-grid">
         <div class="field-group" style="grid-column:span 2">
           <label>Nome completo</label>
-          <input type="text" id="p_nome" placeholder="Nome completo do paciente" oninput="fd.nome=this.value">
+          <input type="text" id="p_nome" list="pac_names_list" placeholder="Nome completo do paciente" oninput="fd.nome=this.value;populatePacNames()"><datalist id="pac_names_list"></datalist>
         </div>
         <div class="field-group">
           <label>Data de nascimento</label>
@@ -257,6 +257,14 @@ header h1{font-size:15px;font-weight:700}
               <span class="pill" onclick="setPill(this,'ea_cid','m46');document.getElementById('p_cid').value='M46.8 — Espondiloartrite axial + periférica'">Axial + Periférica (M46.8)</span>
             </div>
           </div>
+        </div>
+        <div class="field-group">
+          <label>Telefone <span style="font-size:10px;color:#a0aec0">(não aparece no laudo)</span></label>
+          <input type="tel" id="pac_telefone" placeholder="Ex: (11) 99999-9999" oninput="fd.pac_telefone=this.value">
+        </div>
+        <div class="field-group">
+          <label>E-mail <span style="font-size:10px;color:#a0aec0">(não aparece no laudo)</span></label>
+          <input type="email" id="pac_email" placeholder="Ex: paciente@email.com" oninput="fd.pac_email=this.value">
         </div>
       </div>
     </div>
@@ -442,9 +450,16 @@ header h1{font-size:15px;font-weight:700}
           </div>
           <div class="score-display">
             <div class="score-val" id="asdas_result">—</div>
-            <div class="score-label">ASDAS-PCR</div>
+            <div class="score-label" id="asdas_mode_label">ASDAS-PCR</div>
             <div id="asdas_class" class="score-class cls-inactive">Não calculado</div>
           </div>
+        </div>
+      </div>
+      <div style="margin:8px 0 0 0;padding:10px 14px;background:#f7fafc;border-radius:8px;border:1px solid #e2e8f0">
+        <label style="font-size:12px;font-weight:600;color:#2d3748">Marcador para ASDAS:</label>
+        <div class="pill-group" style="margin-top:6px">
+          <span class="pill selected" id="asdas_pcr_pill" onclick="setAsdasMode('pcr',this)">PCR (mg/L)</span>
+          <span class="pill" id="asdas_vhs_pill" onclick="setAsdasMode('vhs',this)">VHS (mm/h)</span>
         </div>
       </div>
       <div class="section-card">
@@ -471,7 +486,7 @@ header h1{font-size:15px;font-weight:700}
           </div>
           <div class="field-group">
             <label>VHS (mm/h)</label>
-            <input type="number" id="ea_vhs" min="0" oninput="fd.ea_vhs=this.value">
+            <input type="number" id="ea_vhs" min="0" oninput="fd.ea_vhs=this.value;updASDAS()">
           </div>
           <div class="field-group">
             <label>Data do diagnóstico</label>
@@ -1031,6 +1046,25 @@ header h1{font-size:15px;font-weight:700}
 
   <!-- TAB MEDICAMENTO -->
   <div class="tab-content" id="tab-med">
+    <div class="section-card" style="margin-bottom:12px">
+      <div class="section-title">Tipo de Solicitação</div>
+      <div class="pill-group" style="margin-bottom:12px">
+        <span class="pill selected" id="sol_intro_pill" onclick="setSolTipo('intro',this)">Introdução</span>
+        <span class="pill" id="sol_renov_pill" onclick="setSolTipo('renov',this)">Renovação</span>
+      </div>
+      <div id="sol_renov_fields" style="display:none">
+        <div class="field-grid">
+          <div class="field-group">
+            <label>Tempo de uso do medicamento</label>
+            <input type="text" id="sol_tempo_uso" placeholder="Ex: 12 meses" oninput="fd.sol_tempo_uso=this.value">
+          </div>
+          <div class="field-group">
+            <label>Resposta ao tratamento</label>
+            <input type="text" id="sol_resposta" placeholder="Ex: boa resposta clínica com remissão" oninput="fd.sol_resposta=this.value">
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="section-card">
       <div class="section-title">Medicamento Solicitado</div>
       <div class="field-grid">
@@ -1081,6 +1115,7 @@ header h1{font-size:15px;font-weight:700}
     <div class="section-title">Exportar</div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
       <button class="btn-primary" onclick="genPDF()">📄 Gerar PDF</button>
+      <button class="btn-primary" style="background:#0d6efd" onclick="genReceita()">🩺 Gerar Receita</button>
       <button class="btn-primary" style="background:#276749" onclick="genDOCX()">📝 Gerar Word (.docx)</button>
       <button class="btn-primary" style="background:#6b46c1" onclick="genRecurso()">📨 Gerar Carta de Recurso</button>
       <button class="btn-primary" style="background:#2d7d46" onclick="salvarLaudo()">💾 Salvar no Banco</button>
@@ -1488,12 +1523,26 @@ function updBASDAI() {
   updASDAS();
 }
 
+let _asdasMode='pcr';
+function setAsdasMode(mode, el) {
+  _asdasMode=mode;
+  document.querySelectorAll('#asdas_pcr_pill,#asdas_vhs_pill').forEach(p=>p.classList.remove('selected'));
+  if(el) el.classList.add('selected');
+  const lbl=document.getElementById('asdas_mode_label');
+  if(lbl) lbl.textContent='ASDAS-'+(mode==='pcr'?'PCR':'VHS');
+  updASDAS();
+}
 function updASDAS() {
   const v=BASDAI_Q.map((_,i)=>parseFloat(document.getElementById('bq'+i)?.value)||0);
   const pcr=parseFloat(fd.ea_pcr)||0;
-  const rigAvg=(v[4]+v[5])/2;
-  const score=0.121*v[1]+0.058*v[2]+0.110*v[3]+0.073*rigAvg+0.579*Math.log(pcr+1);
-  fd.asdas=score.toFixed(2);
+  const vhs=parseFloat(fd.ea_vhs)||0;
+  let score;
+  if(_asdasMode==='vhs') {
+    score=0.113*v[1]+0.086*(v[5]*12)+0.069*v[2]+0.079*v[4]+0.293*Math.sqrt(vhs);
+  } else {
+    score=0.121*v[1]+0.058*(v[5]*12)+0.110*v[2]+0.073*v[4]+0.579*Math.log(pcr+1);
+  }
+  fd.ea_asdas=score.toFixed(2);
   const el=document.getElementById('asdas_result');
   const cl=document.getElementById('asdas_class');
   if(!el||!cl) return;
@@ -2131,7 +2180,7 @@ function buildPreview() {
     ${tbTxt}
     ${imagens.filter(i=>i.tipo).length>0?`<div style="margin-top:6px">${imagens.filter(i=>i.tipo).map(i=>`<p style="margin:3px 0"><b>${i.tipo}:</b> ${i.laudo||''}${i.data?' ('+fmtDate(i.data)+')':''}</p>`).join('')}</div>`:''}
     ${sep}
-    <p style="line-height:1.8">Dessa forma, solicito a introdução de <b>${f.med_nome||'—'}</b> via ${f.med_via||'—'}, conforme posologia abaixo:</p>
+    <p style="line-height:1.8">Dessa forma, ${getSolText(f)} conforme posologia abaixo:</p>
     <p style="white-space:pre-wrap;font-size:12px;line-height:1.7;margin-top:6px">${f.med_posologia||'—'}</p>
     ${f.med_justificativa?`<p style="margin-top:6px;font-size:12px;color:#444"><i>${f.med_justificativa}</i></p>`:''}
     <p style="font-size:10px;color:#888;margin-top:6px"><i>${D_DUT[disease]||''}</i></p>
@@ -2140,6 +2189,52 @@ function buildPreview() {
       <p>CRM: ${f.crm||'_______________'}</p>
       <p>${f.cidade||'_______________'}, ${dataL}</p>
     </div>`;
+}
+
+function genReceita() {
+  if(!window.jspdf){alert('Biblioteca jsPDF não carregada.');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const f=fd;
+  const M=20; let y=20;
+  const TW=170;
+  const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
+
+  // Header
+  doc.setFillColor(26,86,160);doc.rect(0,0,210,14,'F');
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+  doc.text('RECEITA MÉDICA',105,9,{align:'center'});
+  y=24;
+  doc.setTextColor(30,30,30);
+
+  doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text(`Dr(a). ${f.medico||'_______________'}`,M,y);y+=5;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text(`CRM: ${f.crm||'_______________'}   Especialidade: Reumatologia`,M,y);y+=5;
+  doc.text(`${f.cidade||'_______________'}   Data: ${dataL}`,M,y);y+=8;
+
+  doc.setDrawColor(180,180,180);doc.line(M,y,210-M,y);y+=6;
+
+  doc.setFontSize(10);doc.setFont('helvetica','bold');
+  doc.text('Paciente:',M,y);doc.setFont('helvetica','normal');
+  doc.text(f.nome||'_______________',M+22,y);y+=5;
+  if(f.dn){doc.text(`Data de nascimento: ${fmtDate(f.dn)||f.dn}`,M,y);y+=5;}
+  y+=4;doc.line(M,y,210-M,y);y+=8;
+
+  doc.setFontSize(11);doc.setFont('helvetica','bold');
+  const lines=doc.splitTextToSize(`${f.med_nome||'—'} — ${f.med_via||''}`,TW);
+  lines.forEach(l=>{doc.text(l,M,y);y+=5;});
+  doc.setFont('helvetica','normal');doc.setFontSize(10);
+  const posLines=doc.splitTextToSize(f.med_posologia||'—',TW);
+  posLines.forEach(l=>{doc.text(l,M,y);y+=5;});
+
+  y=Math.max(y+20,240);
+  doc.line(M,y,M+70,y);y+=4;
+  doc.text(`Dr(a). ${f.medico||'_______________'}`,M,y);y+=4;
+  doc.text(`CRM: ${f.crm||'_______________'}`,M,y);
+
+  const nome=(f.nome||'paciente').replace(/\s+/g,'_').toLowerCase();
+  doc.save(`receita_${nome}_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 // ─── GERAÇÃO PDF ─────────────────────────────────────────────────────────────
@@ -2217,7 +2312,7 @@ function genPDF() {
   }
 
   y+=4;
-  addText(`Dessa forma, solicito a introdução de ${f.med_nome||'—'} via ${f.med_via||'—'}, conforme posologia abaixo:`);
+  addText(`Dessa forma, ${f.sol_tipo==='renov'?'solicito a renovação de '+(f.med_nome||'—')+' via '+(f.med_via||'—')+', em uso há '+(f.sol_tempo_uso||'—')+', com '+(f.sol_resposta||'—')+'.':'solicito a introdução de '+(f.med_nome||'—')+' via '+(f.med_via||'—')+',' } conforme posologia abaixo:`);
   addText(f.med_posologia||'—',9);
   if(f.med_justificativa) addText(`Justificativa: ${f.med_justificativa}`);
   addText(`Fundamentação: ${D_DUT[disease]||''}`,9,'italic',[80,80,80]);
@@ -2280,7 +2375,7 @@ function genDOCX() {
   Object.entries(docxExamsByDate).forEach(([dt,items])=>children.push(p(`${dt} — ${items.join(' / ')}`)));
   const imgRowsW=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
   if(imgRowsW.length>0) children.push(tbl(['Exame de Imagem','Laudo','Data'],imgRowsW));
-  children.push(p(`Dessa forma, solicito a introdução de ${f.med_nome||'—'} via ${f.med_via||'—'}, conforme posologia abaixo:`));
+  children.push(p(`Dessa forma, ${f.sol_tipo==='renov'?'solicito a renovação de '+(f.med_nome||'—')+' via '+(f.med_via||'—')+', em uso há '+(f.sol_tempo_uso||'—')+', com '+(f.sol_resposta||'—')+'.':'solicito a introdução de '+(f.med_nome||'—')+' via '+(f.med_via||'—')+',' } conforme posologia abaixo:`));
   children.push(p(f.med_posologia||'—'));
   if(f.med_justificativa) children.push(b('Justificativa: ',f.med_justificativa));
   children.push(b('Fundamentação normativa: ',D_DUT[disease]||''));
@@ -2307,6 +2402,7 @@ function salvarLaudo() {
     nome: fd.nome||'Paciente sem nome',
     data: fd.data_laudo||new Date().toISOString().split('T')[0],
     med: fd.med_nome||'—',
+    status: 'rascunho',
     fd: JSON.parse(JSON.stringify(fd)),
     mv: JSON.parse(JSON.stringify(mv)),
     dmards: JSON.parse(JSON.stringify(dmards)),
@@ -2340,6 +2436,21 @@ function carregarLaudo(id) {
   },100);
 }
 
+function duplicarLaudo(id) {
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
+  const snap = laudos.find(l=>l.id===id);
+  if(!snap) return;
+  selectDisease(snap.disease);
+  setTimeout(()=>{
+    fd=JSON.parse(JSON.stringify(snap.fd));
+    mv=JSON.parse(JSON.stringify(snap.mv||{}));
+    dmards=[]; imagens=[];
+    (snap.dmards||[]).forEach(d=>addDmard(d));
+    (snap.imagens||[]).forEach(im=>{imagens.push(im);addImagem();imagens[imagens.length-1]=im;});
+    alert('Laudo duplicado para edição. Salve para criar uma nova entrada.');
+  },100);
+}
+
 function renderLaudos(filtro) {
   const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
   const el = document.getElementById('laudos-lista');
@@ -2349,19 +2460,58 @@ function renderLaudos(filtro) {
     el.innerHTML='<p style="color:#718096;font-size:13px;text-align:center;padding:20px">Nenhum laudo encontrado.</p>';
     return;
   }
+  const STATUS_COLORS={rascunho:'#718096',enviado:'#3182ce',aprovado:'#38a169',negado:'#e53e3e',recurso:'#dd6b20'};
+  const STATUS_LABELS={rascunho:'Rascunho',enviado:'Enviado',aprovado:'Aprovado',negado:'Negado',recurso:'Recurso'};
   el.innerHTML=lista.map(l=>`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;background:#fafafa">
       <div style="flex:1">
-        <div style="font-weight:600;color:#1a202c;font-size:13px">${l.nome}</div>
+        <div style="font-weight:600;color:#1a202c;font-size:13px">${l.nome} <span style="background:${STATUS_COLORS[l.status||'rascunho']};color:#fff;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:500;vertical-align:middle">${STATUS_LABELS[l.status||'rascunho']}</span></div>
         <div style="font-size:11px;color:#718096;margin-top:2px">${D_NAMES[l.disease]||l.disease} · ${l.med} · ${fmtDate(l.data)||l.data}</div>
       </div>
+      <select style="font-size:11px;padding:3px 6px;border:1px solid #cbd5e0;border-radius:5px;background:#fff" onchange="mudarStatus(${l.id},this.value)">
+        <option value="rascunho" ${(l.status||'rascunho')==='rascunho'?'selected':''}>Rascunho</option>
+        <option value="enviado" ${l.status==='enviado'?'selected':''}>Enviado</option>
+        <option value="aprovado" ${l.status==='aprovado'?'selected':''}>Aprovado</option>
+        <option value="negado" ${l.status==='negado'?'selected':''}>Negado</option>
+        <option value="recurso" ${l.status==='recurso'?'selected':''}>Recurso</option>
+      </select>
       <button class="btn-secondary" style="padding:5px 12px;font-size:12px" onclick="carregarLaudo(${l.id})">Carregar</button>
+      <button class="btn-secondary" style="padding:5px 12px;font-size:12px;background:#805ad5;color:#fff;border:none" onclick="duplicarLaudo(${l.id})">📋 Duplicar</button>
       <button class="btn-danger" onclick="excluirLaudo(${l.id})">✕</button>
     </div>`).join('');
 }
 
 function filtrarLaudos(v) { renderLaudos(v); }
 function limparBusca() { document.getElementById('busca-paciente').value=''; renderLaudos(); }
+
+function mudarStatus(id, novoStatus) {
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
+  const idx = laudos.findIndex(l=>l.id===id);
+  if(idx===-1) return;
+  laudos[idx].status = novoStatus;
+  localStorage.setItem('reumaLaudos', JSON.stringify(laudos));
+}
+
+function populatePacNames() {
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
+  const names = [...new Set(laudos.map(l=>l.nome).filter(Boolean))];
+  const dl = document.getElementById('pac_names_list');
+  if(!dl) return;
+  dl.innerHTML = names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+}
+
+function setSolTipo(tipo, el) {
+  fd.sol_tipo=tipo;
+  document.querySelectorAll('#sol_intro_pill,#sol_renov_pill').forEach(p=>p.classList.remove('selected'));
+  if(el) el.classList.add('selected');
+  document.getElementById('sol_renov_fields').style.display=(tipo==='renov')?'block':'none';
+}
+function getSolText(f) {
+  if(f.sol_tipo==='renov') {
+    return `solicito a <b>renovação</b> de <b>${f.med_nome||'—'}</b> via ${f.med_via||'—'}, em uso há ${f.sol_tempo_uso||'—'}, com ${f.sol_resposta||'—'}.`;
+  }
+  return `solicito a introdução de <b>${f.med_nome||'—'}</b> via ${f.med_via||'—'},`;
+}
 
 // ─── ESTATÍSTICAS ──────────────────────────────────────────────────────────────
 function registrarEstatistica(d) {
