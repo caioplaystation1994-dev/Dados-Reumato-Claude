@@ -1593,7 +1593,6 @@ const DMARD_DEFAULT_DOSE = {
   'Celecoxibe': '200 mg/dia',
   'Etoricoxibe': '90 mg/dia',
   'Meloxicam': '15 mg/dia',
-  'Prednisona': '1 mg/kg/dia (dose de ataque)',
   'Ciclofosfamida (VO)': '2 mg/kg/dia',
   'Metotrexato (MTX)': '15 mg/semana via oral',
 };
@@ -1619,6 +1618,11 @@ const DMARD_WEIGHT_DOSE = {
     const raw = 0.1 * kg; // 0.1 mg/kg/dia
     const rounded = Math.ceil(raw / 0.5) * 0.5; // caps de 0,5 mg
     return `${rounded.toFixed(1)} mg/dia (~0,1 mg/kg/dia)`;
+  },
+  'Prednisona': (kg) => {
+    const raw = 1 * kg; // 1 mg/kg/dia
+    const rounded = Math.ceil(raw / 5) * 5; // arredonda p/ cima em múltiplos de 5mg (comp 5 e 20mg)
+    return `${rounded} mg/dia`;
   },
   'Ciclofosfamida (pulsos EV)': (kg) => {
     const raw = 15 * kg; // 15 mg/kg/pulso
