@@ -1010,6 +1010,21 @@ header h1{font-size:15px;font-weight:700}
 
   <!-- TAB EXAMES -->
   <div class="tab-content" id="tab-exam">
+    <div class="section-card" style="background:#fffbeb;border:1.5px solid #fbbf24">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:18px">📋</span>
+        <div>
+          <div style="font-weight:700;font-size:13px;color:#92400e">Cole o resultado do laboratório aqui</div>
+          <div style="font-size:11px;color:#b45309">O sistema detecta e preenche automaticamente os campos abaixo</div>
+        </div>
+      </div>
+      <textarea id="lab_paste_input" rows="5" placeholder="Cole o texto do laudo laboratorial aqui. Exemplos reconhecidos:&#10;PCR: 18,5 mg/L | VHS: 45 mm/h | TGO: 22 U/L | TGP: 28 U/L | Creatinina: 0,9 mg/dL&#10;HBsAg: Não Reagente | Anti-HCV: Não Reagente | Anti-HIV: Não Reagente&#10;Hemograma: Hb 12,5 g/dL, Leuc 7.500/mm³, Plaq 210.000/mm³" style="width:100%;padding:10px;border:1px solid #fcd34d;border-radius:8px;font-size:12px;background:#fff;resize:vertical;box-sizing:border-box;font-family:monospace;line-height:1.6"></textarea>
+      <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap">
+        <button onclick="parseLabText()" style="background:#d97706;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">⚡ Distribuir nos campos</button>
+        <button onclick="document.getElementById('lab_paste_input').value=''" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer">✕ Limpar</button>
+        <div id="lab_parse_result" style="font-size:12px;color:#065f46;font-weight:600"></div>
+      </div>
+    </div>
     <div class="section-card">
       <div class="section-title">Triagem Pré-Biológico <span class="badge-req">Obrigatório pela DUT</span></div>
       <div id="exames-container"></div>
@@ -1638,6 +1653,74 @@ function setGlobalExamDate(val) {
     const disp=document.getElementById('exam_date_display_'+e.id);
     if(disp) disp.value=formatted;
   });
+}
+
+function parseLabText() {
+  const raw = document.getElementById('lab_paste_input').value;
+  if(!raw.trim()) return;
+
+  // Normaliza: vírgula decimal → ponto, remove espaços extras
+  const txt = raw.replace(/(\d),(\d)/g,'$1.$2');
+
+  // Mapa: id do exame → array de padrões a procurar (case-insensitive)
+  const patterns = {
+    pcr:       [/\bPCR\b[:\s=]+([0-9.]+)/i, /prote[íi]na\s*c[- ]?reativa[:\s=]+([0-9.]+)/i],
+    vhs:       [/\bVHS\b[:\s=]+([0-9.]+)/i, /hemossedimenta[çc][aã]o[:\s=]+([0-9.]+)/i, /velocidade\s+de\s+hemossedimenta[çc][aã]o[:\s=]+([0-9.]+)/i],
+    tgo:       [/\bTGO\b[:\s=]+([0-9.]+)/i, /\bAST\b[:\s=]+([0-9.]+)/i, /aspartato\s+aminotransferase[:\s=]+([0-9.]+)/i],
+    tgp:       [/\bTGP\b[:\s=]+([0-9.]+)/i, /\bALT\b[:\s=]+([0-9.]+)/i, /alanina\s+aminotransferase[:\s=]+([0-9.]+)/i],
+    creatinina:[/creatinina[:\s=]+([0-9.]+)/i],
+    hbsag:     [/\bHBsAg\b[:\s:]+([^\n,|;]{2,40})/i, /hepatite\s*b\b[^\n]*?(?:resultado|hbsag)[:\s]+([^\n,|;]{2,40})/i],
+    anti_hbc:  [/anti[-\s]?HBc\b[:\s:]+([^\n,|;]{2,40})/i],
+    anti_hcv:  [/anti[-\s]?HCV\b[:\s:]+([^\n,|;]{2,40})/i, /hepatite\s*c\b[^\n]*?resultado[:\s]+([^\n,|;]{2,40})/i],
+    hiv:       [/anti[-\s]?HIV\b[:\s:]+([^\n,|;]{2,40})/i, /\bHIV\b[:\s:]+([^\n,|;]{2,40})/i],
+    hemograma: [/hemograma[:\s]*([^\n]{5,120})/i],
+    urina:     [/\b(?:EAS|urina\s*(?:tipo\s*i|i|1)|urina\s*de\s*rotina)\b[:\s]+([^\n,|;]{3,80})/i],
+    ppd:       [/\b(?:PPD|IGRA|Quantiferon)\b[:\s:]+([^\n,|;]{2,60})/i]
+  };
+
+  const filled = [];
+  const missed = [];
+
+  Object.entries(patterns).forEach(([id, pats])=>{
+    let found = null;
+    for(const pat of pats){
+      const m = txt.match(pat);
+      if(m){ found = m[1].trim().replace(/\s+/g,' '); break; }
+    }
+    if(found){
+      // Normaliza resultados de sorologias
+      if(['hbsag','anti_hbc','anti_hcv','hiv'].includes(id)){
+        if(/n[aã]o\s*reag/i.test(found)) found='Não Reagente';
+        else if(/reag/i.test(found)&&!/n[aã]o/i.test(found)) found='Reagente';
+        else if(/neg/i.test(found)) found='Não Reagente';
+        else if(/pos/i.test(found)) found='Reagente';
+      }
+      // Numeros: acrescenta unidade se falta
+      if(id==='pcr'&&!/[a-z]/i.test(found)) found=found+' mg/L';
+      if(id==='vhs'&&!/[a-z]/i.test(found)) found=found+' mm/h';
+      if(['tgo','tgp'].includes(id)&&!/[a-z]/i.test(found)) found=found+' U/L';
+      if(id==='creatinina'&&!/[a-z]/i.test(found)) found=found+' mg/dL';
+
+      const el=document.getElementById('exam_result_'+id);
+      if(el){
+        el.value=found;
+        exams[id]=exams[id]||{};
+        exams[id].result=found;
+        if(id==='ppd') checkPPD();
+        filled.push(id);
+      }
+    }
+  });
+
+  const msg = document.getElementById('lab_parse_result');
+  if(filled.length>0){
+    const labels = filled.map(id=>(EXAMES_BASE.find(e=>e.id===id)||{l:id}).l.split(' ')[0]);
+    msg.style.color='#065f46';
+    msg.textContent = `✅ ${filled.length} campo${filled.length>1?'s':''} preenchido${filled.length>1?'s':''}: ${labels.join(', ')}`;
+  } else {
+    msg.style.color='#991b1b';
+    msg.textContent = '⚠️ Nenhum valor reconhecido. Verifique o formato do texto.';
+  }
 }
 
 function buildExams() {
