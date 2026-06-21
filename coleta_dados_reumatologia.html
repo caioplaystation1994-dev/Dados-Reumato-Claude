@@ -3368,18 +3368,18 @@ const PACIENTES_PLANILHA = [{"nome":"Renata vieira dos santos","rghc":"60042775K
 
 function importPacientesPlanilha() {
   const count = PACIENTES_PLANILHA.length;
-  if (!confirm('Importar ' + count + ' pacientes da planilha?\n\nOs pacientes serao ADICIONADOS aos existentes (nao substituidos).')) return;
-  let db = loadDB();
+  if (!confirm('Importar ' + count + ' pacientes da planilha?\n\nOs pacientes serão ADICIONADOS aos existentes (não substituídos).')) return;
+  let db = getData();
   let added = 0, updated = 0;
   PACIENTES_PLANILHA.forEach(function(novo) {
     const idx = db.findIndex(function(p) { return p.rghc && p.rghc === novo.rghc; });
     if (idx >= 0) { db[idx] = Object.assign({}, db[idx], novo); updated++; }
     else { db.push(novo); added++; }
   });
-  saveDB(db);
+  setData(db);
   renderList();
   showPage('list');
-  alert('Importacao concluida! ' + added + ' pacientes adicionados, ' + updated + ' atualizados.');
+  alert('Importação concluída!\n' + added + ' pacientes adicionados, ' + updated + ' atualizados.');
 }
 </script>
 <!-- ===== MODAL EVOLUÇÃO ===== -->
