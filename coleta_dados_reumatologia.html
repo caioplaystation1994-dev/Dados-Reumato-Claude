@@ -191,6 +191,43 @@ tr:hover td{background:#f7faff}
 .alert{background:#fed7d7;color:#9b2c2c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
 .success{background:#c6f6d5;color:#276749;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
 
+/* Checkbox seleção */
+.sel-cb{width:16px;height:16px;cursor:pointer;accent-color:#1a56a0}
+th .sel-cb{accent-color:#fff}
+.badge-ader{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge-ader.ok{background:#c6f6d5;color:#276749}
+.badge-ader.no{background:#fed7d7;color:#9b2c2c}
+.badge-ader.nd{background:#e2e8f0;color:#718096}
+.badge-quest{display:inline-flex;gap:3px;flex-wrap:wrap;max-width:220px}
+.qchip{font-size:10px;padding:2px 6px;border-radius:8px;font-weight:700;white-space:nowrap}
+.qchip.done{background:#c6f6d5;color:#276749}
+.qchip.miss{background:#fed7d7;color:#9b2c2c}
+.qchip.all{background:#c6f6d5;color:#276749;font-size:11px;padding:3px 10px;border-radius:12px}
+.btn-danger-sel{background:#e53e3e;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:none}
+/* Filtros rápidos lista */
+.list-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.filter-btn{padding:5px 13px;border:1.5px solid #cbd5e0;border-radius:20px;background:#fff;font-size:12px;cursor:pointer;font-weight:600;color:#4a5568;transition:.15s}
+.filter-btn:hover{border-color:#1a56a0;color:#1a56a0}
+.filter-btn.active{background:#1a56a0;color:#fff;border-color:#1a56a0}
+/* Sort header */
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{background:#1541a0}
+th.sortable .sort-arrow{margin-left:4px;opacity:.5;font-size:10px}
+th.sortable.asc .sort-arrow::after{content:'▲'}
+th.sortable.desc .sort-arrow::after{content:'▼'}
+th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
+/* Painel de scores (sugestão 6) */
+.scores-panel{background:#f7faff;border:1.5px solid #bee3f8;border-radius:10px;padding:14px 18px;margin-bottom:16px}
+.scores-panel-title{font-size:12px;font-weight:700;color:#2b6cb0;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.scores-grid{display:flex;flex-wrap:wrap;gap:8px}
+.score-pill{display:flex;flex-direction:column;align-items:center;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 14px;min-width:80px}
+.score-pill .sp-lbl{font-size:10px;color:#718096;font-weight:600;margin-bottom:2px}
+.score-pill .sp-val{font-size:18px;font-weight:700;color:#1a56a0}
+.score-pill .sp-sub{font-size:9px;color:#a0aec0;margin-top:1px}
+.score-pill.ok{border-color:#68d391;background:#f0fff4}.score-pill.ok .sp-val{color:#276749}
+.score-pill.warn{border-color:#f6ad55;background:#fffaf0}.score-pill.warn .sp-val{color:#c05621}
+.score-pill.bad{border-color:#fc8181;background:#fff5f5}.score-pill.bad .sp-val{color:#c53030}
+.score-pill.nd{border-color:#e2e8f0;background:#f7faff}.score-pill.nd .sp-val{color:#a0aec0;font-size:14px}
 /* Google Sheets modal */
 .gs-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
 .gs-step-num{width:26px;height:26px;background:#0f9d58;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
@@ -220,6 +257,10 @@ tr:hover td{background:#f7faff}
 <!-- ===== FORMULÁRIO ===== -->
 <div id="page-form" class="page active">
   <div id="form-msg"></div>
+  <div id="scores-panel" class="scores-panel" style="display:none">
+    <div class="scores-panel-title">&#128202; Scores calculados até o momento</div>
+    <div class="scores-grid" id="scores-grid"></div>
+  </div>
 
   <!-- Nav de etapas -->
   <div class="form-steps-nav" style="align-items:center">
@@ -507,6 +548,7 @@ tr:hover td{background:#f7faff}
       <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0">
       <div class="eva-row"><label>EVA Dor</label><input type="range" id="f-eva-dor" min="0" max="100" value="" oninput="updEva('f-eva-dor','v-eva-dor')"><span class="eva-val" id="v-eva-dor">—</span></div>
       <div class="eva-row"><label>EVA Estresse</label><input type="range" id="f-eva-estresse" min="0" max="100" value="" oninput="updEva('f-eva-estresse','v-eva-estresse')"><span class="eva-val" id="v-eva-estresse">—</span></div>
+      <div class="eva-row"><label>EVA Fadiga</label><input type="range" id="f-eva-fadiga" min="0" max="100" value="" oninput="updEva('f-eva-fadiga','v-eva-fadiga')"><span class="eva-val" id="v-eva-fadiga">—</span></div>
       <div class="eva-row"><label>EVA PtGA (Avaliação Global do Paciente)</label><input type="range" id="f-eva-ptga" min="0" max="100" value="" oninput="updEva('f-eva-ptga','v-eva-ptga')"><span class="eva-val" id="v-eva-ptga">—</span></div>
       </div>
     </div>
@@ -627,12 +669,22 @@ tr:hover td{background:#f7faff}
 <div id="page-list" class="page">
   <div class="search-bar">
     <input type="text" id="search-input" placeholder="Buscar por nome ou RGHC..." oninput="renderList()">
+    <button class="btn-danger-sel" id="btn-excluir-sel" onclick="deleteSelected()">Excluir selecionados</button>
     <button class="btn-primary btn-sm" onclick="exportCSV()">Exportar CSV</button>
     <button class="btn-green-sm" onclick="openSheetsModal()" title="Exportar para Google Sheets via Apps Script">&#127347; Google Sheets</button>
     <button class="btn-secondary btn-sm" onclick="exportJSON()">Backup JSON</button>
     <label class="btn-secondary btn-sm" style="cursor:pointer;padding:5px 12px;font-size:12px;font-weight:600;border:2px solid #1a56a0;border-radius:8px;color:#1a56a0">
       Importar JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
     </label>
+    <button class="btn-secondary btn-sm" style="background:#f0fff4;color:#276749;border-color:#68d391" onclick="importPacientesPlanilha()">&#128203; Importar Planilha (9 pac.)</button>
+  </div>
+  <div class="list-filters" id="list-filters">
+    <span style="font-size:12px;color:#718096;align-self:center;font-weight:600">Filtrar:</span>
+    <button class="filter-btn active" data-filter="todos" onclick="setListFilter('todos',this)">Todos</button>
+    <button class="filter-btn" data-filter="aderente" onclick="setListFilter('aderente',this)">Aderentes</button>
+    <button class="filter-btn" data-filter="nao-aderente" onclick="setListFilter('nao-aderente',this)">Não aderentes</button>
+    <button class="filter-btn" data-filter="sem-cqr" onclick="setListFilter('sem-cqr',this)">Sem CQR</button>
+    <button class="filter-btn" data-filter="incompletos" onclick="setListFilter('incompletos',this)">Questionários incompletos</button>
   </div>
   <div id="list-container"></div>
 </div>
@@ -1123,8 +1175,8 @@ function calcTabProgress(tab) {
       const f = [r.material_educ, r.acompanhamento, r.dif_doenca, r.conhec_complic, r.dif_trat,
                  r.facilidade_consulta, r.falta_farm, r.compra_med, r.custo_med, r.deslocamento];
       const evas = ['f-comunic','f-confianca','f-participacao','f-satisfacao','f-suporte',
-                    'f-eva-dor','f-eva-estresse','f-eva-ptga'].filter(id => gv(id) !== '').length;
-      return { done: f.filter(Boolean).length + evas, total: 18 };
+                    'f-eva-dor','f-eva-estresse','f-eva-fadiga','f-eva-ptga'].filter(id => gv(id) !== '').length;
+      return { done: f.filter(Boolean).length + evas, total: 19 };
     }
     case 4: {
       const scores = [r.bmq_necessity, r.bmq_concerns, r.seams_score, r.hads_anx, r.hads_dep, r.haq_score, r.cqr_score];
@@ -1145,6 +1197,57 @@ function updateTabBadges() {
     }
     if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
   }
+  updateScoresPanel();
+}
+
+function pill(label, val, sub, colorClass) {
+  const v = (val !== '' && val !== undefined && val !== null) ? val : null;
+  const cls = v !== null ? colorClass : 'nd';
+  return `<div class="score-pill ${cls}">
+    <span class="sp-lbl">${label}</span>
+    <span class="sp-val">${v !== null ? v : '—'}</span>
+    ${sub ? `<span class="sp-sub">${sub}</span>` : ''}
+  </div>`;
+}
+
+function updateScoresPanel() {
+  const r = formData;
+  const panel = document.getElementById('scores-panel');
+  const grid  = document.getElementById('scores-grid');
+  if (!panel || !grid) return;
+
+  const hasAny = [r.haq_score, r.bmq_necessity, r.bmq_concerns, r.seams_score,
+                  r.hads_anx, r.hads_dep, r.cqr_score].some(v => v !== '' && v !== undefined && v !== null);
+  if (!hasAny) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+
+  // HAQ: 0 sem dificuldade, >1.5 grave
+  const haqClass = r.haq_score === '' || r.haq_score == null ? 'nd'
+    : r.haq_score <= 0.5 ? 'ok' : r.haq_score <= 1.5 ? 'warn' : 'bad';
+
+  // HADS: 0-7 normal, 8-10 limítrofe, 11-21 clínico
+  const hadsClass = v => v === '' || v == null ? 'nd' : v <= 7 ? 'ok' : v <= 10 ? 'warn' : 'bad';
+
+  // CQR adesão
+  const cqrClass = r.cqr_aderente === 'Aderente' ? 'ok' : r.cqr_aderente === 'Não aderente' ? 'bad' : 'nd';
+  const cqrVal   = r.cqr_aderente || (r.cqr_score !== '' && r.cqr_score != null ? r.cqr_score : null);
+
+  // BMQ diff
+  const bmqDiffClass = r.bmq_diff == null || r.bmq_diff === '' ? 'nd' : r.bmq_diff >= 0 ? 'ok' : 'bad';
+
+  // SEAMS: 13-39, >26 boa autoeficácia
+  const seamsClass = r.seams_score == null || r.seams_score === '' ? 'nd'
+    : r.seams_score >= 27 ? 'ok' : r.seams_score >= 20 ? 'warn' : 'bad';
+
+  grid.innerHTML =
+    pill('HAQ-DI', r.haq_score != null && r.haq_score !== '' ? parseFloat(r.haq_score).toFixed(2) : '', '0–3', haqClass) +
+    pill('BMQ-N', r.bmq_necessity, '5–25', r.bmq_necessity != null && r.bmq_necessity !== '' ? 'ok' : 'nd') +
+    pill('BMQ-C', r.bmq_concerns, '6–30', r.bmq_concerns != null && r.bmq_concerns !== '' ? 'warn' : 'nd') +
+    pill('BMQ Δ', r.bmq_diff != null && r.bmq_diff !== '' ? (r.bmq_diff > 0 ? '+' : '') + r.bmq_diff : '', 'N−C', bmqDiffClass) +
+    pill('SEAMS', r.seams_score, '13–39', seamsClass) +
+    pill('HADS-A', r.hads_anx, '0–21', hadsClass(r.hads_anx)) +
+    pill('HADS-D', r.hads_dep, '0–21', hadsClass(r.hads_dep)) +
+    pill('CQR-19', r.cqr_aderente || '', '', cqrClass);
 }
 
 // ============================================================
@@ -1494,7 +1597,7 @@ function restoreHAQ(respostas) {
 }
 
 // ── EVA sliders ──
-const EVA_FIELDS = ['comunic','confianca','participacao','satisfacao','suporte','eva-dor','eva-estresse','eva-ptga'];
+const EVA_FIELDS = ['comunic','confianca','participacao','satisfacao','suporte','eva-dor','eva-estresse','eva-fadiga','eva-ptga'];
 function updEva(inputId, valId) {
   document.getElementById(valId).textContent = document.getElementById(inputId).value;
 }
@@ -1678,6 +1781,7 @@ function savePatient() {
     suporte: document.getElementById('f-suporte').value,
     eva_dor: document.getElementById('f-eva-dor').value,
     eva_estresse: document.getElementById('f-eva-estresse').value,
+    eva_fadiga: document.getElementById('f-eva-fadiga').value,
     eva_ptga: document.getElementById('f-eva-ptga').value,
     // BMQ
     bmq_respostas:  {...(formData.bmq_respostas||{})},
@@ -1751,32 +1855,134 @@ function clearForm() {
 // ============================================================
 // LIST PAGE
 // ============================================================
+let listFilter = 'todos';
+let listSortCol = null;   // 'nome' | 'aderente' | 'quests'
+let listSortDir = 'asc';
+
+function setListFilter(f, btn) {
+  listFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+function applyListFilter(db) {
+  if (listFilter === 'aderente')    return db.filter(p => p.cqr_aderente === 'Aderente');
+  if (listFilter === 'nao-aderente') return db.filter(p => p.cqr_aderente === 'Não aderente');
+  if (listFilter === 'sem-cqr')     return db.filter(p => !p.cqr_aderente);
+  if (listFilter === 'incompletos')  return db.filter(p => QUESTS_DEF.some(q => p[q.key] === '' || p[q.key] === undefined || p[q.key] === null));
+  return db;
+}
+
+function sortList(col) {
+  if (listSortCol === col) listSortDir = listSortDir === 'asc' ? 'desc' : 'asc';
+  else { listSortCol = col; listSortDir = 'asc'; }
+  renderList();
+}
+
+function applySort(db) {
+  if (!listSortCol) return db;
+  return [...db].sort((a, b) => {
+    let va, vb;
+    if (listSortCol === 'nome') { va = (a.nome||'').toLowerCase(); vb = (b.nome||'').toLowerCase(); }
+    else if (listSortCol === 'aderente') {
+      const rank = p => p.cqr_aderente === 'Aderente' ? 0 : p.cqr_aderente === 'Não aderente' ? 1 : 2;
+      va = rank(a); vb = rank(b);
+    } else if (listSortCol === 'quests') {
+      va = QUESTS_DEF.filter(q => a[q.key] === '' || a[q.key] === undefined || a[q.key] === null).length;
+      vb = QUESTS_DEF.filter(q => b[q.key] === '' || b[q.key] === undefined || b[q.key] === null).length;
+    }
+    if (va < vb) return listSortDir === 'asc' ? -1 : 1;
+    if (va > vb) return listSortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+function thSort(col, label) {
+  const cls = listSortCol === col ? listSortDir : '';
+  return `<th class="sortable ${cls}" onclick="sortList('${col}')">${label}<span class="sort-arrow"></span></th>`;
+}
+
+const QUESTS_DEF = [
+  { key: 'haq_score',     label: 'HAQ' },
+  { key: 'bmq_necessity', label: 'BMQ-N' },
+  { key: 'bmq_concerns',  label: 'BMQ-C' },
+  { key: 'seams_score',   label: 'SEAMS' },
+  { key: 'hads_anx',      label: 'HADS-A' },
+  { key: 'hads_dep',      label: 'HADS-D' },
+  { key: 'cqr_score',     label: 'CQR-19' },
+];
+
+function questBadge(p) {
+  const missing = QUESTS_DEF.filter(q => p[q.key] === '' || p[q.key] === undefined || p[q.key] === null);
+  if (missing.length === 0) return '<span class="qchip all">Todos preenchidos</span>';
+  return '<div class="badge-quest">' + missing.map(q =>
+    `<span class="qchip miss">${q.label}</span>`
+  ).join('') + '</div>';
+}
+
+function aderBadge(p) {
+  if (!p.cqr_aderente) return '<span class="badge-ader nd">Sem CQR</span>';
+  if (p.cqr_aderente === 'Aderente') return '<span class="badge-ader ok">Aderente</span>';
+  return '<span class="badge-ader no">Não aderente</span>';
+}
+
+function updateDeleteSelBtn() {
+  const anyChecked = document.querySelectorAll('.cb-patient:checked').length > 0;
+  document.getElementById('btn-excluir-sel').style.display = anyChecked ? 'inline-block' : 'none';
+}
+
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.cb-patient').forEach(c => c.checked = cb.checked);
+  updateDeleteSelBtn();
+}
+
 function renderList() {
   const q = document.getElementById('search-input').value.toLowerCase();
-  const db = getData().filter(p =>
-    p.nome.toLowerCase().includes(q) || p.rghc.toLowerCase().includes(q)
+  let db = getData().filter(p =>
+    p.nome.toLowerCase().includes(q) || (p.rghc||'').toLowerCase().includes(q)
   );
+  db = applyListFilter(db);
+  db = applySort(db);
   const c = document.getElementById('list-container');
+  document.getElementById('btn-excluir-sel').style.display = 'none';
   if (!db.length) { c.innerHTML = '<p style="color:#718096;padding:20px">Nenhum paciente encontrado.</p>'; return; }
   c.innerHTML = `
     <table>
-      <thead><tr><th>#</th><th>Nome</th><th>RGHC</th><th>Doença</th><th>Entrevista</th><th>Atividade</th><th>Ações</th></tr></thead>
+      <thead><tr>
+        <th style="width:36px;text-align:center"><input type="checkbox" class="sel-cb" title="Selecionar todos" onchange="toggleSelectAll(this)"></th>
+        <th>#</th>
+        ${thSort('nome','Nome')}
+        <th>RGHC</th><th>Doença</th>
+        ${thSort('aderente','Adesão (CQR-19)')}
+        ${thSort('quests','Questionários faltando')}
+        <th>Ações</th>
+      </tr></thead>
       <tbody>${db.map((p,i) => `
         <tr>
+          <td style="text-align:center"><input type="checkbox" class="sel-cb cb-patient" data-rghc="${p.rghc}" onchange="updateDeleteSelBtn()"></td>
           <td>${i+1}</td>
           <td>${p.nome}</td>
-          <td>${p.rghc}</td>
+          <td>${p.rghc||'—'}</td>
           <td>${p.doenca || '—'}</td>
-          <td>${p.entrevista || '—'}</td>
-          <td>${p.atividade || '—'}</td>
-          <td>
+          <td style="text-align:center">${aderBadge(p)}</td>
+          <td>${questBadge(p)}</td>
+          <td style="white-space:nowrap">
             <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
             <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
           </td>
         </tr>`).join('')}
       </tbody>
     </table>
-    <p style="margin-top:10px;font-size:12px;color:#718096">${db.length} paciente(s) no total</p>`;
+    <p style="margin-top:10px;font-size:12px;color:#718096">${db.length} paciente(s) exibido(s)</p>`;
+}
+
+function deleteSelected() {
+  const checked = [...document.querySelectorAll('.cb-patient:checked')].map(c => c.dataset.rghc);
+  if (!checked.length) return;
+  if (!confirm(`Excluir ${checked.length} paciente(s) selecionado(s)?`)) return;
+  setData(getData().filter(p => !checked.includes(p.rghc)));
+  renderList();
 }
 
 function deletePatient(rghc) {
@@ -1874,7 +2080,7 @@ function editPatient(rghc) {
     // Escalas
     [['comunic',p.comunic],['confianca',p.confianca],['participacao',p.participacao],
      ['satisfacao',p.satisfacao],['suporte',p.suporte],
-     ['eva-dor',p.eva_dor],['eva-estresse',p.eva_estresse],['eva-ptga',p.eva_ptga]
+     ['eva-dor',p.eva_dor],['eva-estresse',p.eva_estresse],['eva-fadiga',p.eva_fadiga],['eva-ptga',p.eva_ptga]
     ].forEach(([f,v]) => setEva(f, v||''));
     // BMQ
     restoreBMQ(p.bmq_respostas);
@@ -1886,6 +2092,7 @@ function editPatient(rghc) {
     restoreHAQ(p.haq_respostas);
     // CQR-19
     restoreCQR(p.cqr_respostas);
+    updateScoresPanel();
   }, 50);
 }
 
@@ -1905,7 +2112,7 @@ function exportCSV() {
     'material_educ','acompanhamento','dif_doenca','conhec_complic','dif_trat',
     'facilidade_consulta','falta_farm','compra_med','custo_med','deslocamento',
     'comunic','confianca','participacao','satisfacao','suporte',
-    'eva_dor','eva_estresse','eva_ptga',
+    'eva_dor','eva_estresse','eva_fadiga','eva_ptga',
     'bmqn_1','bmqn_2','bmqn_3','bmqn_4','bmqn_5','bmq_necessity',
     'bmqc_1','bmqc_2','bmqc_3','bmqc_4','bmqc_5','bmqc_6','bmq_concerns','bmq_diff',
     'seams_1','seams_2','seams_3','seams_4','seams_5','seams_6','seams_7','seams_8','seams_9','seams_10','seams_11','seams_12','seams_13','seams_score',
@@ -2038,6 +2245,7 @@ const SHEET_COLS = [
   ['suporte',             'EVA – Suporte Social (0–100)'],
   ['eva_dor',             'EVA Dor (0–100)'],
   ['eva_estresse',        'EVA Estresse (0–100)'],
+  ['eva_fadiga',          'EVA Fadiga (0–100)'],
   ['eva_ptga',            'EVA PtGA – Avaliação Global do Paciente (0–100)'],
   // BMQ Necessity
   ['bmqn_1', 'BMQ-N1: Saúde depende dos medicamentos'],
@@ -2754,6 +2962,7 @@ function renderStats() {
     ['Q50 · Suporte social','suporte'],
     ['Q50 · EVA Dor','eva_dor'],
     ['Q50 · EVA Estresse','eva_estresse'],
+    ['Q50 · EVA Fadiga','eva_fadiga'],
     ['Q50 · EVA PtGA','eva_ptga'],
   ].map(([l,f]) => numericCard(l, numStat(db,f))).join('');
   ap(escGrid);
@@ -3112,6 +3321,7 @@ function fillTestData() {
       setSlider('f-suporte',      70);
       setSlider('f-eva-dor',      28);
       setSlider('f-eva-estresse', 42);
+      setSlider('f-eva-fadiga',   55);
       setSlider('f-eva-ptga',     32);
 
       // ── BMQ (1–5): Necessity alta, Concerns moderada ──
@@ -3152,6 +3362,25 @@ function fillTestData() {
 // INIT
 // ============================================================
 initForm();
+
+// ── Importação dos 9 pacientes da planilha ──────────────────────────────────
+const PACIENTES_PLANILHA = [{"nome":"Renata vieira dos santos","rghc":"60042775K","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Evangélico / Protestante","estado_civil":"Divorciado","filhos":"1","escolaridade":"Ensino Superior incompleto","renda":"3 a 5 salários mínimos","ocupacao":"Afastado INSS","carga_horaria":"< 14 horas","locomocao":[],"local_residencia":"Área urbana","num_pessoas":"3","situacao_moradia":"Alugada","tabagismo":"Ex-tabagista","etilismo":"Não","material_educ":"Não","acompanhamento":"Sim","dif_doenca":"Não","conhec_complic":"Parcialmente","dif_trat":"Não","facilidade_consulta":"Sim","falta_farm":"Sim","compra_med":"Não","custo_med":"Sim","deslocamento":"Sim","comunic":30,"confianca":0,"participacao":10,"satisfacao":50,"suporte":0,"eva_dor":80,"eva_estresse":100,"eva_fadiga":100,"eva_ptga":100,"bmq_respostas":{"bmqn-1":4,"bmqn-2":4,"bmqn-3":4,"bmqn-4":3,"bmqn-5":4,"bmqc-1":4,"bmqc-2":4,"bmqc-3":3,"bmqc-4":3,"bmqc-5":2,"bmqc-6":5},"bmq_necessity":19,"bmq_concerns":21,"bmq_diff":-2,"seams_respostas":{"1":3,"2":3,"3":3,"4":3,"5":2,"6":3,"7":3,"8":3,"9":2,"10":2,"11":3,"12":2,"13":3},"seams_score":35,"hads_respostas":{"1A":2,"1D":1,"2A":3,"2D":1,"3A":3,"3D":1,"4A":2,"4D":3,"5A":3,"5D":3,"6A":3,"6D":2,"7A":2,"7D":2},"hads_anx":18,"hads_dep":13,"haq_respostas":{"1":2,"2":1,"3":3,"4":2,"5":1,"6":1,"7":2,"8":1,"9":2,"10":2,"11":2,"12":2,"13":3,"14":3,"15":3,"16":3,"17":1,"18":3,"19":3,"20":3},"haq_score":2.5,"cqr_respostas":{"1":3,"2":3,"3":3,"4":3,"5":4,"6":3,"7":2,"8":3,"9":3,"10":3,"11":3,"12":3,"13":3,"14":3,"15":4,"16":2,"17":3,"18":2,"19":3},"cqr_score":0.5893,"cqr_score_continuo":65,"cqr_aderente":"Aderente","ts":"2026-06-21T15:49:45.278790"},{"nome":"FRANCISCA CESAR DA SILVA","rghc":"13674436F","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Testemunha de Jeová","estado_civil":"Viúvo","filhos":"3","escolaridade":"Ensino Fundamental completo","renda":"1 a 3 salários mínimos","ocupacao":"Aposentado","carga_horaria":"","locomocao":[],"local_residencia":"Área urbana","num_pessoas":"2","situacao_moradia":"Própria","tabagismo":"Ex-tabagista","etilismo":"Sim","material_educ":"Não","acompanhamento":"Não","dif_doenca":"Não","conhec_complic":"Sim","dif_trat":"Não","facilidade_consulta":"Sim","falta_farm":"Sim","compra_med":"Parcialmente","custo_med":"Não","deslocamento":"Não","comunic":0,"confianca":0,"participacao":0,"satisfacao":0,"suporte":50,"eva_dor":0,"eva_estresse":100,"eva_fadiga":60,"eva_ptga":20,"bmq_respostas":{"bmqn-1":2,"bmqn-2":2,"bmqn-3":4,"bmqn-4":2,"bmqn-5":4,"bmqc-1":2,"bmqc-2":2,"bmqc-3":4,"bmqc-4":2,"bmqc-5":2,"bmqc-6":2},"bmq_necessity":14,"bmq_concerns":14,"bmq_diff":0,"seams_respostas":{"1":3,"2":3,"3":3,"4":3,"5":2,"6":2,"7":1,"8":3,"9":3,"10":3,"11":3,"12":2,"13":3},"seams_score":34,"hads_respostas":{"1A":2,"1D":1,"2A":3,"2D":1,"3A":0,"3D":2,"4A":0,"4D":1,"5A":0,"5D":0,"6A":2,"6D":1,"7A":0,"7D":0},"hads_anx":7,"hads_dep":6,"haq_respostas":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":1,"10":0,"11":0,"12":0,"13":0,"14":1,"15":0,"16":0,"17":0,"18":0,"19":0,"20":1},"haq_score":0.38,"cqr_respostas":{"1":3,"2":3,"3":3,"4":3,"5":3,"6":3,"7":3,"8":2,"9":4,"10":3,"11":2,"12":3,"13":4,"14":3,"15":3,"16":2,"17":3,"18":3,"19":4},"cqr_score":0.2826,"cqr_score_continuo":67,"cqr_aderente":"Aderente","ts":"2026-06-21T15:49:45.278995"},{"nome":"Nayara de souza ramos oliveira","rghc":"92243989E","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Evangélico / Protestante","estado_civil":"Casado","filhos":"Sem filhos","escolaridade":"Ensino Superior incompleto","renda":"3 a 5 salários mínimos","ocupacao":"Assistente administrativo","carga_horaria":"40 a 48 horas","locomocao":[],"local_residencia":"Área rural","num_pessoas":"3","situacao_moradia":"Alugada","tabagismo":"Não","etilismo":"Não","material_educ":"Não","acompanhamento":"Não","dif_doenca":"Sim","conhec_complic":"Não","dif_trat":"Sim","facilidade_consulta":"Sim","falta_farm":"Sim","compra_med":"Não","custo_med":"Sim","deslocamento":"Sim","comunic":20,"confianca":0,"participacao":0,"satisfacao":0,"suporte":80,"eva_dor":60,"eva_estresse":60,"eva_fadiga":100,"eva_ptga":60,"bmq_respostas":{"bmqn-1":5,"bmqn-2":5,"bmqn-3":5,"bmqn-4":2,"bmqn-5":4,"bmqc-1":4,"bmqc-2":4,"bmqc-3":3,"bmqc-4":2,"bmqc-5":4,"bmqc-6":4},"bmq_necessity":21,"bmq_concerns":21,"bmq_diff":0,"seams_respostas":{"1":3,"2":3,"3":3,"4":3,"5":2,"6":3,"7":3,"8":3,"9":3,"10":3,"11":3,"12":3,"13":3},"seams_score":38,"hads_respostas":{"1A":1,"1D":1,"2A":2,"2D":0,"3A":2,"3D":2,"4A":2,"4D":1,"5A":1,"5D":0,"6A":1,"6D":0,"7A":1,"7D":1},"hads_anx":10,"hads_dep":5,"haq_respostas":{"1":1,"2":0,"3":0,"4":0,"5":1,"6":0,"7":1,"8":0,"9":2,"10":0,"11":0,"12":0,"13":1,"14":2,"15":1,"16":0,"17":0,"18":1,"19":0,"20":0},"haq_score":1.0,"cqr_respostas":{"1":3,"2":3,"3":3,"4":3,"5":3,"6":3,"7":3,"8":2,"9":3,"10":3,"11":3,"12":4,"13":4,"14":3,"15":4,"16":3,"17":3,"18":4,"19":4},"cqr_score":0.7676,"cqr_score_continuo":74,"cqr_aderente":"Aderente","ts":"2026-06-21T15:49:45.279164"},{"nome":"Rosangela julio coelho","rghc":"92515040E","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Catolicismo","estado_civil":"Casado","filhos":"3","escolaridade":"Ensino Médio completo","renda":"1 a 3 salários mínimos","ocupacao":"Cuidadora de idosos","carga_horaria":"< 14 horas","locomocao":[],"local_residencia":"Área urbana","num_pessoas":"3","situacao_moradia":"Própria","tabagismo":"Não","etilismo":"Não","material_educ":"Não","acompanhamento":"Não","dif_doenca":"Sim","conhec_complic":"Sim","dif_trat":"Não","facilidade_consulta":"Sim","falta_farm":"Sim","compra_med":"Parcialmente","custo_med":"Parcialmente","deslocamento":"Não","comunic":20,"confianca":20,"participacao":0,"satisfacao":20,"suporte":0,"eva_dor":0,"eva_estresse":50,"eva_fadiga":0,"eva_ptga":60,"bmq_respostas":{"bmqn-1":4,"bmqn-2":4,"bmqn-3":4,"bmqn-4":2,"bmqn-5":4,"bmqc-1":2,"bmqc-2":2,"bmqc-3":2,"bmqc-4":2,"bmqc-5":4,"bmqc-6":2},"bmq_necessity":18,"bmq_concerns":14,"bmq_diff":4,"seams_respostas":{"1":3,"2":3,"3":3,"4":3,"5":2,"6":3,"7":3,"8":3,"9":2,"10":3,"11":3,"12":2,"13":3},"seams_score":36,"hads_respostas":{"1A":0,"1D":1,"2A":0,"2D":0,"3A":0,"3D":2,"4A":0,"4D":0,"5A":0,"5D":0,"6A":3,"6D":0,"7A":1,"7D":1},"hads_anx":4,"hads_dep":4,"haq_respostas":{"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0,"10":0,"11":0,"12":0,"13":0,"14":0,"15":0,"16":0,"17":0,"18":0,"19":0,"20":0},"haq_score":0.0,"cqr_respostas":{"1":3,"2":3,"3":3,"4":3,"5":3,"6":3,"7":3,"8":1,"9":2,"10":3,"11":3,"12":3,"13":3,"14":2,"15":4,"16":3,"17":3,"18":2,"19":3},"cqr_score":0.6707,"cqr_score_continuo":60,"cqr_aderente":"Aderente","ts":"2026-06-21T15:49:45.279307"},{"nome":"Maria Janaina da Silva","rghc":"92560917J","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Evangélico / Protestante","estado_civil":"Solteiro","filhos":"2","escolaridade":"Ensino Superior completo","renda":"1 a 3 salários mínimos","ocupacao":"Costureira","carga_horaria":"> 60 horas","locomocao":[],"local_residencia":"Área urbana","num_pessoas":"2","situacao_moradia":"Alugada","tabagismo":"Não","etilismo":"Não","material_educ":"Não","acompanhamento":"Não","dif_doenca":"Não","conhec_complic":"Não","dif_trat":"Parcialmente","facilidade_consulta":"Sim","falta_farm":"Sim","compra_med":"Não","custo_med":"Sim","deslocamento":"Sim","comunic":50,"confianca":0,"participacao":0,"satisfacao":20,"suporte":20,"eva_dor":100,"eva_estresse":100,"eva_fadiga":100,"eva_ptga":100,"bmq_respostas":{"bmqn-1":4,"bmqn-2":4,"bmqn-3":4,"bmqn-4":4,"bmqn-5":3,"bmqc-1":4,"bmqc-2":4,"bmqc-3":4,"bmqc-4":5,"bmqc-5":5,"bmqc-6":2},"bmq_necessity":19,"bmq_concerns":24,"bmq_diff":-5,"seams_respostas":{"1":2,"2":2,"3":2,"4":3,"5":1,"6":3,"7":2,"8":1,"9":1,"10":1,"11":3,"12":2,"13":2},"seams_score":25,"hads_respostas":{"1A":2,"1D":0,"2A":3,"2D":0,"3A":2,"3D":0,"4A":2,"4D":0,"5A":1,"5D":2,"6A":3,"6D":0,"7A":0,"7D":0},"hads_anx":13,"hads_dep":2,"haq_respostas":{"1":2,"2":0,"3":2,"4":2,"5":0,"6":0,"7":0,"8":2,"9":2,"10":1,"11":0,"12":2,"13":2,"14":2,"15":3,"16":3,"17":0,"18":1,"19":2,"20":2},"haq_score":1.88,"cqr_respostas":{"1":3,"2":3,"3":2,"4":3,"5":4,"6":3,"7":2,"8":1,"9":2,"10":2,"11":3,"12":3,"13":3,"14":3,"15":4,"16":3,"17":3,"18":3,"19":2},"cqr_score":-1.7219,"cqr_score_continuo":58,"cqr_aderente":"Não aderente","ts":"2026-06-21T15:49:45.279451"},{"nome":"Maria Silvino Costa","rghc":"14346595F","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Catolicismo","estado_civil":"Solteiro","filhos":"2","escolaridade":"Ensino Fundamental completo","renda":"Mais de 5 salários mínimos","ocupacao":"Aposentado","carga_horaria":"","locomocao":[],"local_residencia":"Área semi-urbana","num_pessoas":"4","situacao_moradia":"Própria","tabagismo":"Ex-tabagista","etilismo":"Ex-etilista","material_educ":"Não","acompanhamento":"Não","dif_doenca":"Sim","conhec_complic":"Parcialmente","dif_trat":"Sim","facilidade_consulta":"Não","falta_farm":"Sim","compra_med":"Sim","custo_med":"Não","deslocamento":"Sim","comunic":0,"confianca":0,"participacao":0,"satisfacao":0,"suporte":20,"eva_dor":50,"eva_estresse":0,"eva_fadiga":0,"eva_ptga":100,"bmq_respostas":{"bmqn-1":4,"bmqn-2":4,"bmqn-3":4,"bmqn-4":4,"bmqn-5":4,"bmqc-1":2,"bmqc-2":4,"bmqc-3":4,"bmqc-4":2,"bmqc-5":4,"bmqc-6":2},"bmq_necessity":20,"bmq_concerns":18,"bmq_diff":2,"seams_respostas":{"1":3,"2":3,"3":3,"4":3,"5":3,"6":3,"7":3,"8":3,"9":3,"10":3,"11":3,"12":3,"13":3},"seams_score":39,"hads_respostas":{"1A":1,"1D":0,"2A":3,"2D":0,"3A":0,"3D":0,"4A":2,"4D":0,"5A":1,"5D":2,"6A":3,"6D":0,"7A":0,"7D":0},"hads_anx":10,"hads_dep":2,"haq_respostas":{"1":2,"2":0,"3":3,"4":2,"5":3,"6":0,"7":3,"8":0,"9":3,"10":0,"11":0,"12":1,"13":3,"14":3,"15":3,"16":0,"17":0,"18":3,"19":3,"20":3},"haq_score":2.62,"cqr_respostas":{"1":3,"2":3,"3":3,"4":2,"5":3,"6":3,"7":3,"8":2,"9":2,"10":3,"11":2,"12":3,"13":3,"14":3,"15":3,"16":3,"17":3,"18":3,"19":3},"cqr_score":0.0346,"cqr_score_continuo":60,"cqr_aderente":"Aderente","ts":"2026-06-21T15:49:45.279593"},{"nome":"Klebiana de souza rocha caetano","rghc":"14323759K","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Evangélico / Protestante","estado_civil":"Casado","filhos":"2","escolaridade":"Ensino Médio completo","renda":"1 a 3 salários mínimos","ocupacao":"Aposentado","carga_horaria":"< 14 horas","locomocao":[],"local_residencia":"Área urbana","num_pessoas":"3","situacao_moradia":"Alugada","tabagismo":"Não","etilismo":"Não","material_educ":"Sim","acompanhamento":"Sim","dif_doenca":"Não","conhec_complic":"Sim","dif_trat":"Não","facilidade_consulta":"Sim","falta_farm":"Não","compra_med":"Não","custo_med":"Sim","deslocamento":"Sim","comunic":0,"confianca":0,"participacao":0,"satisfacao":0,"suporte":0,"eva_dor":100,"eva_estresse":100,"eva_fadiga":100,"eva_ptga":70,"bmq_respostas":{"bmqn-1":4,"bmqn-2":4,"bmqn-3":5,"bmqn-5":4,"bmqc-1":4,"bmqc-2":4,"bmqc-3":4,"bmqc-4":4,"bmqc-5":4,"bmqc-6":4},"bmq_necessity":"","bmq_concerns":24,"bmq_diff":"","seams_respostas":{"1":2,"2":3,"3":3,"4":1,"5":1,"6":1,"7":3,"8":2,"9":1,"10":3,"11":3,"12":2,"13":3},"seams_score":28,"hads_respostas":{"1A":3,"1D":3,"2A":3,"2D":1,"3A":3,"3D":2,"4A":3,"4D":3,"5A":2,"5D":2,"6A":3,"6D":1,"7A":3,"7D":2},"hads_anx":20,"hads_dep":14,"haq_respostas":{"1":2,"2":0,"3":3,"4":2,"5":0,"6":0,"7":0,"8":0,"9":1,"10":1,"11":2,"12":0,"13":2,"14":3,"15":3,"16":0,"17":0,"18":3,"19":3,"20":0},"haq_score":2.12,"cqr_respostas":{"1":3,"2":3,"3":2,"4":4,"5":3,"6":3,"7":3,"8":2,"9":3,"10":3,"11":2,"12":3,"13":3,"14":3,"15":4,"16":3,"17":4,"18":3,"19":3},"cqr_score":-1.0895,"cqr_score_continuo":67,"cqr_aderente":"Não aderente","ts":"2026-06-21T15:49:45.279766"},{"nome":"Inez de Abreu Correia","rghc":"2289909H","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Catolicismo","estado_civil":"Solteiro","filhos":"Sem filhos","escolaridade":"Ensino Fundamental incompleto","renda":"Até 1 salário mínimo","ocupacao":"Aposentado","carga_horaria":"< 14 horas","locomocao":[],"local_residencia":"Área urbana","num_pessoas":"2","situacao_moradia":"Própria","tabagismo":"Não","etilismo":"Não","material_educ":"Não","acompanhamento":"Sim","dif_doenca":"Sim","conhec_complic":"Sim","dif_trat":"Parcialmente","facilidade_consulta":"Não","falta_farm":"Sim","compra_med":"Não","custo_med":"Sim","deslocamento":"Não","comunic":0,"confianca":0,"participacao":0,"satisfacao":0,"suporte":0,"eva_dor":8,"eva_estresse":9,"eva_fadiga":0,"eva_ptga":7,"bmq_respostas":{"bmqn-1":3,"bmqn-2":2,"bmqn-3":4,"bmqn-4":4,"bmqn-5":3,"bmqc-1":2,"bmqc-2":2,"bmqc-3":2,"bmqc-4":2,"bmqc-5":2,"bmqc-6":2},"bmq_necessity":16,"bmq_concerns":12,"bmq_diff":4,"seams_respostas":{"1":3,"2":3,"3":2,"4":3,"5":2,"6":1,"7":1,"8":1,"9":1,"10":1,"11":3,"12":3,"13":3},"seams_score":27,"hads_respostas":{"1A":3,"1D":2,"2A":3,"2D":2,"3A":3,"3D":2,"4A":3,"4D":3,"5A":3,"5D":3,"6A":3,"6D":0,"7A":0,"7D":0},"hads_anx":18,"hads_dep":12,"haq_respostas":{},"haq_score":"","cqr_respostas":{"1":3,"2":2,"3":3,"4":4,"5":3,"6":3,"7":2,"8":2,"9":3,"10":3,"11":3,"12":2,"13":3,"14":3,"15":3,"16":3,"17":3,"18":3,"19":3},"cqr_score":0.5394,"cqr_score_continuo":61,"cqr_aderente":"Aderente","ts":"2026-06-21T15:49:45.279900"},{"nome":"Selma Regina Ozuna Bezerra","rghc":"13696399K","nascimento":"","inicio_seg":"","entrevista":"2026-06-17","idade":"","sexo":"","etnia":"","doenca":"","tempo_diag":"","atividade":"","tempo_remissao":"","vhs":"","pcr":"","cpk":"","das28":"","asdas":"","sledai":"","myoact":"","mmt8":"","bvas":"","itas":"","num_med":"","gcs":"","csdmard":[],"bdmard":[],"tsdmard":[],"dmard_posologia":{},"tempo_dmard":"","csdmard_prev":[],"bdmard_prev":[],"tsdmard_prev":[],"comorbidades":[],"med_continuas":[],"reacao":"","reacao_quais":[],"intervalo":"","religiao":"Espiritismo","estado_civil":"Casado","filhos":"3","escolaridade":"Ensino Médio completo","renda":"3 a 5 salários mínimos","ocupacao":"Afastado INSS","carga_horaria":"< 14 horas","locomocao":[],"local_residencia":"Área urbana","num_pessoas":"5","situacao_moradia":"Própria","tabagismo":"Não","etilismo":"Não","material_educ":"Não","acompanhamento":"Não","dif_doenca":"Não","conhec_complic":"Sim","dif_trat":"Parcialmente","facilidade_consulta":"Sim","falta_farm":"Sim","compra_med":"Não","custo_med":"Sim","deslocamento":"Sim","comunic":0,"confianca":0,"participacao":0,"satisfacao":0,"suporte":0,"eva_dor":100,"eva_estresse":100,"eva_fadiga":100,"eva_ptga":70,"bmq_respostas":{"bmqn-1":5,"bmqn-2":4,"bmqn-3":4,"bmqn-4":4,"bmqn-5":4,"bmqc-1":4,"bmqc-2":4,"bmqc-3":2,"bmqc-4":2,"bmqc-5":2,"bmqc-6":2},"bmq_necessity":21,"bmq_concerns":16,"bmq_diff":5,"seams_respostas":{"1":3,"2":3,"3":3,"4":3,"5":3,"6":3,"7":3,"8":3,"9":3,"10":3,"11":3,"12":3,"13":3},"seams_score":39,"hads_respostas":{"1A":2,"1D":1,"2A":2,"2D":1,"3A":2,"3D":2,"4A":2,"4D":1,"5A":2,"5D":1,"6A":1,"6D":1,"7A":1,"7D":2},"hads_anx":12,"hads_dep":9,"haq_respostas":{"1":1,"2":1,"3":1,"4":1,"5":0,"6":0,"7":0,"8":2,"9":1,"10":0,"11":0,"12":1,"13":1,"14":1,"15":1,"16":0,"17":0,"18":1,"19":1,"20":1},"haq_score":1.0,"cqr_respostas":{"1":3,"2":3,"3":3,"4":3,"5":3,"6":3,"7":3,"8":2,"9":3,"10":3,"11":3,"12":3,"13":3,"14":3,"15":4,"16":2,"17":3,"18":3,"19":3},"cqr_score":0.1353,"cqr_score_continuo":65,"cqr_aderente":"Aderente","ts":"2026-06-21T15:49:45.280036"}];
+
+function importPacientesPlanilha() {
+  const count = PACIENTES_PLANILHA.length;
+  if (!confirm('Importar ' + count + ' pacientes da planilha?\n\nOs pacientes serao ADICIONADOS aos existentes (nao substituidos).')) return;
+  let db = loadDB();
+  let added = 0, updated = 0;
+  PACIENTES_PLANILHA.forEach(function(novo) {
+    const idx = db.findIndex(function(p) { return p.rghc && p.rghc === novo.rghc; });
+    if (idx >= 0) { db[idx] = Object.assign({}, db[idx], novo); updated++; }
+    else { db.push(novo); added++; }
+  });
+  saveDB(db);
+  renderList();
+  showPage('list');
+  alert('Importacao concluida! ' + added + ' pacientes adicionados, ' + updated + ' atualizados.');
+}
 </script>
 <!-- ===== MODAL EVOLUÇÃO ===== -->
 <div class="modal-overlay" id="evo-modal" style="display:none" onclick="if(event.target===this)closeEvolucaoModal()">
