@@ -1659,56 +1659,100 @@ function parseLabText() {
   const raw = document.getElementById('lab_paste_input').value;
   if(!raw.trim()) return;
 
-  // Normaliza: vírgula decimal → ponto, remove espaços extras
+  // Normaliza: vírgula decimal → ponto
   const txt = raw.replace(/(\d),(\d)/g,'$1.$2');
 
-  // Mapa: id do exame → array de padrões a procurar (case-insensitive)
+  // Helper: captura sorologias — para no primeiro separador (/ | , ; \n)
+  // e normaliza NR/Reagente/Negativo/etc. → texto padronizado
+  function normSorol(s){
+    if(!s) return null;
+    // corta no primeiro separador após o valor
+    const v = s.trim().replace(/[/|,;].*/,'').trim();
+    if(/\bNR\b/i.test(v)||/n[aã]o\s*reag/i.test(v)||/\bneg/i.test(v)||/ausente/i.test(v)) return 'Não Reagente';
+    if(/\bR\b/i.test(v)||/reag/i.test(v)||/\bpos/i.test(v)||/presente/i.test(v)) return 'Reagente';
+    return v||null;
+  }
+
+  // Tenta montar hemograma a partir de componentes individuais (sem prefixo "Hemograma:")
+  function extractHemograma(){
+    const parts = [];
+    const hb  = txt.match(/\bHb\b[:\s=]*([0-9.]+)/i);
+    const ht  = txt.match(/\bHt\b[:\s=]*([0-9.]+)/i);
+    const vcm = txt.match(/\bVCM\b[:\s=]*([0-9.]+)/i);
+    const hcm = txt.match(/\bHCM\b[:\s=]*([0-9.]+)/i);
+    const leu = txt.match(/([0-9.]+)\s*leuc[oó]citos?/i) || txt.match(/leuc[oó]citos?[:\s=]*([0-9.]+)/i);
+    const plq = txt.match(/([0-9.,]+)\s*plaquetas?/i)    || txt.match(/plaquetas?[:\s=]*([0-9.,]+)/i);
+    const neu = txt.match(/neutr[oó]filos?[:\s=]*([0-9.]+)/i);
+    if(hb)  parts.push(`Hb ${hb[1]} g/dL`);
+    if(ht)  parts.push(`Ht ${ht[1]}%`);
+    if(vcm) parts.push(`VCM ${vcm[1]} fL`);
+    if(hcm) parts.push(`HCM ${hcm[1]} pg`);
+    if(leu) parts.push(`Leucócitos ${leu[1].replace('.','')}/mm³`);
+    if(plq) parts.push(`Plaquetas ${plq[1].replace('.','')}/mm³`);
+    if(neu) parts.push(`Neutrófilos ${neu[1]}%`);
+    return parts.length>=2 ? parts.join(' | ') : null;
+  }
+
+  // Mapa de padrões — sorologias capturam até o primeiro / | , ; \n
+  const SEP = '[^\\n,|;/]{1,30}';
   const patterns = {
-    pcr:       [/\bPCR\b[:\s=]+([0-9.]+)/i, /prote[íi]na\s*c[- ]?reativa[:\s=]+([0-9.]+)/i],
-    vhs:       [/\bVHS\b[:\s=]+([0-9.]+)/i, /hemossedimenta[çc][aã]o[:\s=]+([0-9.]+)/i, /velocidade\s+de\s+hemossedimenta[çc][aã]o[:\s=]+([0-9.]+)/i],
-    tgo:       [/\bTGO\b[:\s=]+([0-9.]+)/i, /\bAST\b[:\s=]+([0-9.]+)/i, /aspartato\s+aminotransferase[:\s=]+([0-9.]+)/i],
-    tgp:       [/\bTGP\b[:\s=]+([0-9.]+)/i, /\bALT\b[:\s=]+([0-9.]+)/i, /alanina\s+aminotransferase[:\s=]+([0-9.]+)/i],
-    creatinina:[/creatinina[:\s=]+([0-9.]+)/i],
-    hbsag:     [/\bHBsAg\b[:\s:]+([^\n,|;]{2,40})/i, /hepatite\s*b\b[^\n]*?(?:resultado|hbsag)[:\s]+([^\n,|;]{2,40})/i],
-    anti_hbc:  [/anti[-\s]?HBc\b[:\s:]+([^\n,|;]{2,40})/i],
-    anti_hcv:  [/anti[-\s]?HCV\b[:\s:]+([^\n,|;]{2,40})/i, /hepatite\s*c\b[^\n]*?resultado[:\s]+([^\n,|;]{2,40})/i],
-    hiv:       [/anti[-\s]?HIV\b[:\s:]+([^\n,|;]{2,40})/i, /\bHIV\b[:\s:]+([^\n,|;]{2,40})/i],
+    pcr:       [/\bPCR\b[:\s/=]+([0-9.]+)/i, /prote[íi]na\s*c[- ]?reativa[:\s=]+([0-9.]+)/i],
+    vhs:       [/\bVHS\b[:\s/=]+([0-9.]+)/i, /hemossedimenta[çc][aã]o[:\s=]+([0-9.]+)/i],
+    tgo:       [/\bTGO\b[:\s/=]+([0-9.]+)/i, /\bAST\b[:\s=]+([0-9.]+)/i],
+    tgp:       [/\bTGP\b[:\s/=]+([0-9.]+)/i, /\bALT\b[:\s=]+([0-9.]+)/i],
+    creatinina:[/creatinina[:\s/=]+([0-9.]+)/i],
+    hbsag:     [/\bHBsAg\b\s*([^\n,|;/]{1,30})/i],
+    anti_hbc:  [/anti[-\s]?HBc\b\s*([^\n,|;/]{1,30})/i, /\bHBc\b\s*([^\n,|;/]{1,30})/i],
+    anti_hcv:  [/anti[-\s]?HCV\b\s*([^\n,|;/]{1,30})/i],
+    hiv:       [/anti[-\s]?HIV\b\s*([^\n,|;/]{1,30})/i, /\bHIV\b\s*([^\n,|;/]{1,30})/i],
     hemograma: [/hemograma[:\s]*([^\n]{5,120})/i],
     urina:     [/\b(?:EAS|urina\s*(?:tipo\s*i|i|1)|urina\s*de\s*rotina)\b[:\s]+([^\n,|;]{3,80})/i],
-    ppd:       [/\b(?:PPD|IGRA|Quantiferon)\b[:\s:]+([^\n,|;]{2,60})/i]
+    ppd:       [/\b(?:PPD|IGRA|Quantiferon)\b[:\s:]+([^\n,|;/]{2,60})/i]
   };
 
   const filled = [];
-  const missed = [];
+
+  // Hemograma: tenta prefixo padrão primeiro, senão monta por componentes
+  let hemoVal = null;
+  const hemoMatch = txt.match(/hemograma[:\s]*([^\n]{5,120})/i);
+  if(hemoMatch) hemoVal = hemoMatch[1].trim();
+  else hemoVal = extractHemograma();
 
   Object.entries(patterns).forEach(([id, pats])=>{
+    if(id==='hemograma'){
+      if(hemoVal){
+        const el=document.getElementById('exam_result_hemograma');
+        if(el){ el.value=hemoVal; exams['hemograma']=exams['hemograma']||{}; exams['hemograma'].result=hemoVal; filled.push('hemograma'); }
+      }
+      return;
+    }
+
     let found = null;
     for(const pat of pats){
       const m = txt.match(pat);
       if(m){ found = m[1].trim().replace(/\s+/g,' '); break; }
     }
-    if(found){
-      // Normaliza resultados de sorologias
-      if(['hbsag','anti_hbc','anti_hcv','hiv'].includes(id)){
-        if(/n[aã]o\s*reag/i.test(found)) found='Não Reagente';
-        else if(/reag/i.test(found)&&!/n[aã]o/i.test(found)) found='Reagente';
-        else if(/neg/i.test(found)) found='Não Reagente';
-        else if(/pos/i.test(found)) found='Reagente';
-      }
-      // Numeros: acrescenta unidade se falta
-      if(id==='pcr'&&!/[a-z]/i.test(found)) found=found+' mg/L';
-      if(id==='vhs'&&!/[a-z]/i.test(found)) found=found+' mm/h';
-      if(['tgo','tgp'].includes(id)&&!/[a-z]/i.test(found)) found=found+' U/L';
-      if(id==='creatinina'&&!/[a-z]/i.test(found)) found=found+' mg/dL';
+    if(!found) return;
 
-      const el=document.getElementById('exam_result_'+id);
-      if(el){
-        el.value=found;
-        exams[id]=exams[id]||{};
-        exams[id].result=found;
-        if(id==='ppd') checkPPD();
-        filled.push(id);
-      }
+    // Normaliza sorologias
+    if(['hbsag','anti_hbc','anti_hcv','hiv'].includes(id)){
+      found = normSorol(found);
+      if(!found) return;
+    }
+
+    // Acrescenta unidade em valores numéricos
+    if(id==='pcr'&&!/[a-z]/i.test(found)) found=found+' mg/L';
+    if(id==='vhs'&&!/[a-z]/i.test(found)) found=found+' mm/h';
+    if(['tgo','tgp'].includes(id)&&!/[a-z]/i.test(found)) found=found+' U/L';
+    if(id==='creatinina'&&!/[a-z]/i.test(found)) found=found+' mg/dL';
+
+    const el=document.getElementById('exam_result_'+id);
+    if(el){
+      el.value=found;
+      exams[id]=exams[id]||{};
+      exams[id].result=found;
+      if(id==='ppd') checkPPD();
+      filled.push(id);
     }
   });
 
