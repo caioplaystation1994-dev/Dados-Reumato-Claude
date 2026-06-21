@@ -1046,8 +1046,29 @@ header h1{font-size:15px;font-weight:700}
         </div>
       </div>
       <div class="field-group" style="margin-top:12px">
-        <label>Posologia sugerida (editável)</label>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <label style="margin:0">Posologia sugerida (editável)</label>
+          <button onclick="restaurarPosologia()" style="font-size:11px;padding:3px 10px;background:#e2e8f0;border:none;border-radius:5px;cursor:pointer;color:#4a5568">↺ Restaurar padrão</button>
+        </div>
         <textarea id="med_posologia" rows="3" oninput="fd.med_posologia=this.value"></textarea>
+      </div>
+      <div class="field-grid" style="margin-top:12px">
+        <div class="field-group">
+          <label>Duração do tratamento</label>
+          <select id="med_duracao" onchange="fd.med_duracao=this.value">
+            <option value="">Selecione...</option>
+            <option value="Por tempo indeterminado">Por tempo indeterminado</option>
+            <option value="6 meses (reavaliação)">6 meses (reavaliação)</option>
+            <option value="12 meses (reavaliação)">12 meses (reavaliação)</option>
+            <option value="24 meses">24 meses</option>
+            <option value="Ciclo único">Ciclo único</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+        <div class="field-group" id="med_duracao_outro_group" style="display:none">
+          <label>Especificar duração</label>
+          <input type="text" id="med_duracao_outro" placeholder="Ex: 18 meses" oninput="fd.med_duracao=this.value">
+        </div>
       </div>
       <div class="field-group" style="margin-top:12px">
         <label>Justificativa clínica da escolha</label>
@@ -1756,12 +1777,46 @@ function rmImagem(idx) {
 }
 
 // ─── MEDICAMENTO ──────────────────────────────────────────────────────────────
+function restaurarPosologia() {
+  const m=fd.med_nome;
+  if(!m) return;
+  const info=MED_INFO[m]||{};
+  const peso=fd.med_peso;
+  const via=fd.med_via||'';
+  let posText='';
+  if(info.pos && typeof info.pos==='object'){
+    if(via.includes('EV')||via.includes('Endovenosa')){
+      posText=peso&&info.pos.evPeso?info.pos.evPeso(peso):info.pos.ev||'';
+    } else {
+      posText=info.pos.sc||'';
+    }
+  } else if(typeof info.pos==='string'){
+    posText=peso&&info.posPeso?info.posPeso(peso):info.pos;
+  }
+  document.getElementById('med_posologia').value=posText;
+  fd.med_posologia=posText;
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const durSel=document.getElementById('med_duracao');
+  if(durSel) durSel.addEventListener('change',function(){
+    const outro=document.getElementById('med_duracao_outro_group');
+    if(outro) outro.style.display=this.value==='Outro'?'':'none';
+    if(this.value!=='Outro') fd.med_duracao=this.value;
+  });
+});
+
 function onMedChange() {
   const m=document.getElementById('med_nome').value;
   fd.med_nome=m;
   fd.med_justificativa='';
+  fd.med_duracao='';
   const justEl=document.getElementById('med_justificativa');
   if(justEl) justEl.value='';
+  const durEl=document.getElementById('med_duracao');
+  if(durEl) durEl.value='';
+  const durOutroGrp=document.getElementById('med_duracao_outro_group');
+  if(durOutroGrp) durOutroGrp.style.display='none';
   const info=MED_INFO[m]||{via:'',pos:''};
   const viaGroup=document.getElementById('med_via_group');
 
@@ -2052,6 +2107,7 @@ function buildPreview() {
     ${sep}
     <p style="line-height:1.8">Dessa forma, solicito a introdução de <b>${f.med_nome||'—'}</b>, conforme prescrição abaixo:</p>
     <div style="font-size:12px;margin-top:8px;padding:12px 14px;border-left:3px solid #1a56a0;background:#f7faff;border-radius:0 6px 6px 0">${fmtPosologiaHTML(f.med_posologia)}</div>
+    ${f.med_duracao?`<p style="margin-top:6px;font-size:12px"><b>Duração do tratamento:</b> ${f.med_duracao}</p>`:''}
     ${f.med_justificativa?`<p style="margin-top:10px;font-size:12px;line-height:1.65"><b>Justificativa:</b> ${f.med_justificativa}</p>`:''}
     <p style="margin-top:8px;font-size:12px"><b>Fundamentação:</b> <i>${D_DUT[disease]||''}</i></p>
     <div style="margin-top:32px;padding-top:16px;font-size:11px;color:#4a5568">
@@ -2145,6 +2201,7 @@ function genPDF() {
       else if(line.trim()) addText(line,9);
     });
   }
+  if(f.med_duracao) addText(`Duração do tratamento: ${f.med_duracao}`,9,'bold');
   if(f.med_justificativa) addText(`Justificativa: ${f.med_justificativa}`,9,'bolditalic');
   addText(`Fundamentação: ${D_DUT[disease]||''}`,9,'italic');
 
@@ -2215,6 +2272,7 @@ function genDOCX() {
       children.push(new Paragraph({children:[new TextRun({text:line,bold:isTit||isPre,size:isTit?22:20})],spacing:{after:60}}));
     });
   }
+  if(f.med_duracao) children.push(new Paragraph({children:[new TextRun({text:'Duração do tratamento: ',bold:true,size:20}),new TextRun({text:f.med_duracao,size:20})],spacing:{after:60}}));
   if(f.med_justificativa) children.push(new Paragraph({children:[new TextRun({text:'Justificativa: ',bold:true,size:20}),new TextRun({text:f.med_justificativa,italics:true,size:20})],spacing:{after:80}}));
   children.push(new Paragraph({children:[new TextRun({text:'Fundamentação: ',bold:true,size:20}),new TextRun({text:D_DUT[disease]||'',italics:true,size:20})],spacing:{after:80}}));
   children.push(new Paragraph({spacing:{before:600}}));
