@@ -1171,8 +1171,8 @@ const MED_OPTS = {
 // vias: array = múltiplas opções para seletor; string = via única
 // pesoDep: true = posologia calculada com peso do paciente
 const MED_INFO = {
-  'Adalimumabe':{via:'Subcutânea (SC)',pos:'USO SUBCUTÂNEO CONTÍNUO\n\n1. Adalimumabe 40 mg/0,8 mL\nAdministrar 40 mg SC a cada 14 dias, por tempo indeterminado.\nRotacionar os locais de aplicação.'},
-  'Etanercepte':{via:'Subcutânea (SC)',pos:'USO SUBCUTÂNEO CONTÍNUO\n\n1. Etanercepte 50 mg/mL\nAdministrar 50 mg SC, 1x por semana, por tempo indeterminado.\nRotacionar os locais de aplicação.'},
+  'Adalimumabe':{via:'Subcutânea (SC)',pos:'USO SUBCUTÂNEO CONTÍNUO\n\n1. Adalimumabe 40 mg/0,8 mL\nAdministrar 40 mg SC a cada 14 dias, por tempo indeterminado.'},
+  'Etanercepte':{via:'Subcutânea (SC)',pos:'USO SUBCUTÂNEO CONTÍNUO\n\n1. Etanercepte 50 mg/mL\nAdministrar 50 mg SC, 1x por semana, por tempo indeterminado.'},
   'Infliximabe':{via:'Endovenosa (EV)',pos:'USO ENDOVENOSO EM REGIME DE INDUÇÃO E MANUTENÇÃO\n\n1. Infliximabe 100 mg/frasco\nAdministrar 3–5 mg/kg EV, diluídos em 250 mL de SF 0,9%, em infusão de no mínimo 2 horas, nas semanas 0, 2, 6 e a cada 8 semanas após.\n\nPré-medicação:\n1. Paracetamol 1 g VO\n2. Difenidramina 50 mg VO',pesoDep:true,posPeso:(kg)=>{const d1=Math.round(3*kg);const d2=Math.round(5*kg);return`USO ENDOVENOSO EM REGIME DE INDUÇÃO E MANUTENÇÃO\n\n1. Infliximabe 100 mg/frasco\nAdministrar ${d1}–${d2} mg, diluídos em 250 mL de SF 0,9%, em infusão de no mínimo 2 horas, nas semanas 0, 2, 6 e a cada 8 semanas após.\n\nPeso: ${kg} kg\n\nPré-medicação:\n1. Paracetamol 1 g VO\n2. Difenidramina 50 mg VO`}},
   'Certolizumabe pegol':{via:'Subcutânea (SC)',pos:'USO SUBCUTÂNEO EM REGIME DE INDUÇÃO E MANUTENÇÃO\n\n1. Certolizumabe pegol 200 mg/mL\nAdministrar 400 mg SC nas semanas 0, 2, 4 e 200 mg SC a cada 2 semanas após.'},
   'Golimumabe':{via:['Subcutânea (SC)','Endovenosa (EV)'],pos:{sc:'USO SUBCUTÂNEO CONTÍNUO\n\n1. Golimumabe 50 mg/0,5 mL\nAdministrar 50 mg SC, 1x por mês, por tempo indeterminado.',ev:'USO ENDOVENOSO EM REGIME DE INDUÇÃO E MANUTENÇÃO\n\n1. Golimumabe 50 mg/4 mL\nAdministrar 2 mg/kg EV, diluídos em 100 mL de SF 0,9%, em infusão de 30 minutos, nas semanas 0, 4 e a cada 8 semanas após.',evPeso:(kg)=>{const dose=Math.round(2*kg);return`USO ENDOVENOSO EM REGIME DE INDUÇÃO E MANUTENÇÃO\n\n1. Golimumabe 50 mg/4 mL\nAdministrar ${dose} mg EV, diluídos em 100 mL de SF 0,9%, em infusão de 30 minutos, nas semanas 0, 4 e a cada 8 semanas após.\n\nPeso: ${kg} kg`}},pesoDep:true},
@@ -1759,6 +1759,9 @@ function rmImagem(idx) {
 function onMedChange() {
   const m=document.getElementById('med_nome').value;
   fd.med_nome=m;
+  fd.med_justificativa='';
+  const justEl=document.getElementById('med_justificativa');
+  if(justEl) justEl.value='';
   const info=MED_INFO[m]||{via:'',pos:''};
   const viaGroup=document.getElementById('med_via_group');
 
