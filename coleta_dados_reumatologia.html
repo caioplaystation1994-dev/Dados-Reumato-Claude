@@ -1288,6 +1288,7 @@ function importJSON(input) {
 // ============================================================
 let formData = {};
 let editingRghc = null;
+let editingIdx = null;
 
 function getData() {
   return JSON.parse(localStorage.getItem('reumatologia_db') || '[]');
@@ -1807,12 +1808,12 @@ function savePatient() {
   };
 
   const db = getData();
-  const searchRghc = editingRghc || rghc;
-  const idx = db.findIndex(p => p.rghc === searchRghc);
-  if (idx !== -1) {
-    db[idx] = record;
+  if (editingIdx !== null) {
+    // Editando paciente existente — usa índice direto, sem ambiguidade
+    db[editingIdx] = record;
   } else {
-    const dupIdx = db.findIndex(p => p.rghc === rghc);
+    // Novo paciente — verifica duplicata por RGHC
+    const dupIdx = rghc ? db.findIndex(p => p.rghc === rghc) : -1;
     if (dupIdx !== -1) {
       if (!confirm(`Paciente com RGHC ${rghc} já existe. Deseja sobrescrever os dados?`)) return;
       db[dupIdx] = record;
@@ -1820,6 +1821,7 @@ function savePatient() {
       db.push(record);
     }
   }
+  editingIdx = null;
   editingRghc = null;
   setData(db);
   msg.innerHTML = '<div class="success">Paciente salvo com sucesso! Total: ' + db.length + ' paciente(s).</div>';
@@ -1833,6 +1835,7 @@ function savePatient() {
 }
 
 function clearForm() {
+  editingIdx = null;
   editingRghc = null;
   document.getElementById('f-nome').value = '';
   document.getElementById('f-rghc').value = '';
@@ -1947,9 +1950,10 @@ function toggleSelectAll(cb) {
 
 function renderList() {
   const q = document.getElementById('search-input').value.toLowerCase();
-  let db = getData().filter(p =>
-    p.nome.toLowerCase().includes(q) || (p.rghc||'').toLowerCase().includes(q)
-  );
+  const fullDb = getData();
+  let db = fullDb
+    .map((p, realIdx) => ({...p, _realIdx: realIdx}))
+    .filter(p => p.nome.toLowerCase().includes(q) || (p.rghc||'').toLowerCase().includes(q));
   db = applyListFilter(db);
   db = applySort(db);
   const c = document.getElementById('list-container');
@@ -1968,7 +1972,7 @@ function renderList() {
       </tr></thead>
       <tbody>${db.map((p,i) => `
         <tr>
-          <td style="text-align:center"><input type="checkbox" class="sel-cb cb-patient" data-rghc="${p.rghc}" onchange="updateDeleteSelBtn()"></td>
+          <td style="text-align:center"><input type="checkbox" class="sel-cb cb-patient" data-idx="${p._realIdx}" onchange="updateDeleteSelBtn()"></td>
           <td>${i+1}</td>
           <td>${p.nome}</td>
           <td>${p.rghc||'—'}</td>
@@ -1976,8 +1980,8 @@ function renderList() {
           <td style="text-align:center">${aderBadge(p)}</td>
           <td>${questBadge(p)}</td>
           <td style="white-space:nowrap">
-            <button class="btn-secondary btn-sm" onclick="editPatient('${p.rghc}')">Editar</button>
-            <button class="btn-danger btn-sm" onclick="deletePatient('${p.rghc}')">Excluir</button>
+            <button class="btn-secondary btn-sm" onclick="editPatient(${p._realIdx})">Editar</button>
+            <button class="btn-danger btn-sm" onclick="deletePatient(${p._realIdx})">Excluir</button>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -1986,23 +1990,28 @@ function renderList() {
 }
 
 function deleteSelected() {
-  const checked = [...document.querySelectorAll('.cb-patient:checked')].map(c => c.dataset.rghc);
-  if (!checked.length) return;
-  if (!confirm(`Excluir ${checked.length} paciente(s) selecionado(s)?`)) return;
-  setData(getData().filter(p => !checked.includes(p.rghc)));
+  const idxs = [...document.querySelectorAll('.cb-patient:checked')].map(c => Number(c.dataset.idx));
+  if (!idxs.length) return;
+  if (!confirm(`Excluir ${idxs.length} paciente(s) selecionado(s)?`)) return;
+  const db = getData().filter((_, i) => !idxs.includes(i));
+  setData(db);
   renderList();
 }
 
-function deletePatient(rghc) {
+function deletePatient(idx) {
   if (!confirm('Excluir este paciente?')) return;
-  setData(getData().filter(p => p.rghc !== rghc));
+  const db = getData();
+  db.splice(idx, 1);
+  setData(db);
   renderList();
 }
 
-function editPatient(rghc) {
-  const p = getData().find(x => x.rghc === rghc);
+function editPatient(idx) {
+  const db = getData();
+  const p = db[idx];
   if (!p) return;
-  editingRghc = rghc;
+  editingIdx = idx;
+  editingRghc = p.rghc;
   showPage('form');
   clearForm();
   setTimeout(() => {
