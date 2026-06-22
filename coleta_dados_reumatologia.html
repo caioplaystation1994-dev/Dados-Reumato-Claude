@@ -1807,13 +1807,20 @@ function savePatient() {
   };
 
   const db = getData();
-  const idx = db.findIndex(p => p.rghc === rghc);
+  const searchRghc = editingRghc || rghc;
+  const idx = db.findIndex(p => p.rghc === searchRghc);
   if (idx !== -1) {
-    if (!confirm(`Paciente com RGHC ${rghc} já existe. Deseja sobrescrever os dados?`)) return;
     db[idx] = record;
   } else {
-    db.push(record);
+    const dupIdx = db.findIndex(p => p.rghc === rghc);
+    if (dupIdx !== -1) {
+      if (!confirm(`Paciente com RGHC ${rghc} já existe. Deseja sobrescrever os dados?`)) return;
+      db[dupIdx] = record;
+    } else {
+      db.push(record);
+    }
   }
+  editingRghc = null;
   setData(db);
   msg.innerHTML = '<div class="success">Paciente salvo com sucesso! Total: ' + db.length + ' paciente(s).</div>';
   window.scrollTo(0,0);
@@ -1826,6 +1833,7 @@ function savePatient() {
 }
 
 function clearForm() {
+  editingRghc = null;
   document.getElementById('f-nome').value = '';
   document.getElementById('f-rghc').value = '';
   document.getElementById('f-nascimento').value = '';
@@ -1994,6 +2002,7 @@ function deletePatient(rghc) {
 function editPatient(rghc) {
   const p = getData().find(x => x.rghc === rghc);
   if (!p) return;
+  editingRghc = rghc;
   showPage('form');
   clearForm();
   setTimeout(() => {
