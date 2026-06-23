@@ -187,6 +187,9 @@ tr:hover td{background:#f7faff}
 .step-progress-bar{flex:1;margin:0 16px;background:#e8ecf0;border-radius:4px;height:6px;overflow:hidden}
 .step-progress-fill{height:100%;background:#1a56a0;border-radius:4px;transition:.4s}
 
+/* Ocultar preenchidos */
+.q-filled-hide{display:none!important}
+#btn-hide-filled.hf-active{background:#e2a000;color:#fff;border-color:#e2a000}
 .hidden{display:none}
 .alert{background:#fed7d7;color:#9b2c2c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
 .success{background:#c6f6d5;color:#276749;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
@@ -270,6 +273,7 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <button class="form-step-btn" id="ftab-btn-3" onclick="showFormTab(3)"><span class="step-num">4</span>Acesso e Percepção<span class="step-badge empty" id="ftab-badge-3">0/18</span></button>
     <button class="form-step-btn" id="ftab-btn-4" onclick="showFormTab(4)"><span class="step-num">5</span>Questionários<span class="step-badge empty" id="ftab-badge-4">0/7</span></button>
     <button class="evo-trigger-btn" onclick="openEvolucaoModal()" title="Colar evolução do prontuário e preencher automaticamente">&#128203; Importar Evolução</button>
+    <button id="btn-hide-filled" class="evo-trigger-btn" style="border-color:#e2a000;background:#fffbeb;color:#744210" onclick="toggleHideFilled()" title="Oculta campos já preenchidos, mostrando apenas os em branco">&#128065; Ocultar preenchidos</button>
   </div>
 
   <!-- ── PAINEL 0: Identificação ── -->
@@ -695,6 +699,7 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <button class="filter-btn" data-filter="nao-aderente" onclick="setListFilter('nao-aderente',this)">Não aderentes</button>
     <button class="filter-btn" data-filter="sem-cqr" onclick="setListFilter('sem-cqr',this)">Sem CQR</button>
     <button class="filter-btn" data-filter="incompletos" onclick="setListFilter('incompletos',this)">Questionários incompletos</button>
+    <button class="filter-btn" data-filter="sem-imuno" onclick="setListFilter('sem-imuno',this)">🚫 Sem imunossupressor</button>
   </div>
   <div id="list-container"></div>
 </div>
@@ -1208,6 +1213,7 @@ function updateTabBadges() {
     if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
   }
   updateScoresPanel();
+  if (hideFilled) applyHideFilled();
 }
 
 function pill(label, val, sub, colorClass) {
@@ -1487,6 +1493,83 @@ function updateMetrics(doenca) {
 }
 
 // ============================================================
+// ============================================================
+// OCULTAR PREENCHIDOS
+// ============================================================
+let hideFilled = false;
+
+function toggleHideFilled() {
+  hideFilled = !hideFilled;
+  const btn = document.getElementById('btn-hide-filled');
+  if (hideFilled) btn.classList.add('hf-active'); else btn.classList.remove('hf-active');
+  applyHideFilled();
+}
+
+function applyHideFilled() {
+  // Limpa marcações anteriores
+  document.querySelectorAll('.q-filled-hide').forEach(el => el.classList.remove('q-filled-hide'));
+  if (!hideFilled) return;
+
+  // ── 1. field-group (inputs de texto/data/número)
+  document.querySelectorAll('.field-group').forEach(fg => {
+    const inp = fg.querySelector('input:not([readonly])');
+    if (inp && inp.value !== '') fg.classList.add('q-filled-hide');
+  });
+
+  // ── 2. Blocos de radio/check: options-grid + seu label acima
+  document.querySelectorAll('.options-grid').forEach(grid => {
+    if (!grid.querySelector('.opt-btn.selected')) return;
+    // Wrapper: pode ser div[style*="margin-top"] ou section-card direto
+    const parent = grid.parentElement;
+    if (!parent) return;
+    // Se o pai for section-card, ocultamos apenas este grid e o q-label imediatamente antes
+    if (parent.classList.contains('section-card') || parent.classList.contains('form-tab-panel')) {
+      // Ocultar o grid
+      grid.classList.add('q-filled-hide');
+      // E o q-label anterior
+      const prevEl = grid.previousElementSibling;
+      if (prevEl && (prevEl.classList.contains('q-label') || prevEl.classList.contains('section-title'))) {
+        prevEl.classList.add('q-filled-hide');
+      }
+    } else {
+      // O pai é o wrapper completo (div com margin-top, sub-q, etc.)
+      parent.classList.add('q-filled-hide');
+    }
+  });
+
+  // ── 3. numeric-inline (VHS/PCR/CPK/DAS28 etc.)
+  document.querySelectorAll('.numeric-inline').forEach(ni => {
+    const inp = ni.querySelector('input');
+    if (inp && inp.value !== '') ni.classList.add('q-filled-hide');
+  });
+
+  // ── 4. EVA sliders
+  document.querySelectorAll('.eva-row').forEach(row => {
+    const val = row.querySelector('.eva-val');
+    if (val && val.textContent !== '—') row.classList.add('q-filled-hide');
+  });
+
+  // ── 5. HAQ items
+  document.querySelectorAll('.haq-item').forEach(item => {
+    if (item.querySelector('.opt-btn.selected')) item.classList.add('q-filled-hide');
+  });
+
+  // ── 6. HADS items e BMQ items (ambos usam .hads-item)
+  document.querySelectorAll('.hads-item').forEach(item => {
+    if (item.querySelector('.opt-btn.selected')) item.classList.add('q-filled-hide');
+  });
+
+  // ── 7. CQR table rows
+  document.querySelectorAll('.cqr-table tbody tr').forEach(row => {
+    if (row.querySelector('.opt-btn.selected')) row.classList.add('q-filled-hide');
+  });
+
+  // ── 8. SEAMS itens (renderizados em seams-items)
+  document.querySelectorAll('#seams-items .hads-item').forEach(item => {
+    if (item.querySelector('.opt-btn.selected')) item.classList.add('q-filled-hide');
+  });
+}
+
 // INIT FORM
 // ============================================================
 function initForm() {
@@ -1934,6 +2017,8 @@ function savePatient() {
 }
 
 function clearForm() {
+  // Desativa modo ocultar preenchidos ao limpar/novo paciente
+  if (hideFilled) { hideFilled = false; const b=document.getElementById('btn-hide-filled'); if(b) b.classList.remove('hf-active'); }
   editingIdx = null;
   editingRghc = null;
   document.getElementById('f-nome').value = '';
@@ -1981,6 +2066,7 @@ function applyListFilter(db) {
   if (listFilter === 'nao-aderente') return db.filter(p => p.cqr_aderente === 'Não aderente');
   if (listFilter === 'sem-cqr')     return db.filter(p => !p.cqr_aderente);
   if (listFilter === 'incompletos')  return db.filter(p => QUESTS_DEF.some(q => p[q.key] === '' || p[q.key] === undefined || p[q.key] === null));
+  if (listFilter === 'sem-imuno')    return db.filter(p => p.sem_imuno === true);
   return db;
 }
 
