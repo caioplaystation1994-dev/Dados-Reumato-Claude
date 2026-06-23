@@ -436,7 +436,7 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     </div>
 
     <div style="margin-top:16px">
-      <div class="q-label">Terapias especiais em uso <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+      <div class="q-label">Terapias especiais em uso nos últimos 12 meses <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
       <div id="q-terapias-especiais" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
         <div class="te-item">
           <div class="opt-btn multi" id="te-ivig-btn" onclick="toggleTerapiaEspecial('ivig')">IVIG</div>
@@ -484,32 +484,6 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
       <div class="options-grid" id="q-tsdmard-prev"></div>
     </div>
 
-    <div style="margin-top:16px">
-      <div class="q-label">Terapias especiais prévias <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
-        <div class="te-item">
-          <div class="opt-btn multi" id="te-ivig-prev-btn" onclick="toggleTerapiaEspecial('ivig_prev')">IVIG</div>
-          <div id="te-ivig-prev-date" style="display:none;margin-top:4px">
-            <label style="font-size:11px;color:#718096">Última realização:</label>
-            <input type="month" id="f-ivig-prev-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.ivig_prev_data=this.value">
-          </div>
-        </div>
-        <div class="te-item">
-          <div class="opt-btn multi" id="te-pulso-prev-btn" onclick="toggleTerapiaEspecial('pulso_prev')">Pulsoterapia</div>
-          <div id="te-pulso-prev-date" style="display:none;margin-top:4px">
-            <label style="font-size:11px;color:#718096">Última realização:</label>
-            <input type="month" id="f-pulso-prev-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.pulso_prev_data=this.value">
-          </div>
-        </div>
-        <div class="te-item">
-          <div class="opt-btn multi" id="te-ciclo-prev-btn" onclick="toggleTerapiaEspecial('ciclo_prev')">Ciclofosfamida</div>
-          <div id="te-ciclo-prev-date" style="display:none;margin-top:4px">
-            <label style="font-size:11px;color:#718096">Última realização:</label>
-            <input type="month" id="f-ciclo-prev-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.ciclo_prev_data=this.value">
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- S7: Comorbidades -->
@@ -853,11 +827,11 @@ const TS_DMARD = ['Baricitinibe','Tofacitinibe','Upadacitinibe'];
 const TEMPO_DMARD = ['< 6 meses','6–12 meses','12–24 meses','24–48 meses','48 meses ou mais'];
 const COMORBIDADES = [
   'Ansiedade','Artroplastia joelho','Artroplastia quadril','Asma','AVCi','Catarata',
-  'DAC','DAOP','Depressão','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn',
-  'Doença de Sjogren','DPOC','DRC','DRGE','FA','Fibromialgia','HAS',
-  'Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','ICFEP','ICFER','IAM',
+  'Baixa acuidade visual','DAC','DAOP','Depressão','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn',
+  'Doença de Sjogren','DPOC','DRC','DRGE','Endometriose','FA','Fibromialgia','HAS',
+  'Hiperparatireoidismo','Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','ICFEP','ICFER','IAM',
   'Glaucoma','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Obesidade',
-  'DPI','Neuropatia periférica','Osteoartrite','Osteonecrose','Osteomielite','Osteoporose','Retocolite ulcerativa','SAF','TEP','TVP'
+  'DPI','Lombalgia crônica','Neuropatia periférica','Osteoartrite','Osteonecrose','Osteomielite','Osteoporose','Retocolite ulcerativa','SAF','TEP','TVP'
 ];
 const MED_CONTINUAS = [
   'AAS','Aciclovir','Ácido fólico','Ácido zoledrônico','Alendronato de sódio',
@@ -874,7 +848,7 @@ const MED_CONTINUAS = [
   'Paracetamol','Pioglitazona','Pregabalina','Propranolol','Quetiapina','Ramipril',
   'Risedronato de sódio','Rivaroxabana','Romosozumabe','Rosuvastatina','Semaglutida',
   'Sertralina','Sildenafil','Sinvastatina','Sulfato ferroso','Tamoxifeno','Tansulosina',
-  'Budesonida nasal','Metadona','Teriparatida','Ticagrelor','Tramadol','Valsartana','Varfarina','Venlafaxina'
+  'Anticoncepcional oral','Budesonida nasal','Clonazepam','Lamotrigina','Loratadina','Metadona','Teriparatida','Ticagrelor','Tramadol','Valsartana','Varfarina','Venlafaxina'
 ];
 const REACAO_DMARD = [...CS_DMARD,...B_DMARD,...TS_DMARD].filter((v,i,a)=>a.indexOf(v)===i).sort();
 
@@ -884,7 +858,7 @@ const ESTADO_CIVIL = ['Casado','Divorciado','Solteiro','União estável','Viúvo
 const FILHOS = ['Sem filhos','1','2','3','4','5','6 ou mais'];
 const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto','Ensino Fundamental completo','Ensino Médio incompleto','Ensino Médio completo','Ensino Superior incompleto','Ensino Superior completo','Pós-graduação'];
 const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
-const OCUPACAO = ['Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de limpeza','Balconista','Cabeleireiro','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Técnico de enfermagem','Entregador','Faxineiro','Garçom','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Segurança'];
+const OCUPACAO = ['Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de limpeza','Balconista','Cabeleireiro','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Técnico de enfermagem','Entregador','Faxineiro','Garçom','Gerente de vendas','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Representante comercial','Segurança','Vendedora de loja'];
 const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
 const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
 const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
@@ -2166,11 +2140,10 @@ function initForm() {
     comorbidades:[], med_continuas:[], reacao_quais:[],
     dmard_posologia:{}, locomocao:[], sem_imuno:false,
     te_ivig:false, te_ivig_data:'', te_pulso:false, te_pulso_data:'', te_ciclo:false, te_ciclo_data:'',
-    te_ivig_prev:false, te_ivig_prev_data:'', te_pulso_prev:false, te_pulso_prev_data:'', te_ciclo_prev:false, te_ciclo_prev_data:'',
     cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
   };
   // Reset terapias especiais
-  ['ivig','pulso','ciclo','ivig_prev','pulso_prev','ciclo_prev'].forEach(k => {
+  ['ivig','pulso','ciclo'].forEach(k => {
     const btn = document.getElementById('te-'+k+'-btn');
     const dd = document.getElementById('te-'+k+'-date');
     const inp = document.getElementById('f-'+k.replace('_','-')+'-data');
@@ -2539,9 +2512,6 @@ function savePatient() {
     te_ivig: formData.te_ivig || false, te_ivig_data: formData.te_ivig_data || '',
     te_pulso: formData.te_pulso || false, te_pulso_data: formData.te_pulso_data || '',
     te_ciclo: formData.te_ciclo || false, te_ciclo_data: formData.te_ciclo_data || '',
-    te_ivig_prev: formData.te_ivig_prev || false, te_ivig_prev_data: formData.te_ivig_prev_data || '',
-    te_pulso_prev: formData.te_pulso_prev || false, te_pulso_prev_data: formData.te_pulso_prev_data || '',
-    te_ciclo_prev: formData.te_ciclo_prev || false, te_ciclo_prev_data: formData.te_ciclo_prev_data || '',
     reacao: formData.reacao || '',
     reacao_quais: [...(formData.reacao_quais||[])],
     intervalo: formData.intervalo || '',
@@ -2908,18 +2878,6 @@ function editPatient(idx) {
         const btn = document.getElementById('te-'+k+'-btn');
         const dd = document.getElementById('te-'+k+'-date');
         const inp = document.getElementById('f-'+k+'-data');
-        if (btn) btn.classList.add('selected');
-        if (dd) dd.style.display = 'block';
-        if (inp && p['te_'+k+'_data']) inp.value = p['te_'+k+'_data'];
-        formData['te_'+k] = true;
-        formData['te_'+k+'_data'] = p['te_'+k+'_data'] || '';
-      }
-    });
-    ['ivig_prev','pulso_prev','ciclo_prev'].forEach(k => {
-      if (p['te_'+k]) {
-        const btn = document.getElementById('te-'+k+'-btn');
-        const dd = document.getElementById('te-'+k+'-date');
-        const inp = document.getElementById('f-'+k.replace('_','-')+'-data');
         if (btn) btn.classList.add('selected');
         if (dd) dd.style.display = 'block';
         if (inp && p['te_'+k+'_data']) inp.value = p['te_'+k+'_data'];
