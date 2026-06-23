@@ -461,14 +461,26 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
   <!-- S8: Medicações contínuas -->
   <div class="section-card">
     <div class="section-title">24. Medicações de Uso Contínuo <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
-    <div style="margin-bottom:12px;position:relative">
+    <!-- busca individual -->
+    <div style="margin-bottom:10px;position:relative">
       <div style="display:flex;gap:6px;align-items:center">
         <input type="text" id="med-continuas-search" placeholder="🔍 Buscar ou adicionar medicamento..." autocomplete="off"
           style="border:1.5px solid #bee3f8;border-radius:8px;padding:7px 12px;font-size:13px;width:100%;background:#f0f7ff"
           oninput="medContinuasSearch(this.value)"
           onkeydown="medContinuasKeydown(event)">
+        <button class="btn-secondary btn-sm" style="white-space:nowrap" onclick="toggleMedPaste()">📋 Colar lista</button>
       </div>
       <div id="med-continuas-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #bee3f8;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:200;max-height:220px;overflow-y:auto"></div>
+    </div>
+    <!-- colar lista em bloco -->
+    <div id="med-paste-area" style="display:none;margin-bottom:12px;background:#f7faff;border:1.5px solid #bee3f8;border-radius:8px;padding:12px">
+      <div style="font-size:12px;color:#2b6cb0;font-weight:600;margin-bottom:6px">Cole a lista de medicações (uma por linha, com doses e posologia — elas serão ignoradas):</div>
+      <textarea id="med-paste-input" rows="6" style="width:100%;border:1px solid #cbd5e0;border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;background:#fff" placeholder="- Duloxetina 30mg&#10;- Selozok 25mg&#10;- Puran T4 75mcg (1-0-0)&#10;- Forxiga 10mg"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn-primary btn-sm" onclick="importMedPaste()">✔ Importar</button>
+        <button class="btn-secondary btn-sm" onclick="toggleMedPaste()">Cancelar</button>
+      </div>
+      <div id="med-paste-result" style="display:none;margin-top:10px;font-size:12px;line-height:1.7"></div>
     </div>
     <div class="options-grid" id="q-med-continuas"></div>
     <input type="hidden" id="med-continuas-outro-input">
@@ -1395,6 +1407,248 @@ function toggleOcupacaoOutro(opt) {
   } else {
     wrap.style.display = 'none';
   }
+}
+
+// ── Mapa nome comercial → genérico ──
+const BRAND_GENERIC = {
+  // Antidiabéticos
+  'glifage':'Metformina','glucoformin':'Metformina','diaformin':'Metformina',
+  'forxiga':'Dapaglifozina','farxiga':'Dapaglifozina',
+  'jardians':'Empaglifozina','jardiance':'Empaglifozina',
+  'invokana':'Canaglifozina',
+  'ozempic':'Semaglutida','rybelsus':'Semaglutida',
+  'victoza':'Liraglutida','saxenda':'Liraglutida',
+  'amaryl':'Glimepirida',
+  'diamicron':'Gliclazida','glucotrol':'Gliclazida',
+  'daonil':'Glibenclamida',
+  'actos':'Pioglitazona',
+  // Cardiovasculares
+  'selozok':'Metoprolol','lopressor':'Metoprolol','betaloc':'Metoprolol',
+  'concor':'Bisoprolol','cardicor':'Bisoprolol',
+  'nebilet':'Nebivolol',
+  'diovan':'Valsartana',
+  'cozaar':'Losartana','hyzaar':'Losartana',
+  'norvasc':'Anlodipino','amlor':'Anlodipino','amplodipino':'Anlodipino',
+  'adalat':'Nifedipino','nifedical':'Nifedipino',
+  'tenormin':'Atenolol','atenol':'Atenolol',
+  'aldactone':'Espironolactona',
+  'natrilix':'Indapamida','natrix':'Indapamida',
+  'atacand':'Candesartana',
+  'renitec':'Enalapril','vasotec':'Enalapril',
+  'tritace':'Ramipril','ramace':'Ramipril',
+  'capoten':'Captopril',
+  'cardura':'Doxazosina',
+  'catapres':'Clonidina',
+  'hipotensor':'Hidralazina',
+  'micardis':'Valsartana',
+  // Anticoag/antiagregantes
+  'xarelto':'Rivaroxabana',
+  'eliquis':'Apixabana',
+  'pradaxa':'Dabigatrana',
+  'brilinta':'Ticagrelor','brilique':'Ticagrelor',
+  'plavix':'Clopidogrel','trombex':'Clopidogrel','iscover':'Clopidogrel',
+  'aspirina':'AAS',
+  'coumadin':'Varfarina','marevan':'Varfarina',
+  // Estatinas
+  'crestor':'Rosuvastatina','mertenil':'Rosuvastatina',
+  'zocor':'Sinvastatina','vastin':'Sinvastatina',
+  'lipitor':'Atorvastatina','zarator':'Atorvastatina','citalor':'Atorvastatina',
+  // Hormônios
+  'puran':'Levotiroxina','euthyrox':'Levotiroxina','synthroid':'Levotiroxina','letter':'Levotiroxina',
+  // Osteoporose
+  'actonel':'Risedronato de sódio','risedross':'Risedronato de sódio',
+  'fosamax':'Alendronato de sódio','alendros':'Alendronato de sódio',
+  'reclast':'Ácido zoledrônico','aclasta':'Ácido zoledrônico','zometa':'Ácido zoledrônico',
+  'prolia':'Denosumabe','xgeva':'Denosumabe',
+  'evenity':'Romosozumabe',
+  'forteo':'Teriparatida','forsteo':'Teriparatida',
+  'caltrate':'Carbonato de cálcio','calcichew':'Carbonato de cálcio',
+  'calcigenol':'Citrato de cálcio',
+  // Psiq/neuro
+  'cymbalta':'Duloxetina',
+  'effexor':'Venlafaxina','efexor':'Venlafaxina',
+  'lexapro':'Escitalopram','cipralex':'Escitalopram',
+  'zoloft':'Sertralina',
+  'prozac':'Fluoxetina',
+  'amytril':'Amitriptilina','tryptanol':'Amitriptilina',
+  'pamelor':'Nortriptilina',
+  'neurontin':'Gabapentina',
+  'lyrica':'Pregabalina',
+  'pristiq':'Desvenlafaxina',
+  'seroquel':'Quetiapina',
+  // GI
+  'losec':'Omeprazol',
+  'pantozol':'Pantoprazol','panprazol':'Pantoprazol',
+  'plasil':'Metoclopramida',
+  'motilium':'Domperidona',
+  'digesan':'Bromoprida',
+  'vonau':'Ondansetrona','zofran':'Ondansetrona',
+  // Outros
+  'novalgina':'Dipirona','dipyrone':'Dipirona',
+  'tylenol':'Paracetamol','dorflex':'Paracetamol',
+  'zovirax':'Aciclovir',
+  'tramal':'Tramadol',
+  'colchis':'Colchicina',
+  'ominik':'Tansulosina','flomax':'Tansulosina','secotex':'Tansulosina',
+  'viagra':'Sildenafil','revatio':'Sildenafil',
+  'nolvadex':'Tamoxifeno',
+  'proscar':'Finasterida','propecia':'Finasterida',
+  'clexane':'Enoxaparina',
+  'bactrim':'Bactrim','sulfametoxazol':'Bactrim',
+};
+
+// Prefixos de sal/forma farmacêutica a remover antes de comparar
+const SALT_PREFIXES = /\b(cloridrato|fosfato|maleato|succinato|fumarato|tartarato|mesilato|besilato|citrato|oxalato|brometo|cloreto|acetato|gluconato|lactato|sódio|potássio|cálcio|magnésio|de|do|da|dos|das|mono|di|tri|hemi|iso)\b/gi;
+
+function normStr(s) {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9 ]/g,' ')
+    .replace(/\s+/g,' ').trim();
+}
+
+function levenshtein(a,b) {
+  if (Math.abs(a.length-b.length)>3) return 99;
+  const m=a.length,n=b.length,dp=[];
+  for(let i=0;i<=m;i++){dp[i]=[i];for(let j=1;j<=n;j++)dp[i][j]=i===0?j:0;}
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function cleanMedLine(raw) {
+  return raw
+    .replace(/^[\s\-•*\d.)]+/, '')        // bullets e numeração
+    .replace(/\(.*?\)/g, '')              // conteúdo entre parênteses
+    .replace(/\b\d+[\d.,]*\s*(mg|mcg|g|ml|ui|u|comp|cp|cps|caps|dpi|inh|amp|sol|cr|mdi|puff)[\w/]*/gi,'') // doses
+    .replace(/\b\d+[-\/]\d+[-\/]\d+\b/g,'') // posologia 1-0-1
+    .replace(/\s+/g,' ').trim();
+}
+
+function findMedInList(cleaned) {
+  const norm = normStr(cleaned);
+  const words = norm.split(' ').filter(w=>w.length>=4);
+
+  // 1. Mapa de nomes comerciais (por palavra ou frase completa)
+  for (const w of words) {
+    if (BRAND_GENERIC[w]) return { match: BRAND_GENERIC[w], how:'comercial' };
+  }
+  if (BRAND_GENERIC[norm]) return { match: BRAND_GENERIC[norm], how:'comercial' };
+
+  // 2. Correspondência exata normalizada
+  for (const med of MED_CONTINUAS) {
+    if (normStr(med) === norm) return { match:med, how:'exato' };
+  }
+
+  // 3. Palavras significativas presentes no nome (remove sais antes de comparar)
+  const cleanedNoSalt = normStr(cleaned.replace(SALT_PREFIXES,''));
+  const sigWords = cleanedNoSalt.split(' ').filter(w=>w.length>=5);
+
+  for (const med of MED_CONTINUAS) {
+    const normMed = normStr(med);
+    for (const w of sigWords) {
+      if (normMed.includes(w)) return { match:med, how:'parcial' };
+    }
+    // Inverso: palavras do genérico dentro do texto inserido
+    const medWords = normMed.split(' ').filter(w=>w.length>=5);
+    for (const mw of medWords) {
+      if (cleanedNoSalt.includes(mw)) return { match:med, how:'parcial' };
+    }
+  }
+
+  // 4. Fuzzy — distância de Levenshtein ≤ 2 para palavras longas
+  for (const med of MED_CONTINUAS) {
+    const medWords = normStr(med).split(' ').filter(w=>w.length>=6);
+    for (const mw of medWords) {
+      for (const iw of sigWords) {
+        if (iw.length>=6 && levenshtein(iw,mw)<=2) return { match:med, how:'aproximado' };
+      }
+    }
+  }
+
+  return null;
+}
+
+function toggleMedPaste() {
+  const area = document.getElementById('med-paste-area');
+  const open = area.style.display === 'block';
+  area.style.display = open ? 'none' : 'block';
+  if (!open) {
+    document.getElementById('med-paste-input').focus();
+    document.getElementById('med-paste-result').style.display = 'none';
+  }
+}
+
+function importMedPaste() {
+  const raw = document.getElementById('med-paste-input').value;
+  const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>1);
+  if (!lines.length) return;
+
+  const found=[], notFound=[], alreadySel=[];
+
+  lines.forEach(line => {
+    const cleaned = cleanMedLine(line);
+    if (!cleaned) return;
+    const result = findMedInList(cleaned);
+    if (result) {
+      const arr = formData.med_continuas || (formData.med_continuas=[]);
+      if (arr.includes(result.match)) {
+        alreadySel.push(result.match);
+      } else {
+        // Seleciona botão pré-existente no grid
+        const btn=[...document.querySelectorAll('#q-med-continuas .opt-btn')].find(b=>b.textContent===result.match);
+        if (btn) { arr.push(result.match); btn.classList.add('selected'); }
+        found.push({ original:cleaned, match:result.match, how:result.how });
+      }
+    } else {
+      notFound.push(cleaned);
+    }
+  });
+
+  updateTabBadges();
+
+  // Exibe resultado
+  let html='';
+  if (found.length) {
+    html += `<div style="margin-bottom:6px;font-weight:700;color:#276749">✔ ${found.length} medicação(ões) adicionada(s):</div>`;
+    found.forEach(f=>{
+      const how = f.how==='comercial'?'nome comercial':f.how==='aproximado'?'correspondência aproximada':'';
+      html += `<div style="padding:2px 0">
+        <span style="background:#c6f6d5;color:#276749;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700">✓</span>
+        <span style="color:#2d3748"> ${f.match}</span>
+        ${how?`<span style="font-size:10px;color:#718096;margin-left:4px">(via ${how})</span>`:''}
+      </div>`;
+    });
+  }
+  if (alreadySel.length) {
+    html += `<div style="margin-top:6px;color:#718096;font-size:11px">Já selecionados: ${alreadySel.join(', ')}</div>`;
+  }
+  if (notFound.length) {
+    html += `<div style="margin-top:8px;font-weight:700;color:#c05621">⚠ ${notFound.length} não reconhecida(s):</div>`;
+    notFound.forEach(n => {
+      html += `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
+        <span style="background:#fed7d7;color:#9b2c2c;border-radius:4px;padding:1px 7px;font-size:11px">?</span>
+        <span style="color:#4a5568">${n}</span>
+        <button onclick="addCustomMed('${n.replace(/'/g,"\\'")}',this)" style="font-size:10px;padding:2px 8px;border:1px solid #e2a000;background:#fffbeb;color:#744210;border-radius:4px;cursor:pointer;flex-shrink:0">＋ Adicionar assim</button>
+      </div>`;
+    });
+  }
+  const res = document.getElementById('med-paste-result');
+  res.innerHTML = html;
+  res.style.display = 'block';
+}
+
+function addCustomMed(val, btn) {
+  const arr = formData.med_continuas || (formData.med_continuas=[]);
+  if (arr.includes(val)) return;
+  arr.push(val);
+  const c = document.getElementById('q-med-continuas');
+  const b = document.createElement('div');
+  b.className='opt-btn multi selected'; b.textContent=val;
+  b.onclick=()=>{ const i=arr.indexOf(val); if(i!==-1){arr.splice(i,1);b.remove();} updateTabBadges(); };
+  c.appendChild(b);
+  btn.textContent='✓ Adicionado'; btn.disabled=true; btn.style.opacity='0.6';
+  updateTabBadges();
 }
 
 // ── Autocomplete medicações contínuas ──
