@@ -187,6 +187,15 @@ tr:hover td{background:#f7faff}
 .step-progress-bar{flex:1;margin:0 16px;background:#e8ecf0;border-radius:4px;height:6px;overflow:hidden}
 .step-progress-fill{height:100%;background:#1a56a0;border-radius:4px;transition:.4s}
 
+/* Autocomplete medicações contínuas */
+.med-ac-item{padding:8px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #f0f4f8}
+.med-ac-item:last-child{border-bottom:none}
+.med-ac-item:hover,.med-ac-item.ac-focus{background:#ebf8ff}
+.med-ac-item.ac-selected{color:#718096;background:#f7faff}
+.med-ac-sel-tag{font-size:10px;background:#c6f6d5;color:#276749;border-radius:4px;padding:1px 6px;font-weight:700;flex-shrink:0}
+.med-ac-add-tag{font-size:10px;background:#fefcbf;color:#744210;border-radius:4px;padding:1px 6px;font-weight:700;flex-shrink:0}
+.med-ac-empty{padding:10px 14px;font-size:12px;color:#718096;font-style:italic}
+
 /* Ocultar preenchidos */
 .q-filled-hide{display:none!important}
 #btn-hide-filled.hf-active{background:#e2a000;color:#fff;border-color:#e2a000}
@@ -452,11 +461,17 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
   <!-- S8: Medicações contínuas -->
   <div class="section-card">
     <div class="section-title">24. Medicações de Uso Contínuo <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
-    <div class="options-grid" id="q-med-continuas"></div>
-    <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
-      <input type="text" id="med-continuas-outro-input" placeholder="Adicionar outro medicamento..." style="border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;width:260px">
-      <button class="btn-secondary btn-sm" onclick="addOutroItem('med_continuas','q-med-continuas','med-continuas-outro-input')">＋ Adicionar</button>
+    <div style="margin-bottom:12px;position:relative">
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" id="med-continuas-search" placeholder="🔍 Buscar ou adicionar medicamento..." autocomplete="off"
+          style="border:1.5px solid #bee3f8;border-radius:8px;padding:7px 12px;font-size:13px;width:100%;background:#f0f7ff"
+          oninput="medContinuasSearch(this.value)"
+          onkeydown="medContinuasKeydown(event)">
+      </div>
+      <div id="med-continuas-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #bee3f8;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:200;max-height:220px;overflow-y:auto"></div>
     </div>
+    <div class="options-grid" id="q-med-continuas"></div>
+    <input type="hidden" id="med-continuas-outro-input">
   </div>
 
   <!-- S9: Reações adversas -->
@@ -1381,6 +1396,128 @@ function toggleOcupacaoOutro(opt) {
     wrap.style.display = 'none';
   }
 }
+
+// ── Autocomplete medicações contínuas ──
+let _acFocusIdx = -1;
+
+function medContinuasSearch(q) {
+  const dd = document.getElementById('med-continuas-dropdown');
+  _acFocusIdx = -1;
+  q = q.trim();
+  if (!q) { dd.style.display = 'none'; return; }
+
+  const lower = q.toLowerCase();
+  const lista = MED_CONTINUAS;
+  const matches = lista.filter(m => m.toLowerCase().includes(lower));
+
+  // Verifica se já está selecionado
+  const isSelected = v => (formData.med_continuas || []).includes(v);
+
+  let html = '';
+  matches.forEach((m, i) => {
+    const sel = isSelected(m);
+    const tag = sel
+      ? `<span class="med-ac-sel-tag">✓ selecionado</span>`
+      : '';
+    const hl = m.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<strong>$1</strong>');
+    html += `<div class="med-ac-item${sel?' ac-selected':''}" data-val="${m}" onclick="medContinuasSelect('${m.replace(/'/g,"\\'")}')">
+      <span>${hl}</span>${tag}
+    </div>`;
+  });
+
+  // Se o texto digitado não está na lista → opção de adicionar
+  const exactInList = lista.some(m => m.toLowerCase() === lower);
+  if (!exactInList && q.length >= 2) {
+    html += `<div class="med-ac-item" data-val="__add__" onclick="medContinuasAdd()">
+      <span>${q}</span><span class="med-ac-add-tag">＋ Adicionar</span>
+    </div>`;
+  }
+
+  if (!html) {
+    html = `<div class="med-ac-empty">Nenhuma opção encontrada para "<strong>${q}</strong>". Escreva ao menos 2 letras para adicionar.</div>`;
+  }
+
+  dd.innerHTML = html;
+  dd.style.display = 'block';
+}
+
+function medContinuasSelect(val) {
+  const arr = formData.med_continuas || (formData.med_continuas = []);
+  const idx = arr.indexOf(val);
+  if (idx === -1) {
+    // Seleciona botão pré-existente no grid
+    const btn = [...document.querySelectorAll('#q-med-continuas .opt-btn')].find(b => b.textContent === val);
+    if (btn) { arr.push(val); btn.classList.add('selected'); }
+  } else {
+    // Deseleciona
+    arr.splice(idx, 1);
+    const btn = [...document.querySelectorAll('#q-med-continuas .opt-btn')].find(b => b.textContent === val);
+    if (btn) btn.classList.remove('selected');
+  }
+  // Atualiza dropdown para refletir novo estado
+  medContinuasSearch(document.getElementById('med-continuas-search').value);
+  updateTabBadges();
+}
+
+function medContinuasAdd() {
+  const inp = document.getElementById('med-continuas-search');
+  const val = inp.value.trim();
+  if (!val) return;
+  const arr = formData.med_continuas || (formData.med_continuas = []);
+  if (arr.includes(val)) { medContinuasClose(); return; }
+  arr.push(val);
+  // Cria botão dinâmico no grid
+  const c = document.getElementById('q-med-continuas');
+  const b = document.createElement('div');
+  b.className = 'opt-btn multi selected';
+  b.textContent = val;
+  b.onclick = () => {
+    const i = arr.indexOf(val);
+    if (i !== -1) { arr.splice(i, 1); b.remove(); }
+    updateTabBadges();
+  };
+  c.appendChild(b);
+  medContinuasClose();
+  updateTabBadges();
+}
+
+function medContinuasClose() {
+  document.getElementById('med-continuas-search').value = '';
+  document.getElementById('med-continuas-dropdown').style.display = 'none';
+  _acFocusIdx = -1;
+}
+
+function medContinuasKeydown(e) {
+  const dd = document.getElementById('med-continuas-dropdown');
+  const items = [...dd.querySelectorAll('.med-ac-item')];
+  if (!items.length) {
+    if (e.key === 'Escape') medContinuasClose();
+    return;
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _acFocusIdx = Math.min(_acFocusIdx + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _acFocusIdx = Math.max(_acFocusIdx - 1, 0);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const focused = items[_acFocusIdx] || items[0];
+    if (focused) focused.click();
+    return;
+  } else if (e.key === 'Escape') {
+    medContinuasClose(); return;
+  } else { return; }
+  items.forEach((el, i) => el.classList.toggle('ac-focus', i === _acFocusIdx));
+  items[_acFocusIdx]?.scrollIntoView({ block: 'nearest' });
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('#med-continuas-search') && !e.target.closest('#med-continuas-dropdown')) {
+    document.getElementById('med-continuas-dropdown')?.style && (document.getElementById('med-continuas-dropdown').style.display = 'none');
+  }
+});
 
 function addOutroItem(field, containerId, inputId) {
   const inp = document.getElementById(inputId);
