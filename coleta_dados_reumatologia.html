@@ -434,12 +434,23 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
   <div class="section-card">
     <div class="section-title">23. Comorbidades Associadas <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
     <div class="options-grid" id="q-comorbidades"></div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+      <input type="text" id="comorbidades-outro-input" placeholder="Adicionar outra comorbidade..." style="border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;width:260px">
+      <button class="btn-secondary btn-sm" onclick="addOutroItem('comorbidades','q-comorbidades','comorbidades-outro-input')">＋ Adicionar</button>
+    </div>
   </div>
 
   <!-- S8: Medicações contínuas -->
   <div class="section-card">
     <div class="section-title">24. Medicações de Uso Contínuo <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+    <div style="margin-bottom:8px">
+      <div id="btn-sem-imuno" class="opt-btn multi" style="background:#fff5f5;border-color:#fc8181;color:#c53030;font-weight:700" onclick="toggleSemImuno()">🚫 Sem imunossupressor</div>
+    </div>
     <div class="options-grid" id="q-med-continuas"></div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+      <input type="text" id="med-continuas-outro-input" placeholder="Adicionar outro medicamento..." style="border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;width:260px">
+      <button class="btn-secondary btn-sm" onclick="addOutroItem('med_continuas','q-med-continuas','med-continuas-outro-input')">＋ Adicionar</button>
+    </div>
   </div>
 
   <!-- S9: Reações adversas -->
@@ -478,21 +489,22 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <div style="margin-top:16px"><div class="q-label">31. Renda Familiar Mensal</div>
     <div class="options-grid" id="q-renda"></div></div>
     <div style="margin-top:16px"><div class="q-label">32. Ocupação</div>
-    <div class="options-grid" id="q-ocupacao"></div></div>
+    <div class="options-grid" id="q-ocupacao"></div>
+    <div id="ocupacao-outro-wrap" style="display:none;margin-top:8px;display:none">
+      <input type="text" id="ocupacao-outro-input" placeholder="Especifique a ocupação..." style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;width:260px">
+    </div></div>
     <div style="margin-top:16px"><div class="q-label">33. Carga Horária de Trabalho por Semana</div>
     <div class="options-grid" id="q-carga-horaria"></div></div>
   </div>
 
-  <!-- S12: Moradia e Locomoção -->
+  <!-- S12: Moradia -->
   <div class="section-card">
-    <div class="section-title">Moradia e Locomoção</div>
-    <div class="q-label">34. Principal Meio de Locomoção <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
-    <div class="options-grid" id="q-locomocao"></div>
-    <div style="margin-top:16px"><div class="q-label">35. Localização da Residência</div>
-    <div class="options-grid" id="q-local-residencia"></div></div>
-    <div style="margin-top:16px"><div class="q-label">36. Número de Pessoas na Residência</div>
+    <div class="section-title">Moradia</div>
+    <div class="q-label">34. Localização da Residência</div>
+    <div class="options-grid" id="q-local-residencia"></div>
+    <div style="margin-top:16px"><div class="q-label">35. Número de Pessoas na Residência</div>
     <div class="options-grid" id="q-num-pessoas"></div></div>
-    <div style="margin-top:16px"><div class="q-label">37. Situação de Moradia</div>
+    <div style="margin-top:16px"><div class="q-label">36. Situação de Moradia</div>
     <div class="options-grid" id="q-situacao-moradia"></div></div>
   </div>
 
@@ -1312,10 +1324,92 @@ function renderRadio(containerId, options, field) {
       if (field === 'atividade') toggleRemissao(opt);
       if (field === 'doenca') updateMetrics(opt);
       if (field === 'reacao') toggleReacao(opt);
+      if (field === 'ocupacao') toggleOcupacaoOutro(opt);
       updateTabBadges();
     };
     c.appendChild(b);
   });
+  // Botão "Outro" para ocupação
+  if (field === 'ocupacao') {
+    const bOutro = document.createElement('div');
+    bOutro.className = 'opt-btn';
+    bOutro.textContent = 'Outro';
+    bOutro.onclick = () => {
+      c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
+      bOutro.classList.add('selected');
+      formData[field] = document.getElementById('ocupacao-outro-input').value || 'Outro';
+      toggleOcupacaoOutro('Outro');
+      updateTabBadges();
+    };
+    c.appendChild(bOutro);
+  }
+}
+
+function toggleOcupacaoOutro(opt) {
+  const wrap = document.getElementById('ocupacao-outro-wrap');
+  if (!wrap) return;
+  if (opt === 'Outro') {
+    wrap.style.display = 'block';
+    const inp = document.getElementById('ocupacao-outro-input');
+    inp.oninput = () => { formData.ocupacao = inp.value || 'Outro'; updateTabBadges(); };
+    inp.focus();
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function addOutroItem(field, containerId, inputId) {
+  const inp = document.getElementById(inputId);
+  const val = inp.value.trim();
+  if (!val) return;
+  if (!formData[field]) formData[field] = [];
+  if (formData[field].includes(val)) { inp.value = ''; return; }
+  formData[field].push(val);
+  const c = document.getElementById(containerId);
+  const b = document.createElement('div');
+  b.className = 'opt-btn multi selected';
+  b.textContent = val;
+  b.onclick = () => {
+    const idx = formData[field].indexOf(val);
+    if (idx !== -1) { formData[field].splice(idx,1); b.remove(); }
+    updateTabBadges();
+  };
+  c.appendChild(b);
+  inp.value = '';
+  updateTabBadges();
+}
+
+function toggleSemImuno(forceState) {
+  const btn = document.getElementById('btn-sem-imuno');
+  const ativo = forceState !== undefined ? forceState : !btn.classList.contains('selected');
+  if (ativo) btn.classList.add('selected'); else btn.classList.remove('selected');
+  formData.sem_imuno = ativo;
+  // Bloqueia/desbloqueia csdmard, bdmard, tsdmard e gcs (corticosteroide atual)
+  const camposBloquear = ['q-csdmard','q-bdmard','q-tsdmard','q-gcs'];
+  const fieldsBloquear = ['csdmard','bdmard','tsdmard','gcs'];
+  camposBloquear.forEach((cid, i) => {
+    const cont = document.getElementById(cid);
+    if (!cont) return;
+    if (ativo) {
+      // Limpa seleções
+      cont.querySelectorAll('.opt-btn.selected').forEach(b => b.classList.remove('selected'));
+      formData[fieldsBloquear[i]] = Array.isArray(formData[fieldsBloquear[i]]) ? [] : '';
+      cont.style.opacity = '0.35';
+      cont.style.pointerEvents = 'none';
+      // Esconde posologia
+      if (['csdmard','bdmard','tsdmard'].includes(fieldsBloquear[i])) {
+        const posEl = document.getElementById('posologia-'+fieldsBloquear[i]);
+        if (posEl) { posEl.innerHTML = ''; posEl.classList.add('hidden'); }
+      }
+    } else {
+      cont.style.opacity = '';
+      cont.style.pointerEvents = '';
+    }
+  });
+  if (ativo) {
+    formData.csdmard = []; formData.bdmard = []; formData.tsdmard = []; formData.gcs = '';
+    formData.dmard_posologia = {};
+  }
 }
 
 function renderCheck(containerId, options, field, posologiaId) {
@@ -1400,8 +1494,15 @@ function initForm() {
     csdmard:[], bdmard:[], tsdmard:[],
     csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
     comorbidades:[], med_continuas:[], reacao_quais:[],
-    dmard_posologia:{}, locomocao:[], cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
+    dmard_posologia:{}, locomocao:[], sem_imuno:false,
+    cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
   };
+  // Reset sem_imuno button
+  const siBtn = document.getElementById('btn-sem-imuno');
+  if (siBtn) siBtn.classList.remove('selected');
+  ['q-csdmard','q-bdmard','q-tsdmard','q-gcs'].forEach(id => {
+    const el = document.getElementById(id); if (el) { el.style.opacity=''; el.style.pointerEvents=''; }
+  });
   renderRadio('q-sexo', SEXO, 'sexo');
   renderRadio('q-etnia', ETNIA, 'etnia');
   renderRadio('q-doenca', DOENCAS, 'doenca');
@@ -1747,6 +1848,7 @@ function savePatient() {
     tsdmard_prev: [...(formData.tsdmard_prev||[])],
     comorbidades: [...(formData.comorbidades||[])],
     med_continuas: [...(formData.med_continuas||[])],
+    sem_imuno: formData.sem_imuno || false,
     reacao: formData.reacao || '',
     reacao_quais: [...(formData.reacao_quais||[])],
     intervalo: formData.intervalo || '',
@@ -2042,6 +2144,30 @@ function editPatient(idx) {
         if ((vals||[]).includes(b.textContent)) b.classList.add('selected');
       });
     };
+    // Como restoreCheck mas cria botões dinâmicos para itens não presentes na lista fixa
+    const restoreCheckWithOutros = (containerId, field, vals, inputId) => {
+      const knownSet = new Set(document.querySelectorAll(`#${containerId} .opt-btn`).length
+        ? [...document.querySelectorAll(`#${containerId} .opt-btn`)].map(b=>b.textContent) : []);
+      formData[field] = vals || [];
+      (vals||[]).forEach(v => {
+        const existing = [...document.querySelectorAll(`#${containerId} .opt-btn`)].find(b=>b.textContent===v);
+        if (existing) { existing.classList.add('selected'); }
+        else {
+          // item customizado — cria botão dinâmico
+          const c = document.getElementById(containerId);
+          if (!c) return;
+          const b = document.createElement('div');
+          b.className = 'opt-btn multi selected';
+          b.textContent = v;
+          b.onclick = () => {
+            const idx = formData[field].indexOf(v);
+            if (idx !== -1) { formData[field].splice(idx,1); b.remove(); }
+            updateTabBadges();
+          };
+          c.appendChild(b);
+        }
+      });
+    };
 
     restore('q-sexo','sexo',p.sexo);
     restore('q-etnia','etnia',p.etnia);
@@ -2063,8 +2189,10 @@ function editPatient(idx) {
     restoreCheck('q-csdmard-prev','csdmard_prev',p.csdmard_prev);
     restoreCheck('q-bdmard-prev','bdmard_prev',p.bdmard_prev);
     restoreCheck('q-tsdmard-prev','tsdmard_prev',p.tsdmard_prev);
-    restoreCheck('q-comorbidades','comorbidades',p.comorbidades);
-    restoreCheck('q-med-continuas','med_continuas',p.med_continuas);
+    restoreCheckWithOutros('q-comorbidades','comorbidades',p.comorbidades,'comorbidades-outro-input');
+    restoreCheckWithOutros('q-med-continuas','med_continuas',p.med_continuas,'med-continuas-outro-input');
+    // Sem imunossupressor
+    if (p.sem_imuno) toggleSemImuno(true);
     restore('q-reacao','reacao',p.reacao);
     if (p.reacao === 'Sim') { document.getElementById('sub-reacao').classList.remove('hidden'); restoreCheck('q-reacao-quais','reacao_quais',p.reacao_quais); }
     restore('q-intervalo','intervalo',p.intervalo);
@@ -2074,9 +2202,18 @@ function editPatient(idx) {
     restore('q-filhos','filhos',p.filhos);
     restore('q-escolaridade','escolaridade',p.escolaridade);
     restore('q-renda','renda',p.renda);
-    restore('q-ocupacao','ocupacao',p.ocupacao);
+    // Ocupação — pode ser valor customizado
+    { const OCUP_LIST = OCUPACAO;
+      if (p.ocupacao && !OCUP_LIST.includes(p.ocupacao)) {
+        // valor customizado — seleciona botão "Outro" e preenche campo
+        const c = document.getElementById('q-ocupacao');
+        const outroBtn = c ? [...c.querySelectorAll('.opt-btn')].find(b=>b.textContent==='Outro') : null;
+        if (outroBtn) { outroBtn.click(); }
+        const inp = document.getElementById('ocupacao-outro-input');
+        if (inp) { inp.value = p.ocupacao; formData.ocupacao = p.ocupacao; }
+      } else { restore('q-ocupacao','ocupacao',p.ocupacao); }
+    }
     restore('q-carga-horaria','carga_horaria',p.carga_horaria);
-    restoreCheck('q-locomocao','locomocao',p.locomocao);
     restore('q-local-residencia','local_residencia',p.local_residencia);
     restore('q-num-pessoas','num_pessoas',p.num_pessoas);
     restore('q-situacao-moradia','situacao_moradia',p.situacao_moradia);
