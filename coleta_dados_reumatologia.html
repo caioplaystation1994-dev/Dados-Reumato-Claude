@@ -587,8 +587,9 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <div class="options-grid" id="q-renda"></div></div>
     <div style="margin-top:16px"><div class="q-label">32. Ocupação</div>
     <div class="options-grid" id="q-ocupacao"></div>
-    <div id="ocupacao-outro-wrap" style="display:none;margin-top:8px;display:none">
-      <input type="text" id="ocupacao-outro-input" placeholder="Especifique a ocupação..." style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;width:260px">
+    <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+      <input type="text" id="ocupacao-outro-input" placeholder="Adicionar outra ocupação..." style="border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;width:260px">
+      <button class="btn-secondary btn-sm" onclick="addOcupacaoOutro()">＋ Adicionar</button>
     </div></div>
     <div style="margin-top:16px"><div class="q-label">33. Carga Horária de Trabalho por Semana</div>
     <div class="options-grid" id="q-carga-horaria"></div></div>
@@ -883,7 +884,7 @@ const ESTADO_CIVIL = ['Casado','Divorciado','Solteiro','União estável','Viúvo
 const FILHOS = ['Sem filhos','1','2','3','4','5','6 ou mais'];
 const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto','Ensino Fundamental completo','Ensino Médio incompleto','Ensino Médio completo','Ensino Superior incompleto','Ensino Superior completo','Pós-graduação'];
 const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
-const OCUPACAO = ['Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de limpeza','Balconista','Cabeleireiro','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Técnico de enfermagem','Entregador','Faxineiro','Garçom','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Segurança','Outro'];
+const OCUPACAO = ['Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de limpeza','Balconista','Cabeleireiro','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Técnico de enfermagem','Entregador','Faxineiro','Garçom','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Segurança'];
 const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
 const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
 const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
@@ -1445,38 +1446,34 @@ function renderRadio(containerId, options, field) {
       if (field === 'atividade') toggleRemissao(opt);
       if (field === 'doenca') updateMetrics(opt);
       if (field === 'reacao') toggleReacao(opt);
-      if (field === 'ocupacao') toggleOcupacaoOutro(opt);
       updateTabBadges();
     };
     c.appendChild(b);
   });
-  // Botão "Outro" para ocupação
-  if (field === 'ocupacao') {
-    const bOutro = document.createElement('div');
-    bOutro.className = 'opt-btn';
-    bOutro.textContent = 'Outro';
-    bOutro.onclick = () => {
-      c.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
-      bOutro.classList.add('selected');
-      formData[field] = document.getElementById('ocupacao-outro-input').value || 'Outro';
-      toggleOcupacaoOutro('Outro');
-      updateTabBadges();
-    };
-    c.appendChild(bOutro);
-  }
 }
 
-function toggleOcupacaoOutro(opt) {
-  const wrap = document.getElementById('ocupacao-outro-wrap');
-  if (!wrap) return;
-  if (opt === 'Outro') {
-    wrap.style.display = 'block';
-    const inp = document.getElementById('ocupacao-outro-input');
-    inp.oninput = () => { formData.ocupacao = inp.value || 'Outro'; updateTabBadges(); };
-    inp.focus();
-  } else {
-    wrap.style.display = 'none';
-  }
+function addOcupacaoOutro() {
+  const inp = document.getElementById('ocupacao-outro-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  const c = document.getElementById('q-ocupacao');
+  // Deseleciona todos os botões existentes
+  c.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  // Remove botão customizado anterior (se houver)
+  c.querySelectorAll('.opt-btn[data-custom]').forEach(b => b.remove());
+  formData.ocupacao = val;
+  const b = document.createElement('div');
+  b.className = 'opt-btn selected';
+  b.textContent = val;
+  b.dataset.custom = '1';
+  b.onclick = () => {
+    b.classList.toggle('selected');
+    formData.ocupacao = b.classList.contains('selected') ? val : '';
+    updateTabBadges();
+  };
+  c.appendChild(b);
+  inp.value = '';
+  updateTabBadges();
 }
 
 // ── Mapa nome comercial → genérico ──
@@ -2940,16 +2937,10 @@ function editPatient(idx) {
     restore('q-escolaridade','escolaridade',p.escolaridade);
     restore('q-renda','renda',p.renda);
     // Ocupação — pode ser valor customizado
-    { const OCUP_LIST = OCUPACAO;
-      if (p.ocupacao && !OCUP_LIST.includes(p.ocupacao)) {
-        // valor customizado — seleciona botão "Outro" e preenche campo
-        const c = document.getElementById('q-ocupacao');
-        const outroBtn = c ? [...c.querySelectorAll('.opt-btn')].find(b=>b.textContent==='Outro') : null;
-        if (outroBtn) { outroBtn.click(); }
-        const inp = document.getElementById('ocupacao-outro-input');
-        if (inp) { inp.value = p.ocupacao; formData.ocupacao = p.ocupacao; }
-      } else { restore('q-ocupacao','ocupacao',p.ocupacao); }
-    }
+    if (p.ocupacao && !OCUPACAO.includes(p.ocupacao)) {
+      const inp = document.getElementById('ocupacao-outro-input');
+      if (inp) { inp.value = p.ocupacao; addOcupacaoOutro(); }
+    } else { restore('q-ocupacao','ocupacao',p.ocupacao); }
     restore('q-carga-horaria','carga_horaria',p.carga_horaria);
     restore('q-local-residencia','local_residencia',p.local_residencia);
     restore('q-num-pessoas','num_pessoas',p.num_pessoas);
