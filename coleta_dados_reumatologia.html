@@ -392,6 +392,9 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <div class="section-title">Medicações em Uso</div>
     <div class="q-label">14. Número de Medicações em Uso</div>
     <div class="options-grid" id="q-num-med"></div>
+    <div style="margin-top:10px">
+      <div id="btn-sem-imuno" class="opt-btn multi" style="background:#fff5f5;border-color:#fc8181;color:#c53030;font-weight:700" onclick="toggleSemImuno()">🚫 Sem imunossupressor</div>
+    </div>
 
     <div style="margin-top:16px">
       <div class="q-label">15. Uso de Corticosteroides (dose equivalente de prednisona)</div>
@@ -401,19 +404,16 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <div style="margin-top:16px">
       <div class="q-label">16. csDMARD em Uso <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
       <div class="options-grid" id="q-csdmard"></div>
-      <div class="sub-q hidden" id="posologia-csdmard" style="margin-top:10px"></div>
     </div>
 
     <div style="margin-top:16px">
       <div class="q-label">17. bDMARD em Uso <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
       <div class="options-grid" id="q-bdmard"></div>
-      <div class="sub-q hidden" id="posologia-bdmard" style="margin-top:10px"></div>
     </div>
 
     <div style="margin-top:16px">
       <div class="q-label">18. tsDMARD em Uso <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
       <div class="options-grid" id="q-tsdmard"></div>
-      <div class="sub-q hidden" id="posologia-tsdmard" style="margin-top:10px"></div>
     </div>
 
     <div style="margin-top:16px">
@@ -452,9 +452,6 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
   <!-- S8: Medicações contínuas -->
   <div class="section-card">
     <div class="section-title">24. Medicações de Uso Contínuo <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
-    <div style="margin-bottom:8px">
-      <div id="btn-sem-imuno" class="opt-btn multi" style="background:#fff5f5;border-color:#fc8181;color:#c53030;font-weight:700" onclick="toggleSemImuno()">🚫 Sem imunossupressor</div>
-    </div>
     <div class="options-grid" id="q-med-continuas"></div>
     <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
       <input type="text" id="med-continuas-outro-input" placeholder="Adicionar outro medicamento..." style="border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;width:260px">
@@ -1694,9 +1691,9 @@ function initForm() {
   renderRadio('q-tempo-remissao', TEMPO_REMISSAO, 'tempo_remissao');
   renderRadio('q-num-med', NUM_MED, 'num_med');
   renderRadio('q-gcs', GCS, 'gcs');
-  renderCheck('q-csdmard', CS_DMARD, 'csdmard', 'posologia-csdmard');
-  renderCheck('q-bdmard', B_DMARD, 'bdmard', 'posologia-bdmard');
-  renderCheck('q-tsdmard', TS_DMARD, 'tsdmard', 'posologia-tsdmard');
+  renderCheck('q-csdmard', CS_DMARD, 'csdmard');
+  renderCheck('q-bdmard', B_DMARD, 'bdmard');
+  renderCheck('q-tsdmard', TS_DMARD, 'tsdmard');
   renderRadio('q-tempo-dmard', TEMPO_DMARD, 'tempo_dmard');
   renderCheck('q-csdmard-prev', CS_DMARD, 'csdmard_prev');
   renderCheck('q-bdmard-prev', B_DMARD, 'bdmard_prev');
@@ -2371,12 +2368,8 @@ function editPatient(idx) {
     restore('q-num-med','num_med',p.num_med);
     restore('q-gcs','gcs',p.gcs);
     restoreCheck('q-csdmard','csdmard',p.csdmard);
-    formData.dmard_posologia = p.dmard_posologia ? {...p.dmard_posologia} : {};
-    if (p.csdmard?.length) renderPosologia('csdmard','posologia-csdmard');
     restoreCheck('q-bdmard','bdmard',p.bdmard);
-    if (p.bdmard?.length) renderPosologia('bdmard','posologia-bdmard');
     restoreCheck('q-tsdmard','tsdmard',p.tsdmard);
-    if (p.tsdmard?.length) renderPosologia('tsdmard','posologia-tsdmard');
     restore('q-tempo-dmard','tempo_dmard',p.tempo_dmard);
     restoreCheck('q-csdmard-prev','csdmard_prev',p.csdmard_prev);
     restoreCheck('q-bdmard-prev','bdmard_prev',p.bdmard_prev);
@@ -3529,13 +3522,8 @@ function fillFromExtracted(data) {
   selectRadio('q-gcs',     'gcs',     data.gcs);
 
   selectCheck('q-csdmard', 'csdmard', data.csdmard);
-  if ((data.csdmard||[]).length) renderPosologia('csdmard', 'posologia-csdmard');
-
   selectCheck('q-bdmard', 'bdmard', data.bdmard);
-  if ((data.bdmard||[]).length) renderPosologia('bdmard', 'posologia-bdmard');
-
   selectCheck('q-tsdmard', 'tsdmard', data.tsdmard);
-  if ((data.tsdmard||[]).length) renderPosologia('tsdmard', 'posologia-tsdmard');
 
   selectRadio('q-tempo-dmard', 'tempo_dmard', data.tempo_dmard);
 
@@ -3608,13 +3596,8 @@ function fillTestData() {
   clickOpt('q-num-med',    '3');
   clickOpt('q-gcs',        '5 mg');
   clickOpt('q-csdmard',    'Metotrexato');
-  setTimeout(() => {          // aguarda renderPosologia
-    const posCS = document.querySelector('#posologia-csdmard tr td input[placeholder="Dose"]');
-    if (posCS) posCS.value = '15mg/sem';
-    clickOpt('q-bdmard', 'Adalimumabe');
-    setTimeout(() => {
-      const posB = document.querySelector('#posologia-bdmard tr td input[placeholder="Dose"]');
-      if (posB) posB.value = '40mg/14d';
+  clickOpt('q-bdmard', 'Adalimumabe');
+  setTimeout(() => {
       clickOpt('q-tempo-dmard', '24–48 meses');
       clickOpt('q-reacao',      'Não');
       clickOpt('q-intervalo',   '3 a 6 meses');
@@ -3697,7 +3680,6 @@ function fillTestData() {
       document.getElementById('form-msg').innerHTML =
         '<div class="success">&#128101; Paciente fictícia <strong>Maria das Graças</strong> preenchida para teste. Revise e clique em Salvar.</div>';
       window.scrollTo(0,0);
-    }, 100);
   }, 100);
 }
 
