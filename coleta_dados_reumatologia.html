@@ -362,10 +362,19 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
   <!-- S3: Labs -->
   <div class="section-card">
     <div class="section-title">12. Provas Inflamatórias</div>
-    <div style="display:flex;flex-wrap:wrap;gap:16px">
-      <div class="numeric-inline"><label>VHS (mm/h):</label><input type="number" id="f-vhs" min="1" max="150" placeholder="1–150"></div>
-      <div class="numeric-inline"><label>PCR (mg/L):</label><input type="number" id="f-pcr" step="0.1" min="0.5" max="50" placeholder="0.5–50"></div>
-      <div class="numeric-inline"><label>CPK (U/L):</label><input type="number" id="f-cpk" min="10" max="50000" placeholder="10–50000"></div>
+    <div id="lab-hint" style="font-size:12px;color:#718096;margin-bottom:8px">Os campos disponíveis dependem da doença selecionada na questão 9.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px" id="lab-fields">
+      <!-- VHS/PCR (padrão e lúpus) -->
+      <div class="numeric-inline lab-vhs-pcr"><label>VHS (mm/h):</label><input type="number" id="f-vhs" min="1" max="150" placeholder="1–150"></div>
+      <div class="numeric-inline lab-vhs-pcr"><label>PCR (mg/L):</label><input type="number" id="f-pcr" step="0.1" min="0.5" max="50" placeholder="0.5–50"></div>
+      <!-- Complemento e dsDNA (apenas lúpus) -->
+      <div class="numeric-inline lab-lupus" style="display:none"><label>C3 (mg/dL):</label><input type="number" id="f-c3" step="0.1" min="1" max="300" placeholder="1–300"></div>
+      <div class="numeric-inline lab-lupus" style="display:none"><label>C4 (mg/dL):</label><input type="number" id="f-c4" step="0.1" min="1" max="100" placeholder="1–100"></div>
+      <div class="numeric-inline lab-lupus" style="display:none"><label>Anti-dsDNA (UI/mL):</label><input type="number" id="f-dsdna" step="1" min="0" max="10000" placeholder="UI/mL"></div>
+      <!-- Enzimas musculares (apenas miopatias) -->
+      <div class="numeric-inline lab-miopatia" style="display:none"><label>CPK (U/L):</label><input type="number" id="f-cpk" min="10" max="50000" placeholder="10–50000"></div>
+      <div class="numeric-inline lab-miopatia" style="display:none"><label>Aldolase (U/L):</label><input type="number" id="f-aldolase" step="0.1" min="0" max="1000" placeholder="U/L"></div>
+      <div class="numeric-inline lab-miopatia" style="display:none"><label>DHL (U/L):</label><input type="number" id="f-dhl" min="0" max="10000" placeholder="U/L"></div>
     </div>
   </div>
 
@@ -766,6 +775,12 @@ const DOENCA_AUTOCLASSIFICA = new Set([
   'Espondiloartrite','Artrite psorística',
   'Lúpus eritematoso sistêmico','Lúpus juvenil'
 ]);
+const DOENCA_MIOPATIA = new Set([
+  'Dermatomiosite','Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil',
+  'Polimiosite','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão',
+  'Síndrome antissintetase','Sobreposição miopatia + outra doença'
+]);
+const DOENCA_LUPUS = new Set(['Lúpus eritematoso sistêmico','Lúpus juvenil']);
 // Doenças com índice mas SEM graus padronizados (miopatias e vasculites)
 const DOENCA_BINARIO = new Set([
   'Dermatomiosite','Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil',
@@ -1918,6 +1933,24 @@ function updateMetrics(doenca) {
   document.getElementById('ativ-auto-badge').style.display = 'none';
   // Limpa classificação automática anterior
   clearAutoClassify();
+  // Atualiza campos de provas inflamatórias
+  updateLabFields(doenca);
+}
+
+function updateLabFields(doenca) {
+  const isMio  = DOENCA_MIOPATIA.has(doenca);
+  const isLup  = DOENCA_LUPUS.has(doenca);
+  // VHS e PCR: mostrar em tudo que NÃO seja miopatia
+  document.querySelectorAll('.lab-vhs-pcr').forEach(el => el.style.display = isMio ? 'none' : '');
+  // Campos lúpus
+  document.querySelectorAll('.lab-lupus').forEach(el => el.style.display = isLup ? '' : 'none');
+  // Campos miopatia
+  document.querySelectorAll('.lab-miopatia').forEach(el => el.style.display = isMio ? '' : 'none');
+  document.getElementById('lab-hint').style.display = doenca ? 'none' : 'block';
+  // Limpa campos que ficaram ocultos para não persistir dados inconsistentes
+  if (isMio) { document.getElementById('f-vhs').value=''; document.getElementById('f-pcr').value=''; document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; document.getElementById('f-dsdna').value=''; }
+  if (isLup) { document.getElementById('f-cpk').value=''; document.getElementById('f-aldolase').value=''; document.getElementById('f-dhl').value=''; }
+  if (!isMio && !isLup) { document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; document.getElementById('f-dsdna').value=''; document.getElementById('f-cpk').value=''; document.getElementById('f-aldolase').value=''; document.getElementById('f-dhl').value=''; }
 }
 
 function classifyDAS28(v) {
@@ -2400,7 +2433,12 @@ function savePatient() {
     tempo_remissao: formData.tempo_remissao || '',
     vhs: document.getElementById('f-vhs').value,
     pcr: document.getElementById('f-pcr').value,
+    c3: document.getElementById('f-c3').value,
+    c4: document.getElementById('f-c4').value,
+    dsdna: document.getElementById('f-dsdna').value,
     cpk: document.getElementById('f-cpk').value,
+    aldolase: document.getElementById('f-aldolase').value,
+    dhl: document.getElementById('f-dhl').value,
     das28: document.getElementById('f-das28').value,
     asdas: document.getElementById('f-asdas').value,
     sledai: document.getElementById('f-sledai').value,
@@ -2516,9 +2554,13 @@ function clearForm() {
   document.getElementById('f-inicio-seg').value = '';
   document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
-  ['f-vhs','f-pcr','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
+  ['f-vhs','f-pcr','f-c3','f-c4','f-dsdna','f-cpk','f-aldolase','f-dhl','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  // Reset campos de laboratório para estado padrão (sem doença selecionada)
+  document.querySelectorAll('.lab-vhs-pcr').forEach(el => el.style.display = '');
+  document.querySelectorAll('.lab-lupus,.lab-miopatia').forEach(el => el.style.display = 'none');
+  document.getElementById('lab-hint').style.display = 'block';
   document.getElementById('sub-remissao').classList.add('hidden');
   document.getElementById('sub-reacao').classList.add('hidden');
   ['das28','asdas','sledai','myoact','bvas','itas'].forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
@@ -2695,9 +2737,16 @@ function editPatient(idx) {
     document.getElementById('f-inicio-seg').value = p.inicio_seg || '';
     document.getElementById('f-entrevista').value = p.entrevista || '';
     document.getElementById('f-idade').value = p.idade || '';
+    // Atualiza campos de laboratório conforme a doença antes de restaurar valores
+    if (p.doenca) updateLabFields(p.doenca);
     document.getElementById('f-vhs').value = p.vhs || '';
     document.getElementById('f-pcr').value = p.pcr || '';
+    document.getElementById('f-c3').value = p.c3 || '';
+    document.getElementById('f-c4').value = p.c4 || '';
+    document.getElementById('f-dsdna').value = p.dsdna || '';
     document.getElementById('f-cpk').value = p.cpk || '';
+    document.getElementById('f-aldolase').value = p.aldolase || '';
+    document.getElementById('f-dhl').value = p.dhl || '';
     document.getElementById('f-das28').value = p.das28 || '';
     document.getElementById('f-asdas').value = p.asdas || '';
     document.getElementById('f-sledai').value = p.sledai || '';
@@ -2832,7 +2881,7 @@ function exportCSV() {
   const db = getData();
   if (!db.length) { alert('Nenhum dado para exportar.'); return; }
   const headers = ['rghc','nome','nascimento','inicio_seg','entrevista','idade','sexo','etnia','doenca',
-    'tempo_diag','atividade','tempo_remissao','vhs','pcr','cpk','das28','asdas','sledai','myoact','mmt8','bvas','itas',
+    'tempo_diag','atividade','tempo_remissao','vhs','pcr','c3','c4','dsdna','cpk','aldolase','dhl','das28','asdas','sledai','myoact','mmt8','bvas','itas',
     'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
     'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
     'reacao','reacao_quais','intervalo','dmard_posologia',
@@ -3431,7 +3480,12 @@ function renderStats() {
   labGrid.className = 'stat-grid';
   labGrid.innerHTML = numericCard('Q12 · VHS', numStat(db,'vhs'), 'mm/h')
     + numericCard('Q12 · PCR', numStat(db,'pcr'), 'mg/L')
-    + numericCard('Q12 · CPK', numStat(db,'cpk'), 'U/L');
+    + numericCard('Q12 · C3', numStat(db,'c3'), 'mg/dL')
+    + numericCard('Q12 · C4', numStat(db,'c4'), 'mg/dL')
+    + numericCard('Q12 · Anti-dsDNA', numStat(db,'dsdna'), 'UI/mL')
+    + numericCard('Q12 · CPK', numStat(db,'cpk'), 'U/L')
+    + numericCard('Q12 · Aldolase', numStat(db,'aldolase'), 'U/L')
+    + numericCard('Q12 · DHL', numStat(db,'dhl'), 'U/L');
   ap(labGrid);
 
   // ── SEÇÃO 4: MÉTRICAS ──
@@ -3760,7 +3814,12 @@ Estrutura do JSON (use null para campos não encontrados):
   "tempo_remissao": "< 6 meses" | "6–12 meses" | "12–24 meses" | "24–48 meses" | "> 48 meses",
   "vhs": number,
   "pcr": number,
+  "c3": number,
+  "c4": number,
+  "dsdna": number,
   "cpk": number,
+  "aldolase": number,
+  "dhl": number,
   "das28": number,
   "asdas": number,
   "sledai": number,
