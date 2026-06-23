@@ -39,6 +39,7 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
 
 /* Numeric inline */
 .numeric-inline{display:flex;align-items:center;gap:8px;margin-top:4px}
+.te-item{display:flex;flex-direction:column;align-items:flex-start}
 .numeric-inline label{font-size:12px;color:#4a5568;white-space:nowrap}
 .numeric-inline input{width:100px;border:1px solid #cbd5e0;border-radius:6px;padding:5px 8px;font-size:13px}
 
@@ -435,6 +436,33 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     </div>
 
     <div style="margin-top:16px">
+      <div class="q-label">Terapias especiais em uso <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+      <div id="q-terapias-especiais" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+        <div class="te-item">
+          <div class="opt-btn multi" id="te-ivig-btn" onclick="toggleTerapiaEspecial('ivig')">IVIG</div>
+          <div id="te-ivig-date" style="display:none;margin-top:4px">
+            <label style="font-size:11px;color:#718096">Última realização:</label>
+            <input type="month" id="f-ivig-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.ivig_data=this.value">
+          </div>
+        </div>
+        <div class="te-item">
+          <div class="opt-btn multi" id="te-pulso-btn" onclick="toggleTerapiaEspecial('pulso')">Pulsoterapia</div>
+          <div id="te-pulso-date" style="display:none;margin-top:4px">
+            <label style="font-size:11px;color:#718096">Última realização:</label>
+            <input type="month" id="f-pulso-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.pulso_data=this.value">
+          </div>
+        </div>
+        <div class="te-item">
+          <div class="opt-btn multi" id="te-ciclo-btn" onclick="toggleTerapiaEspecial('ciclo')">Ciclofosfamida</div>
+          <div id="te-ciclo-date" style="display:none;margin-top:4px">
+            <label style="font-size:11px;color:#718096">Última realização:</label>
+            <input type="month" id="f-ciclo-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.ciclo_data=this.value">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
       <div class="q-label">19. Tempo desde que o Último DMARD foi Introduzido</div>
       <div class="options-grid" id="q-tempo-dmard"></div>
     </div>
@@ -454,6 +482,34 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <div style="margin-top:16px">
       <div class="q-label">22. tsDMARDs Prévios <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
       <div class="options-grid" id="q-tsdmard-prev"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="q-label">Terapias especiais prévias <span style="font-size:11px;color:#718096">(múltipla escolha)</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+        <div class="te-item">
+          <div class="opt-btn multi" id="te-ivig-prev-btn" onclick="toggleTerapiaEspecial('ivig_prev')">IVIG</div>
+          <div id="te-ivig-prev-date" style="display:none;margin-top:4px">
+            <label style="font-size:11px;color:#718096">Última realização:</label>
+            <input type="month" id="f-ivig-prev-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.ivig_prev_data=this.value">
+          </div>
+        </div>
+        <div class="te-item">
+          <div class="opt-btn multi" id="te-pulso-prev-btn" onclick="toggleTerapiaEspecial('pulso_prev')">Pulsoterapia</div>
+          <div id="te-pulso-prev-date" style="display:none;margin-top:4px">
+            <label style="font-size:11px;color:#718096">Última realização:</label>
+            <input type="month" id="f-pulso-prev-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.pulso_prev_data=this.value">
+          </div>
+        </div>
+        <div class="te-item">
+          <div class="opt-btn multi" id="te-ciclo-prev-btn" onclick="toggleTerapiaEspecial('ciclo_prev')">Ciclofosfamida</div>
+          <div id="te-ciclo-prev-date" style="display:none;margin-top:4px">
+            <label style="font-size:11px;color:#718096">Última realização:</label>
+            <input type="month" id="f-ciclo-prev-data" style="border:1px solid #cbd5e0;border-radius:6px;padding:3px 6px;font-size:12px" onchange="formData.ciclo_prev_data=this.value">
+          </div>
+        </div>
+      </div>
+    </div>
     </div>
   </div>
 
@@ -801,7 +857,7 @@ const COMORBIDADES = [
   'Doença de Sjogren','DPOC','DRC','DRGE','FA','Fibromialgia','HAS',
   'Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','ICFEP','ICFER','IAM',
   'Glaucoma','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Obesidade',
-  'Osteoartrite','Osteonecrose','Osteoporose','Retocolite ulcerativa','SAF','TEP','TVP'
+  'DPI','Neuropatia periférica','Osteoartrite','Osteonecrose','Osteomielite','Osteoporose','Retocolite ulcerativa','SAF','TEP','TVP'
 ];
 const MED_CONTINUAS = [
   'AAS','Aciclovir','Ácido fólico','Ácido zoledrônico','Alendronato de sódio',
@@ -818,7 +874,7 @@ const MED_CONTINUAS = [
   'Paracetamol','Pioglitazona','Pregabalina','Propranolol','Quetiapina','Ramipril',
   'Risedronato de sódio','Rivaroxabana','Romosozumabe','Rosuvastatina','Semaglutida',
   'Sertralina','Sildenafil','Sinvastatina','Sulfato ferroso','Tamoxifeno','Tansulosina',
-  'Teriparatida','Ticagrelor','Tramadol','Valsartana','Varfarina','Venlafaxina'
+  'Budesonida nasal','Metadona','Teriparatida','Ticagrelor','Tramadol','Valsartana','Varfarina','Venlafaxina'
 ];
 const REACAO_DMARD = [...CS_DMARD,...B_DMARD,...TS_DMARD].filter((v,i,a)=>a.indexOf(v)===i).sort();
 
@@ -1842,6 +1898,21 @@ function toggleSemImuno(forceState) {
   }
 }
 
+function toggleTerapiaEspecial(key) {
+  const btn = document.getElementById('te-'+key+'-btn');
+  const dateDiv = document.getElementById('te-'+key+'-date');
+  const isActive = btn.classList.toggle('selected');
+  formData['te_'+key] = isActive;
+  if (dateDiv) dateDiv.style.display = isActive ? 'block' : 'none';
+  const inpId = 'f-' + key.replace(/_/g,'-') + '-data';
+  const inp = document.getElementById(inpId);
+  if (!isActive) {
+    if (inp) inp.value = '';
+    formData['te_'+key+'_data'] = '';
+  }
+  if (inp) inp.onchange = () => { formData['te_'+key+'_data'] = inp.value; };
+}
+
 function renderCheck(containerId, options, field, posologiaId) {
   const c = document.getElementById(containerId);
   c.innerHTML = '';
@@ -2098,8 +2169,19 @@ function initForm() {
     csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
     comorbidades:[], med_continuas:[], reacao_quais:[],
     dmard_posologia:{}, locomocao:[], sem_imuno:false,
+    te_ivig:false, te_ivig_data:'', te_pulso:false, te_pulso_data:'', te_ciclo:false, te_ciclo_data:'',
+    te_ivig_prev:false, te_ivig_prev_data:'', te_pulso_prev:false, te_pulso_prev_data:'', te_ciclo_prev:false, te_ciclo_prev_data:'',
     cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
   };
+  // Reset terapias especiais
+  ['ivig','pulso','ciclo','ivig_prev','pulso_prev','ciclo_prev'].forEach(k => {
+    const btn = document.getElementById('te-'+k+'-btn');
+    const dd = document.getElementById('te-'+k+'-date');
+    const inp = document.getElementById('f-'+k.replace('_','-')+'-data');
+    if (btn) btn.classList.remove('selected');
+    if (dd) dd.style.display = 'none';
+    if (inp) inp.value = '';
+  });
   // Reset sem_imuno button
   const siBtn = document.getElementById('btn-sem-imuno');
   if (siBtn) siBtn.classList.remove('selected');
@@ -2458,6 +2540,12 @@ function savePatient() {
     comorbidades: [...(formData.comorbidades||[])],
     med_continuas: [...(formData.med_continuas||[])],
     sem_imuno: formData.sem_imuno || false,
+    te_ivig: formData.te_ivig || false, te_ivig_data: formData.te_ivig_data || '',
+    te_pulso: formData.te_pulso || false, te_pulso_data: formData.te_pulso_data || '',
+    te_ciclo: formData.te_ciclo || false, te_ciclo_data: formData.te_ciclo_data || '',
+    te_ivig_prev: formData.te_ivig_prev || false, te_ivig_prev_data: formData.te_ivig_prev_data || '',
+    te_pulso_prev: formData.te_pulso_prev || false, te_pulso_prev_data: formData.te_pulso_prev_data || '',
+    te_ciclo_prev: formData.te_ciclo_prev || false, te_ciclo_prev_data: formData.te_ciclo_prev_data || '',
     reacao: formData.reacao || '',
     reacao_quais: [...(formData.reacao_quais||[])],
     intervalo: formData.intervalo || '',
@@ -2818,6 +2906,31 @@ function editPatient(idx) {
     restoreCheckWithOutros('q-med-continuas','med_continuas',p.med_continuas,'med-continuas-outro-input');
     // Sem imunossupressor
     if (p.sem_imuno) toggleSemImuno(true);
+    // Terapias especiais
+    ['ivig','pulso','ciclo'].forEach(k => {
+      if (p['te_'+k]) {
+        const btn = document.getElementById('te-'+k+'-btn');
+        const dd = document.getElementById('te-'+k+'-date');
+        const inp = document.getElementById('f-'+k+'-data');
+        if (btn) btn.classList.add('selected');
+        if (dd) dd.style.display = 'block';
+        if (inp && p['te_'+k+'_data']) inp.value = p['te_'+k+'_data'];
+        formData['te_'+k] = true;
+        formData['te_'+k+'_data'] = p['te_'+k+'_data'] || '';
+      }
+    });
+    ['ivig_prev','pulso_prev','ciclo_prev'].forEach(k => {
+      if (p['te_'+k]) {
+        const btn = document.getElementById('te-'+k+'-btn');
+        const dd = document.getElementById('te-'+k+'-date');
+        const inp = document.getElementById('f-'+k.replace('_','-')+'-data');
+        if (btn) btn.classList.add('selected');
+        if (dd) dd.style.display = 'block';
+        if (inp && p['te_'+k+'_data']) inp.value = p['te_'+k+'_data'];
+        formData['te_'+k] = true;
+        formData['te_'+k+'_data'] = p['te_'+k+'_data'] || '';
+      }
+    });
     restore('q-reacao','reacao',p.reacao);
     if (p.reacao === 'Sim') { document.getElementById('sub-reacao').classList.remove('hidden'); restoreCheck('q-reacao-quais','reacao_quais',p.reacao_quais); }
     restore('q-intervalo','intervalo',p.intervalo);
