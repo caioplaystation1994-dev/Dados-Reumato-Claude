@@ -817,7 +817,7 @@ const DOENCAS = [
   'Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil','Espondiloartrite',
   'GEPA','GPA','Lúpus eritematoso sistêmico','Lúpus juvenil',
   'Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','PAM','PAN',
-  'Policondrite recidivante','Polimiosite','Síndrome antissintetase',
+  'Policondrite recidivante','Polimiosite','SAS-like','Síndrome antissintetase',
   'Sobreposição miopatia + outra doença'
 ];
 const TEMPO_DIAG = ['< 1 ano','1–3 anos','3–5 anos','5–7 anos','7–9 anos','10–15 anos','> 15 anos'];
@@ -834,14 +834,14 @@ const DOENCA_AUTOCLASSIFICA = new Set([
 const DOENCA_MIOPATIA = new Set([
   'Dermatomiosite','Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil',
   'Polimiosite','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão',
-  'Síndrome antissintetase','Sobreposição miopatia + outra doença'
+  'SAS-like','Síndrome antissintetase','Sobreposição miopatia + outra doença'
 ]);
 const DOENCA_LUPUS = new Set(['Lúpus eritematoso sistêmico','Lúpus juvenil']);
 // Doenças com índice mas SEM graus padronizados (miopatias e vasculites)
 const DOENCA_BINARIO = new Set([
   'Dermatomiosite','Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil',
   'Polimiosite','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão',
-  'Síndrome antissintetase','Sobreposição miopatia + outra doença',
+  'SAS-like','Síndrome antissintetase','Sobreposição miopatia + outra doença',
   'GPA','GEPA','PAM','PAN','Arterite de células gigantes',
   'Policondrite recidivante','Arterite de Takayasu'
 ]);
@@ -1260,6 +1260,7 @@ const DOENCA_METRICAS = {
   'Polimiosite': ['myoact'],
   'Miopatia Necrotizante Imunomediada': ['myoact'],
   'Miosite por corpos de inclusão': ['myoact'],
+  'SAS-like': ['myoact'],
   'Síndrome antissintetase': ['myoact'],
   'Sobreposição miopatia + outra doença': ['myoact'],
   'GPA': ['bvas'],
@@ -3357,7 +3358,7 @@ const GRUPOS = {
   'Todos': null,
   'Vasculites': ['GPA','GEPA','PAM','PAN','Arterite de células gigantes','Arterite de Takayasu','Policondrite recidivante'],
   'Artrites inflamatórias': ['Artrite psorística','Artrite reumatoide','Espondiloartrite'],
-  'Miopatias': ['Dermatomiosite','Dermatomiosite clinicamente amiopática','Polimiosite','Síndrome antissintetase','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','Sobreposição miopatia + outra doença'],
+  'Miopatias': ['Dermatomiosite','Dermatomiosite clinicamente amiopática','Polimiosite','SAS-like','Síndrome antissintetase','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','Sobreposição miopatia + outra doença'],
   'Doenças juvenis': ['Lúpus juvenil','Artrite idiopática juvenil','Dermatomiosite juvenil'],
   'LES': ['Lúpus eritematoso sistêmico'],
 };
