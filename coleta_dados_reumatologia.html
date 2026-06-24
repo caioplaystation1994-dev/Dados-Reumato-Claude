@@ -39,6 +39,11 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
 
 /* Numeric inline */
 .numeric-inline{display:flex;align-items:center;gap:8px;margin-top:4px}
+.date-dmy{display:flex;align-items:center;gap:4px}
+.date-dmy input{border:1px solid #cbd5e0;border-radius:6px;padding:5px 6px;font-size:13px;text-align:center}
+.date-dmy input[placeholder="DD"],.date-dmy input[placeholder="MM"]{width:50px}
+.date-dmy input[placeholder="AAAA"]{width:68px}
+.date-dmy span{color:#718096;font-weight:600}
 .te-item{display:flex;flex-direction:column;align-items:flex-start}
 .numeric-inline label{font-size:12px;color:#4a5568;white-space:nowrap}
 .numeric-inline input{width:100px;border:1px solid #cbd5e0;border-radius:6px;padding:5px 8px;font-size:13px}
@@ -303,15 +308,36 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
       </div>
       <div class="field-group">
         <label>3. Data de Nascimento</label>
-        <input type="date" lang="pt-BR" id="f-nascimento" oninput="updateTabBadges()">
+        <div class="date-dmy">
+          <input type="number" min="1" max="31" placeholder="DD" id="f-nascimento-d" oninput="syncDate('f-nascimento');updateTabBadges()">
+          <span>/</span>
+          <input type="number" min="1" max="12" placeholder="MM" id="f-nascimento-m" oninput="syncDate('f-nascimento');updateTabBadges()">
+          <span>/</span>
+          <input type="number" min="1900" max="2100" placeholder="AAAA" id="f-nascimento-y" oninput="syncDate('f-nascimento');updateTabBadges()">
+        </div>
+        <input type="hidden" id="f-nascimento">
       </div>
       <div class="field-group">
         <label>4. HC Início de Seguimento</label>
-        <input type="date" lang="pt-BR" id="f-inicio-seg">
+        <div class="date-dmy">
+          <input type="number" min="1" max="31" placeholder="DD" id="f-inicio-seg-d" oninput="syncDate('f-inicio-seg')">
+          <span>/</span>
+          <input type="number" min="1" max="12" placeholder="MM" id="f-inicio-seg-m" oninput="syncDate('f-inicio-seg')">
+          <span>/</span>
+          <input type="number" min="1900" max="2100" placeholder="AAAA" id="f-inicio-seg-y" oninput="syncDate('f-inicio-seg')">
+        </div>
+        <input type="hidden" id="f-inicio-seg">
       </div>
       <div class="field-group">
         <label>5. Data da Entrevista</label>
-        <input type="date" lang="pt-BR" id="f-entrevista" oninput="calcIdade();updateTabBadges()">
+        <div class="date-dmy">
+          <input type="number" min="1" max="31" placeholder="DD" id="f-entrevista-d" oninput="syncDate('f-entrevista');calcIdade();updateTabBadges()">
+          <span>/</span>
+          <input type="number" min="1" max="12" placeholder="MM" id="f-entrevista-m" oninput="syncDate('f-entrevista');calcIdade();updateTabBadges()">
+          <span>/</span>
+          <input type="number" min="1900" max="2100" placeholder="AAAA" id="f-entrevista-y" oninput="syncDate('f-entrevista');calcIdade();updateTabBadges()">
+        </div>
+        <input type="hidden" id="f-entrevista">
       </div>
       <div class="field-group">
         <label>6. Idade Atual (anos)</label>
@@ -2442,6 +2468,21 @@ function restoreCQR(respostas) {
 // ============================================================
 // CALCULATIONS
 // ============================================================
+function syncDate(prefix) {
+  const d = String(document.getElementById(prefix+'-d').value).padStart(2,'0');
+  const m = String(document.getElementById(prefix+'-m').value).padStart(2,'0');
+  const y = document.getElementById(prefix+'-y').value;
+  const iso = (d !== '00' && m !== '00' && y && y.length === 4) ? `${y}-${m}-${d}` : '';
+  document.getElementById(prefix).value = iso;
+}
+function setDateInput(prefix, iso) {
+  if (!iso) { ['d','m','y'].forEach(p => { document.getElementById(prefix+'-'+p).value = ''; }); return; }
+  const parts = iso.split('-');
+  document.getElementById(prefix+'-y').value = parts[0] || '';
+  document.getElementById(prefix+'-m').value = parts[1] ? parseInt(parts[1]) : '';
+  document.getElementById(prefix+'-d').value = parts[2] ? parseInt(parts[2]) : '';
+}
+
 function calcIdade() {
   const nasc = document.getElementById('f-nascimento').value;
   const entrev = document.getElementById('f-entrevista').value;
@@ -2604,9 +2645,8 @@ function clearForm() {
   editingRghc = null;
   document.getElementById('f-nome').value = '';
   document.getElementById('f-rghc').value = '';
-  document.getElementById('f-nascimento').value = '';
-  document.getElementById('f-inicio-seg').value = '';
-  document.getElementById('f-entrevista').value = '';
+  setDateInput('f-nascimento',''); setDateInput('f-inicio-seg',''); setDateInput('f-entrevista','');
+  document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
   ['f-vhs','f-pcr','f-c3','f-c4','f-dsdna','f-cpk','f-aldolase','f-dhl','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
     document.getElementById(id).value = '';
@@ -2787,9 +2827,9 @@ function editPatient(idx) {
   setTimeout(() => {
     document.getElementById('f-nome').value = p.nome;
     document.getElementById('f-rghc').value = p.rghc;
-    document.getElementById('f-nascimento').value = p.nascimento || '';
-    document.getElementById('f-inicio-seg').value = p.inicio_seg || '';
-    document.getElementById('f-entrevista').value = p.entrevista || '';
+    setDateInput('f-nascimento', p.nascimento||''); document.getElementById('f-nascimento').value = p.nascimento||'';
+    setDateInput('f-inicio-seg', p.inicio_seg||''); document.getElementById('f-inicio-seg').value = p.inicio_seg||'';
+    setDateInput('f-entrevista', p.entrevista||''); document.getElementById('f-entrevista').value = p.entrevista||'';
     document.getElementById('f-idade').value = p.idade || '';
     // Atualiza campos de laboratório conforme a doença antes de restaurar valores
     if (p.doenca) updateLabFields(p.doenca);
@@ -4000,7 +4040,7 @@ function fillFromExtracted(data) {
   // Identificação
   setInput('f-nome',       data.nome,       'nome');
   setInput('f-rghc',       data.rghc,       'rghc');
-  setInput('f-nascimento', data.nascimento,  'nascimento');
+  if (data.nascimento) { setDateInput('f-nascimento', data.nascimento); document.getElementById('f-nascimento').value = data.nascimento; filled.push('nascimento'); }
 
   // Demográfico
   selectRadio('q-sexo',  'sexo',  data.sexo);
@@ -4085,9 +4125,9 @@ function fillTestData() {
   // ── Identificação ──
   document.getElementById('f-nome').value = 'Maria das Graças Ferreira Santos';
   document.getElementById('f-rghc').value = '9987654';
-  document.getElementById('f-nascimento').value = '1965-03-15';
-  document.getElementById('f-inicio-seg').value = '2018-06-10';
-  document.getElementById('f-entrevista').value = '2026-06-15';
+  setDateInput('f-nascimento','1965-03-15'); document.getElementById('f-nascimento').value='1965-03-15';
+  setDateInput('f-inicio-seg','2018-06-10'); document.getElementById('f-inicio-seg').value='2018-06-10';
+  setDateInput('f-entrevista','2026-06-15'); document.getElementById('f-entrevista').value='2026-06-15';
   calcIdade();
   clickOpt('q-sexo',  'Feminino');
   clickOpt('q-etnia', 'Parda');
