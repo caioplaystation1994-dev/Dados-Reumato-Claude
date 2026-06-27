@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nem a Pato! - Jogo de Estimativas</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #334155;
+      --accent: #f59e0b;
+      --accent2: #ef4444;
+      --green: #22c55e;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: #475569;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 640px;
+      padding: 24px 16px 48px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      text-align: center;
+      color: var(--accent);
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--accent);
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    .player-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .player-row input { flex: 1; }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-danger {
+      background: var(--accent2);
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-green {
+      background: var(--green);
+      color: #000;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .btn-full { width: 100%; margin-top: 8px; }
+
+    .question-box {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--accent);
+    }
+
+    .question-box p {
+      font-size: 1.15rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .question-box .hint {
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .turn-banner {
+      text-align: center;
+      padding: 14px;
+      background: var(--surface2);
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .turn-banner .name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .turn-banner .role {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .estimates-list {
+      list-style: none;
+      margin-bottom: 16px;
+    }
+
+    .estimates-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--surface2);
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+
+    .estimates-list li .player-name { font-weight: 700; }
+    .estimates-list li .value { color: var(--accent); font-weight: 600; font-family: monospace; font-size: 0.95rem; }
+    .estimates-list li .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 700;
+    }
+
+    .badge-pass { background: #1e3a5f; color: #60a5fa; }
+    .badge-doubt { background: #3b1d1d; color: #f87171; }
+    .badge-win { background: #14532d; color: #4ade80; }
+    .badge-lose { background: #3b1d1d; color: #f87171; }
+
+    .reveal-box {
+      text-align: center;
+      padding: 20px;
+      background: var(--surface2);
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .reveal-box .real-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--green);
+      font-family: monospace;
+    }
+
+    .reveal-box .unit {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .result-msg {
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .result-win { background: #14532d; color: #4ade80; }
+    .result-lose { background: #3b1d1d; color: #f87171; }
+    .result-neutral { background: var(--surface2); color: var(--muted); }
+
+    .scoreboard {
+      list-style: none;
+    }
+
+    .scoreboard li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: var(--surface2);
+      margin-bottom: 8px;
+    }
+
+    .scoreboard li.top {
+      background: #292000;
+      border: 1px solid var(--accent);
+    }
+
+    .scoreboard li .rank { color: var(--muted); font-size: 0.85rem; width: 24px; }
+    .scoreboard li .sname { font-weight: 700; flex: 1; margin-left: 8px; }
+    .scoreboard li .pts { font-family: monospace; font-size: 1.1rem; color: var(--accent); font-weight: 800; }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.4s ease;
+    }
+
+    .flex-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .flex-row .btn { flex: 1; }
+
+    .hidden { display: none !important; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      background: var(--surface2);
+      color: var(--muted);
+      padding: 2px 8px;
+      border-radius: 99px;
+      margin-bottom: 6px;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    .btn-add-player {
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    .btn-add-player:hover { border-color: var(--accent); color: var(--accent); }
+
+    .emoji { font-size: 2rem; margin-bottom: 8px; display: block; text-align: center; }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.6rem; }
+      .reveal-box .real-value { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const QUESTIONS = [
+  {
+    id: 1,
+    text: "Quantos litros de cerveja são bebidos no mundo por ano?",
+    hint: "Pense em bilhões de litros",
+    unit: "bilhões de litros",
+    realValue: 189,
+    source: "Statista, 2023"
+  },
+  {
+    id: 2,
+    text: "Quantos aviões comerciais estão em operação no mundo hoje?",
+    hint: "Pense em dezenas de milhares",
+    unit: "aviões",
+    realValue: 26000,
+    source: "IATA, 2024"
+  },
+  {
+    id: 3,
+    text: "Quantos quilômetros percorre um carro médio em toda a sua vida útil?",
+    hint: "Pense em centenas de milhares de km",
+    unit: "km",
+    realValue: 300000,
+    source: "estimativa média global"
+  },
+  {
+    id: 4,
+    text: "Quantos hambúrgueres o McDonald's vende por dia no mundo?",
+    hint: "Pense em dezenas de milhões",
+    unit: "hambúrgueres/dia",
+    realValue: 69000000,
+    source: "McDonald's, 2023"
+  },
+  {
+    id: 5,
+    text: "Quantos kg de plástico são jogados nos oceanos por ano?",
+    hint: "Pense em milhões de toneladas (1 tonelada = 1.000 kg)",
+    unit: "toneladas métricas",
+    realValue: 8000000,
+    source: "Ocean Conservancy, 2023"
+  },
+  {
+    id: 6,
+    text: "Quantas pesquisas são feitas no Google por dia no mundo?",
+    hint: "Pense em bilhões",
+    unit: "pesquisas/dia",
+    realValue: 8500000000,
+    source: "Google, 2024"
+  },
+  {
+    id: 7,
+    text: "Quantos frangos são abatidos no Brasil por ano?",
+    hint: "Pense em bilhões de aves",
+    unit: "aves/ano",
+    realValue: 5800000000,
+    source: "ABPA, 2023"
+  },
+  {
+    id: 8,
+    text: "Quantas horas de vídeo são enviadas ao YouTube a cada minuto?",
+    hint: "Pense em centenas de horas",
+    unit: "horas/minuto",
+    realValue: 500,
+    source: "YouTube, 2024"
+  },
+  {
+    id: 9,
+    text: "Quantos reais em dívidas os brasileiros têm com bancos hoje?",
+    hint: "Pense em trilhões de reais",
+    unit: "trilhões de reais",
+    realValue: 6.2,
+    source: "Banco Central do Brasil, 2024"
+  },
+  {
+    id: 10,
+    text: "Quantos cigarros são fumados no mundo por dia?",
+    hint: "Pense em bilhões",
+    unit: "cigarros/dia",
+    realValue: 18000000000,
+    source: "WHO, 2023"
+  },
+  {
+    id: 11,
+    text: "Quantos km² tem a Floresta Amazônica?",
+    hint: "Pense em milhões de km²",
+    unit: "km²",
+    realValue: 5500000,
+    source: "INPE, 2023"
+  },
+  {
+    id: 12,
+    text: "Quantas mensagens são enviadas pelo WhatsApp por dia no mundo?",
+    hint: "Pense em bilhões",
+    unit: "mensagens/dia",
+    realValue: 100000000000,
+    source: "Meta, 2023"
+  }
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+
+const state = {
+  screen: 'setup',        // setup | round | doubt | reveal | scoreboard | end
+  players: [],            // [{name, score}]
+  questions: [],          // shuffled subset
+  currentQ: 0,            // index into questions
+  currentPlayer: 0,       // index into players (whose turn it is)
+  estimates: [],          // [{playerIdx, value, doubled: bool, doubtTargetIdx}]
+  doubtInfo: null,        // {doubterIdx, targetIdx} or null
+  totalRounds: 5,
+};
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+
+function formatNumber(n) {
+  if (n === undefined || n === null) return '?';
+  if (n >= 1e12) return (n / 1e12).toLocaleString('pt-BR', {maximumFractionDigits: 2}) + ' tri';
+  if (n >= 1e9)  return (n / 1e9).toLocaleString('pt-BR', {maximumFractionDigits: 2}) + ' bi';
+  if (n >= 1e6)  return (n / 1e6).toLocaleString('pt-BR', {maximumFractionDigits: 2}) + ' mi';
+  if (n >= 1e3)  return n.toLocaleString('pt-BR');
+  return n.toLocaleString('pt-BR');
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  const screens = {
+    setup: renderSetup,
+    round: renderRound,
+    doubt: renderDoubt,
+    reveal: renderReveal,
+    scoreboard: renderScoreboard,
+    end: renderEnd,
+  };
+
+  const fn = screens[state.screen];
+  if (fn) app.appendChild(fn());
+}
+
+// ─── SETUP ──────────────────────────────────────────────────────────────────
+
+function renderSetup() {
+  const frag = document.createDocumentFragment();
+
+  const title = el('h1', {}, '🦆 Nem a Pato!');
+  const sub = el('p', {className: 'subtitle'}, 'O jogo de estimativas com dúvida');
+  frag.append(title, sub);
+
+  // Players card
+  const playersCard = el('div', {className: 'card'});
+  playersCard.appendChild(el('h2', {}, 'Jogadores'));
+
+  const playersList = el('div', {id: 'players-list'});
+
+  function addPlayerRow(name = '') {
+    const row = el('div', {className: 'player-row'});
+    const inp = el('input', {type: 'text', placeholder: 'Nome do jogador', value: name});
+    const del = el('button', {className: 'btn btn-ghost btn-sm'}, '✕');
+    del.onclick = () => { row.remove(); };
+    row.append(inp, del);
+    playersList.appendChild(row);
+  }
+
+  ['', '', ''].forEach(() => addPlayerRow());
+
+  const addBtn = el('button', {className: 'btn-add-player'}, '+ Adicionar jogador');
+  addBtn.onclick = () => addPlayerRow();
+
+  playersCard.append(playersList, addBtn);
+  frag.appendChild(playersCard);
+
+  // Rounds card
+  const roundsCard = el('div', {className: 'card'});
+  roundsCard.appendChild(el('h2', {}, 'Configuração'));
+  const roundLabel = el('label', {}, 'Número de rodadas');
+  const roundInput = el('input', {type: 'number', id: 'rounds-input', value: '5', min: '1', max: '12'});
+  roundsCard.append(roundLabel, roundInput);
+  frag.appendChild(roundsCard);
+
+  // Rules card
+  const rulesCard = el('div', {className: 'card'});
+  rulesCard.appendChild(el('h2', {}, 'Regras'));
+  const rules = [
+    '🎯 Uma pergunta é apresentada a todos.',
+    '🔢 Cada jogador dá seu palpite em sequência.',
+    '🦆 Antes de dar seu palpite, você pode dizer "Nem a Pato!" ao palpite anterior.',
+    '📖 O valor real é revelado e os pontos são calculados.',
+    '❌ Se duvidou e o outro estava certo (ou foi conservador) → você perde 1 ponto.',
+    '✅ Se duvidou e o outro exagerou → ele perde 1 ponto.',
+    '🏆 Vence quem tiver mais pontos no final!',
+  ];
+  rules.forEach(r => {
+    rulesCard.appendChild(el('p', {style: 'margin-bottom:8px; font-size:0.88rem; color:#cbd5e1'}, r));
+  });
+  frag.appendChild(rulesCard);
+
+  const startBtn = el('button', {className: 'btn btn-primary btn-full'}, 'Começar Jogo');
+  startBtn.onclick = startGame;
+  frag.appendChild(startBtn);
+
+  return frag;
+}
+
+function startGame() {
+  const names = [...document.querySelectorAll('#players-list input')]
+    .map(i => i.value.trim()).filter(Boolean);
+
+  if (names.length < 2) {
+    alert('Adicione pelo menos 2 jogadores!');
+    return;
+  }
+
+  const rounds = Math.min(12, Math.max(1, parseInt(document.getElementById('rounds-input').value) || 5));
+  if (rounds > QUESTIONS.length) {
+    alert(`Máximo de ${QUESTIONS.length} rodadas disponíveis.`);
+    return;
+  }
+
+  state.players = names.map(name => ({ name, score: 0 }));
+  state.questions = shuffle(QUESTIONS).slice(0, rounds);
+  state.totalRounds = rounds;
+  state.currentQ = 0;
+  state.currentPlayer = 0;
+  state.estimates = [];
+  state.doubtInfo = null;
+  state.screen = 'round';
+  render();
+}
+
+// ─── ROUND ──────────────────────────────────────────────────────────────────
+
+function renderRound() {
+  const frag = document.createDocumentFragment();
+
+  const q = state.questions[state.currentQ];
+  const player = state.players[state.currentPlayer];
+  const isFirst = state.currentPlayer === 0;
+
+  // Progress
+  const prog = el('div', {className: 'progress-bar'});
+  const fill = el('div', {className: 'progress-bar-fill'});
+  fill.style.width = `${(state.currentQ / state.totalRounds) * 100}%`;
+  prog.appendChild(fill);
+  frag.appendChild(prog);
+
+  frag.appendChild(el('p', {className: 'subtitle'}, `Rodada ${state.currentQ + 1} de ${state.totalRounds}`));
+
+  // Question
+  const qbox = el('div', {className: 'question-box'});
+  qbox.appendChild(el('span', {className: 'tag'}, `Categoria · estimativa`));
+  qbox.appendChild(el('p', {}, q.text));
+  qbox.appendChild(el('p', {className: 'hint'}, `💡 ${q.hint}`));
+  frag.appendChild(qbox);
+
+  // Previous estimates (already given this round)
+  if (state.estimates.length > 0) {
+    const ul = el('ul', {className: 'estimates-list'});
+    state.estimates.forEach(e => {
+      const li = el('li');
+      li.appendChild(el('span', {className: 'player-name'}, state.players[e.playerIdx].name));
+      li.appendChild(el('span', {className: 'value'}, formatNumber(e.value)));
+      ul.appendChild(li);
+    });
+    frag.appendChild(ul);
+    frag.appendChild(el('hr', {className: 'section-divider'}));
+  }
+
+  // Turn banner
+  const banner = el('div', {className: 'turn-banner'});
+  banner.appendChild(el('div', {className: 'name'}, player.name));
+  banner.appendChild(el('div', {className: 'role'}, 'é a sua vez!'));
+  frag.appendChild(banner);
+
+  // Doubt button (not available for first player)
+  if (!isFirst) {
+    const prevPlayer = state.players[state.estimates[state.estimates.length - 1].playerIdx];
+    const doubtBtn = el('button', {className: 'btn btn-danger btn-full'}, `🦆 Nem a Pato! (duvidar de ${prevPlayer.name})`);
+    doubtBtn.onclick = () => {
+      state.doubtInfo = {
+        doubterIdx: state.currentPlayer,
+        targetIdx: state.estimates[state.estimates.length - 1].playerIdx,
+      };
+      state.screen = 'doubt';
+      render();
+    };
+    frag.appendChild(doubtBtn);
+    frag.appendChild(el('p', {style: 'text-align:center;color:var(--muted);font-size:0.8rem;margin:8px 0'}, 'ou dê seu palpite:'));
+  }
+
+  // Estimate input
+  const card = el('div', {className: 'card'});
+  card.appendChild(el('label', {}, `Seu palpite (em ${q.unit}):`));
+  const inp = el('input', {type: 'number', id: 'estimate-input', placeholder: '0', min: '0', step: 'any'});
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitEstimate(); });
+  card.appendChild(inp);
+
+  const submitBtn = el('button', {className: 'btn btn-primary btn-full'}, 'Confirmar Palpite');
+  submitBtn.onclick = submitEstimate;
+  card.appendChild(submitBtn);
+  frag.appendChild(card);
+
+  return frag;
+}
+
+function submitEstimate() {
+  const val = parseFloat(document.getElementById('estimate-input').value);
+  if (isNaN(val) || val < 0) { alert('Digite um valor válido!'); return; }
+
+  state.estimates.push({ playerIdx: state.currentPlayer, value: val });
+
+  const isLast = state.currentPlayer === state.players.length - 1;
+  if (isLast) {
+    state.screen = 'reveal';
+    state.doubtInfo = null;
+  } else {
+    state.currentPlayer++;
+  }
+  render();
+}
+
+// ─── DOUBT ──────────────────────────────────────────────────────────────────
+
+function renderDoubt() {
+  const frag = document.createDocumentFragment();
+
+  const q = state.questions[state.currentQ];
+  const doubter = state.players[state.doubtInfo.doubterIdx];
+  const target = state.players[state.doubtInfo.targetIdx];
+  const targetEstimate = state.estimates.find(e => e.playerIdx === state.doubtInfo.targetIdx);
+
+  frag.appendChild(el('h1', {}, '🦆 Nem a Pato!'));
+
+  const banner = el('div', {className: 'card', style: 'text-align:center'});
+  banner.appendChild(el('span', {className: 'emoji'}, '🎯'));
+  banner.appendChild(el('p', {style: 'font-size:1.1rem;font-weight:700;margin-bottom:8px'}, `${doubter.name} duvidou de ${target.name}!`));
+  banner.appendChild(el('p', {style: 'color:var(--muted);font-size:0.9rem'}, `${target.name} disse: `));
+  banner.appendChild(el('p', {style: 'font-size:1.8rem;font-weight:800;color:var(--accent);font-family:monospace'}, formatNumber(targetEstimate.value)));
+  banner.appendChild(el('p', {style: 'color:var(--muted);font-size:0.8rem;margin-top:4px'}, q.unit));
+  frag.appendChild(banner);
+
+  const revealBtn = el('button', {className: 'btn btn-primary btn-full'}, '📖 Revelar Valor Real!');
+  revealBtn.onclick = () => {
+    state.screen = 'reveal';
+    render();
+  };
+  frag.appendChild(revealBtn);
+
+  return frag;
+}
+
+// ─── REVEAL ─────────────────────────────────────────────────────────────────
+
+function renderReveal() {
+  const frag = document.createDocumentFragment();
+
+  const q = state.questions[state.currentQ];
+  const realValue = q.realValue;
+
+  // Calculate results for this round
+  let resultMsg = '';
+  let resultClass = 'result-neutral';
+  let doubtWon = null;
+
+  if (state.doubtInfo) {
+    const { doubterIdx, targetIdx } = state.doubtInfo;
+    const targetEstimate = state.estimates.find(e => e.playerIdx === targetIdx);
+    const targetVal = targetEstimate.value;
+
+    if (targetVal > realValue) {
+      // Target overestimated → target loses a point
+      state.players[targetIdx].score -= 1;
+      resultMsg = `${state.players[targetIdx].name} exagerou! (${formatNumber(targetVal)} > ${formatNumber(realValue)} ${q.unit}) → perde 1 ponto!`;
+      resultClass = 'result-win';
+      doubtWon = true;
+    } else {
+      // Target was correct or conservative → doubter loses a point
+      state.players[doubterIdx].score -= 1;
+      resultMsg = `${state.players[targetIdx].name} estava certo! (${formatNumber(targetVal)} ≤ ${formatNumber(realValue)} ${q.unit}) → ${state.players[doubterIdx].name} perde 1 ponto!`;
+      resultClass = 'result-lose';
+      doubtWon = false;
+    }
+  } else {
+    resultMsg = 'Nenhuma dúvida nessa rodada.';
+  }
+
+  // Progress
+  const prog = el('div', {className: 'progress-bar'});
+  const fill = el('div', {className: 'progress-bar-fill'});
+  fill.style.width = `${((state.currentQ + 1) / state.totalRounds) * 100}%`;
+  prog.appendChild(fill);
+  frag.appendChild(prog);
+
+  frag.appendChild(el('h1', {style: 'margin-bottom:8px'}, '📖 Resposta!'));
+
+  // Question recap
+  const qbox = el('div', {className: 'question-box'});
+  qbox.appendChild(el('p', {}, q.text));
+  frag.appendChild(qbox);
+
+  // Real value
+  const revealBox = el('div', {className: 'reveal-box'});
+  revealBox.appendChild(el('p', {style: 'color:var(--muted);font-size:0.85rem;margin-bottom:6px'}, 'Valor real'));
+  revealBox.appendChild(el('div', {className: 'real-value'}, formatNumber(realValue)));
+  revealBox.appendChild(el('div', {className: 'unit'}, q.unit));
+  revealBox.appendChild(el('div', {style: 'font-size:0.75rem;color:var(--muted);margin-top:8px'}, `Fonte: ${q.source}`));
+  frag.appendChild(revealBox);
+
+  // All estimates
+  const ul = el('ul', {className: 'estimates-list'});
+  state.estimates.forEach(e => {
+    const li = el('li');
+    const pName = el('span', {className: 'player-name'}, state.players[e.playerIdx].name);
+    const pVal = el('span', {className: 'value'}, formatNumber(e.value));
+
+    let badge = null;
+    if (state.doubtInfo) {
+      const { doubterIdx, targetIdx } = state.doubtInfo;
+      if (e.playerIdx === targetIdx) {
+        const won = e.value <= realValue;
+        badge = el('span', {className: `badge ${won ? 'badge-win' : 'badge-lose'}`}, won ? '✓ certo' : '✗ exagerou');
+      } else if (e.playerIdx === doubterIdx) {
+        badge = el('span', {className: `badge ${doubtWon ? 'badge-win' : 'badge-lose'}`}, doubtWon ? '🦆 ganhou' : '🦆 perdeu');
+      }
+    }
+
+    li.append(pName, pVal);
+    if (badge) li.appendChild(badge);
+    ul.appendChild(li);
+  });
+  frag.appendChild(ul);
+
+  // Result message
+  if (state.doubtInfo) {
+    frag.appendChild(el('div', {className: `result-msg ${resultClass}`}, resultMsg));
+  }
+
+  // Next button
+  const isLastRound = state.currentQ >= state.totalRounds - 1;
+  const nextBtn = el('button', {className: `btn ${isLastRound ? 'btn-green' : 'btn-primary'} btn-full`},
+    isLastRound ? '🏆 Ver Placar Final' : 'Próxima Rodada →'
+  );
+  nextBtn.onclick = () => {
+    state.currentQ++;
+    state.currentPlayer = 0;
+    state.estimates = [];
+    state.doubtInfo = null;
+
+    if (state.currentQ >= state.totalRounds) {
+      state.screen = 'end';
+    } else {
+      state.screen = 'scoreboard';
+    }
+    render();
+  };
+  frag.appendChild(nextBtn);
+
+  return frag;
+}
+
+// ─── SCOREBOARD (between rounds) ────────────────────────────────────────────
+
+function renderScoreboard() {
+  const frag = document.createDocumentFragment();
+
+  frag.appendChild(el('h1', {style: 'margin-bottom:4px'}, 'Placar'));
+  frag.appendChild(el('p', {className: 'subtitle'}, `Após rodada ${state.currentQ} de ${state.totalRounds}`));
+
+  const sorted = [...state.players]
+    .map((p, i) => ({ ...p, idx: i }))
+    .sort((a, b) => b.score - a.score);
+
+  const ul = el('ul', {className: 'scoreboard'});
+  sorted.forEach((p, rank) => {
+    const li = el('li', { className: rank === 0 ? 'top' : '' });
+    li.appendChild(el('span', {className: 'rank'}, `#${rank + 1}`));
+    li.appendChild(el('span', {className: 'sname'}, p.name));
+    li.appendChild(el('span', {className: 'pts'}, `${p.score > 0 ? '+' : ''}${p.score} pts`));
+    ul.appendChild(li);
+  });
+  frag.appendChild(ul);
+
+  const nextBtn = el('button', {className: 'btn btn-primary btn-full', style: 'margin-top:16px'}, `Rodada ${state.currentQ + 1} →`);
+  nextBtn.onclick = () => { state.screen = 'round'; render(); };
+  frag.appendChild(nextBtn);
+
+  return frag;
+}
+
+// ─── END ────────────────────────────────────────────────────────────────────
+
+function renderEnd() {
+  const frag = document.createDocumentFragment();
+
+  const sorted = [...state.players]
+    .map((p, i) => ({ ...p, idx: i }))
+    .sort((a, b) => b.score - a.score);
+
+  const winner = sorted[0];
+
+  frag.appendChild(el('h1', {style: 'margin-bottom:4px'}, '🏆 Fim de Jogo!'));
+
+  const winCard = el('div', {className: 'card', style: 'text-align:center'});
+  winCard.appendChild(el('span', {className: 'emoji'}, '🥇'));
+  winCard.appendChild(el('p', {style: 'font-size:1.5rem;font-weight:800;color:var(--accent)'}, winner.name));
+  winCard.appendChild(el('p', {style: 'color:var(--muted);margin-top:4px'}, `${winner.score > 0 ? '+' : ''}${winner.score} pontos · Vencedor!`));
+  frag.appendChild(winCard);
+
+  const ul = el('ul', {className: 'scoreboard'});
+  sorted.forEach((p, rank) => {
+    const li = el('li', { className: rank === 0 ? 'top' : '' });
+    li.appendChild(el('span', {className: 'rank'}, `#${rank + 1}`));
+    li.appendChild(el('span', {className: 'sname'}, p.name));
+    li.appendChild(el('span', {className: 'pts'}, `${p.score > 0 ? '+' : ''}${p.score} pts`));
+    ul.appendChild(li);
+  });
+  frag.appendChild(ul);
+
+  const newGameBtn = el('button', {className: 'btn btn-primary btn-full', style: 'margin-top:16px'}, '🔄 Jogar Novamente');
+  newGameBtn.onclick = () => {
+    state.screen = 'setup';
+    state.players = [];
+    state.questions = [];
+    state.currentQ = 0;
+    state.currentPlayer = 0;
+    state.estimates = [];
+    state.doubtInfo = null;
+    render();
+  };
+  frag.appendChild(newGameBtn);
+
+  return frag;
+}
+
+// ─── UTIL ───────────────────────────────────────────────────────────────────
+
+function el(tag, attrs = {}, text) {
+  const e = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => {
+    if (k === 'className') e.className = v;
+    else if (k === 'style') e.style.cssText = v;
+    else e.setAttribute(k, v);
+  });
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+// ─── BOOT ───────────────────────────────────────────────────────────────────
+
+render();
+</script>
+</body>
+</html>
