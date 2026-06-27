@@ -113,33 +113,12 @@
     .btn:active { transform: scale(0.97); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .btn-primary {
-      background: var(--accent);
-      color: #000;
-    }
-
-    .btn-danger {
-      background: var(--accent2);
-      color: #fff;
-    }
-
-    .btn-ghost {
-      background: var(--surface2);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .btn-green {
-      background: var(--green);
-      color: #000;
-    }
-
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 0.8rem;
-    }
-
-    .btn-full { width: 100%; margin-top: 8px; }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-danger  { background: var(--accent2); color: #fff; }
+    .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-green   { background: var(--green); color: #000; }
+    .btn-sm      { padding: 6px 12px; font-size: 0.8rem; }
+    .btn-full    { width: 100%; margin-top: 8px; }
 
     .question-box {
       background: var(--surface2);
@@ -149,17 +128,8 @@
       border-left: 4px solid var(--accent);
     }
 
-    .question-box p {
-      font-size: 1.15rem;
-      font-weight: 600;
-      line-height: 1.4;
-    }
-
-    .question-box .hint {
-      margin-top: 8px;
-      font-size: 0.82rem;
-      color: var(--muted);
-    }
+    .question-box p { font-size: 1.15rem; font-weight: 600; line-height: 1.4; }
+    .question-box .hint { margin-top: 8px; font-size: 0.82rem; color: var(--muted); }
 
     .turn-banner {
       text-align: center;
@@ -169,22 +139,10 @@
       margin-bottom: 20px;
     }
 
-    .turn-banner .name {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--accent);
-    }
+    .turn-banner .name { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+    .turn-banner .role { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
 
-    .turn-banner .role {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .estimates-list {
-      list-style: none;
-      margin-bottom: 16px;
-    }
+    .estimates-list { list-style: none; margin-bottom: 16px; }
 
     .estimates-list li {
       display: flex;
@@ -197,18 +155,22 @@
       font-size: 0.9rem;
     }
 
+    .estimates-list li.highlighted {
+      border: 1px solid var(--accent2);
+      background: #2a1515;
+    }
+
     .estimates-list li .player-name { font-weight: 700; }
     .estimates-list li .value { color: var(--accent); font-weight: 600; font-family: monospace; font-size: 0.95rem; }
-    .estimates-list li .badge {
+
+    .badge {
       font-size: 0.7rem;
       padding: 2px 8px;
       border-radius: 99px;
       font-weight: 700;
     }
 
-    .badge-pass { background: #1e3a5f; color: #60a5fa; }
-    .badge-doubt { background: #3b1d1d; color: #f87171; }
-    .badge-win { background: #14532d; color: #4ade80; }
+    .badge-win  { background: #14532d; color: #4ade80; }
     .badge-lose { background: #3b1d1d; color: #f87171; }
 
     .reveal-box {
@@ -219,35 +181,76 @@
       margin-bottom: 20px;
     }
 
-    .reveal-box .real-value {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--green);
-      font-family: monospace;
-    }
-
-    .reveal-box .unit {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 4px;
-    }
+    .reveal-box .real-value { font-size: 2rem; font-weight: 800; color: var(--green); font-family: monospace; }
+    .reveal-box .unit       { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
 
     .result-msg {
       text-align: center;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
       padding: 12px;
       border-radius: 8px;
       margin-bottom: 16px;
+      line-height: 1.4;
     }
 
-    .result-win { background: #14532d; color: #4ade80; }
-    .result-lose { background: #3b1d1d; color: #f87171; }
+    .result-win     { background: #14532d; color: #4ade80; }
+    .result-lose    { background: #3b1d1d; color: #f87171; }
     .result-neutral { background: var(--surface2); color: var(--muted); }
 
-    .scoreboard {
-      list-style: none;
+    /* Points assignment */
+    .points-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
     }
+
+    .points-row:last-child { border-bottom: none; }
+
+    .points-row .pname {
+      flex: 1;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .points-row .pts-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pts-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .pts-btn:active { transform: scale(0.93); }
+
+    .pts-display {
+      min-width: 48px;
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 800;
+      font-family: monospace;
+      color: var(--accent);
+    }
+
+    .pts-display.negative { color: var(--accent2); }
+
+    .scoreboard { list-style: none; }
 
     .scoreboard li {
       display: flex;
@@ -259,53 +262,16 @@
       margin-bottom: 8px;
     }
 
-    .scoreboard li.top {
-      background: #292000;
-      border: 1px solid var(--accent);
-    }
+    .scoreboard li.top { background: #292000; border: 1px solid var(--accent); }
 
-    .scoreboard li .rank { color: var(--muted); font-size: 0.85rem; width: 24px; }
+    .scoreboard li .rank  { color: var(--muted); font-size: 0.85rem; width: 24px; }
     .scoreboard li .sname { font-weight: 700; flex: 1; margin-left: 8px; }
-    .scoreboard li .pts { font-family: monospace; font-size: 1.1rem; color: var(--accent); font-weight: 800; }
+    .scoreboard li .pts   { font-family: monospace; font-size: 1.1rem; color: var(--accent); font-weight: 800; }
 
-    .progress-bar {
-      height: 4px;
-      background: var(--surface2);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
+    .progress-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-bottom: 20px; }
+    .progress-bar-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
 
-    .progress-bar-fill {
-      height: 100%;
-      background: var(--accent);
-      transition: width 0.4s ease;
-    }
-
-    .flex-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .flex-row .btn { flex: 1; }
-
-    .hidden { display: none !important; }
-
-    .tag {
-      display: inline-block;
-      font-size: 0.7rem;
-      background: var(--surface2);
-      color: var(--muted);
-      padding: 2px 8px;
-      border-radius: 99px;
-      margin-bottom: 6px;
-    }
-
-    .section-divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 20px 0;
-    }
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
     .btn-add-player {
       background: transparent;
@@ -322,6 +288,13 @@
     .btn-add-player:hover { border-color: var(--accent); color: var(--accent); }
 
     .emoji { font-size: 2rem; margin-bottom: 8px; display: block; text-align: center; }
+
+    .or-divider {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin: 10px 0;
+    }
 
     @media (max-width: 480px) {
       h1 { font-size: 1.6rem; }
@@ -437,14 +410,15 @@ const QUESTIONS = [
 // ─── STATE ──────────────────────────────────────────────────────────────────
 
 const state = {
-  screen: 'setup',        // setup | round | doubt | reveal | scoreboard | end
-  players: [],            // [{name, score}]
-  questions: [],          // shuffled subset
-  currentQ: 0,            // index into questions
-  currentPlayer: 0,       // index into players (whose turn it is)
-  estimates: [],          // [{playerIdx, value, doubled: bool, doubtTargetIdx}]
-  doubtInfo: null,        // {doubterIdx, targetIdx} or null
+  screen: 'setup',     // setup | round | doubt | reveal | points | scoreboard | end
+  players: [],         // [{name, score}]
+  questions: [],       // shuffled subset
+  currentQ: 0,
+  currentPlayer: 0,    // cycles through players until doubt
+  estimates: [],       // [{playerIdx, value}] all estimates in order this round
+  doubtInfo: null,     // {doubterIdx, targetEstimateIdx} when round ends
   totalRounds: 5,
+  roundPoints: [],     // [{playerIdx, delta}] accumulated during points screen
 };
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
@@ -470,16 +444,11 @@ function shuffle(arr) {
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = '';
-
   const screens = {
-    setup: renderSetup,
-    round: renderRound,
-    doubt: renderDoubt,
-    reveal: renderReveal,
-    scoreboard: renderScoreboard,
-    end: renderEnd,
+    setup: renderSetup, round: renderRound, doubt: renderDoubt,
+    reveal: renderReveal, points: renderPoints,
+    scoreboard: renderScoreboard, end: renderEnd,
   };
-
   const fn = screens[state.screen];
   if (fn) app.appendChild(fn());
 }
@@ -489,11 +458,9 @@ function render() {
 function renderSetup() {
   const frag = document.createDocumentFragment();
 
-  const title = el('h1', {}, '🦆 Nem a Pato!');
-  const sub = el('p', {className: 'subtitle'}, 'O jogo de estimativas com dúvida');
-  frag.append(title, sub);
+  frag.append(el('h1', {}, '🦆 Nem a Pato!'));
+  frag.append(el('p', {className: 'subtitle'}, 'O jogo de estimativas com dúvida'));
 
-  // Players card
   const playersCard = el('div', {className: 'card'});
   playersCard.appendChild(el('h2', {}, 'Jogadores'));
 
@@ -503,7 +470,7 @@ function renderSetup() {
     const row = el('div', {className: 'player-row'});
     const inp = el('input', {type: 'text', placeholder: 'Nome do jogador', value: name});
     const del = el('button', {className: 'btn btn-ghost btn-sm'}, '✕');
-    del.onclick = () => { row.remove(); };
+    del.onclick = () => row.remove();
     row.append(inp, del);
     playersList.appendChild(row);
   }
@@ -516,29 +483,22 @@ function renderSetup() {
   playersCard.append(playersList, addBtn);
   frag.appendChild(playersCard);
 
-  // Rounds card
   const roundsCard = el('div', {className: 'card'});
   roundsCard.appendChild(el('h2', {}, 'Configuração'));
-  const roundLabel = el('label', {}, 'Número de rodadas');
-  const roundInput = el('input', {type: 'number', id: 'rounds-input', value: '5', min: '1', max: '12'});
-  roundsCard.append(roundLabel, roundInput);
+  roundsCard.appendChild(el('label', {}, 'Número de rodadas'));
+  roundsCard.appendChild(el('input', {type: 'number', id: 'rounds-input', value: '5', min: '1', max: '12'}));
   frag.appendChild(roundsCard);
 
-  // Rules card
   const rulesCard = el('div', {className: 'card'});
   rulesCard.appendChild(el('h2', {}, 'Regras'));
-  const rules = [
+  [
     '🎯 Uma pergunta é apresentada a todos.',
-    '🔢 Cada jogador dá seu palpite em sequência.',
-    '🦆 Antes de dar seu palpite, você pode dizer "Nem a Pato!" ao palpite anterior.',
-    '📖 O valor real é revelado e os pontos são calculados.',
-    '❌ Se duvidou e o outro estava certo (ou foi conservador) → você perde 1 ponto.',
-    '✅ Se duvidou e o outro exagerou → ele perde 1 ponto.',
+    '🔢 Os jogadores dão palpites em sequência, passando o dispositivo.',
+    '🦆 Antes de dar seu palpite, você pode gritar "Nem a Pato!" ao anterior.',
+    '📖 Quem duvida força a revelação do valor real.',
+    '✏️ O grupo decide juntos quantos pontos cada um merece nessa rodada.',
     '🏆 Vence quem tiver mais pontos no final!',
-  ];
-  rules.forEach(r => {
-    rulesCard.appendChild(el('p', {style: 'margin-bottom:8px; font-size:0.88rem; color:#cbd5e1'}, r));
-  });
+  ].forEach(r => rulesCard.appendChild(el('p', {style: 'margin-bottom:8px;font-size:0.88rem;color:#cbd5e1'}, r)));
   frag.appendChild(rulesCard);
 
   const startBtn = el('button', {className: 'btn btn-primary btn-full'}, 'Começar Jogo');
@@ -552,16 +512,10 @@ function startGame() {
   const names = [...document.querySelectorAll('#players-list input')]
     .map(i => i.value.trim()).filter(Boolean);
 
-  if (names.length < 2) {
-    alert('Adicione pelo menos 2 jogadores!');
-    return;
-  }
+  if (names.length < 2) { alert('Adicione pelo menos 2 jogadores!'); return; }
 
   const rounds = Math.min(12, Math.max(1, parseInt(document.getElementById('rounds-input').value) || 5));
-  if (rounds > QUESTIONS.length) {
-    alert(`Máximo de ${QUESTIONS.length} rodadas disponíveis.`);
-    return;
-  }
+  if (rounds > QUESTIONS.length) { alert(`Máximo de ${QUESTIONS.length} rodadas disponíveis.`); return; }
 
   state.players = names.map(name => ({ name, score: 0 }));
   state.questions = shuffle(QUESTIONS).slice(0, rounds);
@@ -581,9 +535,9 @@ function renderRound() {
 
   const q = state.questions[state.currentQ];
   const player = state.players[state.currentPlayer];
-  const isFirst = state.currentPlayer === 0;
+  const hasEstimate = state.estimates.length > 0;
+  const lastEstimate = hasEstimate ? state.estimates[state.estimates.length - 1] : null;
 
-  // Progress
   const prog = el('div', {className: 'progress-bar'});
   const fill = el('div', {className: 'progress-bar-fill'});
   fill.style.width = `${(state.currentQ / state.totalRounds) * 100}%`;
@@ -592,15 +546,13 @@ function renderRound() {
 
   frag.appendChild(el('p', {className: 'subtitle'}, `Rodada ${state.currentQ + 1} de ${state.totalRounds}`));
 
-  // Question
   const qbox = el('div', {className: 'question-box'});
-  qbox.appendChild(el('span', {className: 'tag'}, `Categoria · estimativa`));
   qbox.appendChild(el('p', {}, q.text));
-  qbox.appendChild(el('p', {className: 'hint'}, `💡 ${q.hint}`));
+  qbox.appendChild(el('p', {className: 'hint'}, `💡 ${q.hint} · unidade: ${q.unit}`));
   frag.appendChild(qbox);
 
-  // Previous estimates (already given this round)
-  if (state.estimates.length > 0) {
+  // All estimates so far this round
+  if (hasEstimate) {
     const ul = el('ul', {className: 'estimates-list'});
     state.estimates.forEach(e => {
       const li = el('li');
@@ -618,20 +570,21 @@ function renderRound() {
   banner.appendChild(el('div', {className: 'role'}, 'é a sua vez!'));
   frag.appendChild(banner);
 
-  // Doubt button (not available for first player)
-  if (!isFirst) {
-    const prevPlayer = state.players[state.estimates[state.estimates.length - 1].playerIdx];
-    const doubtBtn = el('button', {className: 'btn btn-danger btn-full'}, `🦆 Nem a Pato! (duvidar de ${prevPlayer.name})`);
+  // Doubt button — available when there's a previous estimate
+  if (hasEstimate) {
+    const prevPlayer = state.players[lastEstimate.playerIdx];
+    const doubtBtn = el('button', {className: 'btn btn-danger btn-full'},
+      `🦆 Nem a Pato! — duvidar de ${prevPlayer.name}`);
     doubtBtn.onclick = () => {
       state.doubtInfo = {
         doubterIdx: state.currentPlayer,
-        targetIdx: state.estimates[state.estimates.length - 1].playerIdx,
+        targetEstimateIdx: state.estimates.length - 1,
       };
       state.screen = 'doubt';
       render();
     };
     frag.appendChild(doubtBtn);
-    frag.appendChild(el('p', {style: 'text-align:center;color:var(--muted);font-size:0.8rem;margin:8px 0'}, 'ou dê seu palpite:'));
+    frag.appendChild(el('p', {className: 'or-divider'}, '— ou dê seu palpite —'));
   }
 
   // Estimate input
@@ -640,8 +593,7 @@ function renderRound() {
   const inp = el('input', {type: 'number', id: 'estimate-input', placeholder: '0', min: '0', step: 'any'});
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitEstimate(); });
   card.appendChild(inp);
-
-  const submitBtn = el('button', {className: 'btn btn-primary btn-full'}, 'Confirmar Palpite');
+  const submitBtn = el('button', {className: 'btn btn-primary btn-full'}, 'Confirmar Palpite →');
   submitBtn.onclick = submitEstimate;
   card.appendChild(submitBtn);
   frag.appendChild(card);
@@ -654,15 +606,9 @@ function submitEstimate() {
   if (isNaN(val) || val < 0) { alert('Digite um valor válido!'); return; }
 
   state.estimates.push({ playerIdx: state.currentPlayer, value: val });
-
-  const isLast = state.currentPlayer === state.players.length - 1;
-  if (isLast) {
-    state.screen = 'reveal';
-    state.doubtInfo = null;
-  } else {
-    state.currentPlayer++;
-  }
-  render();
+  // Cycle to next player — round never auto-ends, only doubt ends it
+  state.currentPlayer = (state.currentPlayer + 1) % state.players.length;
+  render(); // stays on 'round'
 }
 
 // ─── DOUBT ──────────────────────────────────────────────────────────────────
@@ -671,25 +617,25 @@ function renderDoubt() {
   const frag = document.createDocumentFragment();
 
   const q = state.questions[state.currentQ];
-  const doubter = state.players[state.doubtInfo.doubterIdx];
-  const target = state.players[state.doubtInfo.targetIdx];
-  const targetEstimate = state.estimates.find(e => e.playerIdx === state.doubtInfo.targetIdx);
+  const { doubterIdx, targetEstimateIdx } = state.doubtInfo;
+  const doubter = state.players[doubterIdx];
+  const targetEstimate = state.estimates[targetEstimateIdx];
+  const target = state.players[targetEstimate.playerIdx];
 
   frag.appendChild(el('h1', {}, '🦆 Nem a Pato!'));
 
   const banner = el('div', {className: 'card', style: 'text-align:center'});
   banner.appendChild(el('span', {className: 'emoji'}, '🎯'));
-  banner.appendChild(el('p', {style: 'font-size:1.1rem;font-weight:700;margin-bottom:8px'}, `${doubter.name} duvidou de ${target.name}!`));
-  banner.appendChild(el('p', {style: 'color:var(--muted);font-size:0.9rem'}, `${target.name} disse: `));
-  banner.appendChild(el('p', {style: 'font-size:1.8rem;font-weight:800;color:var(--accent);font-family:monospace'}, formatNumber(targetEstimate.value)));
-  banner.appendChild(el('p', {style: 'color:var(--muted);font-size:0.8rem;margin-top:4px'}, q.unit));
+  banner.appendChild(el('p', {style: 'font-size:1.1rem;font-weight:700;margin-bottom:12px'},
+    `${doubter.name} duvidou de ${target.name}!`));
+  banner.appendChild(el('p', {style: 'color:var(--muted);font-size:0.85rem'}, `${target.name} disse:`));
+  banner.appendChild(el('p', {style: 'font-size:1.9rem;font-weight:800;color:var(--accent);font-family:monospace;margin:6px 0'},
+    formatNumber(targetEstimate.value)));
+  banner.appendChild(el('p', {style: 'color:var(--muted);font-size:0.8rem'}, q.unit));
   frag.appendChild(banner);
 
   const revealBtn = el('button', {className: 'btn btn-primary btn-full'}, '📖 Revelar Valor Real!');
-  revealBtn.onclick = () => {
-    state.screen = 'reveal';
-    render();
-  };
+  revealBtn.onclick = () => { state.screen = 'reveal'; render(); };
   frag.appendChild(revealBtn);
 
   return frag;
@@ -702,35 +648,12 @@ function renderReveal() {
 
   const q = state.questions[state.currentQ];
   const realValue = q.realValue;
+  const { doubterIdx, targetEstimateIdx } = state.doubtInfo;
+  const targetEstimate = state.estimates[targetEstimateIdx];
+  const doubter = state.players[doubterIdx];
+  const target = state.players[targetEstimate.playerIdx];
+  const targetOvershot = targetEstimate.value > realValue;
 
-  // Calculate results for this round
-  let resultMsg = '';
-  let resultClass = 'result-neutral';
-  let doubtWon = null;
-
-  if (state.doubtInfo) {
-    const { doubterIdx, targetIdx } = state.doubtInfo;
-    const targetEstimate = state.estimates.find(e => e.playerIdx === targetIdx);
-    const targetVal = targetEstimate.value;
-
-    if (targetVal > realValue) {
-      // Target overestimated → target loses a point
-      state.players[targetIdx].score -= 1;
-      resultMsg = `${state.players[targetIdx].name} exagerou! (${formatNumber(targetVal)} > ${formatNumber(realValue)} ${q.unit}) → perde 1 ponto!`;
-      resultClass = 'result-win';
-      doubtWon = true;
-    } else {
-      // Target was correct or conservative → doubter loses a point
-      state.players[doubterIdx].score -= 1;
-      resultMsg = `${state.players[targetIdx].name} estava certo! (${formatNumber(targetVal)} ≤ ${formatNumber(realValue)} ${q.unit}) → ${state.players[doubterIdx].name} perde 1 ponto!`;
-      resultClass = 'result-lose';
-      doubtWon = false;
-    }
-  } else {
-    resultMsg = 'Nenhuma dúvida nessa rodada.';
-  }
-
-  // Progress
   const prog = el('div', {className: 'progress-bar'});
   const fill = el('div', {className: 'progress-bar-fill'});
   fill.style.width = `${((state.currentQ + 1) / state.totalRounds) * 100}%`;
@@ -739,7 +662,6 @@ function renderReveal() {
 
   frag.appendChild(el('h1', {style: 'margin-bottom:8px'}, '📖 Resposta!'));
 
-  // Question recap
   const qbox = el('div', {className: 'question-box'});
   qbox.appendChild(el('p', {}, q.text));
   frag.appendChild(qbox);
@@ -752,41 +674,96 @@ function renderReveal() {
   revealBox.appendChild(el('div', {style: 'font-size:0.75rem;color:var(--muted);margin-top:8px'}, `Fonte: ${q.source}`));
   frag.appendChild(revealBox);
 
-  // All estimates
+  // All estimates, highlighting the doubted one
   const ul = el('ul', {className: 'estimates-list'});
-  state.estimates.forEach(e => {
-    const li = el('li');
-    const pName = el('span', {className: 'player-name'}, state.players[e.playerIdx].name);
-    const pVal = el('span', {className: 'value'}, formatNumber(e.value));
-
-    let badge = null;
-    if (state.doubtInfo) {
-      const { doubterIdx, targetIdx } = state.doubtInfo;
-      if (e.playerIdx === targetIdx) {
-        const won = e.value <= realValue;
-        badge = el('span', {className: `badge ${won ? 'badge-win' : 'badge-lose'}`}, won ? '✓ certo' : '✗ exagerou');
-      } else if (e.playerIdx === doubterIdx) {
-        badge = el('span', {className: `badge ${doubtWon ? 'badge-win' : 'badge-lose'}`}, doubtWon ? '🦆 ganhou' : '🦆 perdeu');
-      }
+  state.estimates.forEach((e, i) => {
+    const isTarget = i === targetEstimateIdx;
+    const isDoubter = e.playerIdx === doubterIdx && i === state.estimates.length - 1 + 1; // doubter didn't estimate
+    const li = el('li', {className: isTarget ? 'highlighted' : ''});
+    li.appendChild(el('span', {className: 'player-name'}, state.players[e.playerIdx].name));
+    li.appendChild(el('span', {className: 'value'}, formatNumber(e.value)));
+    if (isTarget) {
+      li.appendChild(el('span', {className: `badge ${targetOvershot ? 'badge-lose' : 'badge-win'}`},
+        targetOvershot ? '✗ exagerou' : '✓ certo'));
     }
-
-    li.append(pName, pVal);
-    if (badge) li.appendChild(badge);
     ul.appendChild(li);
   });
   frag.appendChild(ul);
 
-  // Result message
-  if (state.doubtInfo) {
-    frag.appendChild(el('div', {className: `result-msg ${resultClass}`}, resultMsg));
+  // Verdict
+  let msg, cls;
+  if (targetOvershot) {
+    msg = `${target.name} exagerou! (${formatNumber(targetEstimate.value)} > ${formatNumber(realValue)} ${q.unit})`;
+    cls = 'result-win';
+  } else {
+    msg = `${target.name} estava certo! (${formatNumber(targetEstimate.value)} ≤ ${formatNumber(realValue)} ${q.unit}) — ${doubter.name} se arrependeu 🦆`;
+    cls = 'result-lose';
   }
+  frag.appendChild(el('div', {className: `result-msg ${cls}`}, msg));
 
-  // Next button
+  const nextBtn = el('button', {className: 'btn btn-primary btn-full'}, '✏️ Atribuir Pontos →');
+  nextBtn.onclick = () => { state.screen = 'points'; render(); };
+  frag.appendChild(nextBtn);
+
+  return frag;
+}
+
+// ─── POINTS ─────────────────────────────────────────────────────────────────
+
+function renderPoints() {
+  const frag = document.createDocumentFragment();
+
+  frag.appendChild(el('h1', {style: 'margin-bottom:4px'}, '✏️ Pontuação'));
+  frag.appendChild(el('p', {className: 'subtitle'}, `Rodada ${state.currentQ + 1} — quanto cada um merece?`));
+
+  // Track delta per player in a local object keyed by playerIdx
+  const deltas = {};
+  state.players.forEach((_, i) => { deltas[i] = 0; });
+
+  const card = el('div', {className: 'card'});
+  card.appendChild(el('h2', {}, 'Pontos desta rodada'));
+
+  const displays = {};
+
+  state.players.forEach((p, i) => {
+    const row = el('div', {className: 'points-row'});
+    row.appendChild(el('span', {className: 'pname'}, p.name));
+
+    const controls = el('div', {className: 'pts-controls'});
+
+    const minusBtn = el('button', {className: 'pts-btn'}, '−');
+    const display = el('span', {className: 'pts-display'}, '0');
+    const plusBtn = el('button', {className: 'pts-btn'}, '+');
+
+    displays[i] = display;
+
+    minusBtn.onclick = () => {
+      deltas[i]--;
+      display.textContent = deltas[i] > 0 ? `+${deltas[i]}` : `${deltas[i]}`;
+      display.className = `pts-display${deltas[i] < 0 ? ' negative' : ''}`;
+    };
+
+    plusBtn.onclick = () => {
+      deltas[i]++;
+      display.textContent = deltas[i] > 0 ? `+${deltas[i]}` : `${deltas[i]}`;
+      display.className = `pts-display${deltas[i] < 0 ? ' negative' : ''}`;
+    };
+
+    controls.append(minusBtn, display, plusBtn);
+    row.appendChild(controls);
+    card.appendChild(row);
+  });
+
+  frag.appendChild(card);
+
   const isLastRound = state.currentQ >= state.totalRounds - 1;
-  const nextBtn = el('button', {className: `btn ${isLastRound ? 'btn-green' : 'btn-primary'} btn-full`},
-    isLastRound ? '🏆 Ver Placar Final' : 'Próxima Rodada →'
-  );
-  nextBtn.onclick = () => {
+  const confirmBtn = el('button', {className: `btn ${isLastRound ? 'btn-green' : 'btn-primary'} btn-full`},
+    isLastRound ? '🏆 Ver Placar Final' : 'Confirmar e Ver Placar →');
+
+  confirmBtn.onclick = () => {
+    // Apply deltas to scores
+    state.players.forEach((p, i) => { p.score += deltas[i]; });
+
     state.currentQ++;
     state.currentPlayer = 0;
     state.estimates = [];
@@ -799,8 +776,8 @@ function renderReveal() {
     }
     render();
   };
-  frag.appendChild(nextBtn);
 
+  frag.appendChild(confirmBtn);
   return frag;
 }
 
@@ -818,7 +795,7 @@ function renderScoreboard() {
 
   const ul = el('ul', {className: 'scoreboard'});
   sorted.forEach((p, rank) => {
-    const li = el('li', { className: rank === 0 ? 'top' : '' });
+    const li = el('li', {className: rank === 0 ? 'top' : ''});
     li.appendChild(el('span', {className: 'rank'}, `#${rank + 1}`));
     li.appendChild(el('span', {className: 'sname'}, p.name));
     li.appendChild(el('span', {className: 'pts'}, `${p.score > 0 ? '+' : ''}${p.score} pts`));
@@ -826,7 +803,8 @@ function renderScoreboard() {
   });
   frag.appendChild(ul);
 
-  const nextBtn = el('button', {className: 'btn btn-primary btn-full', style: 'margin-top:16px'}, `Rodada ${state.currentQ + 1} →`);
+  const nextBtn = el('button', {className: 'btn btn-primary btn-full', style: 'margin-top:16px'},
+    `Rodada ${state.currentQ + 1} →`);
   nextBtn.onclick = () => { state.screen = 'round'; render(); };
   frag.appendChild(nextBtn);
 
@@ -849,12 +827,13 @@ function renderEnd() {
   const winCard = el('div', {className: 'card', style: 'text-align:center'});
   winCard.appendChild(el('span', {className: 'emoji'}, '🥇'));
   winCard.appendChild(el('p', {style: 'font-size:1.5rem;font-weight:800;color:var(--accent)'}, winner.name));
-  winCard.appendChild(el('p', {style: 'color:var(--muted);margin-top:4px'}, `${winner.score > 0 ? '+' : ''}${winner.score} pontos · Vencedor!`));
+  winCard.appendChild(el('p', {style: 'color:var(--muted);margin-top:4px'},
+    `${winner.score > 0 ? '+' : ''}${winner.score} pontos · Vencedor!`));
   frag.appendChild(winCard);
 
   const ul = el('ul', {className: 'scoreboard'});
   sorted.forEach((p, rank) => {
-    const li = el('li', { className: rank === 0 ? 'top' : '' });
+    const li = el('li', {className: rank === 0 ? 'top' : ''});
     li.appendChild(el('span', {className: 'rank'}, `#${rank + 1}`));
     li.appendChild(el('span', {className: 'sname'}, p.name));
     li.appendChild(el('span', {className: 'pts'}, `${p.score > 0 ? '+' : ''}${p.score} pts`));
@@ -864,13 +843,10 @@ function renderEnd() {
 
   const newGameBtn = el('button', {className: 'btn btn-primary btn-full', style: 'margin-top:16px'}, '🔄 Jogar Novamente');
   newGameBtn.onclick = () => {
-    state.screen = 'setup';
-    state.players = [];
-    state.questions = [];
-    state.currentQ = 0;
-    state.currentPlayer = 0;
-    state.estimates = [];
-    state.doubtInfo = null;
+    Object.assign(state, {
+      screen: 'setup', players: [], questions: [],
+      currentQ: 0, currentPlayer: 0, estimates: [], doubtInfo: null,
+    });
     render();
   };
   frag.appendChild(newGameBtn);
