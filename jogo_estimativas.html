@@ -296,19 +296,6 @@
       margin: 10px 0;
     }
 
-    .weight-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #292000;
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      font-size: 0.8rem;
-      font-weight: 800;
-      padding: 3px 10px;
-      border-radius: 99px;
-      margin-bottom: 10px;
-    }
 
     .double-badge {
       font-size: 0.7rem;
@@ -1215,7 +1202,7 @@ const CATEGORIES = {
 const state = {
   screen: 'setup',         // setup | round | doubt | reveal | scoreboard | end
   players: [],             // [{name, score}]
-  questions: [],           // shuffled subset, each with .weight (1-4)
+  questions: [],           // shuffled subset of selected categories
   currentQ: 0,
   currentPlayer: 0,
   roundOrder: [],          // shuffled player indices for current lap
@@ -1317,12 +1304,11 @@ function renderSetup() {
   const rulesCard = el('div', {className: 'card'});
   rulesCard.appendChild(el('h2', {}, 'Regras'));
   [
-    '🎯 Uma pergunta com peso ×1 a ×4 é revelada — o peso multiplica os pontos.',
     '🔀 A ordem dos jogadores é sorteada a cada volta.',
     '🔢 Cada jogador dá seu palpite em sequência.',
     '🦆 Antes do seu palpite você pode gritar "Nem a Pato!" ao anterior.',
-    '📖 Isso revela o valor real: quem exagerou paga +peso; dúvida errada paga +peso.',
-    '🔥 Se dobrar o palpite anterior e ninguém te duvidar: −peso por cada um que passar.',
+    '📖 Isso revela o valor real: quem exagerou paga +1 ponto; dúvida errada paga +1 ponto.',
+    '🔥 Se dobrar o palpite anterior e ninguém te duvidar: −1 ponto por cada um que passar.',
     '🏆 Vence quem tiver MENOS pontos! (pontuação negativa é ótima!)',
   ].forEach(r => rulesCard.appendChild(el('p', {style: 'margin-bottom:8px;font-size:0.88rem;color:#cbd5e1'}, r)));
   frag.appendChild(rulesCard);
@@ -1351,10 +1337,7 @@ function startGame() {
   if (rounds > pool.length) { alert(`Com as categorias selecionadas há apenas ${pool.length} pergunta(s) disponível(is). Reduza o número de rodadas ou adicione mais categorias.`); return; }
 
   state.players = names.map(name => ({ name, score: 0 }));
-  state.questions = shuffle(pool).slice(0, rounds).map(q => ({
-    ...q,
-    weight: Math.ceil(Math.random() * 4),
-  }));
+  state.questions = shuffle(pool).slice(0, rounds);
   state.totalRounds = rounds;
   state.currentQ = 0;
   beginRound();
@@ -1399,10 +1382,7 @@ function renderRound() {
 
   frag.appendChild(el('p', {className: 'subtitle'}, `Rodada ${state.currentQ + 1} de ${state.totalRounds}`));
 
-  // Question with weight badge
   const qbox = el('div', {className: 'question-box'});
-  const wStars = '⭐'.repeat(q.weight) + '☆'.repeat(4 - q.weight);
-  qbox.appendChild(el('div', {className: 'weight-badge'}, `⚡ Peso ×${q.weight}  ${wStars}`));
   qbox.appendChild(el('p', {}, q.text));
   qbox.appendChild(el('p', {className: 'hint'}, `Unidade: ${q.unit}`));
   frag.appendChild(qbox);
@@ -1479,12 +1459,11 @@ function submitEstimate() {
   const val = parseFloat(document.getElementById('estimate-input').value);
   if (isNaN(val) || val < 0) { alert('Digite um valor válido!'); return; }
 
-  const W = state.questions[state.currentQ].weight;
   const prevEst = state.estimates.length > 0 ? state.estimates[state.estimates.length - 1] : null;
 
   // Previous estimate was a double and just survived (new estimate instead of doubt)
   if (prevEst && prevEst.isDouble) {
-    state.pendingDeltas.push({ playerIdx: prevEst.playerIdx, delta: -W, reason: 'dobrou e sobreviveu' });
+    state.pendingDeltas.push({ playerIdx: prevEst.playerIdx, delta: -1, reason: 'dobrou e sobreviveu' });
   }
 
   const isDouble = !!(prevEst && prevEst.value > 0 && val >= 2 * prevEst.value);
@@ -1531,7 +1510,6 @@ function renderReveal() {
   const frag = document.createDocumentFragment();
 
   const q = state.questions[state.currentQ];
-  const W = q.weight;
   const realValue = q.realValue;
   const { doubterIdx, targetEstimateIdx } = state.doubtInfo;
   const targetEstimate = state.estimates[targetEstimateIdx];
@@ -1543,11 +1521,9 @@ function renderReveal() {
   if (!state.revealApplied) {
     state.revealApplied = true;
     if (targetOvershot) {
-      // Correct doubt: only the doubted player pays
-      state.pendingDeltas.push({ playerIdx: targetEstimate.playerIdx, delta: +W, reason: `exagerou` });
+      state.pendingDeltas.push({ playerIdx: targetEstimate.playerIdx, delta: +1, reason: `exagerou` });
     } else {
-      // Wrong doubt: doubter pays
-      state.pendingDeltas.push({ playerIdx: doubterIdx, delta: +W, reason: `dúvida errada` });
+      state.pendingDeltas.push({ playerIdx: doubterIdx, delta: +1, reason: `dúvida errada` });
     }
     state.pendingDeltas.forEach(d => { state.players[d.playerIdx].score += d.delta; });
   }
@@ -1561,8 +1537,6 @@ function renderReveal() {
   frag.appendChild(el('h1', {style: 'margin-bottom:8px'}, '📖 Resposta!'));
 
   const qbox = el('div', {className: 'question-box'});
-  const wStars = '⭐'.repeat(W) + '☆'.repeat(4 - W);
-  qbox.appendChild(el('div', {className: 'weight-badge'}, `⚡ Peso ×${W}  ${wStars}`));
   qbox.appendChild(el('p', {}, q.text));
   frag.appendChild(qbox);
 
@@ -1578,10 +1552,10 @@ function renderReveal() {
   // Verdict
   let msg, cls;
   if (targetOvershot) {
-    msg = `${target.name} exagerou! (${formatNumber(targetEstimate.value)} > ${formatNumber(realValue)}) → +${W} ponto${W>1?'s':''}`;
+    msg = `${target.name} exagerou! (${formatNumber(targetEstimate.value)} > ${formatNumber(realValue)}) → +1 ponto`;
     cls = 'result-lose';
   } else {
-    msg = `${target.name} estava certo! (${formatNumber(targetEstimate.value)} ≤ ${formatNumber(realValue)}) → ${doubter.name} paga +${W} ponto${W>1?'s':''} 🦆`;
+    msg = `${target.name} estava certo! (${formatNumber(targetEstimate.value)} ≤ ${formatNumber(realValue)}) → ${doubter.name} paga +1 ponto 🦆`;
     cls = 'result-win';
   }
   frag.appendChild(el('div', {className: `result-msg ${cls} anim-fadeup`}, msg));
