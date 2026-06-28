@@ -345,6 +345,101 @@
       h1 { font-size: 1.6rem; }
       .reveal-box .real-value { font-size: 1.5rem; }
     }
+
+    /* ── Categorias ── */
+    .category-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .cat-chip {
+      padding: 6px 14px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .cat-chip.active {
+      background: #292000;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .cat-chip:active { transform: scale(0.95); }
+
+    .cat-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .cat-actions button {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 0.78rem;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+    }
+
+    /* ── Animações ── */
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-10px)}
+      40%{transform:translateX(10px)}
+      60%{transform:translateX(-6px)}
+      80%{transform:translateX(6px)}
+    }
+
+    @keyframes popIn {
+      0%{transform:scale(0.4);opacity:0}
+      65%{transform:scale(1.2)}
+      100%{transform:scale(1);opacity:1}
+    }
+
+    @keyframes fadeInUp {
+      from{opacity:0;transform:translateY(16px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    @keyframes revealPop {
+      0%{transform:scale(0.2);opacity:0}
+      55%{transform:scale(1.25)}
+      100%{transform:scale(1);opacity:1}
+    }
+
+    @keyframes flashBg {
+      0%{background:var(--surface)}
+      40%{background:#3b0e0e}
+      100%{background:var(--surface)}
+    }
+
+    @keyframes glowGreen {
+      0%,100%{box-shadow:none}
+      50%{box-shadow:0 0 20px rgba(34,197,94,0.5)}
+    }
+
+    @keyframes glowRed {
+      0%,100%{box-shadow:none}
+      50%{box-shadow:0 0 20px rgba(239,68,68,0.5)}
+    }
+
+    .anim-shake    { animation: shake 0.45s ease; }
+    .anim-pop      { animation: popIn 0.4s cubic-bezier(.2,1.5,.5,1) forwards; }
+    .anim-fadeup   { animation: fadeInUp 0.35s ease forwards; }
+    .anim-reveal   { animation: revealPop 0.55s cubic-bezier(.2,1.4,.5,1) forwards; }
+    .anim-flash    { animation: flashBg 0.6s ease forwards; }
+    .anim-glow-green { animation: glowGreen 0.7s ease; }
+    .anim-glow-red   { animation: glowRed 0.7s ease; }
   </style>
 </head>
 <body>
@@ -360,91 +455,104 @@ const QUESTIONS = [
     text: "Qual a altura (em cm) da pessoa mais alta que já viveu? — Robert Wadlow, EUA",
     unit: "cm",
     realValue: 272,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "humanos"
   },
   {
     id: 2,
     text: "Qual o peso em kg da pessoa mais pesada já registrada? — Jon Brower Minnoch, EUA",
     unit: "kg",
     realValue: 635,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "humanos"
   },
   {
     id: 3,
     text: "Qual o comprimento total (em cm) das unhas mais longas já crescidas em mãos femininas? — Lee Redmond, EUA (2008)",
     unit: "cm (total das 10 unhas)",
     realValue: 865,
-    source: "Guinness World Records, 2008"
+    source: "Guinness World Records, 2008",
+    category: "humanos"
   },
   {
     id: 4,
     text: "Qual o comprimento em metros da maior barba já registrada? — Hans Langseth, Noruega",
     unit: "metros",
     realValue: 5.33,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "humanos"
   },
   {
     id: 5,
     text: "Quantos anos viveu Jeanne Calment, a pessoa mais velha da história? — França",
     unit: "anos",
     realValue: 122,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "humanos"
   },
   {
     id: 6,
     text: "Qual o comprimento em cm da língua mais longa do mundo? — Nick Stoeberl, EUA (2012)",
     unit: "cm",
     realValue: 10.1,
-    source: "Guinness World Records, 2012"
+    source: "Guinness World Records, 2012",
+    category: "humanos"
   },
   {
     id: 7,
     text: "Quantos decibéis atingiu o grito mais alto já registrado? — Jill Drake, Reino Unido (2000)",
     unit: "dB",
     realValue: 129,
-    source: "Guinness World Records, 2000"
+    source: "Guinness World Records, 2000",
+    category: "humanos"
   },
   {
     id: 8,
     text: "Quantos minutos é o recorde mundial de prender a respiração embaixo d'água? — Budimir Šobat (2021)",
     unit: "minutos",
     realValue: 24.6,
-    source: "Guinness World Records, 2021"
+    source: "Guinness World Records, 2021",
+    category: "humanos"
   },
   {
     id: 9,
     text: "Quantas flexões Charles Servizio fez em 24 horas? — recorde mundial (1993)",
     unit: "flexões",
     realValue: 46001,
-    source: "Guinness World Records, 1993"
+    source: "Guinness World Records, 1993",
+    category: "humanos"
   },
   {
     id: 10,
     text: "Quantos Big Macs Donald Gorske comeu ao longo da vida? — recorde mundial (2022)",
     unit: "Big Macs",
     realValue: 32672,
-    source: "Guinness World Records, 2022"
+    source: "Guinness World Records, 2022",
+    category: "humanos"
   },
   {
     id: 11,
     text: "Quantos idiomas Ziad Fazah fala? — recorde mundial de poliglota",
     unit: "idiomas",
     realValue: 58,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "humanos"
   },
   {
     id: 12,
     text: "A quantos metros de altitude Felix Baumgartner saltou de paraquedas do espaço? — 2012",
     unit: "metros",
     realValue: 38969,
-    source: "Guinness World Records, 2012"
+    source: "Guinness World Records, 2012",
+    category: "humanos"
   },
   {
     id: 13,
     text: "Qual a profundidade em metros do mergulho mais fundo já realizado em apneia? — Herbert Nitsch (2012)",
     unit: "metros",
     realValue: 253,
-    source: "Guinness World Records, 2012"
+    source: "Guinness World Records, 2012",
+    category: "humanos"
   },
   // ── Esportes ──
   {
@@ -452,77 +560,88 @@ const QUESTIONS = [
     text: "Quantos segundos durou o recorde mundial dos 100m rasos de Usain Bolt? (2009)",
     unit: "segundos",
     realValue: 9.58,
-    source: "Guinness World Records, 2009"
+    source: "Guinness World Records, 2009",
+    category: "esportes"
   },
   {
     id: 15,
     text: "Qual a velocidade máxima em km/h que Usain Bolt atingiu durante os 100m rasos em Berlim (2009)?",
     unit: "km/h",
     realValue: 44.72,
-    source: "Guinness World Records, 2009"
+    source: "Guinness World Records, 2009",
+    category: "esportes"
   },
   {
     id: 16,
     text: "Quantos segundos durou o recorde mundial da maratona masculina? — Kelvin Kiptum, Quênia (2023)",
     unit: "segundos",
     realValue: 7235,
-    source: "Guinness World Records, 2023"
+    source: "Guinness World Records, 2023",
+    category: "esportes"
   },
   {
     id: 17,
     text: "Quantas medalhas olímpicas de ouro Michael Phelps ganhou ao longo da carreira?",
     unit: "medalhas de ouro",
     realValue: 23,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "esportes"
   },
   {
     id: 18,
     text: "Quantos títulos de Grand Slam Novak Djokovic conquistou (até 2023)?",
     unit: "títulos",
     realValue: 24,
-    source: "Guinness World Records, 2023"
+    source: "Guinness World Records, 2023",
+    category: "esportes"
   },
   {
     id: 19,
     text: "Qual a velocidade em km/h do saque mais rápido do tênis? — Sam Groth, Austrália (2012)",
     unit: "km/h",
     realValue: 263,
-    source: "Guinness World Records, 2012"
+    source: "Guinness World Records, 2012",
+    category: "esportes"
   },
   {
     id: 20,
     text: "Qual a altura em metros do recorde mundial do salto com vara? — Armand Duplantis (2024)",
     unit: "metros",
     realValue: 6.24,
-    source: "Guinness World Records, 2024"
+    source: "Guinness World Records, 2024",
+    category: "esportes"
   },
   {
     id: 21,
     text: "Qual a altura em metros do recorde mundial do salto em altura masculino? — Javier Sotomayor (1993)",
     unit: "metros",
     realValue: 2.45,
-    source: "Guinness World Records, 1993"
+    source: "Guinness World Records, 1993",
+    category: "esportes"
   },
   {
     id: 22,
     text: "Quantos cachorros-quentes Joey Chestnut comeu em 10 minutos? — recorde mundial (2021)",
     unit: "cachorros-quentes",
     realValue: 76,
-    source: "Guinness World Records, 2021"
+    source: "Guinness World Records, 2021",
+    category: "esportes"
   },
   {
     id: 23,
     text: "Quantos km percorreu Victor Campenaerts no recorde mundial de ciclismo 1 hora (2019)?",
     unit: "km",
     realValue: 55.089,
-    source: "Guinness World Records, 2019"
+    source: "Guinness World Records, 2019",
+    category: "esportes"
   },
   {
     id: 24,
     text: "Quantos segundos dura o recorde mundial dos 50m nado livre masculino? — César Cielo, Brasil (2009)",
     unit: "segundos",
     realValue: 20.91,
-    source: "Guinness World Records, 2009"
+    source: "Guinness World Records, 2009",
+    category: "esportes"
   },
   // ── Animais ──
   {
@@ -530,91 +649,104 @@ const QUESTIONS = [
     text: "Qual o peso em kg do maior cachorro doméstico já registrado? — Zorba, mastim inglês (1989)",
     unit: "kg",
     realValue: 155,
-    source: "Guinness World Records, 1989"
+    source: "Guinness World Records, 1989",
+    category: "animais"
   },
   {
     id: 26,
     text: "Qual o comprimento em metros da cobra mais longa em cativeiro já registrada? — Medusa, píton-reticulada (2011)",
     unit: "metros",
     realValue: 7.67,
-    source: "Guinness World Records, 2011"
+    source: "Guinness World Records, 2011",
+    category: "animais"
   },
   {
     id: 27,
     text: "Qual o comprimento em cm da maior aranha do mundo? — aranha-golias (Theraphosa blondi)",
     unit: "cm",
     realValue: 28,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "animais"
   },
   {
     id: 28,
     text: "Qual o peso em gramas do menor mamífero do mundo? — musaranho-etrusco",
     unit: "gramas",
     realValue: 1.8,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "animais"
   },
   {
     id: 29,
     text: "Qual a velocidade máxima em km/h do bicho-preguiça — o mamífero mais lento do mundo?",
     unit: "km/h",
     realValue: 0.15,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "animais"
   },
   {
     id: 30,
     text: "Qual o peso em kg do maior elefante já registrado? — elefante africano (1974)",
     unit: "kg",
     realValue: 10886,
-    source: "Guinness World Records, 1974"
+    source: "Guinness World Records, 1974",
+    category: "animais"
   },
   {
     id: 31,
     text: "Quantos anos tem Jonathan, a tartaruga mais velha do mundo (até 2024)? — ilha de Santa Helena",
     unit: "anos",
     realValue: 192,
-    source: "Guinness World Records, 2024"
+    source: "Guinness World Records, 2024",
+    category: "animais"
   },
   {
     id: 32,
     text: "Quantos decibéis pode atingir o som emitido pelo cachalote — o animal mais barulhento do planeta?",
     unit: "dB",
     realValue: 230,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "animais"
   },
   {
     id: 33,
     text: "Qual a velocidade em km/h do falcão-peregrino em picada — o animal mais rápido do mundo?",
     unit: "km/h",
     realValue: 389,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "animais"
   },
   {
     id: 34,
     text: "Qual a velocidade máxima em km/h do guepardo em corrida?",
     unit: "km/h",
     realValue: 120,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "animais"
   },
   {
     id: 35,
     text: "Qual o peso em toneladas da baleia-azul — o maior animal do mundo?",
     unit: "toneladas",
     realValue: 150,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "animais"
   },
   {
     id: 36,
     text: "Qual a altura em metros da girafa — o animal mais alto do mundo?",
     unit: "metros",
     realValue: 5.8,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "animais"
   },
   {
     id: 37,
     text: "Qual o comprimento em metros do comprimento do urso-polar macho adulto?",
     unit: "metros",
     realValue: 3,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "animais"
   },
   // ── Plantas e natureza ──
   {
@@ -622,28 +754,32 @@ const QUESTIONS = [
     text: "Qual o peso em kg da maior abóbora já registrada? — Stefano Cutrupi, Itália (2021)",
     unit: "kg",
     realValue: 1226,
-    source: "Guinness World Records, 2021"
+    source: "Guinness World Records, 2021",
+    category: "natureza"
   },
   {
     id: 39,
     text: "Qual o diâmetro em cm da maior flor do mundo? — Rafflesia arnoldii",
     unit: "cm",
     realValue: 107,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "natureza"
   },
   {
     id: 40,
     text: "Qual a altura em metros da árvore mais alta do mundo? — Hyperion, sequóia-costeira, EUA",
     unit: "metros",
     realValue: 115.9,
-    source: "Guinness World Records, 2006"
+    source: "Guinness World Records, 2006",
+    category: "natureza"
   },
   {
     id: 41,
     text: "Quantos anos tem a árvore mais velha do mundo? — Matusalém, pinheiro-de-cone-longo, EUA",
     unit: "anos",
     realValue: 4855,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "natureza"
   },
   // ── Construções e obras humanas ──
   {
@@ -651,35 +787,40 @@ const QUESTIONS = [
     text: "Qual a altura em metros do Burj Khalifa, o prédio mais alto do mundo?",
     unit: "metros",
     realValue: 828,
-    source: "Guinness World Records, 2010"
+    source: "Guinness World Records, 2010",
+    category: "construcoes"
   },
   {
     id: 43,
     text: "Qual o comprimento em km da ponte mais longa do mundo? — Danyang-Kunshan, China",
     unit: "km",
     realValue: 164.8,
-    source: "Guinness World Records, 2011"
+    source: "Guinness World Records, 2011",
+    category: "construcoes"
   },
   {
     id: 44,
     text: "Qual o comprimento em km do túnel ferroviário mais longo do mundo? — Gotthard Base Tunnel, Suíça",
     unit: "km",
     realValue: 57.1,
-    source: "Guinness World Records, 2016"
+    source: "Guinness World Records, 2016",
+    category: "construcoes"
   },
   {
     id: 45,
     text: "Qual a capacidade do maior estádio do mundo em número de torcedores? — Rungrado, Coreia do Norte",
     unit: "pessoas",
     realValue: 114000,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "construcoes"
   },
   {
     id: 46,
     text: "Qual o comprimento total em km da Grande Muralha da China?",
     unit: "km",
     realValue: 21196,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "construcoes"
   },
   // ── Geografia ──
   {
@@ -687,119 +828,136 @@ const QUESTIONS = [
     text: "Qual a altitude em metros do cume do Monte Everest — o ponto mais alto da Terra?",
     unit: "metros",
     realValue: 8849,
-    source: "Guinness World Records, 2020"
+    source: "Guinness World Records, 2020",
+    category: "geografia"
   },
   {
     id: 48,
     text: "Qual a profundidade em metros da Fossa das Marianas — o ponto mais fundo dos oceanos?",
     unit: "metros",
     realValue: 10994,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "geografia"
   },
   {
     id: 49,
     text: "Qual a profundidade em metros do Lago Baikal — o lago mais profundo do mundo?",
     unit: "metros",
     realValue: 1642,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "geografia"
   },
   {
     id: 50,
     text: "Qual o comprimento em km do Rio Nilo — o mais longo do mundo?",
     unit: "km",
     realValue: 6650,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "geografia"
   },
   {
     id: 51,
     text: "Qual a temperatura em °C registrada no Vale da Morte (EUA) — maior temperatura da história?",
     unit: "°C",
     realValue: 56.7,
-    source: "Guinness World Records, 1913"
+    source: "Guinness World Records, 1913",
+    category: "geografia"
   },
   {
     id: 52,
     text: "Qual a temperatura em °C registrada na Antártica — menor temperatura da história? (Vostok, 1983)",
     unit: "°C",
     realValue: -89.2,
-    source: "Guinness World Records, 1983"
+    source: "Guinness World Records, 1983",
+    category: "geografia"
   },
   {
     id: 53,
     text: "Qual a velocidade em km/h do tornado mais rápido já registrado? — Oklahoma, EUA (1999)",
     unit: "km/h",
     realValue: 484,
-    source: "Guinness World Records, 1999"
+    source: "Guinness World Records, 1999",
+    category: "geografia"
   },
   {
     id: 54,
     text: "Qual a magnitude do terremoto mais forte já registrado? — Chile (1960)",
     unit: "Richter",
     realValue: 9.5,
-    source: "Guinness World Records, 1960"
+    source: "Guinness World Records, 1960",
+    category: "geografia"
   },
   {
     id: 55,
     text: "Qual o comprimento em km da linha costeira do Canadá — a maior do mundo?",
     unit: "km",
     realValue: 202080,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "geografia"
   },
   {
     id: 56,
     text: "Qual a profundidade em metros do ponto mais fundo do Grand Canyon, EUA?",
     unit: "metros",
     realValue: 1857,
-    source: "Curiosidade geográfica"
+    source: "Curiosidade geográfica",
+    category: "geografia"
   },
   {
     id: 57,
     text: "Qual a área em km² da Rússia — o maior país do mundo?",
     unit: "km²",
     realValue: 17098242,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "geografia"
   },
   {
     id: 58,
     text: "Qual a área em km² do Vaticano — o menor país do mundo?",
     unit: "km²",
     realValue: 0.44,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "geografia"
   },
   {
     id: 59,
     text: "Qual a área aproximada em km² da Floresta Amazônica?",
     unit: "km²",
     realValue: 5500000,
-    source: "Curiosidade geográfica"
+    source: "Curiosidade geográfica",
+    category: "geografia"
   },
   {
     id: 60,
     text: "Qual a extensão em km da costa brasileira — a maior da América do Sul?",
     unit: "km",
     realValue: 7491,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "geografia"
   },
   {
     id: 61,
     text: "Qual a área em km² do Brasil?",
     unit: "km²",
     realValue: 8514877,
-    source: "Curiosidade geográfica"
+    source: "Curiosidade geográfica",
+    category: "geografia"
   },
   {
     id: 62,
     text: "Qual o comprimento em km do equador terrestre?",
     unit: "km",
     realValue: 40075,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "geografia"
   },
   {
     id: 63,
     text: "Qual a área em km² do Oceano Pacífico — o maior oceano do mundo?",
     unit: "km²",
     realValue: 165250000,
-    source: "Curiosidade geográfica"
+    source: "Curiosidade geográfica",
+    category: "geografia"
   },
   // ── Astronomia ──
   {
@@ -807,77 +965,88 @@ const QUESTIONS = [
     text: "Qual a distância média em km entre a Terra e a Lua?",
     unit: "km",
     realValue: 384400,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 65,
     text: "Qual a distância média em km entre a Terra e o Sol?",
     unit: "km",
     realValue: 150000000,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 66,
     text: "Qual a velocidade da luz em km/s?",
     unit: "km/s",
     realValue: 300000,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 67,
     text: "A quantos km de altitude orbita a Estação Espacial Internacional (ISS)?",
     unit: "km",
     realValue: 408,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 68,
     text: "Qual a distância em anos-luz da estrela mais próxima do Sol? — Proxima Centauri",
     unit: "anos-luz",
     realValue: 4.24,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 69,
     text: "Qual o diâmetro aproximado em anos-luz da Via Láctea?",
     unit: "anos-luz",
     realValue: 100000,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 70,
     text: "Quantos bilhões de estrelas há estima-se na Via Láctea?",
     unit: "bilhões de estrelas",
     realValue: 200,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 71,
     text: "Qual a temperatura estimada em graus Celsius no núcleo do Sol?",
     unit: "°C (milhões)",
     realValue: 15000000,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 72,
     text: "Quantos bilhões de anos tem o universo (estimativa atual)?",
     unit: "bilhões de anos",
     realValue: 13.8,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 73,
     text: "Quantos minutos a luz do Sol leva para chegar até a Terra?",
     unit: "minutos",
     realValue: 8.3,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "astronomia"
   },
   {
     id: 74,
     text: "Qual o diâmetro em km da maior cratera de impacto já encontrada na Terra? — Vredefort, África do Sul",
     unit: "km",
     realValue: 300,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "astronomia"
   },
   // ── Corpo humano ──
   {
@@ -885,56 +1054,64 @@ const QUESTIONS = [
     text: "Quantos ossos tem o corpo humano adulto?",
     unit: "ossos",
     realValue: 206,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "corpo"
   },
   {
     id: 76,
     text: "Quantos músculos tem o corpo humano?",
     unit: "músculos",
     realValue: 600,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "corpo"
   },
   {
     id: 77,
     text: "Quantos dentes tem um adulto humano (incluindo os sisos)?",
     unit: "dentes",
     realValue: 32,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "corpo"
   },
   {
     id: 78,
     text: "Quantos ossos tem a mão humana (incluindo o pulso)?",
     unit: "ossos",
     realValue: 27,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "corpo"
   },
   {
     id: 79,
     text: "Qual a capacidade total em litros dos pulmões de um adulto?",
     unit: "litros",
     realValue: 6,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "corpo"
   },
   {
     id: 80,
     text: "Quantos litros de sangue tem o corpo humano adulto em média?",
     unit: "litros",
     realValue: 5,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "corpo"
   },
   {
     id: 81,
     text: "Quantos bilhões de batimentos cardíacos tem o coração humano ao longo de uma vida média?",
     unit: "bilhões de batimentos",
     realValue: 2.5,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "corpo"
   },
   {
     id: 82,
     text: "A que velocidade em km/h viaja um impulso nervoso no corpo humano?",
     unit: "km/h",
     realValue: 432,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "corpo"
   },
   // ── Tecnologia e cultura ──
   {
@@ -942,72 +1119,96 @@ const QUESTIONS = [
     text: "Quantas cópias vendidas (em milhões) o jogo Minecraft acumulou até 2023?",
     unit: "milhões de cópias",
     realValue: 238,
-    source: "Guinness World Records, 2023"
+    source: "Guinness World Records, 2023",
+    category: "tecnologia"
   },
   {
     id: 84,
     text: "Qual a velocidade em km/h do carro terrestre mais rápido do mundo? — ThrustSSC (1997)",
     unit: "km/h",
     realValue: 1228,
-    source: "Guinness World Records, 1997"
+    source: "Guinness World Records, 1997",
+    category: "tecnologia"
   },
   {
     id: 85,
     text: "Qual a velocidade máxima em km/h da montanha-russa mais rápida do mundo? — Formula Rossa, Abu Dhabi",
     unit: "km/h",
     realValue: 240,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "tecnologia"
   },
   {
     id: 86,
     text: "Quantos bilhões de cópias a Bíblia já vendeu na história?",
     unit: "bilhões de cópias",
     realValue: 5,
-    source: "Guinness World Records"
+    source: "Guinness World Records",
+    category: "tecnologia"
   },
   {
     id: 87,
     text: "Quantos bilhões de falantes (nativos + segunda língua) o inglês tem no mundo?",
     unit: "bilhões de falantes",
     realValue: 1.5,
-    source: "Curiosidade linguística"
+    source: "Curiosidade linguística",
+    category: "tecnologia"
   },
   {
     id: 88,
     text: "Quantas línguas existem no mundo atualmente (estimativa)?",
     unit: "línguas",
     realValue: 7000,
-    source: "Curiosidade linguística"
+    source: "Curiosidade linguística",
+    category: "tecnologia"
   },
   {
     id: 89,
     text: "Qual a velocidade do som no ar (em m/s) a 20°C?",
     unit: "m/s",
     realValue: 343,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "tecnologia"
   },
   {
     id: 90,
     text: "Quantas espécies de insetos já foram catalogadas pela ciência?",
     unit: "espécies",
     realValue: 1000000,
-    source: "Curiosidade científica"
+    source: "Curiosidade científica",
+    category: "tecnologia"
   },
   {
     id: 91,
     text: "Qual a área da Antártica em km²?",
     unit: "km²",
     realValue: 14000000,
-    source: "Curiosidade geográfica"
+    source: "Curiosidade geográfica",
+    category: "tecnologia"
   },
   {
     id: 92,
     text: "A que altitude em metros Alan Eustace saltou de paraquedas (recorde de queda livre, 2014)?",
     unit: "metros",
     realValue: 41419,
-    source: "Guinness World Records, 2014"
+    source: "Guinness World Records, 2014",
+    category: "tecnologia"
   }
 ];
+
+// ─── CATEGORIES ─────────────────────────────────────────────────────────────
+
+const CATEGORIES = {
+  humanos:     { label: '🏅 Recordes Humanos',    key: 'humanos' },
+  esportes:    { label: '⚽ Esportes',             key: 'esportes' },
+  animais:     { label: '🐾 Animais',              key: 'animais' },
+  natureza:    { label: '🌿 Plantas & Natureza',   key: 'natureza' },
+  construcoes: { label: '🏗️ Construções',          key: 'construcoes' },
+  geografia:   { label: '🌍 Geografia',            key: 'geografia' },
+  astronomia:  { label: '🔭 Astronomia',           key: 'astronomia' },
+  corpo:       { label: '🫀 Corpo Humano',         key: 'corpo' },
+  tecnologia:  { label: '⚙️ Tecnologia & Cultura', key: 'tecnologia' },
+};
 
 // ─── STATE ──────────────────────────────────────────────────────────────────
 
@@ -1090,8 +1291,28 @@ function renderSetup() {
   const roundsCard = el('div', {className: 'card'});
   roundsCard.appendChild(el('h2', {}, 'Configuração'));
   roundsCard.appendChild(el('label', {}, 'Número de rodadas'));
-  roundsCard.appendChild(el('input', {type: 'number', id: 'rounds-input', value: '5', min: '1', max: '12'}));
+  roundsCard.appendChild(el('input', {type: 'number', id: 'rounds-input', value: '5', min: '1', max: '30'}));
   frag.appendChild(roundsCard);
+
+  // Category picker
+  const catCard = el('div', {className: 'card'});
+  catCard.appendChild(el('h2', {}, 'Categorias'));
+  catCard.appendChild(el('p', {style: 'font-size:0.8rem;color:var(--muted);margin-bottom:12px'}, 'Escolha os temas das perguntas:'));
+  const grid = el('div', {className: 'category-grid', id: 'cat-grid'});
+  Object.values(CATEGORIES).forEach(cat => {
+    const chip = el('div', {className: 'cat-chip active', 'data-cat': cat.key}, cat.label);
+    chip.onclick = () => chip.classList.toggle('active');
+    grid.appendChild(chip);
+  });
+  catCard.appendChild(grid);
+  const catActions = el('div', {className: 'cat-actions'});
+  const selAll = el('button', {}, 'Selecionar todos');
+  selAll.onclick = () => grid.querySelectorAll('.cat-chip').forEach(c => c.classList.add('active'));
+  const clrAll = el('button', {}, 'Limpar todos');
+  clrAll.onclick = () => grid.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+  catActions.append(selAll, clrAll);
+  catCard.appendChild(catActions);
+  frag.appendChild(catCard);
 
   const rulesCard = el('div', {className: 'card'});
   rulesCard.appendChild(el('h2', {}, 'Regras'));
@@ -1119,11 +1340,18 @@ function startGame() {
 
   if (names.length < 2) { alert('Adicione pelo menos 2 jogadores!'); return; }
 
-  const rounds = Math.min(12, Math.max(1, parseInt(document.getElementById('rounds-input').value) || 5));
-  if (rounds > QUESTIONS.length) { alert(`Máximo de ${QUESTIONS.length} rodadas disponíveis.`); return; }
+  // Collect selected categories
+  const activeCats = new Set(
+    [...document.querySelectorAll('#cat-grid .cat-chip.active')].map(c => c.getAttribute('data-cat'))
+  );
+  if (activeCats.size === 0) { alert('Selecione pelo menos uma categoria!'); return; }
+
+  const pool = QUESTIONS.filter(q => activeCats.has(q.category));
+  const rounds = Math.min(30, Math.max(1, parseInt(document.getElementById('rounds-input').value) || 5));
+  if (rounds > pool.length) { alert(`Com as categorias selecionadas há apenas ${pool.length} pergunta(s) disponível(is). Reduza o número de rodadas ou adicione mais categorias.`); return; }
 
   state.players = names.map(name => ({ name, score: 0 }));
-  state.questions = shuffle(QUESTIONS).slice(0, rounds).map(q => ({
+  state.questions = shuffle(pool).slice(0, rounds).map(q => ({
     ...q,
     weight: Math.ceil(Math.random() * 4),
   }));
@@ -1195,11 +1423,14 @@ function renderRound() {
   // All estimates so far this round
   if (hasEstimate) {
     const ul = el('ul', {className: 'estimates-list'});
-    state.estimates.forEach(e => {
-      const li = el('li');
-      const nameSpan = el('span', {className: 'player-name'}, state.players[e.playerIdx].name);
-      li.appendChild(nameSpan);
-      if (e.isDouble) li.appendChild(el('span', {className: 'double-badge'}, '🔥 DOBROU!'));
+    state.estimates.forEach((e, idx) => {
+      const isLast = idx === state.estimates.length - 1;
+      const li = el('li', {className: isLast ? 'anim-fadeup' : ''});
+      li.appendChild(el('span', {className: 'player-name'}, state.players[e.playerIdx].name));
+      if (e.isDouble) {
+        const badge = el('span', {className: 'double-badge' + (isLast ? ' anim-pop' : '')}, '🔥 DOBROU!');
+        li.appendChild(badge);
+      }
       li.appendChild(el('span', {className: 'value'}, formatNumber(e.value)));
       ul.appendChild(li);
     });
@@ -1274,10 +1505,11 @@ function renderDoubt() {
   const targetEstimate = state.estimates[targetEstimateIdx];
   const target = state.players[targetEstimate.playerIdx];
 
-  frag.appendChild(el('h1', {}, '🦆 Nem a Pato!'));
+  const title = el('h1', {className: 'anim-shake'}, '🦆 Nem a Pato!');
+  frag.appendChild(title);
 
-  const banner = el('div', {className: 'card', style: 'text-align:center'});
-  banner.appendChild(el('span', {className: 'emoji'}, '🎯'));
+  const banner = el('div', {className: 'card anim-flash', style: 'text-align:center'});
+  banner.appendChild(el('span', {className: 'emoji anim-pop'}, '🎯'));
   banner.appendChild(el('p', {style: 'font-size:1.1rem;font-weight:700;margin-bottom:12px'},
     `${doubter.name} duvidou de ${target.name}!`));
   banner.appendChild(el('p', {style: 'color:var(--muted);font-size:0.85rem'}, `${target.name} disse:`));
@@ -1286,7 +1518,7 @@ function renderDoubt() {
   banner.appendChild(el('p', {style: 'color:var(--muted);font-size:0.8rem'}, q.unit));
   frag.appendChild(banner);
 
-  const revealBtn = el('button', {className: 'btn btn-primary btn-full'}, '📖 Revelar Valor Real!');
+  const revealBtn = el('button', {className: 'btn btn-primary btn-full anim-fadeup'}, '📖 Revelar Valor Real!');
   revealBtn.onclick = () => { state.screen = 'reveal'; render(); };
   frag.appendChild(revealBtn);
 
@@ -1335,9 +1567,10 @@ function renderReveal() {
   frag.appendChild(qbox);
 
   // Real value
-  const revealBox = el('div', {className: 'reveal-box'});
+  const glowCls = targetOvershot ? 'anim-glow-red' : 'anim-glow-green';
+  const revealBox = el('div', {className: `reveal-box ${glowCls}`});
   revealBox.appendChild(el('p', {style: 'color:var(--muted);font-size:0.85rem;margin-bottom:6px'}, 'Valor real'));
-  revealBox.appendChild(el('div', {className: 'real-value'}, formatNumber(realValue)));
+  revealBox.appendChild(el('div', {className: 'real-value anim-reveal'}, formatNumber(realValue)));
   revealBox.appendChild(el('div', {className: 'unit'}, q.unit));
   revealBox.appendChild(el('div', {style: 'font-size:0.75rem;color:var(--muted);margin-top:8px'}, `Fonte: ${q.source}`));
   frag.appendChild(revealBox);
@@ -1351,7 +1584,7 @@ function renderReveal() {
     msg = `${target.name} estava certo! (${formatNumber(targetEstimate.value)} ≤ ${formatNumber(realValue)}) → ${doubter.name} paga +${W} ponto${W>1?'s':''} 🦆`;
     cls = 'result-win';
   }
-  frag.appendChild(el('div', {className: `result-msg ${cls}`}, msg));
+  frag.appendChild(el('div', {className: `result-msg ${cls} anim-fadeup`}, msg));
 
   // All estimates with double badges
   const ul = el('ul', {className: 'estimates-list'});
