@@ -296,6 +296,51 @@
       margin: 10px 0;
     }
 
+    .weight-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #292000;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 99px;
+      margin-bottom: 10px;
+    }
+
+    .double-badge {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 99px;
+      font-weight: 800;
+      background: #1a2e00;
+      color: #86efac;
+      margin-left: 4px;
+    }
+
+    .delta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: var(--surface2);
+      margin-bottom: 5px;
+      font-size: 0.88rem;
+    }
+
+    .delta-plus  { color: #f87171; font-weight: 800; font-family: monospace; }
+    .delta-minus { color: #4ade80; font-weight: 800; font-family: monospace; }
+
+    .score-note {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
     @media (max-width: 480px) {
       h1 { font-size: 1.6rem; }
       .reveal-box .real-value { font-size: 1.5rem; }
@@ -410,15 +455,18 @@ const QUESTIONS = [
 // ─── STATE ──────────────────────────────────────────────────────────────────
 
 const state = {
-  screen: 'setup',     // setup | round | doubt | reveal | points | scoreboard | end
-  players: [],         // [{name, score}]
-  questions: [],       // shuffled subset
+  screen: 'setup',         // setup | round | doubt | reveal | scoreboard | end
+  players: [],             // [{name, score}]
+  questions: [],           // shuffled subset, each with .weight (1-4)
   currentQ: 0,
-  currentPlayer: 0,    // cycles through players until doubt
-  estimates: [],       // [{playerIdx, value}] all estimates in order this round
-  doubtInfo: null,     // {doubterIdx, targetEstimateIdx} when round ends
+  currentPlayer: 0,
+  roundOrder: [],          // shuffled player indices for current lap
+  roundOrderIdx: 0,        // position in roundOrder
+  estimates: [],           // [{playerIdx, value, isDouble}]
+  doubtInfo: null,         // {doubterIdx, targetEstimateIdx}
+  pendingDeltas: [],       // [{playerIdx, delta, reason}] accumulated this round
+  revealApplied: false,    // guard so scoring only runs once
   totalRounds: 5,
-  roundPoints: [],     // [{playerIdx, delta}] accumulated during points screen
 };
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
@@ -492,12 +540,13 @@ function renderSetup() {
   const rulesCard = el('div', {className: 'card'});
   rulesCard.appendChild(el('h2', {}, 'Regras'));
   [
-    '🎯 Uma pergunta é apresentada a todos.',
-    '🔢 Os jogadores dão palpites em sequência, passando o dispositivo.',
-    '🦆 Antes de dar seu palpite, você pode gritar "Nem a Pato!" ao anterior.',
-    '📖 Quem duvida força a revelação do valor real.',
-    '✏️ O grupo decide juntos quantos pontos cada um merece nessa rodada.',
-    '🏆 Vence quem tiver mais pontos no final!',
+    '🎯 Uma pergunta com peso ×1 a ×4 é revelada — o peso multiplica os pontos.',
+    '🔀 A ordem dos jogadores é sorteada a cada volta.',
+    '🔢 Cada jogador dá seu palpite em sequência.',
+    '🦆 Antes do seu palpite você pode gritar "Nem a Pato!" ao anterior.',
+    '📖 Isso revela o valor real: quem exagerou paga +peso; dúvida errada paga +peso.',
+    '🔥 Se dobrar o palpite anterior e ninguém te duvidar: −peso por cada um que passar.',
+    '🏆 Vence quem tiver MENOS pontos! (pontuação negativa é ótima!)',
   ].forEach(r => rulesCard.appendChild(el('p', {style: 'margin-bottom:8px;font-size:0.88rem;color:#cbd5e1'}, r)));
   frag.appendChild(rulesCard);
 
@@ -518,14 +567,34 @@ function startGame() {
   if (rounds > QUESTIONS.length) { alert(`Máximo de ${QUESTIONS.length} rodadas disponíveis.`); return; }
 
   state.players = names.map(name => ({ name, score: 0 }));
-  state.questions = shuffle(QUESTIONS).slice(0, rounds);
+  state.questions = shuffle(QUESTIONS).slice(0, rounds).map(q => ({
+    ...q,
+    weight: Math.ceil(Math.random() * 4),
+  }));
   state.totalRounds = rounds;
   state.currentQ = 0;
-  state.currentPlayer = 0;
+  beginRound();
+}
+
+function beginRound() {
+  state.roundOrder = shuffle(state.players.map((_, i) => i));
+  state.roundOrderIdx = 0;
+  state.currentPlayer = state.roundOrder[0];
   state.estimates = [];
   state.doubtInfo = null;
+  state.pendingDeltas = [];
+  state.revealApplied = false;
   state.screen = 'round';
   render();
+}
+
+function advancePlayer() {
+  state.roundOrderIdx = (state.roundOrderIdx + 1) % state.players.length;
+  if (state.roundOrderIdx === 0) {
+    // Completed a full lap — reshuffle for next lap
+    state.roundOrder = shuffle(state.players.map((_, i) => i));
+  }
+  state.currentPlayer = state.roundOrder[state.roundOrderIdx];
 }
 
 // ─── ROUND ──────────────────────────────────────────────────────────────────
@@ -546,17 +615,35 @@ function renderRound() {
 
   frag.appendChild(el('p', {className: 'subtitle'}, `Rodada ${state.currentQ + 1} de ${state.totalRounds}`));
 
+  // Question with weight badge
   const qbox = el('div', {className: 'question-box'});
+  const wStars = '⭐'.repeat(q.weight) + '☆'.repeat(4 - q.weight);
+  qbox.appendChild(el('div', {className: 'weight-badge'}, `⚡ Peso ×${q.weight}  ${wStars}`));
   qbox.appendChild(el('p', {}, q.text));
   qbox.appendChild(el('p', {className: 'hint'}, `💡 ${q.hint} · unidade: ${q.unit}`));
   frag.appendChild(qbox);
+
+  // Pending deltas so far (double survivals)
+  if (state.pendingDeltas.length > 0) {
+    const pcard = el('div', {className: 'card', style: 'padding:12px 16px'});
+    pcard.appendChild(el('p', {style: 'font-size:0.75rem;color:var(--muted);margin-bottom:8px;font-weight:700'}, 'PONTOS ACUMULADOS NESTA RODADA'));
+    state.pendingDeltas.forEach(d => {
+      const row = el('div', {className: 'delta-row'});
+      row.appendChild(el('span', {}, state.players[d.playerIdx].name));
+      row.appendChild(el('span', {className: d.delta < 0 ? 'delta-minus' : 'delta-plus'}, `${d.delta > 0 ? '+' : ''}${d.delta}`));
+      pcard.appendChild(row);
+    });
+    frag.appendChild(pcard);
+  }
 
   // All estimates so far this round
   if (hasEstimate) {
     const ul = el('ul', {className: 'estimates-list'});
     state.estimates.forEach(e => {
       const li = el('li');
-      li.appendChild(el('span', {className: 'player-name'}, state.players[e.playerIdx].name));
+      const nameSpan = el('span', {className: 'player-name'}, state.players[e.playerIdx].name);
+      li.appendChild(nameSpan);
+      if (e.isDouble) li.appendChild(el('span', {className: 'double-badge'}, '🔥 DOBROU!'));
       li.appendChild(el('span', {className: 'value'}, formatNumber(e.value)));
       ul.appendChild(li);
     });
@@ -605,10 +692,19 @@ function submitEstimate() {
   const val = parseFloat(document.getElementById('estimate-input').value);
   if (isNaN(val) || val < 0) { alert('Digite um valor válido!'); return; }
 
-  state.estimates.push({ playerIdx: state.currentPlayer, value: val });
-  // Cycle to next player — round never auto-ends, only doubt ends it
-  state.currentPlayer = (state.currentPlayer + 1) % state.players.length;
-  render(); // stays on 'round'
+  const W = state.questions[state.currentQ].weight;
+  const prevEst = state.estimates.length > 0 ? state.estimates[state.estimates.length - 1] : null;
+
+  // Previous estimate was a double and just survived (new estimate instead of doubt)
+  if (prevEst && prevEst.isDouble) {
+    state.pendingDeltas.push({ playerIdx: prevEst.playerIdx, delta: -W, reason: 'dobrou e sobreviveu' });
+  }
+
+  const isDouble = !!(prevEst && prevEst.value > 0 && val >= 2 * prevEst.value);
+  state.estimates.push({ playerIdx: state.currentPlayer, value: val, isDouble });
+
+  advancePlayer();
+  render();
 }
 
 // ─── DOUBT ──────────────────────────────────────────────────────────────────
@@ -647,12 +743,26 @@ function renderReveal() {
   const frag = document.createDocumentFragment();
 
   const q = state.questions[state.currentQ];
+  const W = q.weight;
   const realValue = q.realValue;
   const { doubterIdx, targetEstimateIdx } = state.doubtInfo;
   const targetEstimate = state.estimates[targetEstimateIdx];
   const doubter = state.players[doubterIdx];
   const target = state.players[targetEstimate.playerIdx];
   const targetOvershot = targetEstimate.value > realValue;
+
+  // Apply scoring exactly once
+  if (!state.revealApplied) {
+    state.revealApplied = true;
+    if (targetOvershot) {
+      // Correct doubt: only the doubted player pays
+      state.pendingDeltas.push({ playerIdx: targetEstimate.playerIdx, delta: +W, reason: `exagerou` });
+    } else {
+      // Wrong doubt: doubter pays
+      state.pendingDeltas.push({ playerIdx: doubterIdx, delta: +W, reason: `dúvida errada` });
+    }
+    state.pendingDeltas.forEach(d => { state.players[d.playerIdx].score += d.delta; });
+  }
 
   const prog = el('div', {className: 'progress-bar'});
   const fill = el('div', {className: 'progress-bar-fill'});
@@ -663,6 +773,8 @@ function renderReveal() {
   frag.appendChild(el('h1', {style: 'margin-bottom:8px'}, '📖 Resposta!'));
 
   const qbox = el('div', {className: 'question-box'});
+  const wStars = '⭐'.repeat(W) + '☆'.repeat(4 - W);
+  qbox.appendChild(el('div', {className: 'weight-badge'}, `⚡ Peso ×${W}  ${wStars}`));
   qbox.appendChild(el('p', {}, q.text));
   frag.appendChild(qbox);
 
@@ -674,13 +786,24 @@ function renderReveal() {
   revealBox.appendChild(el('div', {style: 'font-size:0.75rem;color:var(--muted);margin-top:8px'}, `Fonte: ${q.source}`));
   frag.appendChild(revealBox);
 
-  // All estimates, highlighting the doubted one
+  // Verdict
+  let msg, cls;
+  if (targetOvershot) {
+    msg = `${target.name} exagerou! (${formatNumber(targetEstimate.value)} > ${formatNumber(realValue)}) → +${W} ponto${W>1?'s':''}`;
+    cls = 'result-lose';
+  } else {
+    msg = `${target.name} estava certo! (${formatNumber(targetEstimate.value)} ≤ ${formatNumber(realValue)}) → ${doubter.name} paga +${W} ponto${W>1?'s':''} 🦆`;
+    cls = 'result-win';
+  }
+  frag.appendChild(el('div', {className: `result-msg ${cls}`}, msg));
+
+  // All estimates with double badges
   const ul = el('ul', {className: 'estimates-list'});
   state.estimates.forEach((e, i) => {
     const isTarget = i === targetEstimateIdx;
-    const isDoubter = e.playerIdx === doubterIdx && i === state.estimates.length - 1 + 1; // doubter didn't estimate
     const li = el('li', {className: isTarget ? 'highlighted' : ''});
     li.appendChild(el('span', {className: 'player-name'}, state.players[e.playerIdx].name));
+    if (e.isDouble) li.appendChild(el('span', {className: 'double-badge'}, '🔥 DOBROU!'));
     li.appendChild(el('span', {className: 'value'}, formatNumber(e.value)));
     if (isTarget) {
       li.appendChild(el('span', {className: `badge ${targetOvershot ? 'badge-lose' : 'badge-win'}`},
@@ -690,94 +813,38 @@ function renderReveal() {
   });
   frag.appendChild(ul);
 
-  // Verdict
-  let msg, cls;
-  if (targetOvershot) {
-    msg = `${target.name} exagerou! (${formatNumber(targetEstimate.value)} > ${formatNumber(realValue)} ${q.unit})`;
-    cls = 'result-win';
-  } else {
-    msg = `${target.name} estava certo! (${formatNumber(targetEstimate.value)} ≤ ${formatNumber(realValue)} ${q.unit}) — ${doubter.name} se arrependeu 🦆`;
-    cls = 'result-lose';
-  }
-  frag.appendChild(el('div', {className: `result-msg ${cls}`}, msg));
-
-  const nextBtn = el('button', {className: 'btn btn-primary btn-full'}, '✏️ Atribuir Pontos →');
-  nextBtn.onclick = () => { state.screen = 'points'; render(); };
-  frag.appendChild(nextBtn);
-
-  return frag;
-}
-
-// ─── POINTS ─────────────────────────────────────────────────────────────────
-
-function renderPoints() {
-  const frag = document.createDocumentFragment();
-
-  frag.appendChild(el('h1', {style: 'margin-bottom:4px'}, '✏️ Pontuação'));
-  frag.appendChild(el('p', {className: 'subtitle'}, `Rodada ${state.currentQ + 1} — quanto cada um merece?`));
-
-  // Track delta per player in a local object keyed by playerIdx
-  const deltas = {};
-  state.players.forEach((_, i) => { deltas[i] = 0; });
-
-  const card = el('div', {className: 'card'});
-  card.appendChild(el('h2', {}, 'Pontos desta rodada'));
-
-  const displays = {};
-
-  state.players.forEach((p, i) => {
-    const row = el('div', {className: 'points-row'});
-    row.appendChild(el('span', {className: 'pname'}, p.name));
-
-    const controls = el('div', {className: 'pts-controls'});
-
-    const minusBtn = el('button', {className: 'pts-btn'}, '−');
-    const display = el('span', {className: 'pts-display'}, '0');
-    const plusBtn = el('button', {className: 'pts-btn'}, '+');
-
-    displays[i] = display;
-
-    minusBtn.onclick = () => {
-      deltas[i]--;
-      display.textContent = deltas[i] > 0 ? `+${deltas[i]}` : `${deltas[i]}`;
-      display.className = `pts-display${deltas[i] < 0 ? ' negative' : ''}`;
-    };
-
-    plusBtn.onclick = () => {
-      deltas[i]++;
-      display.textContent = deltas[i] > 0 ? `+${deltas[i]}` : `${deltas[i]}`;
-      display.className = `pts-display${deltas[i] < 0 ? ' negative' : ''}`;
-    };
-
-    controls.append(minusBtn, display, plusBtn);
-    row.appendChild(controls);
-    card.appendChild(row);
+  // Score changes this round
+  const dcard = el('div', {className: 'card', style: 'padding:14px 16px'});
+  dcard.appendChild(el('p', {style: 'font-size:0.75rem;color:var(--muted);margin-bottom:8px;font-weight:700'}, 'PONTOS DESTA RODADA'));
+  // Group deltas by player
+  const totals = {};
+  state.pendingDeltas.forEach(d => { totals[d.playerIdx] = (totals[d.playerIdx] || 0) + d.delta; });
+  Object.entries(totals).forEach(([idx, delta]) => {
+    const row = el('div', {className: 'delta-row'});
+    row.appendChild(el('span', {}, state.players[idx].name));
+    row.appendChild(el('span', {className: delta < 0 ? 'delta-minus' : 'delta-plus'}, `${delta > 0 ? '+' : ''}${delta} pt${Math.abs(delta)!==1?'s':''}`));
+    dcard.appendChild(row);
   });
+  frag.appendChild(dcard);
 
-  frag.appendChild(card);
+  frag.appendChild(el('p', {className: 'score-note'}, '↓ menor pontuação = melhor posição'));
 
   const isLastRound = state.currentQ >= state.totalRounds - 1;
-  const confirmBtn = el('button', {className: `btn ${isLastRound ? 'btn-green' : 'btn-primary'} btn-full`},
-    isLastRound ? '🏆 Ver Placar Final' : 'Confirmar e Ver Placar →');
-
-  confirmBtn.onclick = () => {
-    // Apply deltas to scores
-    state.players.forEach((p, i) => { p.score += deltas[i]; });
-
+  const nextBtn = el('button', {className: `btn ${isLastRound ? 'btn-green' : 'btn-primary'} btn-full`},
+    isLastRound ? '🏆 Ver Placar Final' : 'Ver Placar →');
+  nextBtn.onclick = () => {
     state.currentQ++;
-    state.currentPlayer = 0;
-    state.estimates = [];
-    state.doubtInfo = null;
-
     if (state.currentQ >= state.totalRounds) {
       state.screen = 'end';
+      render();
     } else {
-      state.screen = 'scoreboard';
+      beginRound();          // resets round state and sets screen='round'
+      state.screen = 'scoreboard'; // override to show scoreboard first
+      render();
     }
-    render();
   };
+  frag.appendChild(nextBtn);
 
-  frag.appendChild(confirmBtn);
   return frag;
 }
 
@@ -787,16 +854,17 @@ function renderScoreboard() {
   const frag = document.createDocumentFragment();
 
   frag.appendChild(el('h1', {style: 'margin-bottom:4px'}, 'Placar'));
-  frag.appendChild(el('p', {className: 'subtitle'}, `Após rodada ${state.currentQ} de ${state.totalRounds}`));
+  frag.appendChild(el('p', {className: 'subtitle'}, `Após rodada ${state.currentQ} de ${state.totalRounds} · ↓ menor = melhor`));
 
+  // Sort ASCENDING — fewest points wins
   const sorted = [...state.players]
     .map((p, i) => ({ ...p, idx: i }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => a.score - b.score);
 
   const ul = el('ul', {className: 'scoreboard'});
   sorted.forEach((p, rank) => {
     const li = el('li', {className: rank === 0 ? 'top' : ''});
-    li.appendChild(el('span', {className: 'rank'}, `#${rank + 1}`));
+    li.appendChild(el('span', {className: 'rank'}, rank === 0 ? '🥇' : `#${rank + 1}`));
     li.appendChild(el('span', {className: 'sname'}, p.name));
     li.appendChild(el('span', {className: 'pts'}, `${p.score > 0 ? '+' : ''}${p.score} pts`));
     ul.appendChild(li);
@@ -805,7 +873,7 @@ function renderScoreboard() {
 
   const nextBtn = el('button', {className: 'btn btn-primary btn-full', style: 'margin-top:16px'},
     `Rodada ${state.currentQ + 1} →`);
-  nextBtn.onclick = () => { state.screen = 'round'; render(); };
+  nextBtn.onclick = () => { state.screen = 'round'; render(); };  // round already initialized by beginRound
   frag.appendChild(nextBtn);
 
   return frag;
@@ -816,9 +884,10 @@ function renderScoreboard() {
 function renderEnd() {
   const frag = document.createDocumentFragment();
 
+  // Sort ASCENDING — fewest points wins
   const sorted = [...state.players]
     .map((p, i) => ({ ...p, idx: i }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => a.score - b.score);
 
   const winner = sorted[0];
 
@@ -828,13 +897,13 @@ function renderEnd() {
   winCard.appendChild(el('span', {className: 'emoji'}, '🥇'));
   winCard.appendChild(el('p', {style: 'font-size:1.5rem;font-weight:800;color:var(--accent)'}, winner.name));
   winCard.appendChild(el('p', {style: 'color:var(--muted);margin-top:4px'},
-    `${winner.score > 0 ? '+' : ''}${winner.score} pontos · Vencedor!`));
+    `${winner.score > 0 ? '+' : ''}${winner.score} pontos · Menor pontuação — Vencedor!`));
   frag.appendChild(winCard);
 
   const ul = el('ul', {className: 'scoreboard'});
   sorted.forEach((p, rank) => {
     const li = el('li', {className: rank === 0 ? 'top' : ''});
-    li.appendChild(el('span', {className: 'rank'}, `#${rank + 1}`));
+    li.appendChild(el('span', {className: 'rank'}, rank === 0 ? '🥇' : `#${rank + 1}`));
     li.appendChild(el('span', {className: 'sname'}, p.name));
     li.appendChild(el('span', {className: 'pts'}, `${p.score > 0 ? '+' : ''}${p.score} pts`));
     ul.appendChild(li);
