@@ -1197,6 +1197,10 @@ const CATEGORIES = {
   tecnologia:  { label: '⚙️ Tecnologia & Cultura', key: 'tecnologia' },
 };
 
+// Persists across games within the session so questions never repeat
+// until the entire pool of selected categories is exhausted
+const usedQuestionIds = new Set();
+
 // ─── STATE ──────────────────────────────────────────────────────────────────
 
 const state = {
@@ -1336,8 +1340,17 @@ function startGame() {
   const rounds = Math.min(30, Math.max(1, parseInt(document.getElementById('rounds-input').value) || 5));
   if (rounds > pool.length) { alert(`Com as categorias selecionadas há apenas ${pool.length} pergunta(s) disponível(is). Reduza o número de rodadas ou adicione mais categorias.`); return; }
 
+  // Remove already-seen questions; if the remainder is too small, reset the pool
+  let fresh = pool.filter(q => !usedQuestionIds.has(q.id));
+  if (fresh.length < rounds) {
+    usedQuestionIds.clear();
+    fresh = pool;
+  }
+
   state.players = names.map(name => ({ name, score: 0 }));
-  state.questions = shuffle(pool).slice(0, rounds);
+  const chosen = shuffle(fresh).slice(0, rounds);
+  chosen.forEach(q => usedQuestionIds.add(q.id));
+  state.questions = chosen;
   state.totalRounds = rounds;
   state.currentQ = 0;
   beginRound();
