@@ -494,8 +494,7 @@ function render() {
   app.innerHTML = '';
   const screens = {
     setup: renderSetup, round: renderRound, doubt: renderDoubt,
-    reveal: renderReveal, points: renderPoints,
-    scoreboard: renderScoreboard, end: renderEnd,
+    reveal: renderReveal, scoreboard: renderScoreboard, end: renderEnd,
   };
   const fn = screens[state.screen];
   if (fn) app.appendChild(fn());
