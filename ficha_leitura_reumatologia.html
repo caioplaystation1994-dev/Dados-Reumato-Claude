@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fichas de Leitura – Reumatologia</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a202c;font-size:14px}
+header{background:#1a56a0;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+header h1{font-size:17px;font-weight:600}
+header .sub{font-size:11px;opacity:.8;font-weight:400}
+nav button{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 16px;border-radius:6px;cursor:pointer;margin-left:6px;font-size:13px;transition:.2s}
+nav button:hover{background:rgba(255,255,255,.3)}
+
+.hidden{display:none !important}
+
+/* Centered screens (config / login) */
+.center-screen{max-width:480px;margin:60px auto;padding:0 16px}
+.section-card{background:#fff;border-radius:10px;padding:20px 24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.section-title{font-size:13px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e8f0fc}
+.field-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field-group label{font-size:12px;font-weight:600;color:#4a5568}
+.field-group input,.field-group select,.field-group textarea{border:1px solid #cbd5e0;border-radius:6px;padding:8px 10px;font-size:13px;width:100%;background:#fafafa;font-family:inherit}
+.field-group input:focus,.field-group select:focus,.field-group textarea:focus{outline:none;border-color:#1a56a0;background:#fff}
+.field-group textarea{resize:vertical;min-height:60px}
+.field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px 16px}
+
+.btn-primary{background:#1a56a0;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
+.btn-primary:hover{background:#164785}
+.btn-secondary{background:#e8f0fc;color:#1a56a0;border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-secondary:hover{background:#d5e5fb}
+.btn-danger{background:#fff;color:#c53030;border:1px solid #feb2b2;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.btn-danger:hover{background:#fff5f5}
+.btn-link{background:none;border:none;color:#1a56a0;cursor:pointer;font-size:12px;text-decoration:underline;padding:4px 0}
+.msg{font-size:12px;padding:8px 10px;border-radius:6px;margin-top:8px}
+.msg.err{background:#fff5f5;color:#c53030;border:1px solid #feb2b2}
+.msg.ok{background:#f0fff4;color:#276749;border:1px solid #9ae6b4}
+
+pre.rules{background:#1a202c;color:#e2e8f0;padding:12px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.5;margin-top:8px}
+.help-steps{font-size:12.5px;color:#4a5568;line-height:1.7;margin:8px 0 4px 18px}
+
+/* App layout */
+#app{display:flex;min-height:calc(100vh - 54px)}
+.sidebar{width:250px;background:#fff;border-right:1px solid #e2e8f0;padding:16px 12px;flex-shrink:0}
+.sidebar h2{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#718096;margin-bottom:10px;padding:0 6px}
+.tema-item{display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;font-size:13px}
+.tema-item:hover{background:#f7faff}
+.tema-item.active{background:#e8f0fc;color:#1a56a0;font-weight:600}
+.tema-item .count{font-size:11px;background:#edf2f7;color:#4a5568;border-radius:10px;padding:1px 7px}
+.tema-item.active .count{background:#1a56a0;color:#fff}
+.tema-add-form{display:flex;gap:6px;margin-top:8px;padding:0 2px}
+.tema-add-form input{flex:1;border:1px solid #cbd5e0;border-radius:6px;padding:6px 8px;font-size:12.5px}
+.tema-add-form button{background:#1a56a0;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px}
+
+.main{flex:1;padding:20px 28px;max-width:900px}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.toolbar input[type=search]{flex:1;min-width:180px;border:1px solid #cbd5e0;border-radius:8px;padding:9px 12px;font-size:13px}
+.toolbar select{border:1px solid #cbd5e0;border-radius:8px;padding:9px 10px;font-size:13px}
+
+.empty-state{text-align:center;color:#a0aec0;padding:60px 20px;font-size:13px}
+
+.ficha-card{background:#fff;border-radius:10px;padding:16px 20px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;border-left:4px solid #1a56a0}
+.ficha-card:hover{box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.ficha-card h3{font-size:14.5px;color:#1a202c;margin-bottom:4px}
+.ficha-meta{font-size:12px;color:#718096;margin-bottom:8px}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:10.5px;padding:2px 9px;border-radius:20px;background:#edf2f7;color:#4a5568}
+.chip.evid{background:#e8f0fc;color:#1a56a0;font-weight:600}
+.chip.tema{background:#f0fff4;color:#276749}
+
+.ficha-detail p{font-size:12.5px;margin-bottom:2px}
+.ficha-detail .lbl{font-size:11px;font-weight:700;text-transform:uppercase;color:#1a56a0;letter-spacing:.4px;margin-top:12px;margin-bottom:3px}
+.ficha-detail .val{font-size:13px;color:#2d3748;white-space:pre-wrap;line-height:1.5}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(26,32,44,.5);display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;z-index:200}
+.modal{background:#fff;border-radius:12px;max-width:640px;width:100%;padding:24px 28px;margin-bottom:40px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-header h2{font-size:16px;color:#1a56a0}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#a0aec0}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;border-top:1px solid #edf2f7;padding-top:16px}
+
+footer.app-footer{text-align:center;padding:16px;font-size:11px;color:#a0aec0}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Fichas de Leitura – Reumatologia</h1>
+    <div class="sub" id="userLabel"></div>
+  </div>
+  <nav id="topNav" class="hidden">
+    <button id="btnExport">Exportar backup</button>
+    <button id="btnImport">Importar backup</button>
+    <button id="btnLogout">Sair</button>
+  </nav>
+</header>
+
+<!-- CONFIGURAÇÃO DO FIREBASE -->
+<div id="configScreen" class="center-screen hidden">
+  <div class="section-card">
+    <div class="section-title">Configuração inicial (uma única vez)</div>
+    <p style="font-size:12.5px;color:#4a5568;line-height:1.6;margin-bottom:10px">
+      Este app guarda suas fichas de leitura no seu próprio projeto Firebase (gratuito),
+      então você acessa de qualquer computador ou celular com o mesmo login.
+    </p>
+    <div class="help-steps">
+      1. Acesse o <b>Firebase Console</b> e crie um projeto novo.<br>
+      2. Em <b>Build → Firestore Database</b>, crie o banco (modo produção).<br>
+      3. Em <b>Build → Authentication → Sign-in method</b>, ative <b>E-mail/senha</b>.<br>
+      4. Em <b>Configurações do projeto → Seus apps</b>, crie um app Web (ícone &lt;/&gt;) e copie o objeto <code>firebaseConfig</code>.<br>
+      5. Cole o objeto abaixo (JSON) e salve. Depois, nas regras do Firestore, use o texto sugerido mais abaixo.
+    </div>
+    <div class="field-group">
+      <label>Cole aqui o firebaseConfig (JSON)</label>
+      <textarea id="configInput" rows="8" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
+    </div>
+    <button class="btn-primary" id="btnSaveConfig">Salvar e continuar</button>
+    <div id="configMsg"></div>
+    <div class="section-title" style="margin-top:20px">Regras de segurança do Firestore (cole no console)</div>
+    <pre class="rules">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}</pre>
+  </div>
+</div>
+
+<!-- LOGIN / CADASTRO -->
+<div id="authScreen" class="center-screen hidden">
+  <div class="section-card">
+    <div class="section-title" id="authTitle">Entrar</div>
+    <div class="field-group">
+      <label>E-mail</label>
+      <input type="email" id="authEmail" autocomplete="username">
+    </div>
+    <div class="field-group">
+      <label>Senha</label>
+      <input type="password" id="authPassword" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="btnAuthSubmit">Entrar</button>
+    <div id="authMsg"></div>
+    <button class="btn-link" id="btnAuthToggle" style="margin-top:10px">Ainda não tenho conta — criar agora</button>
+    <button class="btn-link" id="btnEditConfig">Alterar configuração do Firebase</button>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="app" class="hidden">
+  <div style="display:flex;width:100%">
+  <aside class="sidebar">
+    <h2>Temas</h2>
+    <div id="temaList"></div>
+    <div class="tema-add-form">
+      <input type="text" id="newTemaInput" placeholder="Novo tema...">
+      <button id="btnAddTema">+</button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="toolbar">
+      <input type="search" id="searchInput" placeholder="Buscar por título, autor ou tag...">
+      <select id="filterEvidencia">
+        <option value="">Todos os níveis</option>
+        <option value="1a">1a — Rev. sistemática de ECRs</option>
+        <option value="1b">1b — Ensaio clínico randomizado</option>
+        <option value="2a">2a — Rev. sistemática de coortes</option>
+        <option value="2b">2b — Estudo de coorte</option>
+        <option value="3a">3a — Rev. sistemática caso-controle</option>
+        <option value="3b">3b — Estudo caso-controle</option>
+        <option value="4">4 — Série de casos</option>
+        <option value="5">5 — Opinião de especialista/consenso</option>
+      </select>
+      <button class="btn-primary" id="btnNewFicha">+ Nova ficha</button>
+    </div>
+    <div id="fichaListContainer"></div>
+  </div>
+  </div>
+  <footer class="app-footer">Uso pessoal — dados armazenados no seu projeto Firebase.</footer>
+</div>
+
+<!-- MODAL FICHA (criar/editar/ver) -->
+<div id="fichaModalOverlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="fichaModalTitle">Nova ficha de leitura</h2>
+      <button class="modal-close" id="btnCloseFichaModal">&times;</button>
+    </div>
+    <div id="fichaFormView">
+      <div class="field-group">
+        <label>Título do artigo *</label>
+        <input type="text" id="f_titulo">
+      </div>
+      <div class="field-grid">
+        <div class="field-group">
+          <label>Autores</label>
+          <input type="text" id="f_autores" placeholder="Ex: Smolen JS, et al.">
+        </div>
+        <div class="field-group">
+          <label>Ano</label>
+          <input type="number" id="f_ano" min="1900" max="2100">
+        </div>
+        <div class="field-group">
+          <label>Revista / Journal</label>
+          <input type="text" id="f_revista">
+        </div>
+        <div class="field-group">
+          <label>Link / DOI</label>
+          <input type="text" id="f_link" placeholder="https://doi.org/...">
+        </div>
+        <div class="field-group">
+          <label>Tema *</label>
+          <select id="f_tema"></select>
+        </div>
+        <div class="field-group">
+          <label>Nível de evidência</label>
+          <select id="f_evidencia">
+            <option value="1a">1a — Rev. sistemática de ECRs</option>
+            <option value="1b">1b — Ensaio clínico randomizado</option>
+            <option value="2a">2a — Rev. sistemática de coortes</option>
+            <option value="2b">2b — Estudo de coorte</option>
+            <option value="3a">3a — Rev. sistemática caso-controle</option>
+            <option value="3b">3b — Estudo caso-controle</option>
+            <option value="4">4 — Série de casos</option>
+            <option value="5">5 — Opinião de especialista/consenso</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Objetivo do estudo</label>
+        <textarea id="f_objetivo" rows="2"></textarea>
+      </div>
+      <div class="field-group">
+        <label>Métodos (resumo)</label>
+        <textarea id="f_metodos" rows="3"></textarea>
+      </div>
+      <div class="field-group">
+        <label>Resultados principais</label>
+        <textarea id="f_resultados" rows="3"></textarea>
+      </div>
+      <div class="field-group">
+        <label>Aplicação clínica / conduta</label>
+        <textarea id="f_aplicacao" rows="2"></textarea>
+      </div>
+      <div class="field-group">
+        <label>Anotações pessoais</label>
+        <textarea id="f_anotacoes" rows="2"></textarea>
+      </div>
+      <div class="field-group">
+        <label>Tags (separadas por vírgula)</label>
+        <input type="text" id="f_tags" placeholder="Ex: biológicos, AR refratária, guideline">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger hidden" id="btnDeleteFicha">Excluir</button>
+      <button class="btn-secondary" id="btnCloseFichaModal2">Cancelar</button>
+      <button class="btn-primary" id="btnSaveFicha">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importFileInput" accept="application/json" class="hidden">
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+  createUserWithEmailAndPassword, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, serverTimestamp, setDoc, getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const CONFIG_KEY = 'reumato_firebase_config';
+const el = id => document.getElementById(id);
+
+let app, auth, db, currentUser = null;
+let temas = [];      // {id, nome}
+let fichas = [];     // {id, tema, titulo, ...}
+let activeTemaId = 'ALL';
+let editingFichaId = null;
+let unsubTemas = null, unsubFichas = null;
+let isSignUp = false;
+
+function showScreen(name){
+  el('configScreen').classList.toggle('hidden', name !== 'config');
+  el('authScreen').classList.toggle('hidden', name !== 'auth');
+  el('app').classList.toggle('hidden', name !== 'app');
+  el('topNav').classList.toggle('hidden', name !== 'app');
+}
+
+function loadStoredConfig(){
+  const raw = localStorage.getItem(CONFIG_KEY);
+  if(!raw) return null;
+  try { return JSON.parse(raw); } catch(e){ return null; }
+}
+
+function initFirebase(config){
+  app = initializeApp(config);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    if(user){
+      el('userLabel').textContent = user.email;
+      showScreen('app');
+      attachListeners(user.uid);
+    } else {
+      if(unsubTemas) unsubTemas();
+      if(unsubFichas) unsubFichas();
+      temas = []; fichas = [];
+      showScreen('auth');
+    }
+  });
+}
+
+// ---------- Config screen ----------
+const storedConfig = loadStoredConfig();
+if(storedConfig){
+  try { initFirebase(storedConfig); } catch(e){ console.error(e); showScreen('config'); }
+} else {
+  showScreen('config');
+}
+
+el('btnSaveConfig').addEventListener('click', () => {
+  const raw = el('configInput').value.trim();
+  let parsed;
+  try { parsed = JSON.parse(raw); }
+  catch(e){
+    el('configMsg').innerHTML = '<div class="msg err">JSON inválido. Confira se copiou o objeto completo do Firebase.</div>';
+    return;
+  }
+  if(!parsed.apiKey || !parsed.projectId){
+    el('configMsg').innerHTML = '<div class="msg err">Faltam campos obrigatórios (apiKey, projectId).</div>';
+    return;
+  }
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(parsed));
+  try {
+    initFirebase(parsed);
+    el('configMsg').innerHTML = '<div class="msg ok">Configuração salva!</div>';
+  } catch(e){
+    el('configMsg').innerHTML = '<div class="msg err">Erro ao iniciar Firebase: '+e.message+'</div>';
+  }
+});
+
+el('btnEditConfig').addEventListener('click', () => showScreen('config'));
+
+// ---------- Auth screen ----------
+el('btnAuthToggle').addEventListener('click', () => {
+  isSignUp = !isSignUp;
+  el('authTitle').textContent = isSignUp ? 'Criar conta' : 'Entrar';
+  el('btnAuthSubmit').textContent = isSignUp ? 'Criar conta' : 'Entrar';
+  el('btnAuthToggle').textContent = isSignUp ? 'Já tenho conta — entrar' : 'Ainda não tenho conta — criar agora';
+});
+
+el('btnAuthSubmit').addEventListener('click', async () => {
+  const email = el('authEmail').value.trim();
+  const password = el('authPassword').value;
+  el('authMsg').innerHTML = '';
+  if(!email || !password){
+    el('authMsg').innerHTML = '<div class="msg err">Preencha e-mail e senha.</div>';
+    return;
+  }
+  try {
+    if(isSignUp){
+      await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+  } catch(e){
+    el('authMsg').innerHTML = '<div class="msg err">'+translateAuthError(e.code)+'</div>';
+  }
+});
+
+function translateAuthError(code){
+  const map = {
+    'auth/invalid-email': 'E-mail inválido.',
+    'auth/user-not-found': 'Usuário não encontrado.',
+    'auth/wrong-password': 'Senha incorreta.',
+    'auth/invalid-credential': 'E-mail ou senha incorretos.',
+    'auth/email-already-in-use': 'Este e-mail já está cadastrado. Tente entrar.',
+    'auth/weak-password': 'A senha precisa ter ao menos 6 caracteres.'
+  };
+  return map[code] || ('Erro: ' + code);
+}
+
+el('btnLogout').addEventListener('click', () => signOut(auth));
+
+// ---------- Firestore listeners ----------
+function attachListeners(uid){
+  if(unsubTemas) unsubTemas();
+  if(unsubFichas) unsubFichas();
+
+  const temasQ = query(collection(db, 'users', uid, 'temas'), orderBy('nome'));
+  unsubTemas = onSnapshot(temasQ, snap => {
+    temas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTemaList();
+    renderFichaForm_TemaOptions();
+    renderFichaList();
+  });
+
+  const fichasQ = query(collection(db, 'users', uid, 'artigos'), orderBy('criadoEm', 'desc'));
+  unsubFichas = onSnapshot(fichasQ, snap => {
+    fichas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTemaList();
+    renderFichaList();
+  });
+}
+
+// ---------- Temas ----------
+function renderTemaList(){
+  const counts = {};
+  fichas.forEach(f => { counts[f.tema] = (counts[f.tema]||0) + 1; });
+  let html = `<div class="tema-item ${activeTemaId==='ALL'?'active':''}" data-id="ALL">
+    <span>Todos os temas</span><span class="count">${fichas.length}</span></div>`;
+  temas.forEach(t => {
+    html += `<div class="tema-item ${activeTemaId===t.id?'active':''}" data-id="${t.id}">
+      <span>${escapeHtml(t.nome)}</span><span class="count">${counts[t.id]||0}</span></div>`;
+  });
+  el('temaList').innerHTML = html;
+  el('temaList').querySelectorAll('.tema-item').forEach(node => {
+    node.addEventListener('click', () => {
+      activeTemaId = node.dataset.id;
+      renderTemaList();
+      renderFichaList();
+    });
+  });
+}
+
+el('btnAddTema').addEventListener('click', async () => {
+  const input = el('newTemaInput');
+  const nome = input.value.trim();
+  if(!nome || !currentUser) return;
+  await addDoc(collection(db, 'users', currentUser.uid, 'temas'), { nome, criadoEm: serverTimestamp() });
+  input.value = '';
+});
+el('newTemaInput').addEventListener('keydown', e => { if(e.key === 'Enter') el('btnAddTema').click(); });
+
+// ---------- Fichas: list ----------
+const EVID_LABEL = {
+  '1a':'1a — Rev. sist. de ECRs','1b':'1b — ECR','2a':'2a — Rev. sist. de coortes',
+  '2b':'2b — Coorte','3a':'3a — Rev. sist. caso-controle','3b':'3b — Caso-controle',
+  '4':'4 — Série de casos','5':'5 — Opinião/consenso'
+};
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderFichaList(){
+  const search = el('searchInput').value.trim().toLowerCase();
+  const evidFilter = el('filterEvidencia').value;
+  let list = fichas.filter(f => activeTemaId === 'ALL' || f.tema === activeTemaId);
+  if(evidFilter) list = list.filter(f => f.nivelEvidencia === evidFilter);
+  if(search){
+    list = list.filter(f => {
+      const tags = (f.tags||[]).join(' ').toLowerCase();
+      return (f.titulo||'').toLowerCase().includes(search) ||
+             (f.autores||'').toLowerCase().includes(search) ||
+             tags.includes(search);
+    });
+  }
+  if(list.length === 0){
+    el('fichaListContainer').innerHTML = '<div class="empty-state">Nenhuma ficha encontrada. Clique em "+ Nova ficha" para começar.</div>';
+    return;
+  }
+  const temaMap = {}; temas.forEach(t => temaMap[t.id] = t.nome);
+  el('fichaListContainer').innerHTML = list.map(f => `
+    <div class="ficha-card" data-id="${f.id}">
+      <h3>${escapeHtml(f.titulo)}</h3>
+      <div class="ficha-meta">${escapeHtml(f.autores||'')}${f.ano?' · '+f.ano:''}${f.revista?' · '+escapeHtml(f.revista):''}</div>
+      <div class="chip-row">
+        ${f.nivelEvidencia ? `<span class="chip evid">${EVID_LABEL[f.nivelEvidencia]}</span>` : ''}
+        ${temaMap[f.tema] ? `<span class="chip tema">${escapeHtml(temaMap[f.tema])}</span>` : ''}
+        ${(f.tags||[]).map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+  el('fichaListContainer').querySelectorAll('.ficha-card').forEach(card => {
+    card.addEventListener('click', () => openFichaModal(card.dataset.id));
+  });
+}
+
+el('searchInput').addEventListener('input', renderFichaList);
+el('filterEvidencia').addEventListener('change', renderFichaList);
+
+// ---------- Ficha modal ----------
+function renderFichaForm_TemaOptions(){
+  el('f_tema').innerHTML = temas.map(t => `<option value="${t.id}">${escapeHtml(t.nome)}</option>`).join('');
+}
+
+function openFichaModal(id){
+  editingFichaId = id || null;
+  const f = id ? fichas.find(x => x.id === id) : null;
+  el('fichaModalTitle').textContent = f ? 'Ficha de leitura' : 'Nova ficha de leitura';
+  el('f_titulo').value = f?.titulo || '';
+  el('f_autores').value = f?.autores || '';
+  el('f_ano').value = f?.ano || '';
+  el('f_revista').value = f?.revista || '';
+  el('f_link').value = f?.link || '';
+  if(temas.length && !f) el('f_tema').value = activeTemaId !== 'ALL' ? activeTemaId : temas[0].id;
+  if(f) el('f_tema').value = f.tema;
+  el('f_evidencia').value = f?.nivelEvidencia || '1b';
+  el('f_objetivo').value = f?.objetivo || '';
+  el('f_metodos').value = f?.metodos || '';
+  el('f_resultados').value = f?.resultados || '';
+  el('f_aplicacao').value = f?.aplicacaoClinica || '';
+  el('f_anotacoes').value = f?.anotacoes || '';
+  el('f_tags').value = (f?.tags || []).join(', ');
+  el('btnDeleteFicha').classList.toggle('hidden', !f);
+  el('fichaModalOverlay').classList.remove('hidden');
+}
+
+function closeFichaModal(){
+  el('fichaModalOverlay').classList.add('hidden');
+  editingFichaId = null;
+}
+
+el('btnNewFicha').addEventListener('click', () => {
+  if(temas.length === 0){
+    alert('Crie um tema primeiro (barra lateral).');
+    return;
+  }
+  openFichaModal(null);
+});
+el('btnCloseFichaModal').addEventListener('click', closeFichaModal);
+el('btnCloseFichaModal2').addEventListener('click', closeFichaModal);
+
+el('btnSaveFicha').addEventListener('click', async () => {
+  const titulo = el('f_titulo').value.trim();
+  const temaId = el('f_tema').value;
+  if(!titulo || !temaId){
+    alert('Preencha ao menos Título e Tema.');
+    return;
+  }
+  const data = {
+    titulo,
+    autores: el('f_autores').value.trim(),
+    ano: el('f_ano').value ? Number(el('f_ano').value) : null,
+    revista: el('f_revista').value.trim(),
+    link: el('f_link').value.trim(),
+    tema: temaId,
+    nivelEvidencia: el('f_evidencia').value,
+    objetivo: el('f_objetivo').value.trim(),
+    metodos: el('f_metodos').value.trim(),
+    resultados: el('f_resultados').value.trim(),
+    aplicacaoClinica: el('f_aplicacao').value.trim(),
+    anotacoes: el('f_anotacoes').value.trim(),
+    tags: el('f_tags').value.split(',').map(t => t.trim()).filter(Boolean)
+  };
+  if(editingFichaId){
+    await updateDoc(doc(db, 'users', currentUser.uid, 'artigos', editingFichaId), data);
+  } else {
+    data.criadoEm = serverTimestamp();
+    await addDoc(collection(db, 'users', currentUser.uid, 'artigos'), data);
+  }
+  closeFichaModal();
+});
+
+el('btnDeleteFicha').addEventListener('click', async () => {
+  if(!editingFichaId) return;
+  if(!confirm('Excluir esta ficha de leitura?')) return;
+  await deleteDoc(doc(db, 'users', currentUser.uid, 'artigos', editingFichaId));
+  closeFichaModal();
+});
+
+// ---------- Backup export / import ----------
+el('btnExport').addEventListener('click', async () => {
+  const backup = { temas, fichas, exportadoEm: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backup_fichas_reumatologia_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+el('btnImport').addEventListener('click', () => el('importFileInput').click());
+el('importFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const text = await file.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch(err){ alert('Arquivo inválido.'); return; }
+  if(!confirm(`Importar ${data.temas?.length||0} temas e ${data.fichas?.length||0} fichas? Isso adiciona aos dados existentes (não apaga nada).`)) return;
+
+  const temaIdMap = {};
+  const existingByName = {}; temas.forEach(t => existingByName[t.nome] = t.id);
+  for(const t of (data.temas||[])){
+    if(existingByName[t.nome]){ temaIdMap[t.id] = existingByName[t.nome]; continue; }
+    const ref = await addDoc(collection(db, 'users', currentUser.uid, 'temas'), { nome: t.nome, criadoEm: serverTimestamp() });
+    temaIdMap[t.id] = ref.id;
+  }
+  for(const f of (data.fichas||[])){
+    const { id, criadoEm, ...rest } = f;
+    rest.tema = temaIdMap[f.tema] || f.tema;
+    await addDoc(collection(db, 'users', currentUser.uid, 'artigos'), { ...rest, criadoEm: serverTimestamp() });
+  }
+  alert('Importação concluída.');
+  e.target.value = '';
+});
+</script>
+</body>
+</html>
