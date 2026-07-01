@@ -401,7 +401,6 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
       <!-- Enzimas musculares (apenas miopatias) -->
       <div class="numeric-inline lab-miopatia" style="display:none"><label>CPK (U/L):</label><input type="number" id="f-cpk" min="10" max="50000" placeholder="10–50000"></div>
 
-      <div class="numeric-inline lab-miopatia" style="display:none"><label>DHL (U/L):</label><input type="number" id="f-dhl" min="0" max="10000" placeholder="U/L"></div>
     </div>
   </div>
 
@@ -856,7 +855,7 @@ const COMORBIDADES = [
   'Baixa acuidade visual','Catarata',
   'DAC','DAOP','Depressão','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn','Doença de Sjogren',
   'DPI','DPOC','DRC','DRGE',
-  'Endometriose','Epilepsia','FA','Fibromialgia','Glaucoma','HAS',
+  'Endometriose','Epilepsia','Esquizofrenia','FA','Fibromialgia','Glaucoma','HAS',
   'Hiperparatireoidismo','Hiperprolactinemia','Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo',
   'HPB','IAM','ICFEP','ICFER',
   'Lombalgia crônica','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Neuropatia periférica',
@@ -868,25 +867,25 @@ const MED_CONTINUAS = [
   'Ambrisentana','Amiodarona','Amitriptilina','Anlodipino','Anticoncepcional oral','Apixabana','Atenolol','Atorvastatina',
   'B2+GC inalatório','Bactrim','Bisoprolol','Bosentana','Bromoprida','Budesonida nasal',
   'Cabergolina','Calcitriol','Canaglifozina','Candesartana','Captopril','Carbamazepina','Carbonato de cálcio','Carvedilol',
-  'Ciclobenzaprina','Cinacalcet','Citrato de cálcio','Clonazepam','Clonidina','Clopidogrel','Clortalidona',
+  'Ciclobenzaprina','Cinacalcet','Citrato de cálcio','Clonazepam','Clonidina','Clopidogrel','Clorpromazina','Clortalidona',
   'Codeína','Colchicina','Colecalciferol','Colírio','Creme',
   'Dabigatrana','Dapaglifozina','Dapsona','Denosumabe','Desvenlafaxina','Difenidramina','Dipirona',
   'Domperidona','Doxazosina','Duloxetina',
   'Empaglifozina','Enalapril','Eritropoetina','Escitalopram','Espironolactona','Ezetimiba',
-  'Finasterida','Fluconazol','Fluoxetina','Furosemida',
+  'Fenobarbital','Finasterida','Fluconazol','Fluoxetina','Furosemida',
   'Gabapentina','Glibenclamida','Gliclazida','Glimepirida',
   'Hidralazina','Hidroclorotiazida','Hixizine',
-  'Indapamida','Insulina',
-  'Lamotrigina','Levotiroxina','Liraglutida','Loperamida','Loratadina','Losartana',
+  'Indapamida','Insulina','Isossorbida',
+  'Lacosamida','Lamotrigina','Levetiracetam','Levotiroxina','Liraglutida','Loperamida','Loratadina','Losartana',
   'Metadona','Metformina','Metildopa','Metoclopramida','Metoprolol','Mirtazapina',
   'Nebivolol','Nifedipino','Nortriptilina',
   'Omeprazol','Ondansetrona',
   'Pantoprazol','Paracetamol','Pioglitazona','Pregabalina','Propranolol',
-  'Quetiapina','Ramipril','Risedronato de sódio','Rivaroxabana','Romosozumabe','Rosuvastatina',
+  'Quetiapina','Ramipril','Risedronato de sódio','Risperidona','Rivaroxabana','Romosozumabe','Rosuvastatina',
   'Salbutamol','Semaglutida','Sertralina','Sevelamer','Sildenafil','Sinvastatina','Sulfato ferroso',
   'Tamoxifeno','Tansulosina','Tapazol','Teriparatida','Ticagrelor','Topiramato','Tramadol',
   'Valsartana','Varfarina','Venlafaxina','Vitamina B12','Vitamina B6',
-  'Ziprasidona'
+  'Ziprasidona','Zolpidem'
 ];
 const REACAO_DMARD = [...CS_DMARD,...B_DMARD,...TS_DMARD].filter((v,i,a)=>a.indexOf(v)===i).sort();
 
@@ -896,7 +895,7 @@ const ESTADO_CIVIL = ['Casado','Divorciado','Solteiro','União estável','Viúvo
 const FILHOS = ['Sem filhos','1','2','3','4','5','6 ou mais'];
 const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto','Ensino Fundamental completo','Ensino Médio incompleto','Ensino Médio completo','Ensino Superior incompleto','Ensino Superior completo','Pós-graduação'];
 const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
-const OCUPACAO = ['Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de creche','Auxiliar de limpeza','Balconista','Cabeleireiro','Comercial corporativo','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Entregador','Faxineiro','Garçom','Gerente de vendas','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Representante comercial','Segurança','Técnico de enfermagem','Vendedora de loja','Zelador'];
+const OCUPACAO = ['Advogado','Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de creche','Auxiliar de limpeza','Balconista','Cabeleireiro','Comercial corporativo','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Entregador','Faxineiro','Garçom','Gerente de vendas','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Representante comercial','Segurança','Técnico de enfermagem','Vendedora de loja','Zelador'];
 const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
 const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
 const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
@@ -2029,8 +2028,8 @@ function updateLabFields(doenca) {
   document.getElementById('lab-hint').style.display = doenca ? 'none' : 'block';
   // Limpa campos que ficaram ocultos para não persistir dados inconsistentes
   if (isMio) { document.getElementById('f-vhs').value=''; document.getElementById('f-pcr').value=''; document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; document.getElementById('f-dsdna').value=''; }
-  if (isLup) { document.getElementById('f-cpk').value=''; document.getElementById('f-dhl').value=''; }
-  if (!isMio && !isLup) { document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; document.getElementById('f-dsdna').value=''; document.getElementById('f-cpk').value=''; document.getElementById('f-dhl').value=''; }
+  if (isLup) { document.getElementById('f-cpk').value=''; }
+  if (!isMio && !isLup) { document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; document.getElementById('f-dsdna').value=''; document.getElementById('f-cpk').value=''; }
 }
 
 function classifyDAS28(v) {
@@ -2542,8 +2541,6 @@ function savePatient() {
     c4: document.getElementById('f-c4').value,
     dsdna: document.getElementById('f-dsdna').value,
     cpk: document.getElementById('f-cpk').value,
-
-    dhl: document.getElementById('f-dhl').value,
     das28: document.getElementById('f-das28').value,
     asdas: document.getElementById('f-asdas').value,
     sledai: document.getElementById('f-sledai').value,
@@ -2661,7 +2658,7 @@ function clearForm() {
   setDateInput('f-nascimento',''); setDateInput('f-inicio-seg',''); setDateInput('f-entrevista','');
   document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
-  ['f-vhs','f-pcr','f-c3','f-c4','f-dsdna','f-cpk','f-dhl','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
+  ['f-vhs','f-pcr','f-c3','f-c4','f-dsdna','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
     document.getElementById(id).value = '';
   });
   // Reset campos de laboratório para estado padrão (sem doença selecionada)
@@ -2852,8 +2849,6 @@ function editPatient(idx) {
     document.getElementById('f-c4').value = p.c4 || '';
     document.getElementById('f-dsdna').value = p.dsdna || '';
     document.getElementById('f-cpk').value = p.cpk || '';
-
-    document.getElementById('f-dhl').value = p.dhl || '';
     document.getElementById('f-das28').value = p.das28 || '';
     document.getElementById('f-asdas').value = p.asdas || '';
     document.getElementById('f-sledai').value = p.sledai || '';
@@ -3597,9 +3592,7 @@ function renderStats() {
     + numericCard('Q12 · C3', numStat(db,'c3'), 'mg/dL')
     + numericCard('Q12 · C4', numStat(db,'c4'), 'mg/dL')
     + numericCard('Q12 · Anti-dsDNA', numStat(db,'dsdna'), 'UI/mL')
-    + numericCard('Q12 · CPK', numStat(db,'cpk'), 'U/L')
-
-    + numericCard('Q12 · DHL', numStat(db,'dhl'), 'U/L');
+    + numericCard('Q12 · CPK', numStat(db,'cpk'), 'U/L');
   ap(labGrid);
 
   // ── SEÇÃO 4: MÉTRICAS ──
