@@ -15,10 +15,7 @@ nav button:hover{background:rgba(255,255,255,.3)}
 
 .hidden{display:none !important}
 
-/* Centered screens (config / login) */
-.center-screen{max-width:480px;margin:60px auto;padding:0 16px}
 .section-card{background:#fff;border-radius:10px;padding:20px 24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.section-title{font-size:13px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e8f0fc}
 .field-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .field-group label{font-size:12px;font-weight:600;color:#4a5568}
 .field-group input,.field-group select,.field-group textarea{border:1px solid #cbd5e0;border-radius:6px;padding:8px 10px;font-size:13px;width:100%;background:#fafafa;font-family:inherit}
@@ -32,13 +29,6 @@ nav button:hover{background:rgba(255,255,255,.3)}
 .btn-secondary:hover{background:#d5e5fb}
 .btn-danger{background:#fff;color:#c53030;border:1px solid #feb2b2;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
 .btn-danger:hover{background:#fff5f5}
-.btn-link{background:none;border:none;color:#1a56a0;cursor:pointer;font-size:12px;text-decoration:underline;padding:4px 0}
-.msg{font-size:12px;padding:8px 10px;border-radius:6px;margin-top:8px}
-.msg.err{background:#fff5f5;color:#c53030;border:1px solid #feb2b2}
-.msg.ok{background:#f0fff4;color:#276749;border:1px solid #9ae6b4}
-
-pre.rules{background:#1a202c;color:#e2e8f0;padding:12px;border-radius:8px;font-size:11px;overflow-x:auto;line-height:1.5;margin-top:8px}
-.help-steps{font-size:12.5px;color:#4a5568;line-height:1.7;margin:8px 0 4px 18px}
 
 /* App layout */
 #app{display:flex;min-height:calc(100vh - 54px)}
@@ -69,10 +59,6 @@ pre.rules{background:#1a202c;color:#e2e8f0;padding:12px;border-radius:8px;font-s
 .chip.evid{background:#e8f0fc;color:#1a56a0;font-weight:600}
 .chip.tema{background:#f0fff4;color:#276749}
 
-.ficha-detail p{font-size:12.5px;margin-bottom:2px}
-.ficha-detail .lbl{font-size:11px;font-weight:700;text-transform:uppercase;color:#1a56a0;letter-spacing:.4px;margin-top:12px;margin-bottom:3px}
-.ficha-detail .val{font-size:13px;color:#2d3748;white-space:pre-wrap;line-height:1.5}
-
 /* Modal */
 .overlay{position:fixed;inset:0;background:rgba(26,32,44,.5);display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;z-index:200}
 .modal{background:#fff;border-radius:12px;max-width:640px;width:100%;padding:24px 28px;margin-bottom:40px}
@@ -89,69 +75,16 @@ footer.app-footer{text-align:center;padding:16px;font-size:11px;color:#a0aec0}
 <header>
   <div>
     <h1>Fichas de Leitura – Reumatologia</h1>
-    <div class="sub" id="userLabel"></div>
+    <div class="sub">Dados salvos apenas neste navegador — faça backup regularmente</div>
   </div>
-  <nav id="topNav" class="hidden">
+  <nav>
     <button id="btnExport">Exportar backup</button>
     <button id="btnImport">Importar backup</button>
-    <button id="btnLogout">Sair</button>
   </nav>
 </header>
 
-<!-- CONFIGURAÇÃO DO FIREBASE -->
-<div id="configScreen" class="center-screen hidden">
-  <div class="section-card">
-    <div class="section-title">Configuração inicial (uma única vez)</div>
-    <p style="font-size:12.5px;color:#4a5568;line-height:1.6;margin-bottom:10px">
-      Este app guarda suas fichas de leitura no seu próprio projeto Firebase (gratuito),
-      então você acessa de qualquer computador ou celular com o mesmo login.
-    </p>
-    <div class="help-steps">
-      1. Acesse o <b>Firebase Console</b> e crie um projeto novo.<br>
-      2. Em <b>Build → Firestore Database</b>, crie o banco (modo produção).<br>
-      3. Em <b>Build → Authentication → Sign-in method</b>, ative <b>E-mail/senha</b>.<br>
-      4. Em <b>Configurações do projeto → Seus apps</b>, crie um app Web (ícone &lt;/&gt;) e copie o objeto <code>firebaseConfig</code>.<br>
-      5. Cole o objeto abaixo (JSON) e salve. Depois, nas regras do Firestore, use o texto sugerido mais abaixo.
-    </div>
-    <div class="field-group">
-      <label>Cole aqui o firebaseConfig (JSON)</label>
-      <textarea id="configInput" rows="8" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
-    </div>
-    <button class="btn-primary" id="btnSaveConfig">Salvar e continuar</button>
-    <div id="configMsg"></div>
-    <div class="section-title" style="margin-top:20px">Regras de segurança do Firestore (cole no console)</div>
-    <pre class="rules">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}</pre>
-  </div>
-</div>
-
-<!-- LOGIN / CADASTRO -->
-<div id="authScreen" class="center-screen hidden">
-  <div class="section-card">
-    <div class="section-title" id="authTitle">Entrar</div>
-    <div class="field-group">
-      <label>E-mail</label>
-      <input type="email" id="authEmail" autocomplete="username">
-    </div>
-    <div class="field-group">
-      <label>Senha</label>
-      <input type="password" id="authPassword" autocomplete="current-password">
-    </div>
-    <button class="btn-primary" id="btnAuthSubmit">Entrar</button>
-    <div id="authMsg"></div>
-    <button class="btn-link" id="btnAuthToggle" style="margin-top:10px">Ainda não tenho conta — criar agora</button>
-    <button class="btn-link" id="btnEditConfig">Alterar configuração do Firebase</button>
-  </div>
-</div>
-
 <!-- APP PRINCIPAL -->
-<div id="app" class="hidden">
+<div id="app">
   <div style="display:flex;width:100%">
   <aside class="sidebar">
     <h2>Temas</h2>
@@ -180,7 +113,7 @@ service cloud.firestore {
     <div id="fichaListContainer"></div>
   </div>
   </div>
-  <footer class="app-footer">Uso pessoal — dados armazenados no seu projeto Firebase.</footer>
+  <footer class="app-footer">Uso pessoal — dados armazenados apenas neste navegador (localStorage). Se limpar os dados do navegador, use um backup exportado para restaurar.</footer>
 </div>
 
 <!-- MODAL FICHA (criar/editar/ver) -->
@@ -265,151 +198,35 @@ service cloud.firestore {
 
 <input type="file" id="importFileInput" accept="application/json" class="hidden">
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp, setDoc, getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const CONFIG_KEY = 'reumato_firebase_config';
+<script>
+const STORAGE_KEY = 'reumato_estudos_data';
 const el = id => document.getElementById(id);
 
-let app, auth, db, currentUser = null;
 let temas = [];      // {id, nome}
 let fichas = [];     // {id, tema, titulo, ...}
 let activeTemaId = 'ALL';
 let editingFichaId = null;
-let unsubTemas = null, unsubFichas = null;
-let isSignUp = false;
 
-function showScreen(name){
-  el('configScreen').classList.toggle('hidden', name !== 'config');
-  el('authScreen').classList.toggle('hidden', name !== 'auth');
-  el('app').classList.toggle('hidden', name !== 'app');
-  el('topNav').classList.toggle('hidden', name !== 'app');
+function genId(){
+  return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
 }
 
-function loadStoredConfig(){
-  const raw = localStorage.getItem(CONFIG_KEY);
-  if(!raw) return null;
-  try { return JSON.parse(raw); } catch(e){ return null; }
-}
-
-function initFirebase(config){
-  app = initializeApp(config);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  onAuthStateChanged(auth, user => {
-    currentUser = user;
-    if(user){
-      el('userLabel').textContent = user.email;
-      showScreen('app');
-      attachListeners(user.uid);
-    } else {
-      if(unsubTemas) unsubTemas();
-      if(unsubFichas) unsubFichas();
-      temas = []; fichas = [];
-      showScreen('auth');
-    }
-  });
-}
-
-// ---------- Config screen ----------
-const storedConfig = loadStoredConfig();
-if(storedConfig){
-  try { initFirebase(storedConfig); } catch(e){ console.error(e); showScreen('config'); }
-} else {
-  showScreen('config');
-}
-
-el('btnSaveConfig').addEventListener('click', () => {
-  const raw = el('configInput').value.trim();
-  let parsed;
-  try { parsed = JSON.parse(raw); }
-  catch(e){
-    el('configMsg').innerHTML = '<div class="msg err">JSON inválido. Confira se copiou o objeto completo do Firebase.</div>';
-    return;
-  }
-  if(!parsed.apiKey || !parsed.projectId){
-    el('configMsg').innerHTML = '<div class="msg err">Faltam campos obrigatórios (apiKey, projectId).</div>';
-    return;
-  }
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(parsed));
+function loadData(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return;
   try {
-    initFirebase(parsed);
-    el('configMsg').innerHTML = '<div class="msg ok">Configuração salva!</div>';
-  } catch(e){
-    el('configMsg').innerHTML = '<div class="msg err">Erro ao iniciar Firebase: '+e.message+'</div>';
-  }
-});
-
-el('btnEditConfig').addEventListener('click', () => showScreen('config'));
-
-// ---------- Auth screen ----------
-el('btnAuthToggle').addEventListener('click', () => {
-  isSignUp = !isSignUp;
-  el('authTitle').textContent = isSignUp ? 'Criar conta' : 'Entrar';
-  el('btnAuthSubmit').textContent = isSignUp ? 'Criar conta' : 'Entrar';
-  el('btnAuthToggle').textContent = isSignUp ? 'Já tenho conta — entrar' : 'Ainda não tenho conta — criar agora';
-});
-
-el('btnAuthSubmit').addEventListener('click', async () => {
-  const email = el('authEmail').value.trim();
-  const password = el('authPassword').value;
-  el('authMsg').innerHTML = '';
-  if(!email || !password){
-    el('authMsg').innerHTML = '<div class="msg err">Preencha e-mail e senha.</div>';
-    return;
-  }
-  try {
-    if(isSignUp){
-      await createUserWithEmailAndPassword(auth, email, password);
-    } else {
-      await signInWithEmailAndPassword(auth, email, password);
-    }
-  } catch(e){
-    el('authMsg').innerHTML = '<div class="msg err">'+translateAuthError(e.code)+'</div>';
-  }
-});
-
-function translateAuthError(code){
-  const map = {
-    'auth/invalid-email': 'E-mail inválido.',
-    'auth/user-not-found': 'Usuário não encontrado.',
-    'auth/wrong-password': 'Senha incorreta.',
-    'auth/invalid-credential': 'E-mail ou senha incorretos.',
-    'auth/email-already-in-use': 'Este e-mail já está cadastrado. Tente entrar.',
-    'auth/weak-password': 'A senha precisa ter ao menos 6 caracteres.'
-  };
-  return map[code] || ('Erro: ' + code);
+    const parsed = JSON.parse(raw);
+    temas = parsed.temas || [];
+    fichas = parsed.fichas || [];
+  } catch(e){ console.error('Dados salvos corrompidos, iniciando vazio.', e); }
 }
 
-el('btnLogout').addEventListener('click', () => signOut(auth));
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ temas, fichas }));
+}
 
-// ---------- Firestore listeners ----------
-function attachListeners(uid){
-  if(unsubTemas) unsubTemas();
-  if(unsubFichas) unsubFichas();
-
-  const temasQ = query(collection(db, 'users', uid, 'temas'), orderBy('nome'));
-  unsubTemas = onSnapshot(temasQ, snap => {
-    temas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTemaList();
-    renderFichaForm_TemaOptions();
-    renderFichaList();
-  });
-
-  const fichasQ = query(collection(db, 'users', uid, 'artigos'), orderBy('criadoEm', 'desc'));
-  unsubFichas = onSnapshot(fichasQ, snap => {
-    fichas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTemaList();
-    renderFichaList();
-  });
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 // ---------- Temas ----------
@@ -432,12 +249,16 @@ function renderTemaList(){
   });
 }
 
-el('btnAddTema').addEventListener('click', async () => {
+el('btnAddTema').addEventListener('click', () => {
   const input = el('newTemaInput');
   const nome = input.value.trim();
-  if(!nome || !currentUser) return;
-  await addDoc(collection(db, 'users', currentUser.uid, 'temas'), { nome, criadoEm: serverTimestamp() });
+  if(!nome) return;
+  temas.push({ id: genId(), nome });
+  temas.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  saveData();
   input.value = '';
+  renderTemaList();
+  renderFichaForm_TemaOptions();
 });
 el('newTemaInput').addEventListener('keydown', e => { if(e.key === 'Enter') el('btnAddTema').click(); });
 
@@ -447,10 +268,6 @@ const EVID_LABEL = {
   '2b':'2b — Coorte','3a':'3a — Rev. sist. caso-controle','3b':'3b — Caso-controle',
   '4':'4 — Série de casos','5':'5 — Opinião/consenso'
 };
-
-function escapeHtml(s){
-  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
 
 function renderFichaList(){
   const search = el('searchInput').value.trim().toLowerCase();
@@ -531,7 +348,7 @@ el('btnNewFicha').addEventListener('click', () => {
 el('btnCloseFichaModal').addEventListener('click', closeFichaModal);
 el('btnCloseFichaModal2').addEventListener('click', closeFichaModal);
 
-el('btnSaveFicha').addEventListener('click', async () => {
+el('btnSaveFicha').addEventListener('click', () => {
   const titulo = el('f_titulo').value.trim();
   const temaId = el('f_tema').value;
   if(!titulo || !temaId){
@@ -554,23 +371,31 @@ el('btnSaveFicha').addEventListener('click', async () => {
     tags: el('f_tags').value.split(',').map(t => t.trim()).filter(Boolean)
   };
   if(editingFichaId){
-    await updateDoc(doc(db, 'users', currentUser.uid, 'artigos', editingFichaId), data);
+    const idx = fichas.findIndex(f => f.id === editingFichaId);
+    if(idx !== -1) fichas[idx] = { ...fichas[idx], ...data };
   } else {
-    data.criadoEm = serverTimestamp();
-    await addDoc(collection(db, 'users', currentUser.uid, 'artigos'), data);
+    data.id = genId();
+    data.criadoEm = new Date().toISOString();
+    fichas.unshift(data);
   }
+  saveData();
+  renderTemaList();
+  renderFichaList();
   closeFichaModal();
 });
 
-el('btnDeleteFicha').addEventListener('click', async () => {
+el('btnDeleteFicha').addEventListener('click', () => {
   if(!editingFichaId) return;
   if(!confirm('Excluir esta ficha de leitura?')) return;
-  await deleteDoc(doc(db, 'users', currentUser.uid, 'artigos', editingFichaId));
+  fichas = fichas.filter(f => f.id !== editingFichaId);
+  saveData();
+  renderTemaList();
+  renderFichaList();
   closeFichaModal();
 });
 
 // ---------- Backup export / import ----------
-el('btnExport').addEventListener('click', async () => {
+el('btnExport').addEventListener('click', () => {
   const backup = { temas, fichas, exportadoEm: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -593,19 +418,33 @@ el('importFileInput').addEventListener('change', async (e) => {
 
   const temaIdMap = {};
   const existingByName = {}; temas.forEach(t => existingByName[t.nome] = t.id);
-  for(const t of (data.temas||[])){
-    if(existingByName[t.nome]){ temaIdMap[t.id] = existingByName[t.nome]; continue; }
-    const ref = await addDoc(collection(db, 'users', currentUser.uid, 'temas'), { nome: t.nome, criadoEm: serverTimestamp() });
-    temaIdMap[t.id] = ref.id;
-  }
-  for(const f of (data.fichas||[])){
-    const { id, criadoEm, ...rest } = f;
+  (data.temas||[]).forEach(t => {
+    if(existingByName[t.nome]){ temaIdMap[t.id] = existingByName[t.nome]; return; }
+    const newId = genId();
+    temas.push({ id: newId, nome: t.nome });
+    temaIdMap[t.id] = newId;
+    existingByName[t.nome] = newId;
+  });
+  (data.fichas||[]).forEach(f => {
+    const { id, ...rest } = f;
+    rest.id = genId();
     rest.tema = temaIdMap[f.tema] || f.tema;
-    await addDoc(collection(db, 'users', currentUser.uid, 'artigos'), { ...rest, criadoEm: serverTimestamp() });
-  }
+    rest.criadoEm = new Date().toISOString();
+    fichas.unshift(rest);
+  });
+  saveData();
+  renderTemaList();
+  renderFichaForm_TemaOptions();
+  renderFichaList();
   alert('Importação concluída.');
   e.target.value = '';
 });
+
+// ---------- Init ----------
+loadData();
+renderTemaList();
+renderFichaForm_TemaOptions();
+renderFichaList();
 </script>
 </body>
 </html>
