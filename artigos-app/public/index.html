@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organizador de Artigos Científicos</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>📚 Organizador de Artigos Científicos</h1>
+  <nav>
+    <button class="tab-btn active" data-tab="upload">Upload</button>
+    <button class="tab-btn" data-tab="library">Biblioteca</button>
+    <button class="tab-btn" data-tab="ask">Perguntas</button>
+  </nav>
+</header>
+
+<main>
+  <!-- UPLOAD -->
+  <section id="tab-upload" class="tab active">
+    <div class="card">
+      <h2>Enviar artigos (PDF)</h2>
+      <div id="dropzone" class="dropzone">
+        <p>Arraste arquivos PDF aqui ou clique para selecionar</p>
+        <input type="file" id="fileInput" accept="application/pdf" multiple hidden>
+      </div>
+      <ul id="uploadList" class="upload-list"></ul>
+    </div>
+  </section>
+
+  <!-- LIBRARY -->
+  <section id="tab-library" class="tab">
+    <div class="card">
+      <div class="lib-controls">
+        <input type="text" id="searchBox" placeholder="Buscar por título, doença, tema...">
+        <select id="diseaseFilter">
+          <option value="">Todas as doenças/temas</option>
+        </select>
+        <button id="refreshLibBtn" class="btn-secondary">Atualizar</button>
+      </div>
+      <div id="libraryList" class="library-list"></div>
+    </div>
+  </section>
+
+  <!-- ASK -->
+  <section id="tab-ask" class="tab">
+    <div class="card">
+      <h2>Pergunte sobre os artigos</h2>
+      <p class="hint">A resposta é gerada com base apenas nos artigos que você já enviou.</p>
+      <div class="ask-box">
+        <input type="text" id="questionInput" placeholder="Ex: Quais artigos falam sobre adesão ao tratamento na artrite reumatoide?">
+        <button id="askBtn" class="btn-primary">Perguntar</button>
+      </div>
+      <div id="askHistory" class="ask-history"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Article detail modal -->
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal">
+    <button id="modalClose" class="modal-close">&times;</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
