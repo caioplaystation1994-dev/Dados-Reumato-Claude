@@ -27,10 +27,12 @@ router.post('/', async (req, res) => {
   const question = (req.body && req.body.question || '').trim();
   if (!question) return res.status(400).json({ error: 'Envie uma pergunta no campo "question".' });
 
-  const total = db.prepare(`SELECT COUNT(*) as c FROM articles WHERE status = 'concluido'`).get().c;
+  const total = db
+    .prepare(`SELECT COUNT(*) as c FROM articles WHERE full_text IS NOT NULL AND full_text != ''`)
+    .get().c;
   if (total === 0) {
     return res.json({
-      answer: 'Ainda nao ha artigos processados na biblioteca. Faca upload de artigos antes de perguntar.',
+      answer: 'Ainda nao ha artigos com texto extraido na biblioteca. Faca upload de artigos antes de perguntar.',
       sources: [],
     });
   }
@@ -42,10 +44,10 @@ router.post('/', async (req, res) => {
     try {
       candidates = db
         .prepare(
-          `SELECT a.id, a.title, a.disease, a.topics, a.summary, a.full_text
+          `SELECT a.id, COALESCE(a.title, a.original_name) as title, a.disease, a.topics, a.summary, a.full_text
            FROM articles_fts f
            JOIN articles a ON a.id = f.rowid
-           WHERE articles_fts MATCH ? AND a.status = 'concluido'
+           WHERE articles_fts MATCH ? AND a.full_text IS NOT NULL AND a.full_text != ''
            ORDER BY rank
            LIMIT 6`
         )
@@ -60,8 +62,8 @@ router.post('/', async (req, res) => {
   if (candidates.length === 0) {
     candidates = db
       .prepare(
-        `SELECT id, title, disease, topics, summary, full_text FROM articles
-         WHERE status = 'concluido' ORDER BY created_at DESC LIMIT 6`
+        `SELECT id, COALESCE(title, original_name) as title, disease, topics, summary, full_text FROM articles
+         WHERE full_text IS NOT NULL AND full_text != '' ORDER BY created_at DESC LIMIT 6`
       )
       .all();
   }

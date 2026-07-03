@@ -6,7 +6,6 @@ const multer = require('multer');
 const pdfParse = require('pdf-parse');
 
 const db = require('../db');
-const { classifyArticle } = require('../claude');
 
 const router = express.Router();
 
@@ -59,40 +58,28 @@ router.get('/:id/file', (req, res) => {
 router.post('/', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
 
-  const insert = db.prepare(
-    `INSERT INTO articles (filename, original_name, status) VALUES (?, ?, 'processando')`
-  );
-  const info = insert.run(req.file.filename, req.file.originalname);
-  const articleId = info.lastInsertRowid;
-
-  res.status(202).json({ id: articleId, status: 'processando' });
+  let fullText = '';
+  let status = 'pendente';
+  let error = null;
 
   try {
     const buffer = fs.readFileSync(path.join(UPLOAD_DIR, req.file.filename));
     const parsed = await pdfParse(buffer);
-    const fullText = parsed.text || '';
+    fullText = parsed.text || '';
 
     if (!fullText.trim()) {
       throw new Error('Nao foi possivel extrair texto do PDF (pode ser uma imagem digitalizada sem OCR).');
     }
-
-    const classification = await classifyArticle(fullText, req.file.originalname);
-
-    db.prepare(
-      `UPDATE articles SET title = ?, authors = ?, year = ?, disease = ?, topics = ?, summary = ?, full_text = ?, status = 'concluido', error = NULL WHERE id = ?`
-    ).run(
-      classification.title,
-      classification.authors,
-      classification.year,
-      classification.disease,
-      classification.topics,
-      classification.summary,
-      fullText,
-      articleId
-    );
   } catch (err) {
-    db.prepare(`UPDATE articles SET status = 'erro', error = ? WHERE id = ?`).run(String(err.message || err), articleId);
+    status = 'erro';
+    error = String(err.message || err);
   }
+
+  const info = db
+    .prepare(`INSERT INTO articles (filename, original_name, full_text, status, error) VALUES (?, ?, ?, ?, ?)`)
+    .run(req.file.filename, req.file.originalname, fullText, status, error);
+
+  res.status(201).json({ id: info.lastInsertRowid, status });
 });
 
 router.delete('/:id', (req, res) => {

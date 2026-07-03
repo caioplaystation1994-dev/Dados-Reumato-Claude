@@ -20,6 +20,7 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
 .upload-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:8px;background:#f7faff;border-left:4px solid #90cdf4}
 .upload-item.status-erro{border-left-color:#fc8181;background:#fff5f5}
 .upload-item.status-concluido{border-left-color:#68d391;background:#f0fff4}
+.upload-item.status-pendente{border-left-color:#f6ad55;background:#fffaf0}
 .upload-item .name{font-weight:600;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upload-item .status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#4a5568;flex-shrink:0}
 

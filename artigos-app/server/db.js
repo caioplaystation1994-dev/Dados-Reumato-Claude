@@ -6,7 +6,6 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const db = new Database(path.join(DATA_DIR, 'artigos.db'));
-db.pragma('journal_mode = WAL');
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS articles (
@@ -20,7 +19,7 @@ CREATE TABLE IF NOT EXISTS articles (
   topics TEXT,
   summary TEXT,
   full_text TEXT,
-  status TEXT NOT NULL DEFAULT 'processando',
+  status TEXT NOT NULL DEFAULT 'pendente',
   error TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

@@ -64,42 +64,21 @@ async function uploadFile(file) {
 
   try {
     const res = await fetch('/api/articles', { method: 'POST', body: formData });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha no upload.');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Falha no upload.');
+
+    if (data.status === 'erro') {
+      li.className = 'upload-item status-erro';
+      statusSpan.textContent = 'Erro na extração do texto do PDF.';
+    } else {
+      li.className = 'upload-item status-pendente';
+      statusSpan.textContent = 'Aguardando classificação';
     }
-    const data = await res.json();
-    statusSpan.textContent = 'Processando (IA)...';
-    pollArticle(data.id, li, statusSpan);
+    loadLibrary();
   } catch (err) {
     li.className = 'upload-item status-erro';
     statusSpan.textContent = 'Erro: ' + err.message;
   }
-}
-
-async function pollArticle(id, li, statusSpan) {
-  const maxAttempts = 40;
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
-    try {
-      const res = await fetch(`/api/articles/${id}`);
-      if (!res.ok) continue;
-      const article = await res.json();
-      if (article.status === 'concluido') {
-        li.className = 'upload-item status-concluido';
-        statusSpan.textContent = `Classificado: ${article.disease}`;
-        return;
-      }
-      if (article.status === 'erro') {
-        li.className = 'upload-item status-erro';
-        statusSpan.textContent = 'Erro: ' + (article.error || 'falha desconhecida');
-        return;
-      }
-    } catch (e) {
-      // ignore transient network errors, keep polling
-    }
-  }
-  statusSpan.textContent = 'Ainda processando... verifique na Biblioteca em instantes.';
 }
 
 // ---------- Library ----------
@@ -165,7 +144,11 @@ function renderLibrary() {
     const metaParts = [];
     if (a.authors) metaParts.push(a.authors);
     if (a.year) metaParts.push(a.year);
-    metaParts.push(a.status === 'concluido' ? 'Classificado' : a.status === 'erro' ? 'Erro no processamento' : 'Processando...');
+    metaParts.push(
+      a.status === 'concluido' ? 'Classificado' :
+      a.status === 'erro' ? 'Erro no processamento' :
+      'Aguardando classificação'
+    );
     meta.textContent = metaParts.join(' · ');
 
     const tags = document.createElement('div');
