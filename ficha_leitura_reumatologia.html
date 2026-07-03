@@ -212,7 +212,14 @@ function genId(){
 }
 
 function loadData(){
-  const raw = localStorage.getItem(STORAGE_KEY);
+  let raw;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch(e){
+    console.error('Armazenamento local indisponível:', e);
+    alert('Este navegador está bloqueando o armazenamento local para este arquivo.\n\nTente: 1) sair do modo privado/anônimo, ou 2) usar outro navegador (Chrome ou Edge).');
+    return;
+  }
   if(!raw) return;
   try {
     const parsed = JSON.parse(raw);
@@ -222,7 +229,14 @@ function loadData(){
 }
 
 function saveData(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ temas, fichas }));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ temas, fichas }));
+    return true;
+  } catch(e){
+    console.error('Falha ao salvar no armazenamento local:', e);
+    alert('Não foi possível salvar os dados neste navegador (armazenamento local bloqueado).\n\nIsso costuma acontecer em modo privado/anônimo, ou quando o navegador bloqueia armazenamento local para arquivos abertos direto do disco.\n\nTente: 1) sair do modo privado/anônimo, ou 2) usar outro navegador (Chrome ou Edge).');
+    return false;
+  }
 }
 
 function escapeHtml(s){
@@ -252,7 +266,10 @@ function renderTemaList(){
 el('btnAddTema').addEventListener('click', () => {
   const input = el('newTemaInput');
   const nome = input.value.trim();
-  if(!nome) return;
+  if(!nome){
+    alert('Digite um nome para o tema no campo de texto antes de clicar em "+".');
+    return;
+  }
   temas.push({ id: genId(), nome });
   temas.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   saveData();
