@@ -12,7 +12,7 @@ const outPath = path.resolve(process.argv[2] || path.join(__dirname, '..', '..',
 
 const articles = db
   .prepare(
-    `SELECT id, title, authors, year, disease, topics, summary, full_text, status, original_name
+    `SELECT id, title, authors, year, disease, topics, summary, detailed_summary, full_text, status, original_name
      FROM articles ORDER BY created_at DESC`
   )
   .all();
@@ -78,12 +78,20 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
 
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.active{display:flex}
-.modal{background:#fff;border-radius:10px;max-width:700px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;position:relative}
+.modal{background:#fff;border-radius:10px;max-width:780px;width:100%;max-height:88vh;overflow-y:auto;padding:28px 32px;position:relative}
 .modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:#718096}
-.modal h3{color:#1a56a0;margin-bottom:8px;font-size:16px}
+.modal h3{color:#1a56a0;margin-bottom:8px;font-size:17px;line-height:1.35;padding-right:24px}
 .modal .meta{font-size:12px;color:#718096;margin-bottom:12px}
+.modal .tags{margin-bottom:6px}
 .modal .section-label{font-size:11px;font-weight:700;text-transform:uppercase;color:#4a5568;margin:14px 0 4px;letter-spacing:.4px}
-.modal p{font-size:13px;line-height:1.55}
+.modal > p{font-size:13px;line-height:1.6;color:#2d3748}
+
+.summary-sections{display:flex;flex-direction:column;gap:16px;margin-top:18px}
+.summary-section{padding-bottom:2px}
+.summary-section h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a56a0;margin-bottom:7px;padding-bottom:6px;border-bottom:2px solid #e8f0fc}
+.summary-section p{font-size:13.5px;line-height:1.65;color:#2d3748;white-space:pre-wrap}
+.summary-section.critical{background:#fffaf0;border:1px solid #f6ad55;border-radius:8px;padding:14px 16px}
+.summary-section.critical h4{color:#c05621;border-bottom-color:#feebc8}
 
 @media (max-width:600px){
   main{padding:14px}
@@ -177,14 +185,18 @@ function populateDiseaseFilter() {
   });
 }
 
+function normalizeText(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+}
+
 function renderLibrary() {
-  const term = searchBox.value.trim().toLowerCase();
+  const term = normalizeText(searchBox.value.trim());
   const diseaseVal = diseaseFilter.value;
 
   const filtered = ARTICLES.filter((a) => {
     if (diseaseVal && a.disease !== diseaseVal) return false;
     if (!term) return true;
-    const haystack = [a.title, a.disease, a.topics, a.summary].join(' ').toLowerCase();
+    const haystack = normalizeText([a.title, a.disease, a.topics, a.summary, a.full_text].join(' '));
     return haystack.includes(term);
   });
 
@@ -247,6 +259,31 @@ function closeModal() {
   modalBody.innerHTML = '';
 }
 
+function renderSummaryBody(a) {
+  let sections = null;
+  if (a.detailed_summary) {
+    try {
+      const parsed = JSON.parse(a.detailed_summary);
+      if (Array.isArray(parsed) && parsed.length > 0) sections = parsed;
+    } catch (e) {
+      sections = null;
+    }
+  }
+
+  if (!sections) {
+    return '<div class="section-label">Resumo</div><p>' + escapeHtml(a.summary || 'Sem resumo disponível.') + '</p>';
+  }
+
+  const isCritical = (heading) => /cr[ií]tic|limita[cç][aã]o|vi[eé]s|qualidade da evid[eê]ncia/i.test(heading || '');
+
+  return '<div class="summary-sections">' + sections.map((s) =>
+    '<div class="summary-section' + (isCritical(s.heading) ? ' critical' : '') + '">' +
+      '<h4>' + escapeHtml(s.heading || '') + '</h4>' +
+      '<p>' + escapeHtml(s.text || '') + '</p>' +
+    '</div>'
+  ).join('') + '</div>';
+}
+
 function openModal(id) {
   const a = ARTICLES.find((x) => x.id === id);
   if (!a) return;
@@ -258,8 +295,7 @@ function openModal(id) {
       (a.disease ? '<span class="tag">' + escapeHtml(a.disease) + '</span>' : '') +
       (a.topics || '').split(',').map((s) => s.trim()).filter(Boolean).map((t) => '<span class="tag topic">' + escapeHtml(t) + '</span>').join('') +
     '</div>' +
-    '<div class="section-label">Resumo</div>' +
-    '<p>' + escapeHtml(a.summary || 'Sem resumo disponível.') + '</p>';
+    renderSummaryBody(a);
 
   modalOverlay.classList.add('active');
 }

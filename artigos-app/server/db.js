@@ -46,4 +46,9 @@ CREATE TRIGGER IF NOT EXISTS articles_au AFTER UPDATE ON articles BEGIN
 END;
 `);
 
+const columns = db.prepare('PRAGMA table_info(articles)').all().map((c) => c.name);
+if (!columns.includes('detailed_summary')) {
+  db.exec('ALTER TABLE articles ADD COLUMN detailed_summary TEXT');
+}
+
 module.exports = db;
