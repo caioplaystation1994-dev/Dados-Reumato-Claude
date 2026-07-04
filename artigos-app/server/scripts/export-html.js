@@ -42,18 +42,21 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
 .card h2{font-size:15px;color:#1a56a0;margin-bottom:12px}
 .hint{font-size:12px;color:#718096;margin-bottom:14px}
 
-.lib-controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.lib-controls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .lib-controls input,.lib-controls select{flex:1;min-width:180px;border:1px solid #cbd5e0;border-radius:8px;padding:9px 14px;font-size:13px}
+.result-count{font-size:12px;color:#718096;margin-bottom:10px}
 
 .library-list{display:flex;flex-direction:column;gap:10px}
 .article-card{position:relative;padding:14px 16px;border-radius:8px;background:#f7faff;border:1px solid #e2e8f0;cursor:pointer;transition:.15s}
 .article-card:hover{border-color:#1a56a0;box-shadow:0 1px 6px rgba(0,0,0,.08)}
 .article-card .title{font-weight:700;font-size:13.5px;color:#1a202c;margin-bottom:4px}
+.article-card .tldr{font-size:12px;color:#4a5568;font-style:italic;margin-bottom:6px;line-height:1.4}
 .article-card .meta{font-size:11.5px;color:#718096;margin-bottom:6px}
 .article-card .tags{display:flex;gap:6px;flex-wrap:wrap}
 .tag{background:#1a56a0;color:#fff;font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:20px}
 .tag.topic{background:#e2e8f0;color:#2d3748}
 .empty-state{color:#a0aec0;text-align:center;padding:30px 0;font-size:13px}
+mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
 
 .btn-primary{background:#1a56a0;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
 .btn-primary:hover{background:#154180}
@@ -87,16 +90,26 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
 .modal .section-label{font-size:11px;font-weight:700;text-transform:uppercase;color:#4a5568;margin:14px 0 4px;letter-spacing:.4px}
 .modal > p{font-size:13px;line-height:1.6;color:#2d3748}
 
-.summary-sections{display:flex;flex-direction:column;gap:16px;margin-top:18px}
-.summary-section{padding-bottom:2px}
+.section-nav{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 4px;position:sticky;top:0;background:#fff;padding:8px 0;z-index:5}
+.section-nav-btn{background:#f0f4f8;border:1px solid #cbd5e0;color:#2d3748;font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;white-space:nowrap;transition:.15s}
+.section-nav-btn:hover{background:#e2e8f0;border-color:#1a56a0}
+
+.summary-sections{display:flex;flex-direction:column;gap:16px;margin-top:8px}
+.summary-section{padding-bottom:2px;scroll-margin-top:44px}
 .summary-section h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a56a0;margin-bottom:7px;padding-bottom:6px;border-bottom:2px solid #e8f0fc}
 .summary-section p{font-size:13.5px;line-height:1.65;color:#2d3748;white-space:pre-wrap}
 .summary-section.critical{background:#fffaf0;border:1px solid #f6ad55;border-radius:8px;padding:14px 16px}
 .summary-section.critical h4{color:#c05621;border-bottom-color:#feebc8}
+.summary-section.relevance{background:#f0fff4;border:1px solid #68d391;border-radius:8px;padding:14px 16px}
+.summary-section.relevance h4{color:#276749;border-bottom-color:#c6f6d5}
 
 .tag.secondary{background:#dbeafe;color:#1e3a8a}
 .tag.evidence{background:#5b21b6;color:#fff}
+.tag.evidence.ev-strong{background:#2f855a}
+.tag.evidence.ev-moderate{background:#2b6cb0}
+.tag.evidence.ev-narrative{background:#805ad5}
 .tag.applicability{background:#e6fffa;color:#065f46;border:1px solid #b2f5ea}
+.tag.muted{background:#edf2f7;color:#718096;font-weight:600}
 .subtopic-breadcrumb{font-size:11.5px;color:#4a5568;margin-bottom:6px}
 .subtopic-breadcrumb b{color:#1a56a0}
 
@@ -122,8 +135,10 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
 .related-box{margin-top:22px;border-top:1px solid #e2e8f0;padding-top:14px}
 .related-box .section-label{margin-bottom:8px}
 .related-list{display:flex;flex-direction:column;gap:6px}
-.related-item{font-size:12.5px;color:#1a56a0;cursor:pointer;padding:6px 10px;background:#f7faff;border-radius:6px;border:1px solid #e2e8f0}
+.related-item{cursor:pointer;padding:6px 10px;background:#f7faff;border-radius:6px;border:1px solid #e2e8f0}
 .related-item:hover{border-color:#1a56a0}
+.related-title{font-size:12.5px;color:#1a56a0;font-weight:600}
+.related-reason{font-size:11px;color:#718096;margin-top:2px}
 
 @media (max-width:600px){
   main{padding:14px}
@@ -157,8 +172,16 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
         <select id="collectionFilter">
           <option value="">Todas as coleções</option>
         </select>
+        <select id="sortSelect">
+          <option value="recent">Mais recentes</option>
+          <option value="title">Título (A-Z)</option>
+          <option value="year_desc">Ano (mais recente)</option>
+          <option value="year_asc">Ano (mais antigo)</option>
+          <option value="evidence">Força da evidência</option>
+        </select>
         <label class="lib-toggle"><input type="checkbox" id="favFilter"> ★ Só favoritos</label>
       </div>
+      <div id="resultCount" class="result-count"></div>
       <div id="libraryList" class="library-list"></div>
     </div>
   </section>
@@ -274,6 +297,8 @@ const evidenceFilter = document.getElementById('evidenceFilter');
 const applicabilityFilter = document.getElementById('applicabilityFilter');
 const collectionFilter = document.getElementById('collectionFilter');
 const favFilter = document.getElementById('favFilter');
+const sortSelect = document.getElementById('sortSelect');
+const resultCount = document.getElementById('resultCount');
 const libraryList = document.getElementById('libraryList');
 
 function populateFilters() {
@@ -329,21 +354,87 @@ function buildBreadcrumb(a) {
   return '<div class="subtopic-breadcrumb"><b>' + escapeHtml(a.disease || '') + '</b> › ' + escapeHtml(a.subtopic) + '</div>';
 }
 
+const EVIDENCE_RANK = {
+  'Ensaio Clínico Randomizado': 0,
+  'Revisão Sistemática/Metanálise': 1,
+  'Estudo de Coorte/Observacional': 2,
+  'Revisão Narrativa': 3,
+  'Protocolo de Estudo': 4,
+  'Bula/Documento Regulatório': 5,
+};
+
+function evidenceClass(level) {
+  if (!level) return '';
+  if (/Ensaio Cl[ií]nico Randomizado|Revis[aã]o Sistem[aá]tica/i.test(level)) return 'ev-strong';
+  if (/Coorte|Observacional/i.test(level)) return 'ev-moderate';
+  return 'ev-narrative';
+}
+
+function tldr(str, maxLen) {
+  if (!str) return '';
+  maxLen = maxLen || 200;
+  const match = str.match(/^[\\s\\S]*?[.!?](?=\\s|$)/);
+  let s = (match ? match[0] : str).trim();
+  if (s.length > maxLen) s = s.slice(0, maxLen).trim() + '…';
+  return s;
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
+}
+
+function highlightMatches(safeHtml, rawTerm) {
+  if (!rawTerm) return safeHtml;
+  try {
+    const re = new RegExp('(' + escapeRegex(rawTerm) + ')', 'gi');
+    return safeHtml.replace(re, '<mark>$1</mark>');
+  } catch (e) {
+    return safeHtml;
+  }
+}
+
+function slugify(str, idx) {
+  return 'sec-' + idx + '-' + (str || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
 function buildTagsHtml(a, opts) {
   opts = opts || {};
   let html = '';
   if (a.disease) html += '<span class="tag">' + escapeHtml(a.disease) + '</span>';
+  if (a.evidence_level) html += '<span class="tag evidence ' + evidenceClass(a.evidence_level) + '">' + escapeHtml(a.evidence_level) + '</span>';
+  if (opts.compact) {
+    const secCount = parseArr(a.secondary_diseases).length;
+    if (secCount > 0) html += '<span class="tag muted">+' + secCount + ' doença' + (secCount > 1 ? 's' : '') + '</span>';
+    return html;
+  }
   parseArr(a.secondary_diseases).forEach((d) => { html += '<span class="tag secondary">' + escapeHtml(d) + '</span>'; });
-  if (a.evidence_level) html += '<span class="tag evidence">' + escapeHtml(a.evidence_level) + '</span>';
   parseArr(a.clinical_applicability).forEach((c) => { html += '<span class="tag applicability">' + escapeHtml(c) + '</span>'; });
   const topics = (a.topics || '').split(',').map((s) => s.trim()).filter(Boolean);
-  const shownTopics = opts.compact ? topics.slice(0, 3) : topics;
-  shownTopics.forEach((t) => { html += '<span class="tag topic">' + escapeHtml(t) + '</span>'; });
+  topics.forEach((t) => { html += '<span class="tag topic">' + escapeHtml(t) + '</span>'; });
   return html;
 }
 
+function sortArticles(list, sortVal) {
+  const sorted = list.slice();
+  if (sortVal === 'title') {
+    sorted.sort((x, y) => (x.title || x.original_name || '').localeCompare(y.title || y.original_name || '', 'pt'));
+  } else if (sortVal === 'year_desc') {
+    sorted.sort((x, y) => (parseInt(y.year, 10) || 0) - (parseInt(x.year, 10) || 0));
+  } else if (sortVal === 'year_asc') {
+    sorted.sort((x, y) => (parseInt(x.year, 10) || 0) - (parseInt(y.year, 10) || 0));
+  } else if (sortVal === 'evidence') {
+    sorted.sort((x, y) => {
+      const rx = x.evidence_level in EVIDENCE_RANK ? EVIDENCE_RANK[x.evidence_level] : 99;
+      const ry = y.evidence_level in EVIDENCE_RANK ? EVIDENCE_RANK[y.evidence_level] : 99;
+      return rx - ry;
+    });
+  }
+  return sorted;
+}
+
 function renderLibrary() {
-  const term = normalizeText(searchBox.value.trim());
+  const rawTerm = searchBox.value.trim();
+  const term = normalizeText(rawTerm);
   const diseaseVal = diseaseFilter.value;
   const evidenceVal = evidenceFilter.value;
   const applicabilityVal = applicabilityFilter.value;
@@ -366,12 +457,18 @@ function renderLibrary() {
     return haystack.includes(term);
   });
 
+  resultCount.textContent = filtered.length === ARTICLES.length
+    ? filtered.length + ' artigo' + (filtered.length !== 1 ? 's' : '')
+    : filtered.length + ' de ' + ARTICLES.length + ' artigos';
+
   if (filtered.length === 0) {
     libraryList.innerHTML = '<div class="empty-state">Nenhum artigo encontrado.</div>';
     return;
   }
 
-  libraryList.innerHTML = filtered.map((a) => {
+  const sorted = sortArticles(filtered, sortSelect.value);
+
+  libraryList.innerHTML = sorted.map((a) => {
     const metaParts = [];
     if (a.authors) metaParts.push(a.authors);
     if (a.year) metaParts.push(a.year);
@@ -382,7 +479,8 @@ function renderLibrary() {
         '<button class="icon-btn fav-btn' + (isFavorite(a.id) ? ' fav-active' : '') + '" data-id="' + a.id + '" title="Favoritar">' + (isFavorite(a.id) ? '★' : '☆') + '</button>' +
         '<button class="icon-btn coll-btn" data-id="' + a.id + '" title="Adicionar à coleção">📁</button>' +
       '</div>' +
-      '<div class="title">' + escapeHtml(a.title || a.original_name) + '</div>' +
+      '<div class="title">' + highlightMatches(escapeHtml(a.title || a.original_name), rawTerm) + '</div>' +
+      (a.summary ? '<div class="tldr">' + highlightMatches(escapeHtml(tldr(a.summary)), rawTerm) + '</div>' : '') +
       buildBreadcrumb(a) +
       '<div class="meta">' + escapeHtml(metaParts.join(' · ')) + '</div>' +
       '<div class="tags">' + buildTagsHtml(a, { compact: true }) + '</div>' +
@@ -406,6 +504,7 @@ evidenceFilter.addEventListener('change', renderLibrary);
 applicabilityFilter.addEventListener('change', renderLibrary);
 collectionFilter.addEventListener('change', renderLibrary);
 favFilter.addEventListener('change', renderLibrary);
+sortSelect.addEventListener('change', renderLibrary);
 
 // ---------- Popover de coleções ----------
 const collectionsPopover = document.getElementById('collectionsPopover');
@@ -493,13 +592,24 @@ function renderSummaryBody(a) {
   }
 
   const isCritical = (heading) => /cr[ií]tic|limita[cç][aã]o|vi[eé]s|qualidade da evid[eê]ncia/i.test(heading || '');
+  const isRelevance = (heading) => /relev[aâ]ncia cl[ií]nica/i.test(heading || '');
 
-  return '<div class="summary-sections">' + sections.map((s) =>
-    '<div class="summary-section' + (isCritical(s.heading) ? ' critical' : '') + '">' +
+  const ids = sections.map((s, i) => slugify(s.heading, i));
+
+  const nav = sections.length > 1
+    ? '<div class="section-nav">' + sections.map((s, i) =>
+        '<button type="button" class="section-nav-btn" data-target="' + ids[i] + '">' + escapeHtml(s.heading || ('Seção ' + (i + 1))) + '</button>'
+      ).join('') + '</div>'
+    : '';
+
+  const body = '<div class="summary-sections">' + sections.map((s, i) =>
+    '<div class="summary-section' + (isCritical(s.heading) ? ' critical' : '') + (isRelevance(s.heading) ? ' relevance' : '') + '" id="' + ids[i] + '">' +
       '<h4>' + escapeHtml(s.heading || '') + '</h4>' +
       '<p>' + escapeHtml(s.text || '') + '</p>' +
     '</div>'
   ).join('') + '</div>';
+
+  return nav + body;
 }
 
 function computeRelatedArticles(a) {
@@ -508,22 +618,39 @@ function computeRelatedArticles(a) {
 
   const scored = ARTICLES.filter((x) => x.id !== a.id).map((x) => {
     let score = 0;
+    const reasons = [];
     const xDiseases = new Set([x.disease, ...parseArr(x.secondary_diseases)].filter(Boolean));
-    xDiseases.forEach((d) => { if (aDiseases.has(d)) score += 3; });
-    if (a.subtopic && x.subtopic && a.subtopic === x.subtopic) score += 2;
-    (x.topics || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean).forEach((t) => { if (aTopics.has(t)) score += 1; });
-    return { x, score };
+    let sharedDiseases = 0;
+    xDiseases.forEach((d) => { if (aDiseases.has(d)) { score += 3; sharedDiseases++; } });
+    if (sharedDiseases > 0) reasons.push(sharedDiseases > 1 ? 'mesma doença/tema (' + sharedDiseases + ')' : 'mesma doença/tema');
+
+    if (a.subtopic && x.subtopic && a.subtopic === x.subtopic) {
+      score += 2;
+      reasons.push('mesmo subtema');
+    }
+
+    let sharedTopics = 0;
+    (x.topics || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean).forEach((t) => { if (aTopics.has(t)) sharedTopics++; });
+    if (sharedTopics > 0) {
+      score += sharedTopics;
+      reasons.push(sharedTopics + ' tópico' + (sharedTopics > 1 ? 's' : '') + ' em comum');
+    }
+
+    return { x, score, reason: reasons.join(' · ') };
   }).filter((s) => s.score > 0);
 
   scored.sort((p, q) => q.score - p.score);
-  return scored.slice(0, 5).map((s) => s.x);
+  return scored.slice(0, 5);
 }
 
 function renderRelatedBox(a) {
   const related = computeRelatedArticles(a);
   if (related.length === 0) return '';
   return '<div class="related-box"><div class="section-label">Artigos Relacionados</div><div class="related-list">' +
-    related.map((r) => '<div class="related-item" data-id="' + r.id + '">' + escapeHtml(r.title || r.original_name) + '</div>').join('') +
+    related.map((r) => '<div class="related-item" data-id="' + r.x.id + '">' +
+      '<div class="related-title">' + escapeHtml(r.x.title || r.x.original_name) + '</div>' +
+      (r.reason ? '<div class="related-reason">' + escapeHtml(r.reason) + '</div>' : '') +
+    '</div>').join('') +
     '</div></div>';
 }
 
@@ -555,6 +682,12 @@ function openModal(id) {
   });
   modalBody.querySelectorAll('.related-item').forEach((el) => {
     el.addEventListener('click', () => openModal(Number(el.dataset.id)));
+  });
+  modalBody.querySelectorAll('.section-nav-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   });
 
   modalOverlay.classList.add('active');
