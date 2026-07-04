@@ -9,8 +9,8 @@ const crypto = require('crypto');
 const pdfParse = require('pdf-parse');
 
 const db = require('../db');
+const { UPLOAD_DIR } = require('../paths');
 
-const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 async function main() {
