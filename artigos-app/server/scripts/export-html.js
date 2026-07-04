@@ -7,16 +7,38 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
+const { UPLOAD_DIR } = require('../paths');
 
 const outPath = path.resolve(process.argv[2] || path.join(__dirname, '..', '..', '..', 'organizador_artigos.html'));
 
 const articles = db
   .prepare(
     `SELECT id, title, authors, year, disease, topics, summary, detailed_summary, full_text, status, original_name,
-     secondary_diseases, subtopic, evidence_level, clinical_applicability
+     secondary_diseases, subtopic, evidence_level, clinical_applicability, filename
      FROM articles ORDER BY created_at DESC`
   )
   .all();
+
+// Copia os PDFs originais para uma pasta "pdfs/" ao lado do HTML gerado,
+// renomeados por ID, para permitir um link "Ver PDF original" sem inflar
+// o HTML em si (embutir todos os PDFs em base64 passaria de 100MB).
+const pdfsDir = path.join(path.dirname(outPath), 'pdfs');
+fs.mkdirSync(pdfsDir, { recursive: true });
+let pdfsCopied = 0;
+articles.forEach((a) => {
+  a.has_pdf = false;
+  if (!a.filename) return;
+  const src = path.join(UPLOAD_DIR, a.filename);
+  const dest = path.join(pdfsDir, a.id + '.pdf');
+  try {
+    fs.copyFileSync(src, dest);
+    a.has_pdf = true;
+    pdfsCopied++;
+  } catch (e) {
+    // PDF original ausente; o botao "Ver PDF" nao sera exibido para este artigo.
+  }
+  delete a.filename;
+});
 
 const dataJson = JSON.stringify(articles).replace(/</g, '\\u003c');
 
@@ -140,6 +162,47 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
 .related-title{font-size:12.5px;color:#1a56a0;font-weight:600}
 .related-reason{font-size:11px;color:#718096;margin-top:2px}
 
+.view-toggle{display:flex;gap:6px;margin-bottom:12px}
+.view-btn{background:#fff;border:1px solid #cbd5e0;color:#4a5568;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:600}
+.view-btn.active{background:#1a56a0;color:#fff;border-color:#1a56a0}
+
+.multiselect-btn{flex:1;min-width:180px;border:1px solid #cbd5e0;border-radius:8px;padding:9px 14px;font-size:13px;background:#fff;text-align:left;cursor:pointer;color:#2d3748}
+.multiselect-btn:hover{border-color:#1a56a0}
+.multiselect-popover{display:none;position:absolute;background:#fff;border:1px solid #cbd5e0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:10px;z-index:300;min-width:240px;max-height:280px;overflow-y:auto}
+.multiselect-popover.active{display:block}
+.ms-item{display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:12.5px;cursor:pointer;border-radius:4px}
+.ms-item:hover{background:#f7faff}
+.multiselect-actions{border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px;text-align:right}
+
+.tree-disease{margin-bottom:8px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;padding:4px 12px}
+.tree-disease-summary{cursor:pointer;font-weight:700;font-size:13.5px;color:#1a56a0;padding:10px 0}
+.tree-subtopic{margin:4px 0 8px 16px}
+.tree-subtopic-summary{cursor:pointer;font-weight:600;font-size:12.5px;color:#2d3748;padding:6px 0}
+.tree-count{color:#a0aec0;font-weight:400}
+.tree-articles{display:flex;flex-direction:column;gap:2px;margin:4px 0 8px 16px}
+.tree-article-row{font-size:12.5px;color:#2d3748;padding:6px 10px;border-radius:6px;cursor:pointer;background:#f7faff}
+.tree-article-row:hover{background:#e8f0fc}
+.tree-year{color:#a0aec0}
+
+.list-sentinel{text-align:center;color:#a0aec0;font-size:12px;padding:14px 0}
+
+.fulltext-toggle-row{margin-top:18px;display:flex;justify-content:center}
+.fulltext-section{margin-top:14px;border-top:1px solid #e2e8f0;padding-top:14px}
+.fulltext-empty{color:#a0aec0;font-size:13px;text-align:center;padding:16px 0}
+.fulltext-meta{font-size:11.5px;color:#718096;margin-bottom:10px}
+.fulltext-search{display:flex;align-items:center;gap:6px;margin-bottom:12px;position:sticky;top:0;background:#fff;padding:6px 0;z-index:5}
+.fulltext-search input{flex:1;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12.5px}
+.fulltext-count{font-size:11.5px;color:#718096;min-width:38px;text-align:center}
+.fulltext-content{font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.75;color:#2d3748;white-space:pre-wrap;max-height:55vh;overflow-y:auto;padding:4px 2px}
+.ft-mark{background:#fef08a}
+.ft-mark-active{background:#f6ad55}
+
+.pdf-actions{margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pdf-viewer{margin-top:12px;display:none}
+.pdf-viewer.active{display:block}
+.pdf-viewer iframe{width:100%;height:65vh;border:1px solid #e2e8f0;border-radius:8px}
+.pdf-hint{font-size:11px;color:#a0aec0}
+
 @media (max-width:600px){
   main{padding:14px}
   header{padding:12px 16px}
@@ -158,17 +221,15 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
 <main>
   <section id="tab-library" class="tab active">
     <div class="card">
+      <div class="view-toggle">
+        <button type="button" id="viewListBtn" class="view-btn active">☰ Lista</button>
+        <button type="button" id="viewTreeBtn" class="view-btn">🌳 Árvore (Doença › Subtema)</button>
+      </div>
       <div class="lib-controls">
         <input type="text" id="searchBox" placeholder="Buscar por título, doença, tema...">
-        <select id="diseaseFilter">
-          <option value="">Todas as doenças/temas</option>
-        </select>
-        <select id="evidenceFilter">
-          <option value="">Todos os níveis de evidência</option>
-        </select>
-        <select id="applicabilityFilter">
-          <option value="">Toda aplicabilidade clínica</option>
-        </select>
+        <button type="button" id="diseaseFilterBtn" class="multiselect-btn">Todas as doenças/temas</button>
+        <button type="button" id="evidenceFilterBtn" class="multiselect-btn">Todos os níveis de evidência</button>
+        <button type="button" id="applicabilityFilterBtn" class="multiselect-btn">Toda aplicabilidade clínica</button>
         <select id="collectionFilter">
           <option value="">Todas as coleções</option>
         </select>
@@ -221,6 +282,13 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
   <div class="coll-new">
     <input type="text" id="newCollectionInput" placeholder="Nova coleção...">
     <button id="newCollectionBtn">Criar</button>
+  </div>
+</div>
+
+<div id="multiselectPopover" class="multiselect-popover">
+  <div id="multiselectList"></div>
+  <div class="multiselect-actions">
+    <button type="button" id="multiselectClear" class="btn-secondary" style="padding:4px 10px;font-size:11.5px">Limpar seleção</button>
   </div>
 </div>
 
@@ -292,43 +360,110 @@ function toggleArticleInCollection(name, id) {
 
 // ---------- Library ----------
 const searchBox = document.getElementById('searchBox');
-const diseaseFilter = document.getElementById('diseaseFilter');
-const evidenceFilter = document.getElementById('evidenceFilter');
-const applicabilityFilter = document.getElementById('applicabilityFilter');
 const collectionFilter = document.getElementById('collectionFilter');
 const favFilter = document.getElementById('favFilter');
 const sortSelect = document.getElementById('sortSelect');
 const resultCount = document.getElementById('resultCount');
 const libraryList = document.getElementById('libraryList');
+const viewListBtn = document.getElementById('viewListBtn');
+const viewTreeBtn = document.getElementById('viewTreeBtn');
+
+let viewMode = 'list';
+const PAGE_SIZE = 30;
+let renderedCount = PAGE_SIZE;
+let currentSorted = [];
+let listObserver = null;
+
+// ---------- Filtros multi-seleção (doença, evidência, aplicabilidade) ----------
+const filterState = { disease: new Set(), evidence: new Set(), applicability: new Set() };
+const multiselectPopover = document.getElementById('multiselectPopover');
+const multiselectList = document.getElementById('multiselectList');
+let activeMultiselect = null;
+
+function optionsForFilterKey(key) {
+  const set = new Set();
+  ARTICLES.forEach((a) => {
+    if (key === 'disease') {
+      if (a.disease) set.add(a.disease);
+      parseArr(a.secondary_diseases).forEach((d) => set.add(d));
+    } else if (key === 'evidence') {
+      if (a.evidence_level) set.add(a.evidence_level);
+    } else if (key === 'applicability') {
+      parseArr(a.clinical_applicability).forEach((c) => set.add(c));
+    }
+  });
+  return [...set].sort();
+}
+
+function multiselectButtonLabel(key, allLabel) {
+  const n = filterState[key].size;
+  return n === 0 ? allLabel : n + ' selecionada' + (n > 1 ? 's' : '');
+}
+
+function updateMultiselectButtons() {
+  document.getElementById('diseaseFilterBtn').textContent = multiselectButtonLabel('disease', 'Todas as doenças/temas');
+  document.getElementById('evidenceFilterBtn').textContent = multiselectButtonLabel('evidence', 'Todos os níveis de evidência');
+  document.getElementById('applicabilityFilterBtn').textContent = multiselectButtonLabel('applicability', 'Toda aplicabilidade clínica');
+}
+
+function openMultiselect(key, anchorEl) {
+  activeMultiselect = key;
+  const opts = optionsForFilterKey(key);
+  const selected = filterState[key];
+  multiselectList.innerHTML = opts.length
+    ? opts.map((o) => '<label class="ms-item"><input type="checkbox" class="ms-check" value="' + escapeHtml(o) + '" ' + (selected.has(o) ? 'checked' : '') + '> ' + escapeHtml(o) + '</label>').join('')
+    : '<div style="font-size:12px;color:#a0aec0;padding:4px">Nenhuma opção.</div>';
+
+  multiselectList.querySelectorAll('.ms-check').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) filterState[activeMultiselect].add(cb.value);
+      else filterState[activeMultiselect].delete(cb.value);
+      updateMultiselectButtons();
+      renderLibrary();
+    });
+  });
+
+  const rect = anchorEl.getBoundingClientRect();
+  multiselectPopover.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+  multiselectPopover.style.left = Math.max(8, window.scrollX + rect.left) + 'px';
+  multiselectPopover.classList.add('active');
+}
+
+function closeMultiselect() {
+  multiselectPopover.classList.remove('active');
+  activeMultiselect = null;
+}
+
+document.getElementById('diseaseFilterBtn').addEventListener('click', (e) => { e.stopPropagation(); openMultiselect('disease', e.currentTarget); });
+document.getElementById('evidenceFilterBtn').addEventListener('click', (e) => { e.stopPropagation(); openMultiselect('evidence', e.currentTarget); });
+document.getElementById('applicabilityFilterBtn').addEventListener('click', (e) => { e.stopPropagation(); openMultiselect('applicability', e.currentTarget); });
+document.getElementById('multiselectClear').addEventListener('click', () => {
+  if (!activeMultiselect) return;
+  filterState[activeMultiselect].clear();
+  updateMultiselectButtons();
+  openMultiselect(activeMultiselect, document.getElementById(activeMultiselect + 'FilterBtn'));
+  renderLibrary();
+});
+document.addEventListener('click', (e) => {
+  if (multiselectPopover.classList.contains('active') && !multiselectPopover.contains(e.target) && !e.target.classList.contains('multiselect-btn')) {
+    closeMultiselect();
+  }
+});
+
+viewListBtn.addEventListener('click', () => {
+  viewMode = 'list';
+  viewListBtn.classList.add('active');
+  viewTreeBtn.classList.remove('active');
+  renderLibrary();
+});
+viewTreeBtn.addEventListener('click', () => {
+  viewMode = 'tree';
+  viewTreeBtn.classList.add('active');
+  viewListBtn.classList.remove('active');
+  renderLibrary();
+});
 
 function populateFilters() {
-  const diseases = new Set();
-  const evidences = new Set();
-  const applicabilities = new Set();
-  ARTICLES.forEach((a) => {
-    if (a.disease) diseases.add(a.disease);
-    parseArr(a.secondary_diseases).forEach((d) => diseases.add(d));
-    if (a.evidence_level) evidences.add(a.evidence_level);
-    parseArr(a.clinical_applicability).forEach((c) => applicabilities.add(c));
-  });
-  [...diseases].sort().forEach((d) => {
-    const opt = document.createElement('option');
-    opt.value = d;
-    opt.textContent = d;
-    diseaseFilter.appendChild(opt);
-  });
-  [...evidences].sort().forEach((v) => {
-    const opt = document.createElement('option');
-    opt.value = v;
-    opt.textContent = v;
-    evidenceFilter.appendChild(opt);
-  });
-  [...applicabilities].sort().forEach((v) => {
-    const opt = document.createElement('option');
-    opt.value = v;
-    opt.textContent = v;
-    applicabilityFilter.appendChild(opt);
-  });
   populateCollectionFilter();
 }
 
@@ -432,21 +567,108 @@ function sortArticles(list, sortVal) {
   return sorted;
 }
 
+function cardHtml(a, rawTerm) {
+  const metaParts = [];
+  if (a.authors) metaParts.push(a.authors);
+  if (a.year) metaParts.push(a.year);
+  metaParts.push(a.status === 'concluido' ? 'Classificado' : a.status === 'erro' ? 'Erro no processamento' : 'Aguardando classificação');
+
+  return '<div class="article-card" data-id="' + a.id + '">' +
+    '<div class="card-actions">' +
+      '<button class="icon-btn fav-btn' + (isFavorite(a.id) ? ' fav-active' : '') + '" data-id="' + a.id + '" title="Favoritar">' + (isFavorite(a.id) ? '★' : '☆') + '</button>' +
+      '<button class="icon-btn coll-btn" data-id="' + a.id + '" title="Adicionar à coleção">📁</button>' +
+    '</div>' +
+    '<div class="title">' + highlightMatches(escapeHtml(a.title || a.original_name), rawTerm) + '</div>' +
+    (a.summary ? '<div class="tldr">' + highlightMatches(escapeHtml(tldr(a.summary)), rawTerm) + '</div>' : '') +
+    buildBreadcrumb(a) +
+    '<div class="meta">' + escapeHtml(metaParts.join(' · ')) + '</div>' +
+    '<div class="tags">' + buildTagsHtml(a, { compact: true }) + '</div>' +
+  '</div>';
+}
+
+function attachCardHandlers() {
+  libraryList.querySelectorAll('.article-card').forEach((card) => {
+    card.addEventListener('click', () => openModal(Number(card.dataset.id)));
+  });
+  libraryList.querySelectorAll('.fav-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(Number(btn.dataset.id)); renderLibrary(); });
+  });
+  libraryList.querySelectorAll('.coll-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); openCollectionsPopover(Number(btn.dataset.id), btn); });
+  });
+}
+
+function renderListBatch() {
+  const rawTerm = searchBox.value.trim();
+  const slice = currentSorted.slice(0, renderedCount);
+  libraryList.innerHTML = slice.map((a) => cardHtml(a, rawTerm)).join('') +
+    (renderedCount < currentSorted.length ? '<div id="listSentinel" class="list-sentinel">Carregando mais artigos…</div>' : '');
+
+  attachCardHandlers();
+
+  if (listObserver) listObserver.disconnect();
+  const sentinel = document.getElementById('listSentinel');
+  if (sentinel) {
+    listObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        renderedCount = Math.min(renderedCount + PAGE_SIZE, currentSorted.length);
+        renderListBatch();
+      }
+    });
+    listObserver.observe(sentinel);
+  }
+}
+
+function renderTree(list) {
+  const byDisease = new Map();
+  list.forEach((a) => {
+    const d = a.disease || 'Sem categoria';
+    if (!byDisease.has(d)) byDisease.set(d, new Map());
+    const bySub = byDisease.get(d);
+    const s = a.subtopic || 'Geral';
+    if (!bySub.has(s)) bySub.set(s, []);
+    bySub.get(s).push(a);
+  });
+
+  const diseases = [...byDisease.keys()].sort();
+  libraryList.innerHTML = diseases.map((d) => {
+    const subMap = byDisease.get(d);
+    const total = [...subMap.values()].reduce((sum, arr) => sum + arr.length, 0);
+    const subtopics = [...subMap.keys()].sort();
+    return '<details class="tree-disease" open>' +
+      '<summary class="tree-disease-summary">' + escapeHtml(d) + ' <span class="tree-count">(' + total + ')</span></summary>' +
+      subtopics.map((s) => {
+        const arts = subMap.get(s);
+        return '<details class="tree-subtopic">' +
+          '<summary class="tree-subtopic-summary">' + escapeHtml(s) + ' <span class="tree-count">(' + arts.length + ')</span></summary>' +
+          '<div class="tree-articles">' +
+            arts.map((a) => '<div class="tree-article-row" data-id="' + a.id + '">' + escapeHtml(a.title || a.original_name) + (a.year ? ' <span class="tree-year">· ' + escapeHtml(a.year) + '</span>' : '') + '</div>').join('') +
+          '</div>' +
+        '</details>';
+      }).join('') +
+    '</details>';
+  }).join('');
+
+  libraryList.querySelectorAll('.tree-article-row').forEach((row) => {
+    row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+  });
+}
+
 function renderLibrary() {
   const rawTerm = searchBox.value.trim();
   const term = normalizeText(rawTerm);
-  const diseaseVal = diseaseFilter.value;
-  const evidenceVal = evidenceFilter.value;
-  const applicabilityVal = applicabilityFilter.value;
   const collectionVal = collectionFilter.value;
   const favOnly = favFilter.checked;
   const collections = getCollections();
 
   const filtered = ARTICLES.filter((a) => {
     const allDiseases = [a.disease, ...parseArr(a.secondary_diseases)];
-    if (diseaseVal && !allDiseases.includes(diseaseVal)) return false;
-    if (evidenceVal && a.evidence_level !== evidenceVal) return false;
-    if (applicabilityVal && !parseArr(a.clinical_applicability).includes(applicabilityVal)) return false;
+    if (filterState.disease.size > 0 && ![...filterState.disease].some((d) => allDiseases.includes(d))) return false;
+    if (filterState.evidence.size > 0 && !filterState.evidence.has(a.evidence_level)) return false;
+    if (filterState.applicability.size > 0) {
+      const appl = parseArr(a.clinical_applicability);
+      if (![...filterState.applicability].some((c) => appl.includes(c))) return false;
+    }
     if (collectionVal && !(collections[collectionVal] || []).includes(a.id)) return false;
     if (favOnly && !isFavorite(a.id)) return false;
     if (!term) return true;
@@ -461,6 +683,8 @@ function renderLibrary() {
     ? filtered.length + ' artigo' + (filtered.length !== 1 ? 's' : '')
     : filtered.length + ' de ' + ARTICLES.length + ' artigos';
 
+  if (listObserver) { listObserver.disconnect(); listObserver = null; }
+
   if (filtered.length === 0) {
     libraryList.innerHTML = '<div class="empty-state">Nenhum artigo encontrado.</div>';
     return;
@@ -468,40 +692,17 @@ function renderLibrary() {
 
   const sorted = sortArticles(filtered, sortSelect.value);
 
-  libraryList.innerHTML = sorted.map((a) => {
-    const metaParts = [];
-    if (a.authors) metaParts.push(a.authors);
-    if (a.year) metaParts.push(a.year);
-    metaParts.push(a.status === 'concluido' ? 'Classificado' : a.status === 'erro' ? 'Erro no processamento' : 'Aguardando classificação');
+  if (viewMode === 'tree') {
+    renderTree(sorted);
+    return;
+  }
 
-    return '<div class="article-card" data-id="' + a.id + '">' +
-      '<div class="card-actions">' +
-        '<button class="icon-btn fav-btn' + (isFavorite(a.id) ? ' fav-active' : '') + '" data-id="' + a.id + '" title="Favoritar">' + (isFavorite(a.id) ? '★' : '☆') + '</button>' +
-        '<button class="icon-btn coll-btn" data-id="' + a.id + '" title="Adicionar à coleção">📁</button>' +
-      '</div>' +
-      '<div class="title">' + highlightMatches(escapeHtml(a.title || a.original_name), rawTerm) + '</div>' +
-      (a.summary ? '<div class="tldr">' + highlightMatches(escapeHtml(tldr(a.summary)), rawTerm) + '</div>' : '') +
-      buildBreadcrumb(a) +
-      '<div class="meta">' + escapeHtml(metaParts.join(' · ')) + '</div>' +
-      '<div class="tags">' + buildTagsHtml(a, { compact: true }) + '</div>' +
-    '</div>';
-  }).join('');
-
-  libraryList.querySelectorAll('.article-card').forEach((card) => {
-    card.addEventListener('click', () => openModal(Number(card.dataset.id)));
-  });
-  libraryList.querySelectorAll('.fav-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(Number(btn.dataset.id)); renderLibrary(); });
-  });
-  libraryList.querySelectorAll('.coll-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => { e.stopPropagation(); openCollectionsPopover(Number(btn.dataset.id), btn); });
-  });
+  currentSorted = sorted;
+  renderedCount = Math.min(PAGE_SIZE, sorted.length);
+  renderListBatch();
 }
 
 searchBox.addEventListener('input', renderLibrary);
-diseaseFilter.addEventListener('change', renderLibrary);
-evidenceFilter.addEventListener('change', renderLibrary);
-applicabilityFilter.addEventListener('change', renderLibrary);
 collectionFilter.addEventListener('change', renderLibrary);
 favFilter.addEventListener('change', renderLibrary);
 sortSelect.addEventListener('change', renderLibrary);
@@ -654,6 +855,91 @@ function renderRelatedBox(a) {
     '</div></div>';
 }
 
+// ---------- PDF original (pasta "pdfs/" ao lado do HTML) ----------
+function buildPdfActionsHtml(a) {
+  if (!a.has_pdf) return '';
+  const href = 'pdfs/' + a.id + '.pdf';
+  return '<div class="pdf-actions">' +
+      '<a class="btn-secondary" href="' + href + '" target="_blank" rel="noopener">📄 Abrir PDF original</a>' +
+      '<button type="button" class="btn-secondary" id="togglePdfViewer" data-href="' + href + '">🖼️ Ver PDF aqui</button>' +
+      '<span class="pdf-hint">Requer a pasta "pdfs/" ao lado deste arquivo HTML.</span>' +
+    '</div>' +
+    '<div id="pdfViewer" class="pdf-viewer"></div>';
+}
+
+// ---------- Texto completo (extraído do PDF) ----------
+function buildFullTextHtml(a) {
+  if (!a.full_text || !a.full_text.trim()) {
+    return '<div class="fulltext-empty">Texto completo não disponível para este artigo.</div>';
+  }
+  const cleaned = a.full_text.replace(/\\r\\n/g, '\\n').replace(/\\n{3,}/g, '\\n\\n').trim();
+  const words = cleaned.split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.round(words / 200));
+  return '<div class="fulltext-meta">~' + words + ' palavras · ~' + minutes + ' min de leitura</div>' +
+    '<div class="fulltext-search">' +
+      '<input type="text" id="fulltextSearchInput" placeholder="Buscar no texto completo...">' +
+      '<span id="fulltextMatchCount" class="fulltext-count"></span>' +
+      '<button type="button" id="fulltextPrev" class="icon-btn" title="Ocorrência anterior">↑</button>' +
+      '<button type="button" id="fulltextNext" class="icon-btn" title="Próxima ocorrência">↓</button>' +
+    '</div>' +
+    '<div id="fulltextContent" class="fulltext-content">' + escapeHtml(cleaned) + '</div>';
+}
+
+function setupFullTextSearch() {
+  const input = document.getElementById('fulltextSearchInput');
+  const countEl = document.getElementById('fulltextMatchCount');
+  const prevBtn = document.getElementById('fulltextPrev');
+  const nextBtn = document.getElementById('fulltextNext');
+  const content = document.getElementById('fulltextContent');
+  if (!input || !content) return;
+  const originalHtml = content.innerHTML;
+  let matches = [];
+  let activeIndex = -1;
+
+  function updateActive() {
+    matches.forEach((m, i) => m.classList.toggle('ft-mark-active', i === activeIndex));
+    if (activeIndex >= 0) {
+      matches[activeIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      countEl.textContent = (activeIndex + 1) + '/' + matches.length;
+    } else {
+      countEl.textContent = input.value.trim() ? '0/0' : '';
+    }
+  }
+
+  function applyHighlight(term) {
+    if (!term) {
+      content.innerHTML = originalHtml;
+      matches = [];
+      activeIndex = -1;
+      countEl.textContent = '';
+      return;
+    }
+    let re;
+    try {
+      re = new RegExp('(' + escapeRegex(term) + ')', 'gi');
+    } catch (e) {
+      return;
+    }
+    content.innerHTML = originalHtml.replace(re, '<mark class="ft-mark">$1</mark>');
+    matches = [...content.querySelectorAll('.ft-mark')];
+    activeIndex = matches.length > 0 ? 0 : -1;
+    updateActive();
+  }
+
+  input.addEventListener('input', () => applyHighlight(input.value.trim()));
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); nextBtn.click(); } });
+  nextBtn.addEventListener('click', () => {
+    if (matches.length === 0) return;
+    activeIndex = (activeIndex + 1) % matches.length;
+    updateActive();
+  });
+  prevBtn.addEventListener('click', () => {
+    if (matches.length === 0) return;
+    activeIndex = (activeIndex - 1 + matches.length) % matches.length;
+    updateActive();
+  });
+}
+
 function openModal(id) {
   const a = ARTICLES.find((x) => x.id === id);
   if (!a) return;
@@ -668,7 +954,10 @@ function openModal(id) {
     buildBreadcrumb(a) +
     '<div class="tags">' + buildTagsHtml(a, { compact: false }) + '</div>' +
     renderSummaryBody(a) +
-    renderRelatedBox(a);
+    renderRelatedBox(a) +
+    buildPdfActionsHtml(a) +
+    '<div class="fulltext-toggle-row"><button type="button" id="toggleFullText" class="btn-secondary">📖 Ler artigo completo</button></div>' +
+    '<div id="fullTextSection" class="fulltext-section" style="display:none">' + buildFullTextHtml(a) + '</div>';
 
   modalBody.querySelector('.fav-btn').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -688,6 +977,34 @@ function openModal(id) {
       const target = document.getElementById(btn.dataset.target);
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+  });
+
+  const pdfToggleBtn = modalBody.querySelector('#togglePdfViewer');
+  if (pdfToggleBtn) {
+    pdfToggleBtn.addEventListener('click', () => {
+      const viewer = document.getElementById('pdfViewer');
+      const isActive = viewer.classList.contains('active');
+      if (isActive) {
+        viewer.classList.remove('active');
+        viewer.innerHTML = '';
+      } else {
+        viewer.innerHTML = '<iframe src="' + pdfToggleBtn.dataset.href + '"></iframe>';
+        viewer.classList.add('active');
+      }
+    });
+  }
+
+  const fullTextToggleBtn = modalBody.querySelector('#toggleFullText');
+  const fullTextSection = modalBody.querySelector('#fullTextSection');
+  let fullTextSearchReady = false;
+  fullTextToggleBtn.addEventListener('click', () => {
+    const isHidden = fullTextSection.style.display === 'none';
+    fullTextSection.style.display = isHidden ? 'block' : 'none';
+    fullTextToggleBtn.textContent = isHidden ? '📖 Ocultar texto completo' : '📖 Ler artigo completo';
+    if (isHidden && !fullTextSearchReady) {
+      setupFullTextSearch();
+      fullTextSearchReady = true;
+    }
   });
 
   modalOverlay.classList.add('active');
@@ -854,3 +1171,4 @@ renderLibrary();
 
 fs.writeFileSync(outPath, html, 'utf-8');
 console.log(`Gerado: ${outPath} (${(html.length / 1024).toFixed(0)} KB, ${articles.length} artigos)`);
+console.log(`PDFs copiados para ${pdfsDir}: ${pdfsCopied}/${articles.length}`);
