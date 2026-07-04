@@ -12,7 +12,8 @@ const outPath = path.resolve(process.argv[2] || path.join(__dirname, '..', '..',
 
 const articles = db
   .prepare(
-    `SELECT id, title, authors, year, disease, topics, summary, detailed_summary, full_text, status, original_name
+    `SELECT id, title, authors, year, disease, topics, summary, detailed_summary, full_text, status, original_name,
+     secondary_diseases, subtopic, evidence_level, clinical_applicability
      FROM articles ORDER BY created_at DESC`
   )
   .all();
@@ -45,7 +46,7 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
 .lib-controls input,.lib-controls select{flex:1;min-width:180px;border:1px solid #cbd5e0;border-radius:8px;padding:9px 14px;font-size:13px}
 
 .library-list{display:flex;flex-direction:column;gap:10px}
-.article-card{padding:14px 16px;border-radius:8px;background:#f7faff;border:1px solid #e2e8f0;cursor:pointer;transition:.15s}
+.article-card{position:relative;padding:14px 16px;border-radius:8px;background:#f7faff;border:1px solid #e2e8f0;cursor:pointer;transition:.15s}
 .article-card:hover{border-color:#1a56a0;box-shadow:0 1px 6px rgba(0,0,0,.08)}
 .article-card .title{font-weight:700;font-size:13.5px;color:#1a202c;margin-bottom:4px}
 .article-card .meta{font-size:11.5px;color:#718096;margin-bottom:6px}
@@ -93,6 +94,37 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
 .summary-section.critical{background:#fffaf0;border:1px solid #f6ad55;border-radius:8px;padding:14px 16px}
 .summary-section.critical h4{color:#c05621;border-bottom-color:#feebc8}
 
+.tag.secondary{background:#dbeafe;color:#1e3a8a}
+.tag.evidence{background:#5b21b6;color:#fff}
+.tag.applicability{background:#e6fffa;color:#065f46;border:1px solid #b2f5ea}
+.subtopic-breadcrumb{font-size:11.5px;color:#4a5568;margin-bottom:6px}
+.subtopic-breadcrumb b{color:#1a56a0}
+
+.article-card .title{padding-right:54px}
+.card-actions{position:absolute;top:12px;right:14px;display:flex;gap:2px}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:3px 5px;border-radius:4px;color:#a0aec0}
+.icon-btn:hover{background:#e2e8f0}
+.icon-btn.fav-active{color:#d69e2e}
+.modal-actions{display:flex;gap:10px;margin:8px 0 14px}
+
+.lib-controls select{min-width:150px}
+.lib-toggle{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#4a5568;padding:9px 4px;white-space:nowrap}
+.lib-toggle input{width:auto}
+
+.collections-popover{display:none;position:absolute;background:#fff;border:1px solid #cbd5e0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:10px;z-index:300;min-width:200px}
+.collections-popover.active{display:block}
+.collections-popover .coll-item{display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:12.5px;cursor:pointer;border-radius:4px}
+.collections-popover .coll-item:hover{background:#f7faff}
+.collections-popover .coll-new{display:flex;gap:6px;margin-top:8px;border-top:1px solid #e2e8f0;padding-top:8px}
+.collections-popover .coll-new input{flex:1;border:1px solid #cbd5e0;border-radius:6px;padding:5px 8px;font-size:12px}
+.collections-popover .coll-new button{border:none;background:#1a56a0;color:#fff;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer}
+
+.related-box{margin-top:22px;border-top:1px solid #e2e8f0;padding-top:14px}
+.related-box .section-label{margin-bottom:8px}
+.related-list{display:flex;flex-direction:column;gap:6px}
+.related-item{font-size:12.5px;color:#1a56a0;cursor:pointer;padding:6px 10px;background:#f7faff;border-radius:6px;border:1px solid #e2e8f0}
+.related-item:hover{border-color:#1a56a0}
+
 @media (max-width:600px){
   main{padding:14px}
   header{padding:12px 16px}
@@ -116,6 +148,16 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
         <select id="diseaseFilter">
           <option value="">Todas as doenças/temas</option>
         </select>
+        <select id="evidenceFilter">
+          <option value="">Todos os níveis de evidência</option>
+        </select>
+        <select id="applicabilityFilter">
+          <option value="">Toda aplicabilidade clínica</option>
+        </select>
+        <select id="collectionFilter">
+          <option value="">Todas as coleções</option>
+        </select>
+        <label class="lib-toggle"><input type="checkbox" id="favFilter"> ★ Só favoritos</label>
       </div>
       <div id="libraryList" class="library-list"></div>
     </div>
@@ -151,6 +193,14 @@ main{padding:20px 24px;max-width:960px;margin:0 auto}
   </div>
 </div>
 
+<div id="collectionsPopover" class="collections-popover">
+  <div id="collectionsList"></div>
+  <div class="coll-new">
+    <input type="text" id="newCollectionInput" placeholder="Nova coleção...">
+    <button id="newCollectionBtn">Criar</button>
+  </div>
+</div>
+
 <script>
 const ARTICLES = ${dataJson};
 const CLAUDE_MODEL = 'claude-sonnet-5';
@@ -170,83 +220,251 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// ---------- Favoritos e Coleções (localStorage) ----------
+function parseArr(str) {
+  if (!str) return [];
+  try {
+    const p = JSON.parse(str);
+    return Array.isArray(p) ? p : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function getFavorites() {
+  try {
+    return JSON.parse(localStorage.getItem('organizador_favorites') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+function saveFavorites(list) { localStorage.setItem('organizador_favorites', JSON.stringify(list)); }
+function isFavorite(id) { return getFavorites().includes(id); }
+function toggleFavorite(id) {
+  const favs = getFavorites();
+  const idx = favs.indexOf(id);
+  if (idx === -1) favs.push(id); else favs.splice(idx, 1);
+  saveFavorites(favs);
+}
+
+function getCollections() {
+  try {
+    return JSON.parse(localStorage.getItem('organizador_collections') || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+function saveCollections(obj) { localStorage.setItem('organizador_collections', JSON.stringify(obj)); }
+function createCollection(name) {
+  const coll = getCollections();
+  if (!coll[name]) { coll[name] = []; saveCollections(coll); }
+}
+function toggleArticleInCollection(name, id) {
+  const coll = getCollections();
+  if (!coll[name]) coll[name] = [];
+  const idx = coll[name].indexOf(id);
+  if (idx === -1) coll[name].push(id); else coll[name].splice(idx, 1);
+  saveCollections(coll);
+}
+
 // ---------- Library ----------
 const searchBox = document.getElementById('searchBox');
 const diseaseFilter = document.getElementById('diseaseFilter');
+const evidenceFilter = document.getElementById('evidenceFilter');
+const applicabilityFilter = document.getElementById('applicabilityFilter');
+const collectionFilter = document.getElementById('collectionFilter');
+const favFilter = document.getElementById('favFilter');
 const libraryList = document.getElementById('libraryList');
 
-function populateDiseaseFilter() {
-  const diseases = [...new Set(ARTICLES.map((a) => a.disease).filter(Boolean))].sort();
-  diseases.forEach((d) => {
+function populateFilters() {
+  const diseases = new Set();
+  const evidences = new Set();
+  const applicabilities = new Set();
+  ARTICLES.forEach((a) => {
+    if (a.disease) diseases.add(a.disease);
+    parseArr(a.secondary_diseases).forEach((d) => diseases.add(d));
+    if (a.evidence_level) evidences.add(a.evidence_level);
+    parseArr(a.clinical_applicability).forEach((c) => applicabilities.add(c));
+  });
+  [...diseases].sort().forEach((d) => {
     const opt = document.createElement('option');
     opt.value = d;
     opt.textContent = d;
     diseaseFilter.appendChild(opt);
   });
+  [...evidences].sort().forEach((v) => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    evidenceFilter.appendChild(opt);
+  });
+  [...applicabilities].sort().forEach((v) => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    applicabilityFilter.appendChild(opt);
+  });
+  populateCollectionFilter();
+}
+
+function populateCollectionFilter() {
+  const collections = getCollections();
+  const current = collectionFilter.value;
+  collectionFilter.innerHTML = '<option value="">Todas as coleções</option>';
+  Object.keys(collections).sort().forEach((name) => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name + ' (' + collections[name].length + ')';
+    collectionFilter.appendChild(opt);
+  });
+  if ([...collectionFilter.options].some((o) => o.value === current)) collectionFilter.value = current;
 }
 
 function normalizeText(s) {
   return (s || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
 }
 
+function buildBreadcrumb(a) {
+  if (!a.subtopic) return '';
+  return '<div class="subtopic-breadcrumb"><b>' + escapeHtml(a.disease || '') + '</b> › ' + escapeHtml(a.subtopic) + '</div>';
+}
+
+function buildTagsHtml(a, opts) {
+  opts = opts || {};
+  let html = '';
+  if (a.disease) html += '<span class="tag">' + escapeHtml(a.disease) + '</span>';
+  parseArr(a.secondary_diseases).forEach((d) => { html += '<span class="tag secondary">' + escapeHtml(d) + '</span>'; });
+  if (a.evidence_level) html += '<span class="tag evidence">' + escapeHtml(a.evidence_level) + '</span>';
+  parseArr(a.clinical_applicability).forEach((c) => { html += '<span class="tag applicability">' + escapeHtml(c) + '</span>'; });
+  const topics = (a.topics || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const shownTopics = opts.compact ? topics.slice(0, 3) : topics;
+  shownTopics.forEach((t) => { html += '<span class="tag topic">' + escapeHtml(t) + '</span>'; });
+  return html;
+}
+
 function renderLibrary() {
   const term = normalizeText(searchBox.value.trim());
   const diseaseVal = diseaseFilter.value;
+  const evidenceVal = evidenceFilter.value;
+  const applicabilityVal = applicabilityFilter.value;
+  const collectionVal = collectionFilter.value;
+  const favOnly = favFilter.checked;
+  const collections = getCollections();
 
   const filtered = ARTICLES.filter((a) => {
-    if (diseaseVal && a.disease !== diseaseVal) return false;
+    const allDiseases = [a.disease, ...parseArr(a.secondary_diseases)];
+    if (diseaseVal && !allDiseases.includes(diseaseVal)) return false;
+    if (evidenceVal && a.evidence_level !== evidenceVal) return false;
+    if (applicabilityVal && !parseArr(a.clinical_applicability).includes(applicabilityVal)) return false;
+    if (collectionVal && !(collections[collectionVal] || []).includes(a.id)) return false;
+    if (favOnly && !isFavorite(a.id)) return false;
     if (!term) return true;
-    const haystack = normalizeText([a.title, a.disease, a.topics, a.summary, a.full_text].join(' '));
+    const haystack = normalizeText([
+      a.title, a.disease, a.topics, a.summary, a.full_text, a.subtopic,
+      parseArr(a.secondary_diseases).join(' '), parseArr(a.clinical_applicability).join(' '),
+    ].join(' '));
     return haystack.includes(term);
   });
 
-  libraryList.innerHTML = '';
   if (filtered.length === 0) {
     libraryList.innerHTML = '<div class="empty-state">Nenhum artigo encontrado.</div>';
     return;
   }
 
-  filtered.forEach((a) => {
-    const card = document.createElement('div');
-    card.className = 'article-card';
-
-    const title = document.createElement('div');
-    title.className = 'title';
-    title.textContent = a.title || a.original_name;
-
-    const meta = document.createElement('div');
-    meta.className = 'meta';
+  libraryList.innerHTML = filtered.map((a) => {
     const metaParts = [];
     if (a.authors) metaParts.push(a.authors);
     if (a.year) metaParts.push(a.year);
     metaParts.push(a.status === 'concluido' ? 'Classificado' : a.status === 'erro' ? 'Erro no processamento' : 'Aguardando classificação');
-    meta.textContent = metaParts.join(' · ');
 
-    const tags = document.createElement('div');
-    tags.className = 'tags';
-    if (a.disease) {
-      const t = document.createElement('span');
-      t.className = 'tag';
-      t.textContent = a.disease;
-      tags.appendChild(t);
-    }
-    (a.topics || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 4).forEach((topic) => {
-      const t = document.createElement('span');
-      t.className = 'tag topic';
-      t.textContent = topic;
-      tags.appendChild(t);
-    });
+    return '<div class="article-card" data-id="' + a.id + '">' +
+      '<div class="card-actions">' +
+        '<button class="icon-btn fav-btn' + (isFavorite(a.id) ? ' fav-active' : '') + '" data-id="' + a.id + '" title="Favoritar">' + (isFavorite(a.id) ? '★' : '☆') + '</button>' +
+        '<button class="icon-btn coll-btn" data-id="' + a.id + '" title="Adicionar à coleção">📁</button>' +
+      '</div>' +
+      '<div class="title">' + escapeHtml(a.title || a.original_name) + '</div>' +
+      buildBreadcrumb(a) +
+      '<div class="meta">' + escapeHtml(metaParts.join(' · ')) + '</div>' +
+      '<div class="tags">' + buildTagsHtml(a, { compact: true }) + '</div>' +
+    '</div>';
+  }).join('');
 
-    card.appendChild(title);
-    card.appendChild(meta);
-    card.appendChild(tags);
-    card.addEventListener('click', () => openModal(a.id));
-    libraryList.appendChild(card);
+  libraryList.querySelectorAll('.article-card').forEach((card) => {
+    card.addEventListener('click', () => openModal(Number(card.dataset.id)));
+  });
+  libraryList.querySelectorAll('.fav-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(Number(btn.dataset.id)); renderLibrary(); });
+  });
+  libraryList.querySelectorAll('.coll-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); openCollectionsPopover(Number(btn.dataset.id), btn); });
   });
 }
 
 searchBox.addEventListener('input', renderLibrary);
 diseaseFilter.addEventListener('change', renderLibrary);
+evidenceFilter.addEventListener('change', renderLibrary);
+applicabilityFilter.addEventListener('change', renderLibrary);
+collectionFilter.addEventListener('change', renderLibrary);
+favFilter.addEventListener('change', renderLibrary);
+
+// ---------- Popover de coleções ----------
+const collectionsPopover = document.getElementById('collectionsPopover');
+const collectionsList = document.getElementById('collectionsList');
+const newCollectionInput = document.getElementById('newCollectionInput');
+let popoverArticleId = null;
+
+function renderCollectionsPopoverList() {
+  const collections = getCollections();
+  const names = Object.keys(collections).sort();
+  if (names.length === 0) {
+    collectionsList.innerHTML = '<div style="font-size:12px;color:#a0aec0;padding:4px">Nenhuma coleção ainda.</div>';
+    return;
+  }
+  collectionsList.innerHTML = names.map((name) => {
+    const checked = collections[name].includes(popoverArticleId);
+    return '<label class="coll-item"><input type="checkbox" class="coll-check" data-name="' + escapeHtml(name) + '" ' + (checked ? 'checked' : '') + '> ' + escapeHtml(name) + ' (' + collections[name].length + ')</label>';
+  }).join('');
+  collectionsList.querySelectorAll('.coll-check').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      toggleArticleInCollection(cb.dataset.name, popoverArticleId);
+      renderCollectionsPopoverList();
+      populateCollectionFilter();
+      renderLibrary();
+    });
+  });
+}
+
+function openCollectionsPopover(articleId, anchorEl) {
+  popoverArticleId = articleId;
+  renderCollectionsPopoverList();
+  const rect = anchorEl.getBoundingClientRect();
+  collectionsPopover.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+  collectionsPopover.style.left = Math.max(8, window.scrollX + rect.left - 150) + 'px';
+  collectionsPopover.classList.add('active');
+}
+
+function closeCollectionsPopover() {
+  collectionsPopover.classList.remove('active');
+  popoverArticleId = null;
+}
+
+document.addEventListener('click', (e) => {
+  if (collectionsPopover.classList.contains('active') && !collectionsPopover.contains(e.target) && !e.target.classList.contains('coll-btn')) {
+    closeCollectionsPopover();
+  }
+});
+
+document.getElementById('newCollectionBtn').addEventListener('click', () => {
+  const name = newCollectionInput.value.trim();
+  if (!name) return;
+  createCollection(name);
+  if (popoverArticleId != null) toggleArticleInCollection(name, popoverArticleId);
+  newCollectionInput.value = '';
+  renderCollectionsPopoverList();
+  populateCollectionFilter();
+  renderLibrary();
+});
+newCollectionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('newCollectionBtn').click(); });
 
 // ---------- Modal ----------
 const modalOverlay = document.getElementById('modalOverlay');
@@ -284,6 +502,31 @@ function renderSummaryBody(a) {
   ).join('') + '</div>';
 }
 
+function computeRelatedArticles(a) {
+  const aDiseases = new Set([a.disease, ...parseArr(a.secondary_diseases)].filter(Boolean));
+  const aTopics = new Set((a.topics || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean));
+
+  const scored = ARTICLES.filter((x) => x.id !== a.id).map((x) => {
+    let score = 0;
+    const xDiseases = new Set([x.disease, ...parseArr(x.secondary_diseases)].filter(Boolean));
+    xDiseases.forEach((d) => { if (aDiseases.has(d)) score += 3; });
+    if (a.subtopic && x.subtopic && a.subtopic === x.subtopic) score += 2;
+    (x.topics || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean).forEach((t) => { if (aTopics.has(t)) score += 1; });
+    return { x, score };
+  }).filter((s) => s.score > 0);
+
+  scored.sort((p, q) => q.score - p.score);
+  return scored.slice(0, 5).map((s) => s.x);
+}
+
+function renderRelatedBox(a) {
+  const related = computeRelatedArticles(a);
+  if (related.length === 0) return '';
+  return '<div class="related-box"><div class="section-label">Artigos Relacionados</div><div class="related-list">' +
+    related.map((r) => '<div class="related-item" data-id="' + r.id + '">' + escapeHtml(r.title || r.original_name) + '</div>').join('') +
+    '</div></div>';
+}
+
 function openModal(id) {
   const a = ARTICLES.find((x) => x.id === id);
   if (!a) return;
@@ -291,11 +534,28 @@ function openModal(id) {
   modalBody.innerHTML =
     '<h3>' + escapeHtml(a.title || a.original_name) + '</h3>' +
     '<div class="meta">' + escapeHtml([a.authors, a.year].filter(Boolean).join(' · ')) + '</div>' +
-    '<div class="tags">' +
-      (a.disease ? '<span class="tag">' + escapeHtml(a.disease) + '</span>' : '') +
-      (a.topics || '').split(',').map((s) => s.trim()).filter(Boolean).map((t) => '<span class="tag topic">' + escapeHtml(t) + '</span>').join('') +
+    '<div class="modal-actions">' +
+      '<button class="btn-secondary fav-btn" data-id="' + a.id + '">' + (isFavorite(a.id) ? '★ Favorito' : '☆ Favoritar') + '</button>' +
+      '<button class="btn-secondary coll-btn" data-id="' + a.id + '">📁 Coleções</button>' +
     '</div>' +
-    renderSummaryBody(a);
+    buildBreadcrumb(a) +
+    '<div class="tags">' + buildTagsHtml(a, { compact: false }) + '</div>' +
+    renderSummaryBody(a) +
+    renderRelatedBox(a);
+
+  modalBody.querySelector('.fav-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFavorite(a.id);
+    openModal(a.id);
+    renderLibrary();
+  });
+  modalBody.querySelector('.coll-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCollectionsPopover(a.id, e.currentTarget);
+  });
+  modalBody.querySelectorAll('.related-item').forEach((el) => {
+    el.addEventListener('click', () => openModal(Number(el.dataset.id)));
+  });
 
   modalOverlay.classList.add('active');
 }
@@ -452,7 +712,7 @@ async function ask() {
 }
 
 // ---------- Init ----------
-populateDiseaseFilter();
+populateFilters();
 renderLibrary();
 </script>
 </body>

@@ -1,8 +1,15 @@
 // Uso interno (Claude Code): aplica uma classificacao (feita por leitura manual do artigo)
 // a um registro ja existente no banco, marcando-o como 'concluido'.
 //
-// Uso: node server/scripts/classify.js --id 3 --json '{"title":"...","authors":"...","year":"2023","disease":"...","topics":"a, b, c","summary":"...","sections":[{"heading":"Objetivo","text":"..."}]}'
+// Uso: node server/scripts/classify.js --id 3 --json '{"title":"...","authors":"...","year":"2023","disease":"...","topics":"a, b, c","summary":"...","sections":[{"heading":"Objetivo","text":"..."}],"secondary_diseases":["..."],"subtopic":"...","evidence_level":"Ensaio Clinico Randomizado","clinical_applicability":["Diagnostico","Tratamento"]}'
 // Ou, para conteudo longo (recomendado): node server/scripts/classify.js --id 3 --file /caminho/dados.json
+//
+// Campos novos (opcionais):
+//   secondary_diseases: array de doencas/temas adicionais alem do "disease" principal
+//   subtopic: subtema/manifestacao especifica dentro da doenca (ex: "Manifestacoes Neurologicas")
+//   evidence_level: nivel de evidencia (ex: "Ensaio Clinico Randomizado", "Revisao Sistematica/Metanalise",
+//     "Estudo de Coorte/Observacional", "Revisao Narrativa", "Protocolo de Estudo", "Bula/Documento Regulatorio")
+//   clinical_applicability: array com valores entre "Diagnostico", "Tratamento", "Prognostico", "Prevencao", "Monitorizacao"
 
 const fs = require('fs');
 const db = require('../db');
@@ -44,8 +51,17 @@ const detailedSummary = Array.isArray(data.sections) && data.sections.length > 0
   ? JSON.stringify(data.sections)
   : null;
 
+const secondaryDiseases = Array.isArray(data.secondary_diseases) && data.secondary_diseases.length > 0
+  ? JSON.stringify(data.secondary_diseases)
+  : null;
+
+const clinicalApplicability = Array.isArray(data.clinical_applicability) && data.clinical_applicability.length > 0
+  ? JSON.stringify(data.clinical_applicability)
+  : null;
+
 db.prepare(
-  `UPDATE articles SET title = ?, authors = ?, year = ?, disease = ?, topics = ?, summary = ?, detailed_summary = ?, status = 'concluido', error = NULL WHERE id = ?`
+  `UPDATE articles SET title = ?, authors = ?, year = ?, disease = ?, topics = ?, summary = ?, detailed_summary = ?,
+   secondary_diseases = ?, subtopic = ?, evidence_level = ?, clinical_applicability = ?, status = 'concluido', error = NULL WHERE id = ?`
 ).run(
   data.title || article.original_name,
   data.authors || '',
@@ -54,6 +70,10 @@ db.prepare(
   data.topics || '',
   data.summary || '',
   detailedSummary,
+  secondaryDiseases,
+  data.subtopic || null,
+  data.evidence_level || null,
+  clinicalApplicability,
   args.id
 );
 

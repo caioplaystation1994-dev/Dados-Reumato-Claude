@@ -58,9 +58,10 @@ server/
     articles.js   upload (extração de texto, sem IA), listagem, detalhe, download e exclusão
     ask.js         endpoint de perguntas e respostas
   scripts/
-    add-article.js  ingestão manual de um PDF (uso interno do Claude Code)
-    classify.js     aplica a classificação manual a um artigo (uso interno do Claude Code)
-    export-html.js  gera organizador_artigos.html a partir do banco de dados
+    add-article.js    ingestão manual de um PDF (uso interno do Claude Code)
+    classify.js       aplica a classificação manual a um artigo (uso interno do Claude Code)
+    set-metadata.js   atualiza só subtopic/evidence_level/clinical_applicability/secondary_diseases de um artigo já classificado
+    export-html.js    gera organizador_artigos.html a partir do banco de dados
 public/
   index.html, app.js, style.css   frontend do app com servidor (sem build step)
 data/             banco SQLite (versionado no git)

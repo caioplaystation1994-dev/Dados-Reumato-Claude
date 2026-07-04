@@ -50,5 +50,17 @@ const columns = db.prepare('PRAGMA table_info(articles)').all().map((c) => c.nam
 if (!columns.includes('detailed_summary')) {
   db.exec('ALTER TABLE articles ADD COLUMN detailed_summary TEXT');
 }
+if (!columns.includes('secondary_diseases')) {
+  db.exec('ALTER TABLE articles ADD COLUMN secondary_diseases TEXT');
+}
+if (!columns.includes('subtopic')) {
+  db.exec('ALTER TABLE articles ADD COLUMN subtopic TEXT');
+}
+if (!columns.includes('evidence_level')) {
+  db.exec('ALTER TABLE articles ADD COLUMN evidence_level TEXT');
+}
+if (!columns.includes('clinical_applicability')) {
+  db.exec('ALTER TABLE articles ADD COLUMN clinical_applicability TEXT');
+}
 
 module.exports = db;
