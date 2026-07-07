@@ -114,7 +114,7 @@ body{padding-bottom:60px}
 @media print{
   /* ── Estrutura: só páginas marcadas aparecem ── */
   header,nav,.action-bar,.btn-add,.btn-remove,.pacote-toggle,
-  .barra-selecao,.doc-subtitle,.section-label,.hlab27-aviso,#igra-aviso,
+  .barra-selecao,.doc-subtitle,.section-label,#hlab27-aviso,#igra-aviso,
   #print-hide,.med-atalhos{display:none!important}
 
   body{background:#fff;padding:0}
@@ -858,11 +858,7 @@ function prepararImpressao(ids) {
   const labFlat = document.getElementById('lab-print-flat');
   if (labFlat) {
     const exames = [];
-    const pkgsEspeciais = new Set(['pkg-hlab27', 'pkg-igra']);
-    document.querySelectorAll('#pacotes-lab .pacote').forEach(pkgEl => {
-      if (pkgsEspeciais.has(pkgEl.id)) return;
-      pkgEl.querySelectorAll('.exam-item.checked label').forEach(l => exames.push(l.textContent));
-    });
+    document.querySelectorAll('#pacotes-lab .exam-item.checked label').forEach(l => exames.push(l.textContent));
     const adicLab = (document.getElementById('lab-adicional')?.value || '').trim();
     if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
     labFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
