@@ -115,14 +115,15 @@ body{padding-bottom:60px}
   /* ── Estrutura: só páginas marcadas aparecem ── */
   header,nav,.action-bar,.btn-add,.btn-remove,.pacote-toggle,
   .barra-selecao,.doc-subtitle,.section-label,.hlab27-aviso,
-  #print-hide{display:none!important}
+  #print-hide,.med-atalhos{display:none!important}
 
   body{background:#fff;padding:0}
   .page{display:none!important;padding:0;max-width:100%}
   .page.print-selected{display:block!important}
 
   /* ── Aparência limpa ── */
-  .doc-wrapper{box-shadow:none;border:none;border-radius:0;padding:16px 0;margin:0}
+  .doc-wrapper{box-shadow:none;border:none;border-radius:0;padding:16px 0;margin:0;display:flex;flex-direction:column;min-height:23cm}
+  .signature-line{margin-top:auto}
   .doc-header{border-bottom:2px solid #1a56a0;margin-bottom:14px}
   .doc-title{font-size:16px}
   .doc-subtitle{display:block!important;font-size:12px;color:#555;text-align:center}
@@ -137,7 +138,12 @@ body{padding-bottom:60px}
   .med-table th{font-size:11px;padding:5px 8px}
   .med-table td{padding:4px 8px;font-size:12px}
 
-  /* ── Pacotes de exames: sem cabeçalho, apenas exames marcados ── */
+  /* ── Pacotes de exames: ocultar; usar lista plana ── */
+  .pacotes-grid{display:none!important}
+  .print-adicional-group{display:none!important}
+  .print-flat-list{display:block!important}
+
+  /* ── Exames marcados (lista plana impressão) ── */
   .pacote{border:none;box-shadow:none;break-inside:avoid;margin-bottom:2px}
   .pacote.sem-selecao{display:none!important}
   .pacote-header{display:none!important}
@@ -168,6 +174,14 @@ body{padding-bottom:60px}
 
   @page{size:A4;margin:2cm 2.5cm}
 }
+
+/* Tela: esconder lista plana (só aparece na impressão) */
+.print-flat-list{display:none}
+.print-flat-item{font-size:13px;padding:3px 0;color:#1a202c;line-height:1.5}
+.print-flat-item::before{content:"• ";color:#1a56a0;font-weight:700}
+
+/* Ocultar cabeçalho da tabela de medicamentos */
+.med-table thead{display:none}
 </style>
 </head>
 <body>
@@ -355,27 +369,9 @@ body{padding-bottom:60px}
     </div>
 
     <div class="section-label">Prescrição</div>
-    <table class="med-table" id="med-table">
-      <thead>
-        <tr>
-          <th style="width:30px">#</th>
-          <th>Medicamento</th>
-          <th style="width:180px">Posologia</th>
-          <th style="width:150px">Via / Duração</th>
-          <th style="width:40px"></th>
-        </tr>
-      </thead>
-      <tbody id="med-tbody">
-        <tr>
-          <td>1</td>
-          <td><input type="text" placeholder="Nome e dose"></td>
-          <td><input type="text" placeholder="Ex: 1 cp 1x/semana"></td>
-          <td><input type="text" placeholder="Ex: VO / contínuo"></td>
-          <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn-add" onclick="addMed()">+ Adicionar linha</button>
+    <div class="field-group">
+      <textarea id="rx-prescricao" style="min-height:220px;font-size:14px;line-height:1.8" placeholder="1. Metotrexato 15 mg – 1 comprimido 1x/semana, via oral, uso contínuo&#10;2. Ácido fólico 5 mg – 1 comprimido 6 dias por semana, via oral&#10;&#10;(Clique nos botões acima para inserir rapidamente o nome do medicamento)"></textarea>
+    </div>
 
     <div class="section-label print-se-preenchido" data-textarea="rx-orientacoes">Orientações ao Paciente</div>
     <div class="field-group">
@@ -435,14 +431,15 @@ body{padding-bottom:60px}
     <div class="section-label">Pacotes de Exames</div>
 
     <div class="pacotes-grid" id="pacotes-lab"></div>
+    <div id="lab-print-flat" class="print-flat-list"></div>
 
     <div id="hlab27-aviso" style="display:none;background:#fffbeb;border:1.5px solid #f6ad55;border-radius:8px;padding:10px 14px;margin-top:4px;font-size:12px;color:#7b341e">
       ⚠️ <strong>HLA-B27</strong> selecionado — será gerado um <strong>arquivo .docx separado</strong> com a solicitação e indicação clínica específica para espondiloartrite.
     </div>
 
     <div class="section-label">Exames Adicionais (texto livre)</div>
-    <div class="field-group">
-      <textarea id="lab-adicional" class="short" placeholder="Outros exames não listados acima..."></textarea>
+    <div class="field-group print-adicional-group">
+      <textarea id="lab-adicional" class="short" placeholder="Outros exames não listados acima... (um por linha)"></textarea>
     </div>
 
     <div class="section-label">Indicação Clínica / Observações</div>
@@ -497,10 +494,11 @@ body{padding-bottom:60px}
 
     <div class="section-label">Exames de Imagem</div>
     <div class="pacotes-grid" id="pacotes-img"></div>
+    <div id="img-print-flat" class="print-flat-list"></div>
 
     <div class="section-label">Exames Adicionais (texto livre)</div>
-    <div class="field-group">
-      <textarea id="img-adicional" class="short" placeholder="Outros exames de imagem, com especificação do segmento/lado..."></textarea>
+    <div class="field-group print-adicional-group">
+      <textarea id="img-adicional" class="short" placeholder="Outros exames de imagem, com especificação do segmento/lado... (um por linha)"></textarea>
     </div>
 
     <div class="section-label print-se-preenchido" data-textarea="img-indicacao">Indicação Clínica / Quesitos</div>
@@ -776,13 +774,8 @@ function clearForm(pageId) {
     });
   }
   if (pageId === 'receita') {
-    document.getElementById('med-tbody').innerHTML = `<tr>
-      <td>1</td>
-      <td><input type="text" placeholder="Ex: Metotrexato 10 mg"></td>
-      <td><input type="text" placeholder="Ex: 1 cp 1x/semana"></td>
-      <td><input type="text" placeholder="Ex: VO / contínuo"></td>
-      <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>
-    </tr>`;
+    const ta = document.getElementById('rx-prescricao');
+    if (ta) ta.value = '';
   }
 }
 
@@ -801,6 +794,26 @@ function prepararImpressao(ids) {
     const vazio = !ta || ta.value.trim() === '';
     label.classList.toggle('oculto-impressao', vazio);
   });
+
+  // ── Lista plana de exames laboratoriais ──
+  const labFlat = document.getElementById('lab-print-flat');
+  if (labFlat) {
+    const exames = [];
+    document.querySelectorAll('#pacotes-lab .exam-item.checked label').forEach(l => exames.push(l.textContent));
+    const adicLab = (document.getElementById('lab-adicional')?.value || '').trim();
+    if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
+    labFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
+  }
+
+  // ── Lista plana de exames de imagem ──
+  const imgFlat = document.getElementById('img-print-flat');
+  if (imgFlat) {
+    const exames = [];
+    document.querySelectorAll('#pacotes-img .exam-item.checked label').forEach(l => exames.push(l.textContent));
+    const adicImg = (document.getElementById('img-adicional')?.value || '').trim();
+    if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
+    imgFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
+  }
 
   // Zera título para não aparecer no cabeçalho do browser na impressão
   document._tituloOriginal = document.title;
@@ -826,46 +839,13 @@ function printDoc(pageId) {
 
 // ─── Medicamentos ──────────────────────────────────────────────────────────────
 function addMedNome(nome) {
-  const tbody = document.getElementById('med-tbody');
-  // Tenta preencher a última linha vazia primeiro
-  const linhas = [...tbody.rows];
-  const vazia = linhas.find(r => r.querySelectorAll('td input')[0]?.value.trim() === '');
-  if (vazia) {
-    vazia.querySelectorAll('td input')[0].value = nome;
-    vazia.querySelectorAll('td input')[0].focus();
-    return;
-  }
-  // Senão adiciona nova linha
-  const n = tbody.rows.length + 1;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td>${n}</td>
-    <td><input type="text" value="${nome}"></td>
-    <td><input type="text" placeholder="Posologia"></td>
-    <td><input type="text" placeholder="Via / Duração"></td>
-    <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>`;
-  tbody.appendChild(tr);
-  tr.querySelectorAll('td input')[1].focus();
-}
-
-function addMed() {
-  const tbody = document.getElementById('med-tbody');
-  const n = tbody.rows.length + 1;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td>${n}</td>
-    <td><input type="text" placeholder="Medicamento e concentração"></td>
-    <td><input type="text" placeholder="Posologia"></td>
-    <td><input type="text" placeholder="Via / Duração"></td>
-    <td><button class="btn-remove" onclick="removeMed(this)">✕</button></td>`;
-  tbody.appendChild(tr);
-}
-
-function removeMed(btn) {
-  const tbody = document.getElementById('med-tbody');
-  if (tbody.rows.length <= 1) return;
-  btn.closest('tr').remove();
-  [...tbody.rows].forEach((r, i) => r.cells[0].textContent = i + 1);
+  const ta = document.getElementById('rx-prescricao');
+  const texto = ta.value;
+  const linhas = texto.split('\n').filter(l => l.trim());
+  const n = linhas.length + 1;
+  ta.value = (texto.trim() ? texto.trimEnd() + '\n' : '') + n + '. ' + nome + ' – ';
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
 }
 
 // ─── Helpers Word ──────────────────────────────────────────────────────────────
@@ -973,10 +953,6 @@ async function gerarWordRelatorio() {
 }
 
 async function gerarWordReceita() {
-  const meds = [...document.getElementById('med-tbody').rows].map(r => {
-    const c = r.querySelectorAll('td input');
-    return { med: c[0]?.value||'', pos: c[1]?.value||'', via: c[2]?.value||'' };
-  });
   const paras = [
     { type: 'title', text: 'RECEITA MÉDICA' },
     { type: 'subtitle', text: localAtual() },
@@ -986,7 +962,7 @@ async function gerarWordReceita() {
     { type: 'label-value', label: 'Data', value: v('rx-data') },
     { type: 'separator' },
     { type: 'heading', text: 'Prescrição' },
-    ...meds.filter(m=>m.med).map((m,i) => ({ type: 'text', text: `${i+1}. ${m.med}  |  ${m.pos}  |  ${m.via}` })),
+    { type: 'multiline', value: v('rx-prescricao') || '—' },
     ...(v('rx-orientacoes') ? [{ type: 'heading', text: 'Orientações ao Paciente' }, { type: 'multiline', value: v('rx-orientacoes') }] : []),
     ...(v('rx-obs') ? [{ type: 'heading', text: 'Observações' }, { type: 'multiline', value: v('rx-obs') }] : []),
     { type: 'separator' },
@@ -998,33 +974,36 @@ async function gerarWordReceita() {
 }
 
 async function gerarWordLab() {
-  const allSections = selectedLabFromPacotes();
-  // Separar HLA-B27 das demais seções
-  const hlaSection = allSections.find(s => s.titulo === 'HLA-B27');
-  const sections = allSections.filter(s => s.titulo !== 'HLA-B27');
+  // Separar HLA-B27 dos demais
+  const hlaChecked = document.querySelectorAll('#pkg-hlab27-items .exam-item.checked').length > 0;
 
   const nomePaciente = v('lab-nome') || 'paciente';
   const medico = v('lab-medico');
   const crm = v('lab-crm');
   const assinatura = medico + (crm ? ' — ' + crm : '');
 
+  // Coletar todos os exames marcados (exceto HLA-B27) em lista plana
+  const todosExames = [];
+  PACOTES_LAB.forEach(pkg => {
+    if (pkg.id === 'pkg-hlab27') return;
+    document.querySelectorAll(`#${pkg.id}-items .exam-item.checked label`).forEach(l => todosExames.push(l.textContent));
+  });
+  const adicLab = v('lab-adicional');
+  if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => todosExames.push(l.trim()));
+
   // Documento principal (sem HLA-B27)
-  if (sections.length || v('lab-adicional') || v('lab-indicacao')) {
+  if (todosExames.length || v('lab-indicacao')) {
     const paras = [
       { type: 'title', text: 'SOLICITAÇÃO DE EXAMES LABORATORIAIS' },
       { type: 'subtitle', text: localAtual() },
       { type: 'label-value', label: 'Paciente', value: nomePaciente },
       { type: 'label-value', label: 'Data', value: v('lab-data') },
       { type: 'label-value', label: 'Diagnóstico / CID', value: v('lab-cid') },
-        { type: 'separator' },
+      { type: 'separator' },
     ];
-    sections.forEach(sec => {
-      paras.push({ type: 'heading', text: sec.titulo });
-      sec.exames.forEach(e => paras.push({ type: 'bullet', text: e }));
-    });
-    if (v('lab-adicional')) {
-      paras.push({ type: 'heading', text: 'Exames Adicionais' });
-      paras.push({ type: 'multiline', value: v('lab-adicional') });
+    if (todosExames.length) {
+      paras.push({ type: 'heading', text: 'Exames Solicitados' });
+      todosExames.forEach(e => paras.push({ type: 'bullet', text: e }));
     }
     if (v('lab-indicacao')) {
       paras.push({ type: 'heading', text: 'Indicação Clínica' });
@@ -1038,7 +1017,7 @@ async function gerarWordLab() {
   }
 
   // Documento separado para HLA-B27
-  if (hlaSection) {
+  if (hlaChecked) {
     const relatorio = PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
     const parasHla = [
       { type: 'title', text: 'SOLICITAÇÃO DE EXAME LABORATORIAL' },
@@ -1060,7 +1039,12 @@ async function gerarWordLab() {
 }
 
 async function gerarWordImg() {
-  const sections = selectedImgFromPacotes();
+  // Coletar todos os exames de imagem marcados em lista plana
+  const todosExames = [];
+  document.querySelectorAll('#pacotes-img .exam-item.checked label').forEach(l => todosExames.push(l.textContent));
+  const adicImg = v('img-adicional');
+  if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => todosExames.push(l.trim()));
+
   const paras = [
     { type: 'title', text: 'SOLICITAÇÃO DE EXAMES DE IMAGEM' },
     { type: 'subtitle', text: localAtual() },
@@ -1069,13 +1053,9 @@ async function gerarWordImg() {
     { type: 'label-value', label: 'Diagnóstico / CID', value: v('img-cid') },
     { type: 'separator' },
   ];
-  sections.forEach(sec => {
-    paras.push({ type: 'heading', text: sec.titulo });
-    sec.exames.forEach(e => paras.push({ type: 'bullet', text: e }));
-  });
-  if (v('img-adicional')) {
-    paras.push({ type: 'heading', text: 'Exames Adicionais' });
-    paras.push({ type: 'multiline', value: v('img-adicional') });
+  if (todosExames.length) {
+    paras.push({ type: 'heading', text: 'Exames Solicitados' });
+    todosExames.forEach(e => paras.push({ type: 'bullet', text: e }));
   }
   if (v('img-indicacao')) {
     paras.push({ type: 'heading', text: 'Indicação Clínica / Quesitos' });
