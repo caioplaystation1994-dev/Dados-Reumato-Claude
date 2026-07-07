@@ -205,12 +205,88 @@ body{padding-bottom:60px}
 
 /* Ocultar cabeçalho da tabela de medicamentos */
 .med-table thead{display:none}
+
+/* ── Modais ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:center;justify-content:center}
+.modal-overlay.aberto{display:flex}
+.modal-box{background:#fff;border-radius:14px;padding:28px 32px;max-width:680px;width:calc(100% - 40px);max-height:80vh;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.modal-titulo{font-size:16px;font-weight:700;color:#1a56a0;display:flex;justify-content:space-between;align-items:center}
+.modal-fechar{background:none;border:none;font-size:20px;cursor:pointer;color:#718096;line-height:1}
+.modal-corpo{overflow-y:auto;flex:1}
+
+/* ── Templates ── */
+.template-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.template-bar label{font-size:11px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.template-bar select{border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px;background:#fafafa;flex:1;max-width:280px}
+.template-bar button{background:#ebf4ff;color:#1a56a0;border:1.5px solid #bee3f8;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s}
+.template-bar button:hover{background:#1a56a0;color:#fff}
+
+/* ── CID autocomplete ── */
+#rel-diagnostico,#lab-cid,#img-cid{position:relative}
+.cid-suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e0;border-radius:0 0 8px 8px;z-index:500;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.cid-item{padding:7px 12px;cursor:pointer;font-size:12px;color:#2d3748;border-bottom:1px solid #f7fafc}
+.cid-item:hover{background:#ebf4ff;color:#1a56a0}
+.cid-item strong{color:#1a56a0}
+.cid-wrap{position:relative}
+
+/* ── DAS28 / Scores ── */
+.score-panel{background:#f7faff;border:1.5px solid #bee3f8;border-radius:10px;padding:14px 18px;margin-bottom:12px}
+.score-panel-titulo{font-size:11px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.score-panel-body{margin-top:12px;display:none}
+.score-panel.aberto .score-panel-body{display:block}
+.score-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px}
+.score-field{display:flex;flex-direction:column;gap:3px}
+.score-field label{font-size:10px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.3px}
+.score-field input{border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:14px;width:100%;background:#fff}
+.score-result{background:#1a56a0;color:#fff;border-radius:8px;padding:10px 16px;text-align:center;font-size:14px;font-weight:700}
+.score-result span{font-size:11px;font-weight:400;opacity:.8;display:block}
+.score-tabs{display:flex;gap:6px;margin-bottom:12px}
+.score-tab{background:#e2e8f0;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;color:#4a5568;transition:.15s}
+.score-tab.ativo{background:#1a56a0;color:#fff}
+
+/* ── Interações medicamentosas ── */
+.interacao-alert{background:#fff5f5;border:1.5px solid #fc8181;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:12px;color:#742a2a;display:none}
+.interacao-alert.visivel{display:block}
+.interacao-alert strong{display:block;margin-bottom:4px;color:#c53030}
+.interacao-item{padding:2px 0;line-height:1.5}
+
+/* ── Barra de ações receita ── */
+.rx-action-bar{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.btn-rx-action{background:#f0f4f8;border:1px solid #cbd5e0;color:#2d3748;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+.btn-rx-action:hover{background:#1a56a0;color:#fff;border-color:#1a56a0}
+
+/* ── Histórico ── */
+.hist-item{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:.15s}
+.hist-item:hover{background:#ebf4ff;border-color:#bee3f8}
+.hist-data{font-size:11px;color:#718096;margin-bottom:3px}
+.hist-diag{font-size:13px;font-weight:700;color:#1a56a0}
+.hist-cond{font-size:12px;color:#4a5568;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-empty{font-size:13px;color:#a0aec0;text-align:center;padding:20px}
+
+/* ── Log de documentos ── */
+.log-item{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid #f0f4f8;font-size:12px}
+.log-tipo{background:#1a56a0;color:#fff;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap}
+.log-nome{flex:1;color:#2d3748;font-weight:600}
+.log-ts{color:#a0aec0;white-space:nowrap}
+
+/* ── Utilitários (header) ── */
+.util-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap}
+.util-btn:hover{background:rgba(255,255,255,.3)}
+
+/* ── Data por extenso (impressão) ── */
+.data-extenso-print{display:none}
+@media print{
+  .data-extenso-print{display:block;font-size:11px;color:#555;text-align:right;margin-bottom:4px}
+  .score-panel,.template-bar,.perfil-bar,.rx-action-bar,.interacao-alert{display:none!important}
+}
+
 </style>
 </head>
 <body>
 
 <header>
   <div style="display:flex;align-items:center;gap:12px">
+    <button class="util-btn" onclick="abrirModal('modal-utils')" title="Exportar, importar dados e log">⚙️ Dados</button>
     <img id="logo-hospital" src="" alt="" style="height:44px;max-width:140px;object-fit:contain;display:none;filter:brightness(0) invert(1)">
     <h1 style="margin:0">Reumatologia</h1>
   </div>
@@ -236,6 +312,44 @@ body{padding-bottom:60px}
     </nav>
   </div>
 </header>
+
+
+<!-- ═══════════════ MODAL UTILITÁRIOS ═══════════════ -->
+<div class="modal-overlay" id="modal-utils">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-titulo">⚙️ Dados e Utilitários <button class="modal-fechar" onclick="fecharModal('modal-utils')">×</button></div>
+    <div class="modal-corpo" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:12px;color:#718096;margin-bottom:4px">Gerencie perfis de pacientes, histórico e log de documentos gerados.</div>
+      <button class="btn-word" style="justify-content:center" onclick="exportarDados()">⬇️ Exportar todos os dados (JSON)</button>
+      <label class="btn-print" style="text-align:center;cursor:pointer;display:block">
+        📂 Importar dados (JSON)
+        <input type="file" id="importar-json" accept=".json" style="display:none" onchange="importarDados(event)">
+      </label>
+      <button class="btn-print" onclick="fecharModal('modal-utils');abrirModal('modal-log')" style="text-align:center">📋 Ver log de documentos</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL LOG ═══════════════ -->
+<div class="modal-overlay" id="modal-log">
+  <div class="modal-box">
+    <div class="modal-titulo">📋 Log de Documentos Gerados <button class="modal-fechar" onclick="fecharModal('modal-log')">×</button></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button class="btn-rx-action" onclick="limparLog()">🗑 Limpar log</button>
+    </div>
+    <div class="modal-corpo" id="log-corpo"><div class="hist-empty">Nenhum documento registrado.</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL HISTÓRICO ═══════════════ -->
+<div class="modal-overlay" id="modal-historico">
+  <div class="modal-box">
+    <div class="modal-titulo">📅 Histórico de Consultas <span id="hist-paciente-nome" style="font-weight:400;font-size:13px;color:#718096"></span>
+      <button class="modal-fechar" onclick="fecharModal('modal-historico')">×</button>
+    </div>
+    <div class="modal-corpo" id="hist-corpo"><div class="hist-empty">Nenhuma consulta registrada.</div></div>
+  </div>
+</div>
 
 <!-- ======================== BARRA DE SELEÇÃO ======================== -->
 <div class="barra-selecao">
@@ -304,7 +418,69 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Diagnóstico Principal</label>
-        <input type="text" id="rel-diagnostico" placeholder="Ex: Artrite Reumatoide – M05.8">
+        <div class="cid-wrap">
+          <input type="text" id="rel-diagnostico" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-rel')" autocomplete="off">
+          <div class="cid-suggestions" id="cid-sug-rel" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="template-bar no-print">
+      <label>Template de relatório:</label>
+      <select id="select-template">
+        <option value="">— selecionar doença —</option>
+        <option value="AR">Artrite Reumatoide (AR)</option>
+        <option value="LES">Lúpus Eritematoso Sistêmico (LES)</option>
+        <option value="EA">Espondiloartrite Axial (EA)</option>
+        <option value="APs">Artrite Psoriásica (APs)</option>
+        <option value="SS">Síndrome de Sjögren (SS)</option>
+        <option value="ES">Esclerose Sistêmica (ES)</option>
+        <option value="PM">Polimiosite / Dermatomiosite</option>
+        <option value="Gota">Gota</option>
+        <option value="FM">Fibromialgia</option>
+      </select>
+      <button onclick="aplicarTemplate()">Aplicar</button>
+    </div>
+
+    <div class="score-panel no-print" id="score-panel">
+      <div class="score-panel-titulo" onclick="toggleScorePanel()">
+        📊 Escores de Atividade de Doença
+        <span id="score-panel-arrow">▶</span>
+      </div>
+      <div class="score-panel-body">
+        <div class="score-tabs">
+          <button class="score-tab ativo" onclick="mudarScore('das28',this)">DAS28</button>
+          <button class="score-tab" onclick="mudarScore('basdai',this)">BASDAI</button>
+          <button class="score-tab" onclick="mudarScore('sledai',this)">SLEDAI-2K</button>
+        </div>
+        <!-- DAS28 -->
+        <div id="score-das28">
+          <div class="score-grid">
+            <div class="score-field"><label>Articulações Dolorosas (0-28)</label><input type="number" id="das-tjc" min="0" max="28" placeholder="0" oninput="calcDAS28()"></div>
+            <div class="score-field"><label>Articulações Tumefatas (0-28)</label><input type="number" id="das-sjc" min="0" max="28" placeholder="0" oninput="calcDAS28()"></div>
+            <div class="score-field"><label>VHS (mm/h) ou PCR (mg/L)</label><input type="number" id="das-esr" min="0" placeholder="—" oninput="calcDAS28()"></div>
+            <div class="score-field"><label>AVG Paciente (0–100 mm)</label><input type="number" id="das-vas" min="0" max="100" placeholder="—" oninput="calcDAS28()"></div>
+          </div>
+          <div class="score-result" id="das-result">DAS28: — <span>Preencha os campos</span></div>
+        </div>
+        <!-- BASDAI -->
+        <div id="score-basdai" style="display:none">
+          <div class="score-grid">
+            <div class="score-field"><label>1. Fadiga (0–10)</label><input type="number" id="bd1" min="0" max="10" step="0.1" oninput="calcBASDI()"></div>
+            <div class="score-field"><label>2. Dor coluna (0–10)</label><input type="number" id="bd2" min="0" max="10" step="0.1" oninput="calcBASDI()"></div>
+            <div class="score-field"><label>3. Dor articular periférica (0–10)</label><input type="number" id="bd3" min="0" max="10" step="0.1" oninput="calcBASDI()"></div>
+            <div class="score-field"><label>4. Entesite (0–10)</label><input type="number" id="bd4" min="0" max="10" step="0.1" oninput="calcBASDI()"></div>
+            <div class="score-field"><label>5. Rigidez matinal – intensidade (0–10)</label><input type="number" id="bd5" min="0" max="10" step="0.1" oninput="calcBASDI()"></div>
+            <div class="score-field"><label>6. Rigidez matinal – duração (0–10)</label><input type="number" id="bd6" min="0" max="10" step="0.1" oninput="calcBASDI()"></div>
+          </div>
+          <div class="score-result" id="basdai-result">BASDAI: — <span>Preencha os campos</span></div>
+        </div>
+        <!-- SLEDAI -->
+        <div id="score-sledai" style="display:none">
+          <div style="font-size:11px;color:#718096;margin-bottom:8px">Marque os itens presentes nas últimas 10 dias:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="sledai-checks"></div>
+          <div class="score-result" style="margin-top:12px" id="sledai-result">SLEDAI-2K: — <span>Marque os itens</span></div>
+        </div>
       </div>
     </div>
 
@@ -350,6 +526,7 @@ body{padding-bottom:60px}
 
   <div class="action-bar">
     <button class="btn-clear" onclick="clearForm('relatorio')">Limpar</button>
+    <button class="btn-print" style="background:#f0fff4;color:#276749;border-color:#68d391" onclick="abrirHistorico()">📅 Histórico</button>
     <button class="btn-print" onclick="printDoc('relatorio')">🖨️ Imprimir</button>
     <button class="btn-word" onclick="gerarWordRelatorio()">⬇️ Baixar Word (.docx)</button>
   </div>
@@ -413,8 +590,16 @@ body{padding-bottom:60px}
     </div>
 
     <div class="section-label">Prescrição</div>
+    <div class="rx-action-bar no-print">
+      <button class="btn-rx-action" onclick="addLinhaPrescricao()">＋ Adicionar linha</button>
+      <button class="btn-rx-action" onclick="reordenarPrescricao()">↕ Reordenar</button>
+    </div>
+    <div class="interacao-alert" id="interacao-alert">
+      <strong>⚠️ Interações medicamentosas detectadas:</strong>
+      <div id="interacao-lista"></div>
+    </div>
     <div class="field-group">
-      <textarea id="rx-prescricao" style="min-height:220px;font-size:14px;line-height:1.8" placeholder="1. Metotrexato 15 mg – 1 comprimido 1x/semana, via oral, uso contínuo&#10;2. Ácido fólico 5 mg – 1 comprimido 6 dias por semana, via oral&#10;&#10;(Clique nos botões acima para inserir rapidamente o nome do medicamento)"></textarea>
+      <textarea id="rx-prescricao" style="min-height:220px;font-size:14px;line-height:1.8" placeholder="1. Metotrexato 15 mg – 1 comprimido 1x/semana, via oral, uso contínuo&#10;2. Ácido fólico 5 mg – 1 comprimido 6 dias por semana, via oral&#10;&#10;(Clique nos botões acima para inserir rapidamente o nome do medicamento)" oninput="verificarInteracoes()"></textarea>
     </div>
 
     <div class="section-label print-se-preenchido" data-textarea="rx-orientacoes">Orientações ao Paciente</div>
@@ -472,7 +657,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
-        <input type="text" id="lab-cid" placeholder="Ex: Artrite Reumatoide – M05.8">
+        <div class="cid-wrap"><input type="text" id="lab-cid" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-lab')" autocomplete="off"><div class="cid-suggestions" id="cid-sug-lab" style="display:none"></div></div>
       </div>
     </div>
 
@@ -610,7 +795,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
-        <input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45">
+        <div class="cid-wrap"><input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45" oninput="cidSuggest(this,'cid-sug-img')" autocomplete="off"><div class="cid-suggestions" id="cid-sug-img" style="display:none"></div></div>
       </div>
     </div>
 
@@ -736,6 +921,41 @@ const PACOTES_LAB = [
   {
     id: 'pkg-igra', titulo: 'IGRA (Quantiferon)',
     exames: ['IGRA (Quantiferon)']
+  },
+  {
+    id: 'pkg-prebio', titulo: 'Pré-Biológico',
+    exames: [
+      'Hemograma completo','Creatinina','Ureia',
+      'TGO (AST)','TGP (ALT)','Gama GT','Fosfatase Alcalina',
+      'Anti-HBs','HBsAg','Anti-HBc total','Anti-HCV','HIV 1 e 2','VDRL',
+      'Glicemia em jejum','Colesterol total e frações','Triglicérides',
+      'Proteína C Reativa','VHS'
+    ]
+  },
+  {
+    id: 'pkg-mtx', titulo: 'Monitoramento MTX/LEF',
+    exames: [
+      'Hemograma completo','TGO (AST)','TGP (ALT)','Gama GT',
+      'Fosfatase Alcalina','Bilirrubina total e frações',
+      'Albumina','Creatinina','Ureia'
+    ]
+  },
+  {
+    id: 'pkg-ativles', titulo: 'Atividade LES',
+    exames: [
+      'Anti-dsDNA','C3','C4','Hemograma completo','Creatinina',
+      'Relação proteinúria/creatinúria','Dismorfismo eritrocitário',
+      'Proteína C Reativa','VHS'
+    ]
+  },
+  {
+    id: 'pkg-ss', titulo: 'Triagem Síndrome de Sjögren',
+    exames: [
+      'FAN','Anti-SSA (Anti-Ro)','Anti-SSB (Anti-La)',
+      'Hemograma completo','Creatinina','TGO (AST)','TGP (ALT)',
+      'TSH','Eletroforese de proteínas','Imunoglobulina IgG',
+      'Proteína C Reativa','VHS'
+    ]
   }
 ];
 
@@ -1072,6 +1292,10 @@ function printDoc(pageId) {
   prepararImpressao([pageId]);
   window.print();
   limparImpressao();
+  const nomes = {'relatorio':'Relatório Médico','receita':'Receita Médica','exames-lab':'Exames Laboratoriais','exames-img':'Exames de Imagem'};
+  const pac = v('rel-nome') || v('rx-nome') || v('lab-nome') || v('img-nome') || '—';
+  registrarLog('Impressão: ' + (nomes[pageId]||pageId), pac, '');
+  if (pageId === 'relatorio') salvarHistorico();
 }
 
 // ─── Posologias habituais dos atalhos de receita ──────────────────────────────
@@ -1099,6 +1323,7 @@ function addMedRx(nome) {
   ta.value = (texto.trim() ? texto.trimEnd() + '\n' : '') + linha;
   ta.focus();
   ta.setSelectionRange(ta.value.length, ta.value.length);
+  verificarInteracoes();
 }
 
 function addMedNome(nome) { addMedRx(nome); }
@@ -1229,7 +1454,9 @@ async function gerarWordRelatorio() {
     { type: 'label-value', label: 'CRM', value: v('rel-crm') },
     { type: 'signature', text: v('rel-medico') + (v('rel-crm') ? ' — ' + v('rel-crm') : '') },
   ];
-  await downloadDocx(makeDoc(paras), `relatorio-${(v('rel-nome')||'paciente').replace(/\s+/g,'-')}.docx`);
+  const nomeArq = `relatorio-${(v('rel-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
+  await downloadDocx(makeDoc(paras), nomeArq);
+  salvarHistorico(); registrarLog('Relatório Word', v('rel-nome'), nomeArq);
 }
 
 async function gerarWordReceita() {
@@ -1579,12 +1806,458 @@ document.addEventListener('DOMContentLoaded', () => {
   sincMedico();
   // Renderizar perfis de paciente
   renderPerfis();
+  // Inicializar SLEDAI
+  renderSledai();
   const hoje = new Date().toISOString().split('T')[0];
   ['rel-data','rx-data','lab-data','img-data'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = hoje;
   });
 });
+
+
+// ─── CID-10 Reumatologia ──────────────────────────────────────────────────────
+const CID_RHEUM = [
+  ['M05','Artrite Reumatoide soropositiva'],['M05.0','AR – Síndrome de Felty'],
+  ['M05.3','AR – Comprometimento de outros órgãos'],['M05.8','AR soropositiva, outra'],
+  ['M06','Artrite Reumatoide soronegativa'],['M06.0','AR soronegativa'],
+  ['M06.9','AR, não especificada'],['M07','Artropatia psoriásica'],
+  ['M07.3','Outras artropatias psoriásicas'],['M08','Artrite Reumatoide juvenil'],
+  ['M10','Gota'],['M10.0','Gota idiopática'],['M10.9','Gota, não especificada'],
+  ['M11','Outros artropatias por cristais'],['M11.2','CPPD – condrocalcinose'],
+  ['M13','Outras artrites'],['M13.1','Artrite monoarticular'],
+  ['M15','Poliartrose'],['M16','Coxartrose'],['M17','Gonartrose'],
+  ['M32','Lúpus Eritematoso Sistêmico (LES)'],['M32.0','LES induzido por drogas'],
+  ['M32.1','LES com comprometimento de outros órgãos'],['M32.9','LES, não especificado'],
+  ['M33','Dermatomiosite / Polimiosite'],['M33.0','Dermatomiosite juvenil'],
+  ['M33.1','Outras dermatomiosites'],['M33.2','Polimiosite'],
+  ['M34','Esclerose Sistêmica (ES)'],['M34.0','ES progressiva'],
+  ['M34.1','Síndrome CREST'],['M34.9','ES, não especificada'],
+  ['M35','Outras doenças sistêmicas do tecido conjuntivo'],
+  ['M35.0','Síndrome de Sjögren (SS)'],['M35.1','Outras síndromes overlap'],
+  ['M35.3','Policondrite recidivante'],['M35.5','Síndrome multicanal fibrosclerótica'],
+  ['M45','Espondilite Anquilosante'],['M45.9','EA, sem menção de doença inflamatória intestinal'],
+  ['M46','Outras espondilopatias inflamatórias'],['M46.0','Entesopatia vertebral'],
+  ['M46.9','Espondiloartrite não radiográfica'],
+  ['M30','Poliarterite nodosa'],['M31.3','Granulomatose de Wegener (GPA)'],
+  ['M31.5','Arterite de células gigantes'],['M31.6','Arterite de Takayasu'],
+  ['M31.7','Micropoliarterite'],['M79.7','Fibromialgia'],
+  ['M80','Osteoporose com fratura patológica'],['M81','Osteoporose sem fratura'],
+  ['M81.0','Osteoporose pós-menopáusica'],['M81.9','Osteoporose, não especificada'],
+];
+
+function cidSuggest(input, sugId) {
+  const q = input.value.trim().toLowerCase();
+  const sug = document.getElementById(sugId);
+  if (!sug) return;
+  if (q.length < 2) { sug.style.display = 'none'; return; }
+  const matches = CID_RHEUM.filter(([code, desc]) =>
+    desc.toLowerCase().includes(q) || code.toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!matches.length) { sug.style.display = 'none'; return; }
+  sug.innerHTML = matches.map(([code, desc]) =>
+    `<div class="cid-item" onclick="selecionarCid(${JSON.stringify(input.id)},${JSON.stringify(sugId)},${JSON.stringify(desc+' – '+code)})"><strong>${code}</strong> ${desc}</div>`
+  ).join('');
+  sug.style.display = 'block';
+}
+
+function selecionarCid(inputId, sugId, valor) {
+  const el = document.getElementById(inputId);
+  if (el) { el.value = valor; sincPaciente('diagnostico', valor); }
+  const sug = document.getElementById(sugId);
+  if (sug) sug.style.display = 'none';
+  // Sincronizar diagnóstico entre abas
+  ['lab-cid','img-cid','rel-diagnostico'].forEach(id => {
+    if (id !== inputId) { const e = document.getElementById(id); if (e && !e.value) e.value = valor; }
+  });
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cid-wrap')) {
+    document.querySelectorAll('.cid-suggestions').forEach(el => el.style.display = 'none');
+  }
+});
+
+// ─── Templates de relatório por doença ───────────────────────────────────────
+const TEMPLATES_DOENCA = {
+  AR: {
+    diagnostico: 'Artrite Reumatoide – M05.8',
+    anamnese: 'Paciente com diagnóstico de Artrite Reumatoide em acompanhamento. Relata ___. Articulações mais acometidas: ___.  Rigidez matinal: ___ minutos. Uso de DMARDs: ___.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg
+
+Articular: ___ articulações dolorosas, ___ tumefatas.
+Deformidades: ___. Nódulos reumatoides: ___.
+Extra-articular: ___.',
+    conduta: 'Manter DMARD convencional (___). Solicitar exames de seguimento. Retorno em ___ semanas.
+Próxima consulta: ___.'
+  },
+  LES: {
+    diagnostico: 'Lúpus Eritematoso Sistêmico – M32.9',
+    anamnese: 'Paciente com diagnóstico de LES em acompanhamento. Critérios SLICC presentes: ___. Último SLEDAI: ___. Relata ___.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg
+
+Pele/mucosas: ___.
+Articular: ___.
+Rins: ___. Manifestações neurológicas: ___.',
+    conduta: 'Manter hidroxicloroquina. ___. Solicitar exames de atividade. Retorno em ___ semanas.'
+  },
+  EA: {
+    diagnostico: 'Espondilite Anquilosante – M45.9',
+    anamnese: 'Paciente com diagnóstico de Espondiloartrite Axial. BASDAI: ___. Dor lombar inflamatória: ___. Relata ___.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg
+
+Schober: ___ cm. Expansão torácica: ___ cm. Distância tragus-parede: ___ cm.
+Articular periférica: ___. Entesite: ___.',
+    conduta: 'Manter AINE (___). ___. Solicitar RMN de sacroilíacas de controle. Retorno em ___ semanas.'
+  },
+  APs: {
+    diagnostico: 'Artrite Psoriásica – M07.3',
+    anamnese: 'Paciente com diagnóstico de Artrite Psoriásica. Padrão articular: ___. Lesões de psoríase: ___ (PASI ___). Relata ___.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg
+
+Pele: ___.
+Articular: ___ articulações comprometidas. Dactilite: ___. Entesite: ___.',
+    conduta: 'Manter DMARD (___). ___. Retorno em ___ semanas.'
+  },
+  SS: {
+    diagnostico: 'Síndrome de Sjögren – M35.0',
+    anamnese: 'Paciente com diagnóstico de Síndrome de Sjögren. Xeroftalmia: ___. Xerostomia: ___. ESSDAI: ___. Relata ___.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg
+
+Glândulas salivares: ___.
+Olhos: ___.
+Mucosas: ___.
+Extra-glandular: ___.',
+    conduta: 'Manter hidroxicloroquina. ___. Oftalmo e odonto de controle. Retorno em ___ semanas.'
+  },
+  ES: {
+    diagnostico: 'Esclerose Sistêmica – M34.9',
+    anamnese: 'Paciente com diagnóstico de Esclerose Sistêmica (___). mRSS: ___. Relata ___. Fenômeno de Raynaud: ___. Dispneia: ___.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  SpO2: ___% |  Peso: ___ kg
+
+Pele: mRSS ___. Telangiectasias: ___.
+Pulmão: ___.
+Articulações: ___.',
+    conduta: 'Manter tratamento (___). Solicitar PFP e TCAR de controle. Ecocardiograma. Retorno em ___ semanas.'
+  },
+  PM: {
+    diagnostico: 'Dermatomiosite / Polimiosite – M33',
+    anamnese: 'Paciente com diagnóstico de ___. CK basal: ___. Fraqueza muscular: grau ___ (MRC). Manifestações cutâneas: ___.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg
+
+Força muscular proximal: ___ MRC.
+Pele: ___.
+Pulmão: ___.',
+    conduta: 'Manter imunossupressão (___). Fisioterapia. Solicitar CK de controle. Retorno em ___ semanas.'
+  },
+  Gota: {
+    diagnostico: 'Gota – M10.0',
+    anamnese: 'Paciente com diagnóstico de Gota. Ácido úrico basal: ___. Frequência de crises: ___. Última crise: ___. Tofos: ___.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg  |  IMC: ___
+
+Articular: ___. Tofos: ___.',
+    conduta: 'Manter alopurinol ___ mg/dia. Meta ácido úrico < 6 mg/dL. Orientar dieta. Retorno em ___ semanas.'
+  },
+  FM: {
+    diagnostico: 'Fibromialgia – M79.7',
+    anamnese: 'Paciente com diagnóstico de Fibromialgia. EVA dor: ___/10. Sono: ___. Fadiga: ___. Humor: ___. Tender points: ___/18.',
+    exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg
+
+Tender points: ___/18 positivos.
+Exame articular: normal. Força muscular: preservada.',
+    conduta: 'Atividade física aeróbica regular. ___. Psicologia/psiquiatria. Retorno em ___ semanas.'
+  },
+};
+
+function aplicarTemplate() {
+  const sel = document.getElementById('select-template')?.value;
+  if (!sel || !TEMPLATES_DOENCA[sel]) { alert('Selecione uma doença.'); return; }
+  if (document.getElementById('rel-anamnese')?.value.trim()) {
+    if (!confirm('Substituir o conteúdo atual do relatório pelo template?')) return;
+  }
+  const t = TEMPLATES_DOENCA[sel];
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  if (!document.getElementById('rel-diagnostico')?.value.trim()) set('rel-diagnostico', t.diagnostico);
+  set('rel-anamnese', t.anamnese);
+  set('rel-exfisico', t.exfisico);
+  set('rel-conduta', t.conduta);
+}
+
+// ─── DAS28 / BASDAI / SLEDAI ─────────────────────────────────────────────────
+function toggleScorePanel() {
+  const p = document.getElementById('score-panel');
+  p.classList.toggle('aberto');
+  document.getElementById('score-panel-arrow').textContent = p.classList.contains('aberto') ? '▼' : '▶';
+}
+
+function mudarScore(id, btn) {
+  ['das28','basdai','sledai'].forEach(s => {
+    document.getElementById('score-' + s).style.display = s === id ? '' : 'none';
+  });
+  document.querySelectorAll('.score-tab').forEach(b => b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+}
+
+function calcDAS28() {
+  const tjc = parseFloat(document.getElementById('das-tjc')?.value) || 0;
+  const sjc = parseFloat(document.getElementById('das-sjc')?.value) || 0;
+  const esr = parseFloat(document.getElementById('das-esr')?.value);
+  const vas = parseFloat(document.getElementById('das-vas')?.value) || 0;
+  const el = document.getElementById('das-result');
+  if (isNaN(esr)) { el.innerHTML = 'DAS28: — <span>Informe VHS ou PCR</span>'; return; }
+  // DAS28-VHS: 0.56√TJC + 0.28√SJC + 0.70×ln(VHS) + 0.014×VAS
+  const score = (0.56 * Math.sqrt(tjc)) + (0.28 * Math.sqrt(sjc)) + (0.70 * Math.log(esr + 1)) + (0.014 * vas);
+  const s = score.toFixed(2);
+  let cat = score < 2.6 ? 'Remissão' : score < 3.2 ? 'Atividade baixa' : score < 5.1 ? 'Atividade moderada' : 'Atividade alta';
+  el.innerHTML = `DAS28: ${s} <span>${cat}</span>`;
+  // Inserir no relatório se quiser
+  document._das28 = `DAS28 = ${s} (${cat})`;
+}
+
+function calcBASDI() {
+  const vals = [1,2,3,4,5,6].map(i => parseFloat(document.getElementById('bd'+i)?.value) || 0);
+  const media56 = (vals[4] + vals[5]) / 2;
+  const score = (vals[0] + vals[1] + vals[2] + vals[3] + media56) / 5;
+  const s = score.toFixed(1);
+  let cat = score < 4 ? 'Inativo / baixo' : score < 6 ? 'Moderado' : 'Alto';
+  const el = document.getElementById('basdai-result');
+  if (el) el.innerHTML = `BASDAI: ${s} <span>${cat}</span>`;
+  document._basdai = `BASDAI = ${s} (${cat})`;
+}
+
+const SLEDAI_ITEMS = [
+  [8,'Convulsão'],[8,'Psicose'],[8,'Síndrome cerebral orgânica'],[8,'Distúrbio visual'],
+  [8,'Neuropatia craniana'],[8,'Cefaleia lúpica'],[8,'AVC'],[4,'Vasculite'],
+  [4,'Artrite'],[4,'Miosite'],[4,'Cilindros urinários'],[4,'Hematúria'],
+  [4,'Proteinúria'],[4,'Piúria'],[2,'Rash'],[2,'Alopecia'],
+  [2,'Úlcera mucosa'],[2,'Pleurite'],[2,'Pericardite'],[2,'Complemento baixo'],
+  [2,'Anti-DNA elevado'],[1,'Febre'],[1,'Trombocitopenia'],[1,'Leucopenia'],
+];
+
+function renderSledai() {
+  const el = document.getElementById('sledai-checks');
+  if (!el) return;
+  el.innerHTML = SLEDAI_ITEMS.map(([peso, nome], i) =>
+    `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px 0">
+      <input type="checkbox" id="sl${i}" onchange="calcSledai()" style="cursor:pointer">
+      <span><strong style="color:#1a56a0">${peso}</strong> – ${nome}</span>
+    </label>`
+  ).join('');
+}
+
+function calcSledai() {
+  let score = 0;
+  SLEDAI_ITEMS.forEach(([peso], i) => {
+    if (document.getElementById('sl'+i)?.checked) score += peso;
+  });
+  let cat = score === 0 ? 'Inativo' : score <= 5 ? 'Atividade leve' : score <= 10 ? 'Atividade moderada' : score <= 19 ? 'Atividade grave' : 'Atividade muito grave';
+  const el = document.getElementById('sledai-result');
+  if (el) el.innerHTML = `SLEDAI-2K: ${score} <span>${cat}</span>`;
+  document._sledai = `SLEDAI-2K = ${score} (${cat})`;
+}
+
+// ─── Adicionar linha / Reordenar prescrição ────────────────────────────────────
+function addLinhaPrescricao() {
+  const ta = document.getElementById('rx-prescricao');
+  const linhas = ta.value.split('\n').filter(l => l.trim());
+  const n = linhas.length + 1;
+  ta.value = (ta.value.trim() ? ta.value.trimEnd() + '\n' : '') + n + '. ';
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
+function reordenarPrescricao() {
+  const ta = document.getElementById('rx-prescricao');
+  const linhas = ta.value.split('\n').filter(l => l.trim());
+  const renumeradas = linhas.map((l, i) => {
+    // Remove numeração existente e renumera
+    const semNum = l.replace(/^\d+\.\s*/, '');
+    return (i + 1) + '. ' + semNum;
+  });
+  ta.value = renumeradas.join('\n');
+}
+
+// ─── Alertas de interação medicamentosa ───────────────────────────────────────
+const INTERACOES_MED = [
+  ['Metotrexato','Naproxeno','AINEs reduzem a depuração renal do Metotrexato → toxicidade aumentada'],
+  ['Metotrexato','Meloxicam','AINEs reduzem a depuração renal do Metotrexato → toxicidade aumentada'],
+  ['Azatioprina','Alopurinol','Alopurinol inibe xantina oxidase → risco de toxicidade grave por Azatioprina (reduzir dose para 25%)'],
+  ['Ciclofosfamida','Alopurinol','Alopurinol pode aumentar toxicidade da Ciclofosfamida'],
+  ['Leflunomida','Metotrexato','Associação aumenta risco de hepatotoxicidade — monitorar TGO/TGP frequentemente'],
+  ['Hidroxicloroquina','Metotrexato','Combinação segura e sinérgica, mas monitorar toxicidade ocular'],
+  ['Mofetilmicofenolato','Azatioprina','Não combinar — duplicação de imunossupressão sem benefício adicional'],
+];
+
+function verificarInteracoes() {
+  const texto = (document.getElementById('rx-prescricao')?.value || '').toLowerCase();
+  const alertEl = document.getElementById('interacao-alert');
+  const listaEl = document.getElementById('interacao-lista');
+  if (!alertEl || !listaEl) return;
+  const achadas = INTERACOES_MED.filter(([a, b]) =>
+    texto.includes(a.toLowerCase()) && texto.includes(b.toLowerCase())
+  );
+  if (achadas.length) {
+    listaEl.innerHTML = achadas.map(([a, b, msg]) =>
+      `<div class="interacao-item">• <strong>${a} + ${b}:</strong> ${msg}</div>`
+    ).join('');
+    alertEl.classList.add('visivel');
+  } else {
+    alertEl.classList.remove('visivel');
+  }
+}
+
+// ─── Data por extenso ─────────────────────────────────────────────────────────
+function dataExtenso(dataStr) {
+  if (!dataStr) return '';
+  const meses = ['janeiro','fevereiro','março','abril','maio','junho',
+                 'julho','agosto','setembro','outubro','novembro','dezembro'];
+  const [y, m, d] = dataStr.split('-').map(Number);
+  const local = localAtual();
+  return `${local}, ${d} de ${meses[m-1]} de ${y}`;
+}
+
+// ─── Histórico de consultas ───────────────────────────────────────────────────
+function chaveHistorico(nome) { return 'hist-' + nome.trim().toLowerCase().replace(/\s+/g,'-'); }
+
+function salvarHistorico() {
+  const nome = v('rel-nome');
+  if (!nome) return;
+  const entrada = {
+    ts: Date.now(),
+    data: v('rel-data'),
+    diag: v('rel-diagnostico'),
+    conduta: v('rel-conduta'),
+    anamnese: v('rel-anamnese'),
+    exfisico: v('rel-exfisico'),
+    exames: v('rel-exames'),
+    obs: v('rel-obs'),
+    das28: document._das28 || '',
+    basdai: document._basdai || '',
+    sledai: document._sledai || '',
+  };
+  const chave = chaveHistorico(nome);
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(chave) || '[]'); } catch(e) {}
+  // Evitar duplicata do mesmo dia
+  hist = hist.filter(h => h.data !== entrada.data);
+  hist.unshift(entrada);
+  hist = hist.slice(0, 50); // max 50 consultas
+  localStorage.setItem(chave, JSON.stringify(hist));
+}
+
+function abrirHistorico() {
+  const nome = v('rel-nome');
+  const el = document.getElementById('hist-paciente-nome');
+  if (el) el.textContent = nome ? '— ' + nome : '';
+  const chave = chaveHistorico(nome || '');
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(chave) || '[]'); } catch(e) {}
+  const corpo = document.getElementById('hist-corpo');
+  if (!nome) {
+    corpo.innerHTML = '<div class="hist-empty">Preencha o nome do paciente para ver o histórico.</div>';
+  } else if (!hist.length) {
+    corpo.innerHTML = '<div class="hist-empty">Nenhuma consulta registrada para ' + nome + '.</div>';
+  } else {
+    corpo.innerHTML = hist.map((h, i) => `
+      <div class="hist-item" onclick="carregarConsulta(${JSON.stringify(chaveHistorico(nome))},${i})">
+        <div class="hist-data">${h.data ? new Date(h.data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
+        <div class="hist-diag">${h.diag || '—'}</div>
+        <div class="hist-cond">${h.conduta || '—'}</div>
+        ${h.das28 || h.basdai ? `<div style="font-size:11px;color:#718096;margin-top:2px">${[h.das28,h.basdai,h.sledai].filter(Boolean).join(' | ')}</div>` : ''}
+      </div>`).join('');
+  }
+  abrirModal('modal-historico');
+}
+
+function carregarConsulta(chave, idx) {
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(chave) || '[]'); } catch(e) {}
+  const h = hist[idx];
+  if (!h) return;
+  if (!confirm('Carregar dados desta consulta (substituirá o conteúdo atual)?')) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('rel-data', h.data); set('rel-diagnostico', h.diag);
+  set('rel-anamnese', h.anamnese); set('rel-exfisico', h.exfisico);
+  set('rel-exames', h.exames); set('rel-conduta', h.conduta); set('rel-obs', h.obs);
+  fecharModal('modal-historico');
+}
+
+// ─── Exportar / Importar dados ────────────────────────────────────────────────
+function exportarDados() {
+  const dados = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    try { dados[k] = JSON.parse(localStorage.getItem(k)); }
+    catch(e) { dados[k] = localStorage.getItem(k); }
+  }
+  const json = JSON.stringify(dados, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'reumato-dados-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  registrarLog('Exportação de dados', '—', a.download);
+}
+
+function importarDados(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const dados = JSON.parse(e.target.result);
+      const n = Object.keys(dados).length;
+      if (!confirm(`Importar ${n} registros? Dados existentes com mesma chave serão sobrescritos.`)) return;
+      Object.entries(dados).forEach(([k, v]) => {
+        localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+      });
+      renderPerfis();
+      alert('Dados importados com sucesso!');
+      registrarLog('Importação de dados', '—', file.name);
+    } catch(err) { alert('Erro ao importar: arquivo JSON inválido.'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ─── Log de documentos ────────────────────────────────────────────────────────
+function registrarLog(tipo, paciente, arquivo) {
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem('log-docs') || '[]'); } catch(e) {}
+  log.unshift({ tipo, paciente: paciente || '—', arquivo, ts: Date.now() });
+  log = log.slice(0, 200);
+  localStorage.setItem('log-docs', JSON.stringify(log));
+}
+
+function abrirLog() { renderLog(); abrirModal('modal-log'); }
+
+function renderLog() {
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem('log-docs') || '[]'); } catch(e) {}
+  const corpo = document.getElementById('log-corpo');
+  if (!log.length) { corpo.innerHTML = '<div class="hist-empty">Nenhum documento registrado.</div>'; return; }
+  corpo.innerHTML = log.map(l => {
+    const d = new Date(l.ts);
+    const ts = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    return `<div class="log-item"><span class="log-tipo">${l.tipo}</span><span class="log-nome">${l.paciente}</span><span class="log-ts">${ts}</span></div>`;
+  }).join('');
+}
+
+function limparLog() {
+  if (!confirm('Apagar todo o log de documentos?')) return;
+  localStorage.removeItem('log-docs');
+  renderLog();
+}
+
+// ─── Modais ───────────────────────────────────────────────────────────────────
+function abrirModal(id) { document.getElementById(id)?.classList.add('aberto'); if (id === 'modal-log') renderLog(); }
+function fecharModal(id) { document.getElementById(id)?.classList.remove('aberto'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.aberto').forEach(m => m.classList.remove('aberto')); });
+document.querySelectorAll && document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('aberto'); }));
+});
+
+
 </script>
 </body>
 </html>
