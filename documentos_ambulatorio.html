@@ -114,7 +114,7 @@ body{padding-bottom:60px}
 @media print{
   /* ── Estrutura: só páginas marcadas aparecem ── */
   header,nav,.action-bar,.btn-add,.btn-remove,.pacote-toggle,
-  .barra-selecao,.doc-subtitle,.section-label,.hlab27-aviso,
+  .barra-selecao,.doc-subtitle,.section-label,.hlab27-aviso,#igra-aviso,
   #print-hide,.med-atalhos{display:none!important}
 
   body{background:#fff;padding:0}
@@ -122,7 +122,7 @@ body{padding-bottom:60px}
   .page.print-selected{display:block!important}
 
   /* ── Aparência limpa ── */
-  .doc-wrapper{box-shadow:none;border:none;border-radius:0;padding:16px 0;margin:0;display:flex;flex-direction:column;min-height:23cm}
+  .doc-wrapper{box-shadow:none;border:none;border-radius:0;padding:16px 0 3.5cm;margin:0;display:flex;flex-direction:column;min-height:25cm}
   .signature-line{margin-top:auto}
   .doc-header{border-bottom:2px solid #1a56a0;margin-bottom:14px}
   .doc-title{font-size:16px}
@@ -348,22 +348,22 @@ body{padding-bottom:60px}
       <div class="atalho-grupo">
         <span class="atalho-titulo">csDMARDs</span>
         <div class="atalho-btns">
-          <button class="btn-atalho" onclick="addMedNome('Metotrexato')">Metotrexato</button>
-          <button class="btn-atalho" onclick="addMedNome('Leflunomida')">Leflunomida</button>
-          <button class="btn-atalho" onclick="addMedNome('Hidroxicloroquina')">Hidroxicloroquina</button>
-          <button class="btn-atalho" onclick="addMedNome('Sulfassalazina')">Sulfassalazina</button>
-          <button class="btn-atalho" onclick="addMedNome('Azatioprina')">Azatioprina</button>
-          <button class="btn-atalho" onclick="addMedNome('Mofetilmicofenolato')">Mofetilmicofenolato</button>
-          <button class="btn-atalho" onclick="addMedNome('Ciclofosfamida')">Ciclofosfamida</button>
-          <button class="btn-atalho" onclick="addMedNome('Clorambucila')">Clorambucila</button>
+          <button class="btn-atalho" onclick="addMedRx('Metotrexato')">Metotrexato</button>
+          <button class="btn-atalho" onclick="addMedRx('Leflunomida')">Leflunomida</button>
+          <button class="btn-atalho" onclick="addMedRx('Hidroxicloroquina')">Hidroxicloroquina</button>
+          <button class="btn-atalho" onclick="addMedRx('Sulfassalazina')">Sulfassalazina</button>
+          <button class="btn-atalho" onclick="addMedRx('Azatioprina')">Azatioprina</button>
+          <button class="btn-atalho" onclick="addMedRx('Mofetilmicofenolato')">Mofetilmicofenolato</button>
+          <button class="btn-atalho" onclick="addMedRx('Ciclofosfamida')">Ciclofosfamida</button>
+          <button class="btn-atalho" onclick="addMedRx('Clorambucila')">Clorambucila</button>
         </div>
       </div>
       <div class="atalho-grupo">
         <span class="atalho-titulo">AINEs / Outros</span>
         <div class="atalho-btns">
-          <button class="btn-atalho" onclick="addMedNome('Naproxeno')">Naproxeno</button>
-          <button class="btn-atalho" onclick="addMedNome('Meloxicam')">Meloxicam</button>
-          <button class="btn-atalho" onclick="addMedNome('Tandrilax')">Tandrilax</button>
+          <button class="btn-atalho" onclick="addMedRx('Naproxeno')">Naproxeno</button>
+          <button class="btn-atalho" onclick="addMedRx('Meloxicam')">Meloxicam</button>
+          <button class="btn-atalho" onclick="addMedRx('Tandrilax')">Tandrilax</button>
         </div>
       </div>
     </div>
@@ -433,8 +433,24 @@ body{padding-bottom:60px}
     <div class="pacotes-grid" id="pacotes-lab"></div>
     <div id="lab-print-flat" class="print-flat-list"></div>
 
-    <div id="hlab27-aviso" style="display:none;background:#fffbeb;border:1.5px solid #f6ad55;border-radius:8px;padding:10px 14px;margin-top:4px;font-size:12px;color:#7b341e">
-      ⚠️ <strong>HLA-B27</strong> selecionado — será gerado um <strong>arquivo .docx separado</strong> com a solicitação e indicação clínica específica para espondiloartrite.
+    <div id="hlab27-aviso" style="display:none;background:#fffbeb;border:1.5px solid #f6ad55;border-radius:8px;padding:12px 14px;margin-top:4px;font-size:12px;color:#7b341e">
+      ⚠️ <strong>HLA-B27</strong> selecionado — será gerado um <strong>arquivo .docx separado</strong> com a solicitação e justificativa específica.
+      <div style="margin-top:10px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#7b341e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Justificativa (editável antes de baixar)</label>
+        <textarea id="hlab27-justificativa" rows="3" style="width:100%;padding:8px;border:1px solid #e2b87f;border-radius:6px;font-size:12px;font-family:inherit;background:#fffef5;resize:vertical;color:#2d3748"></textarea>
+      </div>
+    </div>
+
+    <div id="igra-aviso" style="display:none;background:#fffbeb;border:1.5px solid #f6ad55;border-radius:8px;padding:12px 14px;margin-top:4px;font-size:12px;color:#7b341e">
+      ⚠️ <strong>IGRA (Quantiferon)</strong> selecionado — será gerado um <strong>arquivo .docx separado</strong> com a solicitação e justificativa específica.
+      <div style="margin-top:10px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#7b341e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Diagnóstico do paciente</label>
+        <input type="text" id="igra-diagnostico" placeholder="Ex: Artrite Reumatoide" oninput="atualizarJustIgra()" style="width:100%;padding:7px 10px;border:1px solid #e2b87f;border-radius:6px;font-size:12px;background:#fffef5;color:#2d3748">
+      </div>
+      <div style="margin-top:8px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#7b341e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Justificativa (editável antes de baixar)</label>
+        <textarea id="igra-justificativa" rows="5" style="width:100%;padding:8px;border:1px solid #e2b87f;border-radius:6px;font-size:12px;font-family:inherit;background:#fffef5;resize:vertical;color:#2d3748"></textarea>
+      </div>
     </div>
 
     <div class="section-label">Exames Adicionais (texto livre)</div>
@@ -593,7 +609,11 @@ const PACOTES_LAB = [
   {
     id: 'pkg-hlab27', titulo: 'HLA-B27',
     exames: ['HLA-B27'],
-    relatorio: 'Paciente em investigação de espondiloartrite axial e periférica, solicito HLA-B27 para complementar investigação diagnóstica.\nCID: M45'
+    relatorio: 'Paciente com artropatia inflamatória, em investigação de espondiloartrite axial, solicito HLA-B27 para complementar investigação diagnóstica.'
+  },
+  {
+    id: 'pkg-igra', titulo: 'IGRA (Quantiferon)',
+    exames: ['IGRA (Quantiferon)']
   }
 ];
 
@@ -642,12 +662,41 @@ function renderPacotes() {
     </div>`).join('');
 }
 
-function atualizarAvisoHla() {
-  const aviso = document.getElementById('hlab27-aviso');
-  if (!aviso) return;
-  const algum = [...document.querySelectorAll('#pkg-hlab27-items .exam-item')].some(el => el.classList.contains('checked'));
-  aviso.style.display = algum ? '' : 'none';
+function atualizarAvisosEspeciais() {
+  // HLA-B27
+  const hlaAviso = document.getElementById('hlab27-aviso');
+  if (hlaAviso) {
+    const hlaAtivo = [...document.querySelectorAll('#pkg-hlab27-items .exam-item')].some(el => el.classList.contains('checked'));
+    hlaAviso.style.display = hlaAtivo ? '' : 'none';
+    if (hlaAtivo) {
+      const justEl = document.getElementById('hlab27-justificativa');
+      if (justEl && !justEl.value.trim()) {
+        justEl.value = PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
+      }
+    }
+  }
+  // IGRA
+  const igraAviso = document.getElementById('igra-aviso');
+  if (igraAviso) {
+    const igraAtivo = [...document.querySelectorAll('#pkg-igra-items .exam-item')].some(el => el.classList.contains('checked'));
+    igraAviso.style.display = igraAtivo ? '' : 'none';
+    if (igraAtivo) {
+      const justEl = document.getElementById('igra-justificativa');
+      if (justEl && !justEl.value.trim()) atualizarJustIgra();
+    }
+  }
 }
+
+function atualizarJustIgra() {
+  const diagEl = document.getElementById('igra-diagnostico');
+  const justEl = document.getElementById('igra-justificativa');
+  if (!justEl) return;
+  const diag = diagEl?.value.trim() || '_______________';
+  justEl.value = `Paciente com diagnóstico de ${diag}, em programação de iniciar terapia imunobiológica. Solicito IGRA (quantiferon) para rastreio de tuberculose latente.\n\nCÓDIGO TUSS 4.03.24.64-8\nDUT: 140`;
+}
+
+// Alias para compatibilidade
+function atualizarAvisoHla() { atualizarAvisosEspeciais(); }
 
 function togglePacote(pkgId) {
   const cb = document.getElementById(pkgId + '-cb');
@@ -772,6 +821,16 @@ function clearForm(pageId) {
         el.querySelector('input[type=checkbox]').checked = false;
       });
     });
+    const hlaJust = document.getElementById('hlab27-justificativa');
+    if (hlaJust) hlaJust.value = '';
+    const hlaAviso = document.getElementById('hlab27-aviso');
+    if (hlaAviso) hlaAviso.style.display = 'none';
+    const igraJust = document.getElementById('igra-justificativa');
+    if (igraJust) igraJust.value = '';
+    const igraDiag = document.getElementById('igra-diagnostico');
+    if (igraDiag) igraDiag.value = '';
+    const igraAviso = document.getElementById('igra-aviso');
+    if (igraAviso) igraAviso.style.display = 'none';
   }
   if (pageId === 'receita') {
     const ta = document.getElementById('rx-prescricao');
@@ -799,7 +858,11 @@ function prepararImpressao(ids) {
   const labFlat = document.getElementById('lab-print-flat');
   if (labFlat) {
     const exames = [];
-    document.querySelectorAll('#pacotes-lab .exam-item.checked label').forEach(l => exames.push(l.textContent));
+    const pkgsEspeciais = new Set(['pkg-hlab27', 'pkg-igra']);
+    document.querySelectorAll('#pacotes-lab .pacote').forEach(pkgEl => {
+      if (pkgsEspeciais.has(pkgEl.id)) return;
+      pkgEl.querySelectorAll('.exam-item.checked label').forEach(l => exames.push(l.textContent));
+    });
     const adicLab = (document.getElementById('lab-adicional')?.value || '').trim();
     if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
     labFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
@@ -837,16 +900,34 @@ function printDoc(pageId) {
   limparImpressao();
 }
 
+// ─── Posologias habituais dos atalhos de receita ──────────────────────────────
+const MED_RX = {
+  'Metotrexato':        'Metotrexato 15 mg (comprimidos de 2,5 mg) – 6 comprimidos 1x/semana, via oral, em dose única semanal',
+  'Leflunomida':        'Leflunomida 20 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
+  'Hidroxicloroquina':  'Hidroxicloroquina 400 mg – 2 comprimidos de 200 mg 1x/dia, via oral, uso contínuo',
+  'Sulfassalazina':     'Sulfassalazina 500 mg – 1 comprimido 2x/dia, via oral (aumentar progressivamente até 3 g/dia conforme tolerância)',
+  'Azatioprina':        'Azatioprina 50 mg – ___ comprimidos 1x/dia, via oral (dose-alvo: 2–3 mg/kg/dia)',
+  'Mofetilmicofenolato':'Mofetilmicofenolato 500 mg – 3 comprimidos 2x/dia, via oral (3 g/dia), uso contínuo',
+  'Ciclofosfamida':     'Ciclofosfamida ___ mg/m² – 1 infusão EV mensal conforme protocolo, sob supervisão médica',
+  'Clorambucila':       'Clorambucila 2 mg – ___ comprimidos 1x/dia, via oral (0,1 mg/kg/dia)',
+  'Naproxeno':          'Naproxeno 500 mg – 1 comprimido 2x/dia, via oral, com refeições, durante crise',
+  'Meloxicam':          'Meloxicam 15 mg – 1 comprimido 1x/dia, via oral, com refeições, durante crise',
+  'Tandrilax':          'Tandrilax – 1 comprimido 3x/dia, via oral, por 10 dias',
+};
+
 // ─── Medicamentos ──────────────────────────────────────────────────────────────
-function addMedNome(nome) {
+function addMedRx(nome) {
   const ta = document.getElementById('rx-prescricao');
   const texto = ta.value;
   const linhas = texto.split('\n').filter(l => l.trim());
   const n = linhas.length + 1;
-  ta.value = (texto.trim() ? texto.trimEnd() + '\n' : '') + n + '. ' + nome + ' – ';
+  const linha = MED_RX[nome] ? n + '. ' + MED_RX[nome] : n + '. ' + nome + ' – ';
+  ta.value = (texto.trim() ? texto.trimEnd() + '\n' : '') + linha;
   ta.focus();
   ta.setSelectionRange(ta.value.length, ta.value.length);
 }
+
+function addMedNome(nome) { addMedRx(nome); }
 
 // ─── Helpers Word ──────────────────────────────────────────────────────────────
 function v(id) { return (document.getElementById(id)?.value || '').trim(); }
@@ -982,10 +1063,11 @@ async function gerarWordLab() {
   const crm = v('lab-crm');
   const assinatura = medico + (crm ? ' — ' + crm : '');
 
-  // Coletar todos os exames marcados (exceto HLA-B27) em lista plana
+  // Coletar todos os exames marcados (exceto especiais com doc próprio) em lista plana
+  const especiais = new Set(['pkg-hlab27', 'pkg-igra']);
   const todosExames = [];
   PACOTES_LAB.forEach(pkg => {
-    if (pkg.id === 'pkg-hlab27') return;
+    if (especiais.has(pkg.id)) return;
     document.querySelectorAll(`#${pkg.id}-items .exam-item.checked label`).forEach(l => todosExames.push(l.textContent));
   });
   const adicLab = v('lab-adicional');
@@ -1018,23 +1100,47 @@ async function gerarWordLab() {
 
   // Documento separado para HLA-B27
   if (hlaChecked) {
-    const relatorio = PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
+    const justHla = document.getElementById('hlab27-justificativa')?.value.trim()
+      || PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
     const parasHla = [
       { type: 'title', text: 'SOLICITAÇÃO DE EXAME LABORATORIAL' },
       { type: 'subtitle', text: localAtual() },
       { type: 'label-value', label: 'Paciente', value: nomePaciente },
       { type: 'label-value', label: 'Data', value: v('lab-data') },
-        { type: 'separator' },
+      { type: 'separator' },
       { type: 'heading', text: 'Exame Solicitado' },
       { type: 'bullet', text: 'HLA-B27' },
       { type: 'heading', text: 'Indicação Clínica' },
-      { type: 'multiline', value: relatorio },
+      { type: 'multiline', value: justHla },
       { type: 'separator' },
       { type: 'label-value', label: 'Médico(a)', value: medico },
       { type: 'label-value', label: 'CRM', value: crm },
       { type: 'signature', text: assinatura },
     ];
     await downloadDocx(makeDoc(parasHla), `HLA-B27-${nomePaciente.replace(/\s+/g,'-')}.docx`);
+  }
+
+  // Documento separado para IGRA (Quantiferon)
+  const igraChecked = document.querySelectorAll('#pkg-igra-items .exam-item.checked').length > 0;
+  if (igraChecked) {
+    const justIgra = document.getElementById('igra-justificativa')?.value.trim()
+      || `Paciente com diagnóstico de _______________, em programação de iniciar terapia imunobiológica. Solicito IGRA (quantiferon) para rastreio de tuberculose latente.\n\nCÓDIGO TUSS 4.03.24.64-8\nDUT: 140`;
+    const parasIgra = [
+      { type: 'title', text: 'SOLICITAÇÃO DE EXAME LABORATORIAL' },
+      { type: 'subtitle', text: localAtual() },
+      { type: 'label-value', label: 'Paciente', value: nomePaciente },
+      { type: 'label-value', label: 'Data', value: v('lab-data') },
+      { type: 'separator' },
+      { type: 'heading', text: 'Exame Solicitado' },
+      { type: 'bullet', text: 'IGRA (Quantiferon)' },
+      { type: 'heading', text: 'Indicação Clínica' },
+      { type: 'multiline', value: justIgra },
+      { type: 'separator' },
+      { type: 'label-value', label: 'Médico(a)', value: medico },
+      { type: 'label-value', label: 'CRM', value: crm },
+      { type: 'signature', text: assinatura },
+    ];
+    await downloadDocx(makeDoc(parasIgra), `IGRA-Quantiferon-${nomePaciente.replace(/\s+/g,'-')}.docx`);
   }
 }
 
