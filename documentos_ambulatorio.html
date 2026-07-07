@@ -175,6 +175,10 @@ body{padding-bottom:60px}
   @page{size:A4;margin:2cm 2.5cm}
 }
 
+/* Páginas especiais (HLA-B27 / IGRA) — só aparecem na impressão */
+#print-hlab27,#print-igra{display:none}
+.print-field-val{font-size:13px;border-bottom:1px solid #ccc;padding:2px 0;min-height:18px;color:#1a202c}
+
 /* Tela: esconder lista plana (só aparece na impressão) */
 .print-flat-list{display:none}
 .print-flat-item{font-size:13px;padding:3px 0;color:#1a202c;line-height:1.5}
@@ -242,15 +246,15 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Nome do Paciente</label>
-        <input type="text" id="rel-nome" placeholder="Nome completo">
+        <input type="text" id="rel-nome" placeholder="Nome completo" oninput="sincPaciente('nome',this.value)">
       </div>
       <div class="field-group w-auto" style="flex:0 0 140px">
         <label>Data de Nascimento</label>
-        <input type="date" id="rel-nascimento">
+        <input type="date" id="rel-nascimento" oninput="sincPaciente('nascimento',this.value)">
       </div>
       <div class="field-group w-auto" style="flex:0 0 80px">
         <label>Idade</label>
-        <input type="text" id="rel-idade" placeholder="anos">
+        <input type="text" id="rel-idade" placeholder="anos" oninput="sincPaciente('idade',this.value)">
       </div>
     </div>
     <div class="field-row">
@@ -325,7 +329,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Nome do Paciente</label>
-        <input type="text" id="rx-nome" placeholder="Nome completo">
+        <input type="text" id="rx-nome" placeholder="Nome completo" oninput="sincPaciente('nome',this.value)">
       </div>
       <div class="field-group w-auto" style="flex:0 0 160px">
         <label>Data</label>
@@ -335,11 +339,11 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Endereço</label>
-        <input type="text" id="rx-endereco" placeholder="Rua, número, cidade">
+        <input type="text" id="rx-endereco" placeholder="Rua, número, cidade" oninput="sincPaciente('endereco',this.value)">
       </div>
       <div class="field-group" style="flex:0 0 80px">
         <label>Idade</label>
-        <input type="text" id="rx-idade" placeholder="anos">
+        <input type="text" id="rx-idade" placeholder="anos" oninput="sincPaciente('idade',this.value)">
       </div>
     </div>
 
@@ -414,7 +418,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Nome do Paciente</label>
-        <input type="text" id="lab-nome" placeholder="Nome completo">
+        <input type="text" id="lab-nome" placeholder="Nome completo" oninput="sincPaciente('nome',this.value)">
       </div>
       <div class="field-group w-auto" style="flex:0 0 160px">
         <label>Data</label>
@@ -483,6 +487,52 @@ body{padding-bottom:60px}
   </div>
 </div>
 
+<!-- ======================== PÁGINA IMPRESSÃO HLA-B27 ======================== -->
+<div id="print-hlab27" class="page" style="display:none">
+  <div class="doc-wrapper">
+    <div class="doc-header">
+      <div class="doc-title">SOLICITAÇÃO DE EXAME LABORATORIAL</div>
+      <div class="doc-subtitle local-nome"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Nome do Paciente</label><div id="ph-hla-nome" class="print-field-val"></div></div>
+      <div class="field-group w-auto" style="flex:0 0 160px"><label>Data</label><div id="ph-hla-data" class="print-field-val"></div></div>
+    </div>
+    <div style="margin-top:18px;font-weight:700;font-size:13px;color:#1a56a0;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">Exame Solicitado</div>
+    <div style="font-size:13px;padding:3px 0">• HLA-B27</div>
+    <div style="margin-top:18px;font-weight:700;font-size:13px;color:#1a56a0;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">Indicação Clínica</div>
+    <div id="ph-hla-just" style="font-size:13px;white-space:pre-line;line-height:1.6"></div>
+    <div class="field-row" style="margin-top:24px">
+      <div class="field-group"><label>Médico(a) Responsável</label><div id="ph-hla-medico" class="print-field-val"></div></div>
+      <div class="field-group" style="flex:0 0 200px"><label>CRM</label><div id="ph-hla-crm" class="print-field-val"></div></div>
+    </div>
+    <div class="signature-line">Assinatura e Carimbo</div>
+  </div>
+</div>
+
+<!-- ======================== PÁGINA IMPRESSÃO IGRA ======================== -->
+<div id="print-igra" class="page" style="display:none">
+  <div class="doc-wrapper">
+    <div class="doc-header">
+      <div class="doc-title">SOLICITAÇÃO DE EXAME LABORATORIAL</div>
+      <div class="doc-subtitle local-nome"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Nome do Paciente</label><div id="ph-igra-nome" class="print-field-val"></div></div>
+      <div class="field-group w-auto" style="flex:0 0 160px"><label>Data</label><div id="ph-igra-data" class="print-field-val"></div></div>
+    </div>
+    <div style="margin-top:18px;font-weight:700;font-size:13px;color:#1a56a0;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">Exame Solicitado</div>
+    <div style="font-size:13px;padding:3px 0">• IGRA (Quantiferon)</div>
+    <div style="margin-top:18px;font-weight:700;font-size:13px;color:#1a56a0;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">Indicação Clínica</div>
+    <div id="ph-igra-just" style="font-size:13px;white-space:pre-line;line-height:1.6"></div>
+    <div class="field-row" style="margin-top:24px">
+      <div class="field-group"><label>Médico(a) Responsável</label><div id="ph-igra-medico" class="print-field-val"></div></div>
+      <div class="field-group" style="flex:0 0 200px"><label>CRM</label><div id="ph-igra-crm" class="print-field-val"></div></div>
+    </div>
+    <div class="signature-line">Assinatura e Carimbo</div>
+  </div>
+</div>
+
 <!-- ======================== EXAMES DE IMAGEM ======================== -->
 <div id="exames-img" class="page">
   <div class="doc-wrapper">
@@ -494,7 +544,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Nome do Paciente</label>
-        <input type="text" id="img-nome" placeholder="Nome completo">
+        <input type="text" id="img-nome" placeholder="Nome completo" oninput="sincPaciente('nome',this.value)">
       </div>
       <div class="field-group w-auto" style="flex:0 0 160px">
         <label>Data</label>
@@ -605,6 +655,10 @@ const PACOTES_LAB = [
       'Gama GT','TGP (ALT)','TGO (AST)',
       'PTH','TSH','T4 livre','Urina tipo 1'
     ]
+  },
+  {
+    id: 'pkg-imunoglobulinas', titulo: 'Imunoglobulinas',
+    exames: ['Imunoglobulina IgG','Imunoglobulina IgM','Imunoglobulina IgA','Imunoglobulina IgE']
   },
   {
     id: 'pkg-hlab27', titulo: 'HLA-B27',
@@ -839,14 +893,20 @@ function clearForm(pageId) {
 }
 
 // ─── Preparar / limpar estado de impressão ────────────────────────────────────
+const ESPECIAIS_PRINT = ['print-hlab27','print-igra'];
+
 function prepararImpressao(ids) {
-  DOCS.forEach(id => document.getElementById(id).classList.remove('print-selected'));
-  ids.forEach(id => document.getElementById(id).classList.add('print-selected'));
+  [...DOCS, ...ESPECIAIS_PRINT].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('print-selected');
+  });
+  ids.forEach(id => document.getElementById(id)?.classList.add('print-selected'));
+
   document.querySelectorAll('.pacote').forEach(pkg => {
     const temMarcado = pkg.querySelectorAll('.exam-item.checked').length > 0;
     pkg.classList.toggle('sem-selecao', !temMarcado);
   });
-  // Cabeçalhos de seção condicionais (só aparecem se textarea preenchida)
+
   document.querySelectorAll('.section-label.print-se-preenchido').forEach(label => {
     const taId = label.dataset.textarea;
     const ta = taId ? document.getElementById(taId) : null;
@@ -854,14 +914,63 @@ function prepararImpressao(ids) {
     label.classList.toggle('oculto-impressao', vazio);
   });
 
-  // ── Lista plana de exames laboratoriais ──
+  // ── Lista plana de exames laboratoriais (excluindo HLA-B27 e IGRA) ──
   const labFlat = document.getElementById('lab-print-flat');
   if (labFlat) {
+    const excluir = new Set(['pkg-hlab27','pkg-igra']);
     const exames = [];
-    document.querySelectorAll('#pacotes-lab .exam-item.checked label').forEach(l => exames.push(l.textContent));
+    document.querySelectorAll('#pacotes-lab .pacote').forEach(pkgEl => {
+      if (excluir.has(pkgEl.id)) return;
+      pkgEl.querySelectorAll('.exam-item.checked label').forEach(l => exames.push(l.textContent));
+    });
     const adicLab = (document.getElementById('lab-adicional')?.value || '').trim();
     if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
     labFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
+  }
+
+  // ── Páginas especiais HLA-B27 e IGRA ──
+  if (ids.includes('exames-lab')) {
+    const nomePac = document.getElementById('lab-nome')?.value || '';
+    const dataPac = document.getElementById('lab-data')?.value || '';
+    const medico  = document.getElementById('lab-medico')?.value || '';
+    const crm     = document.getElementById('lab-crm')?.value || '';
+    const local   = localAtual();
+
+    const hlaAtivo = document.querySelectorAll('#pkg-hlab27-items .exam-item.checked').length > 0;
+    const hlaPage  = document.getElementById('print-hlab27');
+    if (hlaPage) {
+      if (hlaAtivo) {
+        hlaPage.classList.add('print-selected');
+        hlaPage.querySelectorAll('.local-nome').forEach(el => el.textContent = local);
+        document.getElementById('ph-hla-nome').textContent  = nomePac;
+        document.getElementById('ph-hla-data').textContent  = dataPac;
+        document.getElementById('ph-hla-medico').textContent= medico;
+        document.getElementById('ph-hla-crm').textContent   = crm;
+        const justHla = document.getElementById('hlab27-justificativa')?.value.trim()
+          || PACOTES_LAB.find(p=>p.id==='pkg-hlab27')?.relatorio || '';
+        document.getElementById('ph-hla-just').textContent = justHla;
+      } else {
+        hlaPage.classList.remove('print-selected');
+      }
+    }
+
+    const igraAtivo = document.querySelectorAll('#pkg-igra-items .exam-item.checked').length > 0;
+    const igraPage  = document.getElementById('print-igra');
+    if (igraPage) {
+      if (igraAtivo) {
+        igraPage.classList.add('print-selected');
+        igraPage.querySelectorAll('.local-nome').forEach(el => el.textContent = local);
+        document.getElementById('ph-igra-nome').textContent  = nomePac;
+        document.getElementById('ph-igra-data').textContent  = dataPac;
+        document.getElementById('ph-igra-medico').textContent= medico;
+        document.getElementById('ph-igra-crm').textContent   = crm;
+        const justIgra = document.getElementById('igra-justificativa')?.value.trim()
+          || `Paciente com diagnóstico de _______________, em programação de iniciar terapia imunobiológica. Solicito IGRA (quantiferon) para rastreio de tuberculose latente.\n\nCÓDIGO TUSS 4.03.24.64-8\nDUT: 140`;
+        document.getElementById('ph-igra-just').textContent = justIgra;
+      } else {
+        igraPage.classList.remove('print-selected');
+      }
+    }
   }
 
   // ── Lista plana de exames de imagem ──
@@ -874,13 +983,14 @@ function prepararImpressao(ids) {
     imgFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
   }
 
-  // Zera título para não aparecer no cabeçalho do browser na impressão
   document._tituloOriginal = document.title;
   document.title = ' ';
 }
 
 function limparImpressao() {
-  DOCS.forEach(id => document.getElementById(id).classList.remove('print-selected'));
+  [...DOCS, ...ESPECIAIS_PRINT].forEach(id => {
+    document.getElementById(id)?.classList.remove('print-selected');
+  });
   document.querySelectorAll('.pacote').forEach(p => p.classList.remove('sem-selecao'));
   document.querySelectorAll('.oculto-impressao').forEach(el => el.classList.remove('oculto-impressao'));
   if (document._tituloOriginal !== undefined) {
@@ -1168,6 +1278,22 @@ async function gerarWordImg() {
   paras.push({ type: 'label-value', label: 'CRM', value: v('img-crm') });
   paras.push({ type: 'signature', text: v('img-medico') + (v('img-crm') ? ' — ' + v('img-crm') : '') });
   await downloadDocx(makeDoc(paras), `exames-imagem-${(v('img-nome')||'paciente').replace(/\s+/g,'-')}.docx`);
+}
+
+// ─── Sincronização de dados do paciente entre abas ───────────────────────────
+const SINC_MAP = {
+  nome:       ['rel-nome','rx-nome','lab-nome','img-nome'],
+  nascimento: ['rel-nascimento'],
+  idade:      ['rel-idade','rx-idade'],
+  endereco:   ['rx-endereco'],
+};
+
+function sincPaciente(campo, valor) {
+  const ids = SINC_MAP[campo] || [];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el !== document.activeElement && el.value !== valor) el.value = valor;
+  });
 }
 
 // ─── Seleção combinada ────────────────────────────────────────────────────────
