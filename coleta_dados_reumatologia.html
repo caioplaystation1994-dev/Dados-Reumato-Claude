@@ -851,13 +851,13 @@ const B_DMARD = ['Abatacept','Adalimumabe','Anifrolumabe','Belimumabe','Certoliz
 const TS_DMARD = ['Baricitinibe','Tofacitinibe','Upadacitinibe'];
 const TEMPO_DMARD = ['< 6 meses','6–12 meses','12–24 meses','24–48 meses','48 meses ou mais'];
 const COMORBIDADES = [
-  'Ansiedade','Artroplastia joelho','Artroplastia quadril','Asma','AVCi',
+  'Ansiedade','Artrite reumatoide','Artroplastia joelho','Artroplastia quadril','Asma','AVCi',
   'Baixa acuidade visual','Catarata',
   'DAC','DAOP','Depressão','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn','Doença de Sjogren',
-  'DPI','DPOC','DRC','DRGE',
-  'Endometriose','Epilepsia','Esquizofrenia','FA','Fibromialgia','Glaucoma','HAS',
-  'Hiperparatireoidismo','Hiperprolactinemia','Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo',
-  'HPB','IAM','ICFEP','ICFER',
+  'Doença inflamatória intestinal','DPI','DPOC','DRC','DRGE',
+  'Endometriose','Epilepsia','Esclerose sistêmica','Espondiloartrite','Esquizofrenia','FA','Fibromialgia','Glaucoma','HAS',
+  'Hiperparatireoidismo','Hiperprolactinemia','Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','HIV',
+  'HPB','IAM','ICFEP','ICFER','LES',
   'Lombalgia crônica','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Neuropatia periférica',
   'Obesidade','Osteoartrite','Osteonecrose','Osteomielite','Osteoporose',
   'Perda auditiva','Retocolite ulcerativa','SAF','TEP','TVP','Varizes esofágicas','Veia cava superior'
@@ -867,23 +867,23 @@ const MED_CONTINUAS = [
   'Ambrisentana','Amiodarona','Amitriptilina','Anlodipino','Anticoncepcional oral','Apixabana','Atenolol','Atorvastatina',
   'B2+GC inalatório','Bactrim','Bisoprolol','Bosentana','Bromoprida','Budesonida nasal',
   'Cabergolina','Calcitriol','Canaglifozina','Candesartana','Captopril','Carbamazepina','Carbonato de cálcio','Carvedilol',
-  'Ciclobenzaprina','Cinacalcet','Citrato de cálcio','Clonazepam','Clonidina','Clopidogrel','Clorpromazina','Clortalidona',
+  'Ciclobenzaprina','Cinacalcet','Ciprofibrato','Citrato de cálcio','Clonazepam','Clonidina','Clopidogrel','Clorpromazina','Clortalidona',
   'Codeína','Colchicina','Colecalciferol','Colírio','Creme',
-  'Dabigatrana','Dapaglifozina','Dapsona','Denosumabe','Desvenlafaxina','Difenidramina','Dipirona',
+  'Dabigatrana','Dapaglifozina','Dapsona','Darunavir','Denosumabe','Desvenlafaxina','Diacereina','Difenidramina','Dipirona',
   'Domperidona','Doxazosina','Duloxetina',
   'Empaglifozina','Enalapril','Eritropoetina','Escitalopram','Espironolactona','Ezetimiba',
   'Fenobarbital','Finasterida','Fluconazol','Fluoxetina','Furosemida',
   'Gabapentina','Glibenclamida','Gliclazida','Glimepirida',
   'Hidralazina','Hidroclorotiazida','Hixizine',
   'Indapamida','Insulina','Isossorbida',
-  'Lacosamida','Lamotrigina','Levetiracetam','Levotiroxina','Liraglutida','Loperamida','Loratadina','Losartana',
-  'Metadona','Metformina','Metildopa','Metoclopramida','Metoprolol','Mirtazapina',
+  'Lacosamida','Lamivudina','Lamotrigina','Levetiracetam','Levotiroxina','Liraglutida','Loperamida','Loratadina','Losartana',
+  'Magnésio','Metadona','Metformina','Metildopa','Metoclopramida','Metoprolol','Mirtazapina',
   'Nebivolol','Nifedipino','Nortriptilina',
-  'Omeprazol','Ondansetrona',
+  'Omega 3','Omeprazol','Ondansetrona',
   'Pantoprazol','Paracetamol','Pioglitazona','Pregabalina','Propranolol',
-  'Quetiapina','Ramipril','Risedronato de sódio','Risperidona','Rivaroxabana','Romosozumabe','Rosuvastatina',
+  'Quetiapina','Ramipril','Risedronato de sódio','Risperidona','Ritonavir','Rivaroxabana','Romosozumabe','Rosuvastatina',
   'Salbutamol','Semaglutida','Sertralina','Sevelamer','Sildenafil','Sinvastatina','Sulfato ferroso',
-  'Tamoxifeno','Tansulosina','Tapazol','Teriparatida','Ticagrelor','Topiramato','Tramadol',
+  'Tamoxifeno','Tansulosina','Tapazol','Teriparatida','Tiamina','Ticagrelor','Topiramato','Tramadol',
   'Valsartana','Varfarina','Venlafaxina','Vitamina B12','Vitamina B6',
   'Ziprasidona','Zolpidem'
 ];
@@ -895,7 +895,7 @@ const ESTADO_CIVIL = ['Casado','Divorciado','Solteiro','União estável','Viúvo
 const FILHOS = ['Sem filhos','1','2','3','4','5','6 ou mais'];
 const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto','Ensino Fundamental completo','Ensino Médio incompleto','Ensino Médio completo','Ensino Superior incompleto','Ensino Superior completo','Pós-graduação'];
 const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
-const OCUPACAO = ['Advogado','Afastado INSS','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de creche','Auxiliar de limpeza','Balconista','Cabeleireiro','Comercial corporativo','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Entregador','Faxineiro','Garçom','Gerente de vendas','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Representante comercial','Segurança','Técnico de enfermagem','Vendedora de loja','Zelador'];
+const OCUPACAO = ['Advogado','Afastado INSS','Agente de saúde','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de creche','Auxiliar de limpeza','Balconista','Cabeleireiro','Comercial corporativo','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Entregador','Estagiário (a)','Faxineiro','Garçom','Gerente de vendas','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Recepcionista','Representante comercial','Segurança','Técnico de enfermagem','Vendedora de loja','Zelador'];
 const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
 const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
 const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
