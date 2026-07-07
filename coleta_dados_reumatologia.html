@@ -887,6 +887,8 @@ const MED_CONTINUAS = [
   'Valsartana','Varfarina','Venlafaxina','Vitamina B12','Vitamina B6',
   'Ziprasidona','Zolpidem'
 ];
+// Sinônimos: busca pelo termo à esquerda encontra/seleciona a medicação canônica à direita
+const MED_CONTINUAS_ALIASES = { 'vitamina d': 'Colecalciferol' };
 const REACAO_DMARD = [...CS_DMARD,...B_DMARD,...TS_DMARD].filter((v,i,a)=>a.indexOf(v)===i).sort();
 
 // ── Dados sociodemográficos ──
@@ -1741,7 +1743,9 @@ function medContinuasSearch(q) {
 
   const lower = q.toLowerCase();
   const lista = MED_CONTINUAS;
-  const matches = lista.filter(m => m.toLowerCase().includes(lower));
+  const aliasHits = Object.keys(MED_CONTINUAS_ALIASES).filter(a => a.includes(lower));
+  const aliasCanonicals = aliasHits.map(a => MED_CONTINUAS_ALIASES[a]);
+  const matches = lista.filter(m => m.toLowerCase().includes(lower) || aliasCanonicals.includes(m));
 
   // Verifica se já está selecionado
   const isSelected = v => (formData.med_continuas || []).includes(v);
@@ -1752,14 +1756,18 @@ function medContinuasSearch(q) {
     const tag = sel
       ? `<span class="med-ac-sel-tag">✓ selecionado</span>`
       : '';
-    const hl = m.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<strong>$1</strong>');
+    const hl = m.toLowerCase().includes(lower)
+      ? m.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<strong>$1</strong>')
+      : m;
+    const aliasHit = aliasHits.find(a => MED_CONTINUAS_ALIASES[a] === m);
+    const aliasNote = aliasHit ? ` <span style="color:#a0aec0;font-weight:400">(${aliasHit.replace(/\b\w/g,c=>c.toUpperCase())})</span>` : '';
     html += `<div class="med-ac-item${sel?' ac-selected':''}" data-val="${m}" onclick="medContinuasSelect('${m.replace(/'/g,"\\'")}')">
-      <span>${hl}</span>${tag}
+      <span>${hl}${aliasNote}</span>${tag}
     </div>`;
   });
 
-  // Se o texto digitado não está na lista → opção de adicionar
-  const exactInList = lista.some(m => m.toLowerCase() === lower);
+  // Se o texto digitado não está na lista (nem é sinônimo conhecido) → opção de adicionar
+  const exactInList = lista.some(m => m.toLowerCase() === lower) || Object.prototype.hasOwnProperty.call(MED_CONTINUAS_ALIASES, lower);
   if (!exactInList && q.length >= 2) {
     html += `<div class="med-ac-item" data-val="__add__" onclick="medContinuasAdd()">
       <span>${q}</span><span class="med-ac-add-tag">＋ Adicionar</span>
