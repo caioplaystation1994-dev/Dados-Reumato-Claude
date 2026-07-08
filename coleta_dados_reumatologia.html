@@ -524,10 +524,10 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     </div>
   </div>
 
-  <!-- S10: Intervalo consultas -->
+  <!-- S10: Consultas nos últimos 12 meses -->
   <div class="section-card">
-    <div class="section-title">26. Intervalo Médio entre Consultas Médicas</div>
-    <div class="options-grid" id="q-intervalo"></div>
+    <div class="section-title">26. Número de Consultas Médicas nos Últimos 12 Meses</div>
+    <div class="numeric-inline"><label>Nº de consultas:</label><input type="number" id="f-intervalo" min="0" max="50" placeholder="0–50" oninput="updateTabBadges()"></div>
   </div>
 
   <div class="step-nav-btns"><button class="btn-secondary" onclick="showFormTab(0)">← Identificação</button><div class="step-progress-bar"><div class="step-progress-fill" id="spf-1" style="width:0%"></div></div><button class="btn-primary" onclick="showFormTab(2)">Sociodemográfico →</button></div>
@@ -1222,7 +1222,6 @@ const DMARD_INFO = {
   'Tofacitinibe':              { via:'Oral',    dose:'5–10 mg',                    freq:'2x ao dia' },
   'Upadacitinibe':             { via:'Oral',    dose:'15–30 mg/dia',               freq:'1x ao dia' },
 };
-const INTERVALO = ['< 3 meses','3 a 6 meses','> 6 meses'];
 
 // Disease → metric mapping
 const DOENCA_METRICAS = {
@@ -2194,7 +2193,6 @@ function initForm() {
   renderCheck('q-med-continuas', MED_CONTINUAS, 'med_continuas');
   renderRadio('q-reacao', ['Sim','Não'], 'reacao');
   renderCheck('q-reacao-quais', REACAO_DMARD, 'reacao_quais');
-  renderRadio('q-intervalo', INTERVALO, 'intervalo');
   // Sociodemográfico
   renderRadio('q-religiao', RELIGIAO, 'religiao');
   renderRadio('q-estado-civil', ESTADO_CIVIL, 'estado_civil');
@@ -2544,7 +2542,7 @@ function savePatient() {
     te_ciclo: formData.te_ciclo || false, te_ciclo_data: formData.te_ciclo_data || '',
     reacao: formData.reacao || '',
     reacao_quais: [...(formData.reacao_quais||[])],
-    intervalo: formData.intervalo || '',
+    intervalo: document.getElementById('f-intervalo').value,
     dmard_posologia: {...(formData.dmard_posologia||{})},
     // Sociodemográfico
     religiao: formData.religiao||'', estado_civil: formData.estado_civil||'',
@@ -2637,7 +2635,7 @@ function clearForm() {
   setDateInput('f-nascimento',''); setDateInput('f-inicio-seg',''); setDateInput('f-entrevista','');
   document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
-  ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
+  ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-intervalo'].forEach(id => {
     document.getElementById(id).value = '';
   });
   // Reset campos de laboratório para estado padrão (sem doença selecionada)
@@ -2914,7 +2912,7 @@ function editPatient(idx) {
     });
     restore('q-reacao','reacao',p.reacao);
     if (p.reacao === 'Sim') { document.getElementById('sub-reacao').classList.remove('hidden'); restoreCheck('q-reacao-quais','reacao_quais',p.reacao_quais); }
-    restore('q-intervalo','intervalo',p.intervalo);
+    document.getElementById('f-intervalo').value = p.intervalo || '';
     // Sociodemográfico
     restore('q-religiao','religiao',p.religiao);
     restore('q-estado-civil','estado_civil',p.estado_civil);
@@ -3077,7 +3075,7 @@ const SHEET_COLS = [
   ['med_continuas',   'Medicações Contínuas'],
   ['reacao',          'Histórico de Reação Adversa a DMARD'],
   ['reacao_quais',    'Reação Adversa – Quais Medicações'],
-  ['intervalo',       'Intervalo Médio entre Consultas'],
+  ['intervalo',       'Nº Consultas Últimos 12 Meses'],
   ['dmard_posologia', 'Posologia dos DMARDs'],
   // Sociodemográfico
   ['religiao',        'Religião'],
@@ -3526,7 +3524,7 @@ function renderStats() {
   const reacGrid = document.createElement('div');
   reacGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px';
   reacGrid.appendChild(barChart('Q25 · Histórico de Reação Adversa a DMARD', countBy(db,'reacao'), n));
-  reacGrid.appendChild(barChart('Q26 · Intervalo Médio entre Consultas', countBy(db,'intervalo'), n));
+  reacGrid.appendChild(barChart('Q26 · Nº Consultas nos Últimos 12 Meses', countBy(db,'intervalo'), n));
   ap(reacGrid);
   const reacDb = db.filter(p=>p.reacao==='Sim');
   if (reacDb.length) ap(barChartMulti('Q25b · DMARDs que Causaram Reação Adversa', countMulti(reacDb,'reacao_quais'), reacDb.length));
@@ -3806,7 +3804,7 @@ function fillTestData() {
   setTimeout(() => {
       clickOpt('q-tempo-dmard', '24–48 meses');
       clickOpt('q-reacao',      'Não');
-      clickOpt('q-intervalo',   '3 a 6 meses');
+      document.getElementById('f-intervalo').value = '3';
 
       // DMARDs prévios
       clickOpt('q-csdmard-prev', 'Leflunomida');
@@ -3902,10 +3900,24 @@ function migrateDsdna() {
   if (changed) setData(db);
 }
 
+// Migra registros antigos: Intervalo Médio entre Consultas (categórico) virou
+// Número de Consultas nos Últimos 12 Meses (numérico).
+// < 3 meses → 4 consultas · 3 a 6 meses → 3 consultas · > 6 meses → 1 consulta
+function migrateIntervalo() {
+  const map = { '< 3 meses':'4', '3 a 6 meses':'3', '> 6 meses':'1' };
+  const db = getData();
+  let changed = false;
+  db.forEach(p => {
+    if (map[p.intervalo]) { p.intervalo = map[p.intervalo]; changed = true; }
+  });
+  if (changed) setData(db);
+}
+
 // ============================================================
 // INIT
 // ============================================================
 migrateDsdna();
+migrateIntervalo();
 initForm();
 
 
