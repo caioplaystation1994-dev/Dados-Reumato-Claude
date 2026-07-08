@@ -362,7 +362,7 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
       <!-- Complemento e dsDNA (apenas lúpus) -->
       <div class="numeric-inline lab-lupus" style="display:none"><label>C3 (mg/dL):</label><input type="number" id="f-c3" step="0.1" min="1" max="300" placeholder="1–300"></div>
       <div class="numeric-inline lab-lupus" style="display:none"><label>C4 (mg/dL):</label><input type="number" id="f-c4" step="0.1" min="1" max="100" placeholder="1–100"></div>
-      <div class="numeric-inline lab-lupus" style="display:none"><label>Anti-dsDNA (UI/mL):</label><input type="number" id="f-dsdna" step="1" min="0" max="10000" placeholder="UI/mL"></div>
+      <div class="numeric-inline lab-lupus" style="display:none"><label>Anti-dsDNA:</label><div class="options-grid" id="q-dsdna"></div></div>
       <!-- Enzimas musculares (apenas miopatias) -->
       <div class="numeric-inline lab-miopatia" style="display:none"><label>CPK (U/L):</label><input type="number" id="f-cpk" min="10" max="50000" placeholder="10–50000"></div>
 
@@ -2000,9 +2000,14 @@ function updateLabFields(doenca) {
   document.querySelectorAll('.lab-miopatia').forEach(el => el.style.display = isMio ? '' : 'none');
   document.getElementById('lab-hint').style.display = doenca ? 'none' : 'block';
   // Limpa campos que ficaram ocultos para não persistir dados inconsistentes
-  if (isMio) { document.getElementById('f-vhs').value=''; document.getElementById('f-pcr').value=''; document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; document.getElementById('f-dsdna').value=''; }
+  if (isMio) { document.getElementById('f-vhs').value=''; document.getElementById('f-pcr').value=''; document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; clearDsdna(); }
   if (isLup) { document.getElementById('f-cpk').value=''; }
-  if (!isMio && !isLup) { document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; document.getElementById('f-dsdna').value=''; document.getElementById('f-cpk').value=''; }
+  if (!isMio && !isLup) { document.getElementById('f-c3').value=''; document.getElementById('f-c4').value=''; clearDsdna(); document.getElementById('f-cpk').value=''; }
+}
+function clearDsdna() {
+  formData.dsdna = '';
+  const c = document.getElementById('q-dsdna');
+  if (c) c.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
 }
 
 function classifyDAS28(v) {
@@ -2177,6 +2182,7 @@ function initForm() {
   renderRadio('q-tempo-remissao', TEMPO_REMISSAO, 'tempo_remissao');
   renderRadio('q-num-med', NUM_MED, 'num_med');
   renderRadio('q-gcs', GCS, 'gcs');
+  renderRadio('q-dsdna', ['Positivo','Negativo'], 'dsdna');
   renderCheck('q-csdmard', CS_DMARD, 'csdmard');
   renderCheck('q-bdmard', B_DMARD, 'bdmard');
   renderCheck('q-tsdmard', TS_DMARD, 'tsdmard');
@@ -2512,7 +2518,7 @@ function savePatient() {
     pcr: document.getElementById('f-pcr').value,
     c3: document.getElementById('f-c3').value,
     c4: document.getElementById('f-c4').value,
-    dsdna: document.getElementById('f-dsdna').value,
+    dsdna: formData.dsdna || '',
     cpk: document.getElementById('f-cpk').value,
     das28: document.getElementById('f-das28').value,
     asdas: document.getElementById('f-asdas').value,
@@ -2631,7 +2637,7 @@ function clearForm() {
   setDateInput('f-nascimento',''); setDateInput('f-inicio-seg',''); setDateInput('f-entrevista','');
   document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
-  ['f-vhs','f-pcr','f-c3','f-c4','f-dsdna','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
+  ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas'].forEach(id => {
     document.getElementById(id).value = '';
   });
   // Reset campos de laboratório para estado padrão (sem doença selecionada)
@@ -2820,7 +2826,6 @@ function editPatient(idx) {
     document.getElementById('f-pcr').value = p.pcr || '';
     document.getElementById('f-c3').value = p.c3 || '';
     document.getElementById('f-c4').value = p.c4 || '';
-    document.getElementById('f-dsdna').value = p.dsdna || '';
     document.getElementById('f-cpk').value = p.cpk || '';
     document.getElementById('f-das28').value = p.das28 || '';
     document.getElementById('f-asdas').value = p.asdas || '';
@@ -2882,6 +2887,7 @@ function editPatient(idx) {
     }
     restore('q-num-med','num_med',p.num_med);
     restore('q-gcs','gcs',p.gcs);
+    if (p.doenca && DOENCA_LUPUS.has(p.doenca)) restore('q-dsdna','dsdna',p.dsdna);
     restoreCheck('q-csdmard','csdmard',p.csdmard);
     restoreCheck('q-bdmard','bdmard',p.bdmard);
     restoreCheck('q-tsdmard','tsdmard',p.tsdmard);
@@ -3457,9 +3463,10 @@ function renderStats() {
     + numericCard('Q12 · PCR', numStat(db,'pcr'), 'mg/L')
     + numericCard('Q12 · C3', numStat(db,'c3'), 'mg/dL')
     + numericCard('Q12 · C4', numStat(db,'c4'), 'mg/dL')
-    + numericCard('Q12 · Anti-dsDNA', numStat(db,'dsdna'), 'UI/mL')
     + numericCard('Q12 · CPK', numStat(db,'cpk'), 'U/L');
   ap(labGrid);
+  const lupusDb = db.filter(p => DOENCA_LUPUS.has(p.doenca));
+  if (lupusDb.length) ap(barChart('Q12 · Anti-dsDNA (pacientes com LES)', countBy(lupusDb,'dsdna'), lupusDb.length));
 
   // ── SEÇÃO 4: MÉTRICAS ──
   ap(secHeader('Métricas de Atividade de Doença', 'Q13'));
