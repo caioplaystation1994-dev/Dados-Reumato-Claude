@@ -3889,9 +3889,23 @@ function fillTestData() {
   }, 100);
 }
 
+// Migra registros antigos: Anti-dsDNA era um valor numérico (UI/mL);
+// agora é Positivo/Negativo. Valor > 0 vira Positivo, 0 vira Negativo.
+function migrateDsdna() {
+  const db = getData();
+  let changed = false;
+  db.forEach(p => {
+    if (p.dsdna === '' || p.dsdna === undefined || p.dsdna === 'Positivo' || p.dsdna === 'Negativo') return;
+    const v = parseFloat(p.dsdna);
+    if (!isNaN(v)) { p.dsdna = v > 0 ? 'Positivo' : 'Negativo'; changed = true; }
+  });
+  if (changed) setData(db);
+}
+
 // ============================================================
 // INIT
 // ============================================================
+migrateDsdna();
 initForm();
 
 
