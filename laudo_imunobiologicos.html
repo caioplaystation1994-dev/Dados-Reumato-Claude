@@ -2584,7 +2584,7 @@ function buildPrescricao() {
   // Pré-medicações (somente na prescrição)
   const premedsSelected = PREMEDS.filter(p => f[p.key]);
   if(premedsSelected.length) {
-    txt += `\nPré-medicações (30 min antes da infusão):\n`;
+    txt += `\nPré-medicações:\n`;
     premedsSelected.forEach((p, i) => { txt += `${i+1}. ${p.label}\n`; });
   }
 
