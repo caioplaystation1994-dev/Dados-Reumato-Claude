@@ -365,19 +365,13 @@ header h1{font-size:15px;font-weight:700}
         <div class="field-grid">
           <div class="field-group">
             <label>Fator Reumatoide (FR)</label>
-            <div class="pill-group">
-              <span class="pill" onclick="setPill(this,'fr','neg')">Negativo</span>
-              <span class="pill" onclick="setPill(this,'fr','pos_baixo')">Positivo baixo título</span>
-              <span class="pill" onclick="setPill(this,'fr','pos_alto')">Positivo alto título</span>
-            </div>
+            <input type="text" id="ar_fr_val" placeholder="Ex: 48 UI/mL ou Negativo" oninput="fd.fr_val=this.value">
+            <input type="date" id="ar_fr_data" style="margin-top:4px" oninput="fd.fr_data=this.value">
           </div>
           <div class="field-group">
             <label>Anti-CCP</label>
-            <div class="pill-group">
-              <span class="pill" onclick="setPill(this,'anticcp','neg')">Negativo</span>
-              <span class="pill" onclick="setPill(this,'anticcp','pos_baixo')">Positivo baixo título</span>
-              <span class="pill" onclick="setPill(this,'anticcp','pos_alto')">Positivo alto título</span>
-            </div>
+            <input type="text" id="ar_anticcp_val" placeholder="Ex: 120 U/mL ou Negativo" oninput="fd.anticcp_val=this.value">
+            <input type="date" id="ar_anticcp_data" style="margin-top:4px" oninput="fd.anticcp_data=this.value">
           </div>
           <div class="field-group">
             <label>PCR (mg/L)</label>
@@ -388,8 +382,8 @@ header h1{font-size:15px;font-weight:700}
             <input type="number" id="ar_vhs" min="0" oninput="fd.ar_vhs=this.value">
           </div>
           <div class="field-group">
-            <label>Duração da doença</label>
-            <input type="text" id="ar_dur" placeholder="Ex: 2 anos" oninput="fd.duracao=this.value">
+            <label>Data do diagnóstico</label>
+            <input type="date" id="ar_data_diag" oninput="fd.data_diag=this.value">
           </div>
         </div>
       </div>
@@ -900,21 +894,38 @@ header h1{font-size:15px;font-weight:700}
   <!-- TAB TRATAMENTO -->
   <div class="tab-content" id="tab-trat">
     <div class="section-card">
-      <div class="section-title">Histórico de Tratamento</div>
-      <div style="font-size:12px;color:#718096;margin-bottom:12px">Documente todos os medicamentos utilizados anteriormente. A DUT 65 exige comprovação de falha ao tratamento convencional.</div>
+      <div class="section-title">Medicações em uso atual</div>
+      <div style="font-size:12px;color:#718096;margin-bottom:12px">Medicamentos que o paciente está usando atualmente (DMARDs de base, AINEs contínuos, etc.).</div>
       <table class="dmard-table">
         <thead>
           <tr>
-            <th style="width:32%">Medicamento</th>
-            <th style="width:18%">Dose</th>
-            <th style="width:18%">Duração</th>
-            <th style="width:24%">Motivo de suspensão</th>
+            <th style="width:38%">Medicamento</th>
+            <th style="width:28%">Dose</th>
+            <th style="width:26%">Data de início</th>
+            <th style="width:8%"></th>
+          </tr>
+        </thead>
+        <tbody id="dmard-atual-tbody"></tbody>
+      </table>
+      <button class="btn-add" onclick="addDmardAtual()">+ Adicionar medicação atual</button>
+    </div>
+    <div class="section-card" style="margin-top:16px">
+      <div class="section-title">Uso prévio / suspensos</div>
+      <div style="font-size:12px;color:#718096;margin-bottom:12px">Documente todos os medicamentos utilizados anteriormente e suspensos. A DUT 65 exige comprovação de falha ao tratamento convencional.</div>
+      <table class="dmard-table">
+        <thead>
+          <tr>
+            <th style="width:26%">Medicamento</th>
+            <th style="width:14%">Dose</th>
+            <th style="width:16%">Data de início</th>
+            <th style="width:16%">Data de suspensão</th>
+            <th style="width:20%">Motivo de suspensão</th>
             <th style="width:8%"></th>
           </tr>
         </thead>
         <tbody id="dmard-tbody"></tbody>
       </table>
-      <button class="btn-add" onclick="addDmard()">+ Adicionar medicamento</button>
+      <button class="btn-add" onclick="addDmard()">+ Adicionar medicamento prévio</button>
       <div id="dut-trat-msg" class="ref-box" style="margin-top:12px"></div>
     </div>
     <div class="section-card" style="margin-top:16px">
@@ -1057,6 +1068,7 @@ let disease = '';
 let fd = {};
 let mv = {};
 let dmards = [];
+let dmardAtuais = [];
 let exams = {};
 let imagens = [];
 
@@ -1194,7 +1206,7 @@ function showTabByName(id) {
 
 // ─── SELEÇÃO DE DOENÇA ────────────────────────────────────────────────────────
 function selectDisease(d) {
-  disease=d; fd={}; mv={}; dmards=[]; bioAnteriores=[]; exams={}; examDateGlobal=''; imagens=[];
+  disease=d; fd={}; mv={}; dmards=[]; dmardAtuais=[]; bioAnteriores=[]; exams={}; examDateGlobal=''; imagens=[];
   const bac=document.getElementById('bioanterior-container'); if(bac) bac.innerHTML='';
   fd.das28_tipo='pcr';
   document.getElementById('form-disease-title').textContent=D_NAMES[d];
@@ -1219,6 +1231,8 @@ function selectDisease(d) {
   const cidSel=document.getElementById('ar_cid_selector');
   if(cidSel) cidSel.style.display=d==='ar'?'':'none';
   document.getElementById('p_data_laudo').value=new Date().toISOString().split('T')[0];
+  document.getElementById('dmard-tbody').innerHTML='';
+  document.getElementById('dmard-atual-tbody').innerHTML='';
   if(d==='ea') buildBASDAI();
   if(d==='dm') buildMMT8();
   if(d==='les') buildSLEDAI();
