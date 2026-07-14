@@ -2320,6 +2320,17 @@ function buildLabLine() {
   return [lines.frAnticcp, lines.sorologias, lines.igra, lines.laboratoriais].filter(Boolean).join('\n');
 }
 
+function stripLabUnits(s) {
+  return s
+    .replace(/\s*\(VR[^)]*\)/gi, '')
+    .replace(/\s*\(valor[^)]*\)/gi, '')
+    .replace(/\s*\(ref[^)]*\)/gi, '')
+    .replace(/\b(mg\/dL|mg\/L|g\/dL|g\/L|mm\/h|fL|mm[³3]|U\/L|mUI\/L|mUI\/mL|mL\/min|ng\/mL|pg\/mL|mcg\/L|µg\/L|mg%|UI\/mL|UI\/L|mmol\/L|nmol\/L|µmol\/L|pmol\/L|IU\/mL|copies\/mL|cel\/mm[³3])\b/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s*\/\s*/g, ' / ')
+    .trim();
+}
+
 function buildLabLines() {
   // Returns categorized lab sections
   const sorolIds = new Set(['hbsag','anti_hbc','anti_hcv','hiv']);
@@ -2348,21 +2359,21 @@ function buildLabLines() {
     igra = `IGRA: Positivo. Profilaxia TB: ${fd.tb_profilaxia_med||'—'} (${fd.tb_profilaxia_status||'—'})`;
   }
 
-  // Sorologias — label sem nome da doença entre parênteses
+  // Sorologias — label sem nome da doença entre parênteses, sem unidades
   const sorolParts = [];
   sorolIds.forEach(id => {
     if(exams[id]?.result) {
       const label = (EXAMES_BASE.find(e=>e.id===id)?.l||id).replace(/\s*\([^)]+\)/g,'').trim();
-      sorolParts.push(`${label} ${exams[id].result}`);
+      sorolParts.push(`${label} ${stripLabUnits(exams[id].result)}`);
     }
   });
   const sorologias = sorolParts.join(' / ');
 
-  // Outros laboratoriais — sem prefixo de label para evitar repetição
+  // Outros laboratoriais — sem prefixo de label, sem unidades
   const labParts = [];
   EXAMES_BASE.forEach(e => {
     if(!sorolIds.has(e.id) && e.id !== 'ppd' && e.id !== 'rx_torax' && exams[e.id]?.result) {
-      labParts.push(exams[e.id].result);
+      labParts.push(stripLabUnits(exams[e.id].result));
     }
   });
   const laboratoriais = labParts.join(' / ');
@@ -2422,58 +2433,40 @@ function buildIntroClinica() {
   const f = fd; const d = disease;
   const nome = f.nome||'[Nome do paciente]';
   const idade = f.idade || document.getElementById('p_idade').value || '';
-  const sexo = f.sexo === 'M' ? 'sexo masculino' : f.sexo === 'F' ? 'sexo feminino' : '';
-  const cid = document.getElementById('p_cid').value || '';
   const dataDiag = f.data_diag ? fmtDate(f.data_diag) : '';
   let doenca = D_NAMES[d]||d;
 
-  let txt = `Paciente ${nome}`;
-  if(idade) txt += `, ${idade}`;
-  if(sexo) txt += `, ${sexo}`;
-  txt += `, diagnóstico de ${doenca}`;
-  if(dataDiag) txt += ` em ${dataDiag}`;
-  txt += '.';
-
-  // Disease-specific clinical detail
+  // Subtype refinement
   if(d==='ea'){
-    const tipo = f.ea_tipo === 'rad' ? 'Espondiloartrite axial radiográfica' : f.ea_tipo === 'nrad' ? 'Espondiloartrite axial não-radiográfica' : '';
-    if(tipo) txt = txt.replace(`diagnóstico de ${doenca}`, `diagnóstico de ${tipo}`);
-    txt += ' Mantendo quadro de dor lombar inflamatória refratária ao tratamento com AINE.';
-  } else if(d==='ar'){
-    const cls = f.das28_class ? f.das28_class.replace(/\s*\([^)]+\)/g,'').trim() : 'atividade moderada a alta';
-    txt += ` Apresentando ${cls} de doença.`;
-  } else if(d==='aps'){
-    txt += ' Apresentando doença com atividade moderada a alta refratária a DMARD convencional.';
-  } else if(d==='les'){
-    // score e manifestações ficam só em buildScoreLine
+    const tipo = f.ea_tipo === 'rad' ? 'Espondiloartrite axial radiográfica' : f.ea_tipo === 'nrad' ? 'Espondiloartrite axial não-radiográfica' : doenca;
+    doenca = tipo;
   } else if(d==='vasc'){
-    const tipo = f.vasc_tipo==='gpa'?'GPA':f.vasc_tipo==='pam'?'PAM':f.vasc_tipo==='gepa'?'GEPA':'';
-    if(tipo) txt = txt.replace(`diagnóstico de ${doenca}`, `diagnóstico de vasculite ANCA-associada (${tipo})`);
+    const tipo = f.vasc_tipo==='gpa'?'vasculite ANCA-associada (GPA)':f.vasc_tipo==='pam'?'vasculite ANCA-associada (PAM)':f.vasc_tipo==='gepa'?'vasculite ANCA-associada (GEPA)':'';
+    if(tipo) doenca = tipo;
   } else if(d==='dm'){
     const sub = f.dm_subtipo==='dm'?'Dermatomiosite':f.dm_subtipo==='pm'?'Polimiosite':f.dm_subtipo==='imnm'?'Miopatia necrosante (IMNM)':f.dm_subtipo==='anti_sint'?'Síndrome anti-sintetase':f.dm_subtipo==='cadm'?'DM amiopática (CADM)':'';
-    if(sub) txt = txt.replace(`diagnóstico de ${doenca}`, `diagnóstico de ${sub}`);
+    if(sub) doenca = sub;
   }
+
+  let txt = `Paciente ${nome}`;
+  if(idade) txt += `, ${idade} anos`;
+  txt += `, diagnóstico de ${doenca}`;
+  if(dataDiag) txt += ` em ${dataDiag}`;
+  txt += ', mantendo atividade de doença apesar do tratamento atual.';
   return txt;
 }
 
 function buildConclusao() {
   const f = fd; const d = disease;
   const med = f.med_nome||'[medicamento]';
-  const via = f.med_via||'';
   let doenca = D_NAMES[d]||d;
   if(d==='ea') doenca = 'Espondiloartrite axial';
+  else if(d==='vasc'){
+    const tipo = f.vasc_tipo==='gpa'?'vasculite ANCA-associada (GPA)':f.vasc_tipo==='pam'?'vasculite ANCA-associada (PAM)':f.vasc_tipo==='gepa'?'vasculite ANCA-associada (GEPA)':'';
+    if(tipo) doenca = tipo;
+  }
 
-  let motivo = 'refratária ao tratamento convencional';
-  if(d==='ea') motivo = 'refratária ao tratamento com AINE';
-  else if(d==='ar') motivo = 'refratária ao tratamento com DMARD convencional';
-  else if(d==='aps') motivo = 'refratária ao tratamento com DMARD';
-  else if(d==='les') motivo = 'com atividade persistente apesar do tratamento imunossupressor';
-  else if(d==='vasc') motivo = 'refratária/recidivante ao tratamento convencional';
-
-  let txt = `Dessa forma, visto quadro de ${doenca} ${motivo}, solicito introdução de ${med}`;
-  if(via) txt += ` ${via}`;
-  txt += ` para controle de atividade de doença conforme posologia abaixo:`;
-  return txt;
+  return `Dessa forma, visto quadro de ${doenca} refratária ao tratamento atual, solicito introdução de ${med}, conforme posologia abaixo, para controle de doença.`;
 }
 
 function buildPrescricao() {
@@ -2485,13 +2478,18 @@ function buildPrescricao() {
   const dut = D_DUT[disease] || '';
 
   const viaUp = via.toUpperCase();
+  let header = '';
+  if(viaUp.includes('EV') || viaUp.includes('ENDOVEN') || viaUp.includes('IV')) header = 'USO ENDOVENOSO CONTÍNUO';
+  else if(viaUp.includes('SC') || viaUp.includes('SUBCUTÂ') || viaUp.includes('SUBCUT')) header = 'USO SUBCUTÂNEO CONTÍNUO';
+  else if(viaUp === 'VO' || viaUp.includes(' VO') || viaUp.includes('ORAL') || viaUp.startsWith('VO ')) header = 'USO ORAL CONTÍNUO';
+  else if(via) header = `Via: ${via}`;
+
   let txt = '';
-  if(viaUp.includes('EV') || viaUp.includes('ENDOVEN') || viaUp.includes('IV')) txt += 'Uso endovenoso contínuo\n';
-  else if(via) txt += `Via: ${via}\n`;
+  if(header) txt += `${header}\n\n`;
   txt += `1. ${med}\n`;
   if(pos) txt += `${pos}\n`;
   if(f.peso) txt += `\nPeso do paciente: ${f.peso} kg\n`;
-  if(cid) txt += `CID ${cid.split(' ')[0]}\n`;
+  if(cid) txt += `\nCID ${cid.split(' ')[0]}\n`;
   if(dut) txt += `\nFundamentação: ${dut}`;
   return txt.trim();
 }
