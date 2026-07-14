@@ -1299,267 +1299,429 @@ function fillDemoData() {
     const di=document.getElementById('exam_date_'+id); if(di) di.value=date||'';
   };
   const setSlider = (id,val) => { const el=document.getElementById(id); if(el){el.value=val;el.dispatchEvent(new Event('input'));} };
+  // Selects a pill within a given container element by matching text
+  const clickPill = (containerSel, text) => {
+    const el = document.querySelector(containerSel);
+    if(!el) return;
+    el.querySelectorAll('.pill').forEach(p => { if(p.textContent.trim()===text) p.click(); });
+  };
+  // Selects a multi-pill within a given container element by matching text
+  const clickMultiPill = (containerSel, text) => {
+    const el = document.querySelector(containerSel);
+    if(!el) return;
+    el.querySelectorAll('.pill').forEach(p => { if(p.textContent.trim()===text && !p.classList.contains('selected')) p.click(); });
+  };
+  // Sets medication: selects in dropdown, triggers onMedChange, optionally overrides posologia/via
+  const setMed = (nome, pesoKg, viaOverride, posOverride, justificativa) => {
+    setVal('med_peso', pesoKg);
+    fd.med_peso = pesoKg;
+    const sel = document.getElementById('med_nome');
+    if(sel){ sel.value=nome; sel.dispatchEvent(new Event('change')); onMedChange(); }
+    if(viaOverride && typeof onViaChange==='function') {
+      fd.med_via=viaOverride;
+      const vs=document.getElementById('med_via_select'); if(vs){ vs.value=viaOverride; vs.dispatchEvent(new Event('change')); }
+      onViaChange(viaOverride);
+    }
+    if(posOverride){
+      const pt=document.getElementById('med_posologia'); if(pt){pt.value=posOverride; fd.med_posologia=posOverride;}
+    }
+    if(justificativa){
+      const jt=document.getElementById('med_justificativa'); if(jt){jt.value=justificativa; fd.med_justificativa=justificativa;}
+    }
+  };
+  // Fills an imagem row
+  const fillImg = (idx,tipo,laudo,data) => {
+    imagens[idx]={tipo,laudo,data};
+    const row=document.getElementById('img'+idx);
+    if(row){row.querySelectorAll('input')[0].value=tipo;row.querySelectorAll('textarea')[0].value=laudo;row.querySelectorAll('input[type=date]')[0].value=data;}
+  };
 
-  // Dados comuns do médico/paciente
+  // ── Dados comuns do médico ──
   setVal('p_medico','Dr. Caio Stecca Wandenkolk');
   setVal('p_crm','CRM-SP 197983');
   setVal('p_data_laudo', fmt(hoje));
   setVal('p_cidade','São Paulo - SP');
 
-  // Sorologias comuns (pré-biológico)
+  // ── Sorologias comuns (pré-biológico) ──
   const labDate = diasAtras(21);
   setGlobalExamDate(labDate);
   const gd = document.getElementById('exam_date_global'); if(gd) gd.value=labDate;
-  setExam('hbsag','Não reagente');
-  setExam('anti_hbc','Não reagente');
-  setExam('anti_hcv','Não reagente');
-  setExam('hiv','Não reagente');
+  setExam('hbsag','Não reagente', labDate);
+  setExam('anti_hbc','Não reagente', labDate);
+  setExam('anti_hcv','Não reagente', labDate);
+  setExam('hiv','Não reagente', labDate);
+  setExam('urina','Densidade 1.020 / pH 6,0 / Proteínas negativo / Glicose negativo / Sedimento: raros leucócitos', labDate);
 
+  // ══════════════════════════════════════════════════════════════════════════════
   if(d==='ar'){
-    // Paciente AR: mulher 48 anos, soropositiva, DAS28 alto, falha MTX+LEF
+  // AR — Maria Aparecida Santos, 48 anos, soropositiva, DAS28 alto, falha MTX+LEF → Tocilizumabe SC
+  // ══════════════════════════════════════════════════════════════════════════════
     setVal('p_nome','Maria Aparecida Santos'); setVal('p_dn',anosAtras(48)); calcAge();
-    fd.sexo='F'; document.querySelectorAll('#tab-pac .pill').forEach(p=>{if(p.textContent==='Feminino')p.classList.add('selected');});
+    clickPill('#tab-pac','Feminino');
     setVal('p_cid','M05.9 — Artrite Reumatoide soropositiva');
     document.getElementById('ar_cid_selector').style.display='';
-    setVal('p_data_laudo',fmt(hoje));
+    const cidSel = document.getElementById('ar_cid_selector');
+    if(cidSel){ const ps=cidSel.querySelectorAll('.pill'); if(ps[0]){ps[0].classList.add('selected');} }
+    fd.ar_cid='pos';
 
     // Diagnóstico
     setVal('ar_data_diag', anosAtras(4));
-    setVal('ar_fr_val','FR: 248 UI/mL (VR < 20)'); setVal('ar_fr_data', diasAtras(21));
-    setVal('ar_anticcp_val','Anti-CCP: 340 U/mL (VR < 17)'); setVal('ar_anticcp_data', diasAtras(21));
+    setVal('ar_fr_val','248 UI/mL (VR < 20)'); setVal('ar_fr_data', diasAtras(21));
+    setVal('ar_anticcp_val','340 U/mL (VR < 17)'); setVal('ar_anticcp_data', diasAtras(21));
     setVal('ar_pcr','18'); setVal('ar_vhs','42');
 
-    // DAS28
+    // DAS28-PCR
     setVal('das_td','8'); setVal('das_te','5'); setVal('das_eva','68'); setVal('das_marker','18');
     updDAS28();
-
     // CDAI/SDAI
     setVal('cdai_ega','5'); setVal('cdai_pga','6'); setVal('cdai_pcr','1.8');
     updCDAI_SDAI();
 
-    // Exames
-    setExam('hemograma','Hb 11,2 / Ht 34 / VCM 82 / Leucócitos 7.800 / Plaquetas 420.000', labDate);
-    setExam('tgo_tgp','TGO 24 / TGP 28', labDate);
-    setExam('creatinina','0,9 mg/dL', labDate);
-    setExam('pcr_vhs','PCR 18 mg/L / VHS 42 mm/h', labDate);
-    setExam('ppd','Negativo', diasAtras(30));
-    setExam('rx_torax','Cúpulas e seios costofrênicos livres. Pulmões expandidos e sem velamento. Mediastino centrado. Área cardíaca dentro da normalidade.', diasAtras(30));
+    // Função pulmonar — sem acometimento
+    setVal('ar_fev1','88'); setVal('ar_cvf','86'); setVal('ar_fev1cvf','0.78');
+    setVal('ar_dlco','82'); setVal('ar_espiro_data', diasAtras(60));
+    setVal('ar_espiro_laudo','Espirometria dentro dos limites da normalidade. DLCO normal. Sem evidência de acometimento pulmonar intersticial.');
+    setVal('ar_tcar_laudo','Sem alterações intersticiais significativas. Ausência de padrão em vidro fosco ou reticular. Campos pulmonares limpos bilateralmente.');
+    setVal('ar_tcar_data', diasAtras(60));
+
+    // Exames laboratoriais
+    setExam('hemograma','Hb 11,2 g/dL / Ht 34% / VCM 82 fL / Leucócitos 7.800/mm³ / Plaquetas 420.000/mm³', labDate);
+    setExam('tgo_tgp','TGO 24 U/L (VR <40) / TGP 28 U/L (VR <40)', labDate);
+    setExam('creatinina','0,9 mg/dL (TFG estimada: 78 mL/min)', labDate);
+    setExam('pcr_vhs','PCR 18,4 mg/L (VR <5) / VHS 42 mm/h (VR <20)', labDate);
+    setExam('ppd','Não reator (induração 0 mm)', diasAtras(30));
+    setExam('rx_torax','Cúpulas e seios costofrênicos livres. Pulmões expandidos e sem velamento. Mediastino centrado. Área cardíaca dentro da normalidade. Sem nódulos ou infiltrados.', diasAtras(30));
 
     // Medicações atuais
-    dmardAtuais=[];
-    document.getElementById('dmard-atual-tbody').innerHTML='';
-    addDmardAtual({med:'Metotrexato',dose:'20mg/semana SC',dataInicio: mesesAtras(36)});
+    dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
+    addDmardAtual({med:'Metotrexato',dose:'20 mg/semana SC',dataInicio: mesesAtras(36)});
+    addDmardAtual({med:'Ácido fólico',dose:'5 mg/semana VO',dataInicio: mesesAtras(36)});
+    addDmardAtual({med:'Prednisona',dose:'7,5 mg/dia VO',dataInicio: mesesAtras(8)});
 
     // Uso prévio
-    dmards=[];
-    document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Metotrexato',dose:'15mg/semana VO',dataInicio:mesesAtras(48),dataSuspensao:mesesAtras(36),motivo:'Intolerância gastrointestinal'});
-    addDmard({med:'Leflunomida',dose:'20mg/dia',dataInicio:mesesAtras(30),dataSuspensao:mesesAtras(6),motivo:'Falha primária — atividade persistente'});
+    dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
+    addDmard({med:'Metotrexato',dose:'15 mg/semana VO',dataInicio:mesesAtras(48),dataSuspensao:mesesAtras(36),motivo:'Intolerância gastrointestinal — náuseas e vômitos refratários à troca para uso SC'});
+    addDmard({med:'Leflunomida',dose:'20 mg/dia VO',dataInicio:mesesAtras(30),dataSuspensao:mesesAtras(6),motivo:'Falha primária — DAS28 persistentemente >5,1 após 6 meses de uso'});
+    addDmard({med:'Hidroxicloroquina',dose:'400 mg/dia VO',dataInicio:mesesAtras(48),dataSuspensao:mesesAtras(30),motivo:'Associada a MTX, suspensa por progressão clínica'});
 
     // Imagem
-    imagens=[];
-    document.getElementById('imagem-container').innerHTML='';
-    addImagem();
-    imagens[0]={tipo:'RM de mãos e punhos',laudo:'Sinovite proliferativa em articulações MCF 2-4 bilateralmente, com erosões ósseas incipientes nos 2º e 3º MCFs à direita. Tenossinovite dos flexores. Derrame articular nos punhos.',data:diasAtras(45)};
-    const img0=document.getElementById('img0');
-    if(img0){img0.querySelectorAll('input')[0].value=imagens[0].tipo;img0.querySelectorAll('textarea')[0].value=imagens[0].laudo;img0.querySelectorAll('input[type=date]')[0].value=imagens[0].data;}
+    imagens=[]; document.getElementById('imagem-container').innerHTML=''; addImagem();
+    fillImg(0,'RM de mãos e punhos bilaterais','Sinovite proliferativa em articulações MCF 2-4 bilateralmente, com erosões ósseas incipientes nos 2º e 3º MCFs à direita. Tenossinovite dos flexores bilateralmente. Derrame articular nos punhos.',diasAtras(45));
 
-    // Medicamento solicitado
-    setVal('p_med_nome','Tocilizumabe'); fd.med_nome='Tocilizumabe';
-    setVal('p_med_via','SC'); fd.med_via='SC';
-    setVal('p_med_posologia','Tocilizumabe 162mg SC a cada semana'); fd.med_posologia='Tocilizumabe 162mg SC a cada semana';
-    fd.peso=62;
+    // Medicamento — Tocilizumabe SC
+    setMed('Tocilizumabe', 62, 'Subcutânea (SC)', 'Tocilizumabe 162 mg SC uma vez por semana.',
+      'Paciente com artrite reumatoide soropositiva (FR 248 UI/mL e Anti-CCP 340 U/mL) em alta atividade de doença (DAS28-PCR: 5,78 — atividade alta), refratária a dois DMARDs sintéticos convencionais em doses adequadas e por tempo suficiente (MTX e LEF), conforme DUT 65.1. Optou-se por tocilizumabe (anti-IL-6R) SC pela eficácia comprovada em pacientes com FR de resposta inadequada aos anti-TNF e pelo perfil de segurança favorável. A via subcutânea foi escolhida por conveniência e preferência da paciente.');
 
+  // ══════════════════════════════════════════════════════════════════════════════
   } else if(d==='ea'){
-    // Paciente EA: homem 28 anos, HLA-B27+, BASDAI 5.2, falha 2 AINEs
+  // EA — Daniel Ferreira Mota, 28 anos, HLA-B27+, BASDAI 5,2, falha 2 AINEs → Golimumabe EV
+  // ══════════════════════════════════════════════════════════════════════════════
     setVal('p_nome','Daniel Ferreira Mota'); setVal('p_dn',anosAtras(28)); calcAge();
-    fd.sexo='M'; document.querySelectorAll('#tab-pac .pill').forEach(p=>{if(p.textContent==='Masculino')p.classList.add('selected');});
+    clickPill('#tab-pac','Masculino');
     setVal('p_cid','M45 — Espondilite Anquilosante');
-    document.getElementById('ea_cid_selector').style.display='';
 
-    setVal('ea_dur', anosAtras(2)); fd.data_diag=anosAtras(2);
-    fd.hlab27='pos'; fd.ea_tipo='rad';
+    setVal('ea_dur','5 anos'); fd.duracao='5 anos';
+    fd.data_diag = anosAtras(5);
+    clickPill('#diag-ea .field-group:nth-child(1)','Positivo');    // HLA-B27
+    clickPill('#diag-ea .field-group:nth-child(2)','Radiográfica (mNY)'); // ea_tipo
 
     // BASDAI
-    [5.5,5.0,6.0,5.0,4.5,5.5].forEach((v,i)=>setSlider('basdai_'+i,v));
-    updBASDI();
-    setVal('ea_pcr','8'); setVal('ea_vhs','28'); fd.ea_pcr='8'; fd.ea_vhs='28';
-    updASDAS();
+    [5.5, 5.0, 6.0, 5.0, 4.5, 5.5].forEach((v,i)=>{ setSlider('bq'+i,v); const sp=document.getElementById('bv'+i); if(sp) sp.textContent=v.toFixed(1); });
+    updBASDAI();
+    setVal('ea_pcr','8'); fd.ea_pcr='8';
+    setVal('ea_vhs','28'); fd.ea_vhs='28';
+    if(typeof updASDAS==='function') updASDAS();
+
+    // RNM sacroilíacas
+    setVal('ea_rnm','Edema ósseo subcondral no terço inferior das articulações sacroilíacas bilateralmente, notadamente à direita. Irregularidades condrais e erosões subcondrais incipientes bilaterais. Achados compatíveis com sacroileíte ativa grau III (critérios de Nova York).');
+    setVal('ea_rnm_data', diasAtras(60));
 
     // Exames
-    setExam('hemograma','Hb 14,6 / Ht 42 / VCM 84 / Leucócitos 6.800 / Plaquetas 298.000', labDate);
-    setExam('tgo_tgp','TGO 23 / TGP 24', labDate);
-    setExam('creatinina','0,8 mg/dL', labDate);
-    setExam('pcr_vhs','PCR 8 mg/L (VR < 5) / VHS 28 mm/h', labDate);
-    setExam('ppd','Negativo', diasAtras(30));
-    setExam('rx_torax','Cúpulas e seios costofrênicos livres. Pulmões expandidos e sem velamento. Hilos e trama vascular normais. Mediastino centrado. Área cardíaca dentro da normalidade. Aorta normal.', diasAtras(30));
+    setExam('hemograma','Hb 14,6 g/dL / Ht 42% / VCM 84 fL / Leucócitos 6.800/mm³ / Plaquetas 298.000/mm³', labDate);
+    setExam('tgo_tgp','TGO 23 U/L / TGP 24 U/L', labDate);
+    setExam('creatinina','0,8 mg/dL (TFG: 112 mL/min)', labDate);
+    setExam('pcr_vhs','PCR 8,2 mg/L (VR <5) / VHS 28 mm/h', labDate);
+    setExam('ppd','Não reator (induração 0 mm)', diasAtras(30));
+    setExam('rx_torax','Cúpulas e seios costofrênicos livres. Pulmões expandidos e sem velamento. Hilos e trama vascular normais. Mediastino centrado. Área cardíaca normal. Retificação da lordose lombar.', diasAtras(30));
 
     // Medicações atuais
-    dmardAtuais=[];
-    document.getElementById('dmard-atual-tbody').innerHTML='';
-    addDmardAtual({med:'Meloxicam',dose:'15mg/dia',dataInicio: mesesAtras(2)});
+    dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
+    addDmardAtual({med:'Meloxicam',dose:'15 mg/dia VO',dataInicio: mesesAtras(2)});
+    addDmardAtual({med:'Omeprazol',dose:'20 mg/dia VO (gastroproteção)',dataInicio: mesesAtras(2)});
 
     // Uso prévio
-    dmards=[];
-    document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Naproxeno',dose:'550mg 12/12h',dataInicio:mesesAtras(6),dataSuspensao:mesesAtras(2),motivo:'Falha terapêutica — atividade persistente'});
-    addDmard({med:'Diclofenaco',dose:'75mg 12/12h',dataInicio:mesesAtras(8),dataSuspensao:mesesAtras(6),motivo:'Intolerância gástrica'});
-
-    // HLA-B27 e FR no campo de exames
-    setVal('ar_fr_val','FR: Não reagente'); setVal('ar_fr_data',labDate);
+    dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
+    addDmard({med:'Naproxeno',dose:'500 mg 12/12h VO',dataInicio:mesesAtras(8),dataSuspensao:mesesAtras(4),motivo:'Falha terapêutica — atividade persistente após 3 meses em dose plena'});
+    addDmard({med:'Diclofenaco',dose:'75 mg 12/12h VO',dataInicio:mesesAtras(12),dataSuspensao:mesesAtras(8),motivo:'Intolerância gástrica — dispepsia e gastrite endoscópica'});
 
     // Imagem
-    imagens=[];
-    document.getElementById('imagem-container').innerHTML='';
+    imagens=[]; document.getElementById('imagem-container').innerHTML=''; addImagem();
+    fillImg(0,'RM de bacia (sacroilíacas)','Edema ósseo subcondral no terço inferior das articulações sacroilíacas bilateralmente com predomínio à direita, associado a irregularidades condrais. Erosões subcondrais incipientes. Sacroileíte ativa grau III pelos critérios de Nova York.',diasAtras(60));
     addImagem();
-    imagens[0]={tipo:'RM de bacia',laudo:'Edema ósseo subcondral no terço inferior das articulações sacroilíacas bilateralmente, notadamente à direita, que pode estar relacionado à sacroileíte.',data:diasAtras(60)};
-    const i0=document.getElementById('img0');
-    if(i0){i0.querySelectorAll('input')[0].value=imagens[0].tipo;i0.querySelectorAll('textarea')[0].value=imagens[0].laudo;i0.querySelectorAll('input[type=date]')[0].value=imagens[0].data;}
-    addImagem();
-    imagens[1]={tipo:'RM de coluna lombossacra',laudo:'Edema ósseo subcondral no terço inferior da articulação sacroilíaca direita, acompanhado de irregularidades e possíveis erosões ósseas subcondrais.',data:diasAtras(60)};
-    const i1=document.getElementById('img1');
-    if(i1){i1.querySelectorAll('input')[0].value=imagens[1].tipo;i1.querySelectorAll('textarea')[0].value=imagens[1].laudo;i1.querySelectorAll('input[type=date]')[0].value=imagens[1].data;}
+    fillImg(1,'RM de coluna lombossacra','Edema de medula óssea nos platôs vertebrais (lesões de Romanus) nos níveis L3-L4 e L4-L5. Sindesmófitos incipientes em L3-L4. Retificação da lordose lombar.',diasAtras(60));
 
-    fd.med_nome='Golimumabe'; fd.med_via='EV'; fd.med_posologia='Golimumabe 50mg/frasco. Administrar 2mg/kg diluídos em 250mL de SF, em 60 minutos, nas semanas 0, 4 e a cada 8 semanas após.'; fd.peso=72;
+    // Medicamento — Golimumabe EV
+    setMed('Golimumabe', 72, 'Endovenosa (EV)',
+      'Golimumabe 2 mg/kg EV (144 mg), diluídos em 250 mL de SF 0,9%, infusão em 30 minutos, nas semanas 0, 4 e a cada 8 semanas subsequentes.',
+      'Paciente com espondilite anquilosante radiográfica (critérios de Nova York, sacroileíte grau III bilateral à RM), HLA-B27 positivo, em alta atividade de doença (BASDAI 5,19 — ≥4, critério DUT), com PCR elevada (8,2 mg/L), refratário a dois AINEs em dose plena e por tempo adequado (naproxeno por 4 meses e meloxicam por 3 meses), conforme DUT 65.3. Indicado anti-TNF (golimumabe EV) pela eficácia documentada na espondilite axial radiográfica e pelo perfil de segurança favorável.');
 
+  // ══════════════════════════════════════════════════════════════════════════════
   } else if(d==='aps'){
-    // Artrite Psoriásica: homem 42 anos, padrão periférico + dactilite, DAPSA alto, falha MTX
+  // APs — Roberto Alves Carvalho, 42 anos, DAPSA alto, psoríase PASI 8,2, falha MTX → Secuquinumabe SC
+  // ══════════════════════════════════════════════════════════════════════════════
     setVal('p_nome','Roberto Alves Carvalho'); setVal('p_dn',anosAtras(42)); calcAge();
-    fd.sexo='M'; document.querySelectorAll('#tab-pac .pill').forEach(p=>{if(p.textContent==='Masculino')p.classList.add('selected');});
+    clickPill('#tab-pac','Masculino');
     setVal('p_cid','M07.3 — Artrite Psoriásica');
-    setVal('aps_dur', anosAtras(3)); fd.data_diag=anosAtras(3);
 
-    setVal('dapsa_td','12'); setVal('dapsa_te','7'); setVal('dapsa_dor','6.5'); setVal('dapsa_glob','6'); setVal('dapsa_pcr','0.8');
+    setVal('aps_dur','3 anos'); fd.duracao='3 anos';
+    fd.data_diag = anosAtras(3);
+
+    // DAPSA
+    setVal('dapsa_td','12'); setVal('dapsa_te','7'); setVal('dapsa_dor','6.5'); setVal('dapsa_glob','6.0'); setVal('dapsa_pcr','0.8');
     updDAPSA();
+
+    // Domínios
+    clickMultiPill('#diag-aps .field-group:nth-child(1)','Artrite periférica');
+    clickMultiPill('#diag-aps .field-group:nth-child(1)','Dactilite');
+    clickMultiPill('#diag-aps .field-group:nth-child(1)','Psoríase cutânea');
+    clickPill('#diag-aps .field-group:nth-child(2)','Negativo'); // FR
     setVal('aps_pasi','8.2'); fd.aps_pasi='8.2';
     setVal('aps_bsa','12'); fd.aps_bsa='12';
 
-    setExam('hemograma','Hb 13,8 / Ht 41 / Leucócitos 7.200 / Plaquetas 312.000', labDate);
-    setExam('tgo_tgp','TGO 26 / TGP 30', labDate);
-    setExam('creatinina','0,9 mg/dL', labDate);
-    setExam('pcr_vhs','PCR 8 mg/dL / VHS 30 mm/h', labDate);
-    setExam('ppd','Negativo', diasAtras(30));
-    setExam('rx_torax','Cúpulas e seios costofrênicos livres. Pulmões expandidos. Mediastino centrado. Área cardíaca normal.', diasAtras(30));
+    // Exames
+    setExam('hemograma','Hb 13,8 g/dL / Ht 41% / Leucócitos 7.200/mm³ / Plaquetas 312.000/mm³', labDate);
+    setExam('tgo_tgp','TGO 26 U/L / TGP 30 U/L', labDate);
+    setExam('creatinina','0,9 mg/dL (TFG: 96 mL/min)', labDate);
+    setExam('pcr_vhs','PCR 8,0 mg/dL (VR <5) / VHS 30 mm/h', labDate);
+    setExam('ppd','Não reator (induração 0 mm)', diasAtras(30));
+    setExam('rx_torax','Cúpulas e seios costofrênicos livres. Pulmões expandidos e sem infiltrados. Mediastino centrado. Área cardíaca normal.', diasAtras(30));
 
+    // Medicações atuais
     dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
-    addDmardAtual({med:'Metotrexato',dose:'20mg/semana SC',dataInicio: mesesAtras(18)});
+    addDmardAtual({med:'Metotrexato',dose:'20 mg/semana SC',dataInicio: mesesAtras(18)});
+    addDmardAtual({med:'Ácido fólico',dose:'5 mg/semana VO',dataInicio: mesesAtras(18)});
 
+    // Uso prévio
     dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Metotrexato',dose:'15mg/semana VO',dataInicio:mesesAtras(30),dataSuspensao:mesesAtras(18),motivo:'Intolerância gástrica — dose aumentada SC'});
+    addDmard({med:'Metotrexato',dose:'15 mg/semana VO',dataInicio:mesesAtras(30),dataSuspensao:mesesAtras(18),motivo:'Intolerância gástrica — dose escalonada para via SC'});
+    addDmard({med:'Leflunomida',dose:'20 mg/dia VO',dataInicio:mesesAtras(24),dataSuspensao:mesesAtras(12),motivo:'Falha terapêutica — DAPSA >28 após 6 meses'});
 
-    fd.med_nome='Secuquinumabe'; fd.med_via='SC'; fd.med_posologia='Secuquinumabe 300mg SC nas semanas 0, 1, 2, 3 e 4, depois 300mg SC a cada 4 semanas.'; fd.peso=82;
+    // Imagem
+    imagens=[]; document.getElementById('imagem-container').innerHTML=''; addImagem();
+    fillImg(0,'Radiografia das mãos','Erosões na articulação IFP do 3º e 4º dedos à direita e dactilite do 2º dedo esquerdo. Redução do espaço articular nas IFPs acometidas. Sem anquilose. Partes moles discretamente espessadas.',diasAtras(30));
 
+    // Medicamento — Secuquinumabe SC
+    setMed('Secuquinumabe', 82, 'Subcutânea (SC)',
+      'Secuquinumabe 300 mg SC nas semanas 0, 1, 2, 3 e 4 (fase de ataque), e a seguir 300 mg SC a cada 4 semanas.',
+      'Paciente com artrite psoriásica em alta atividade de doença (DAPSA 33,3 — atividade alta) com domínios periférico, dactilite e cutâneo (PASI 8,2 / BSA 12%), FR negativo, refratário a dois DMARDs sintéticos convencionais em doses e tempo adequados (MTX e LEF), conforme DUT 65.4. Indicado secuquinumabe (anti-IL-17A) pela eficácia demonstrada em todos os domínios da artrite psoriásica, incluindo o componente cutâneo.');
+
+  // ══════════════════════════════════════════════════════════════════════════════
   } else if(d==='les'){
-    // LES: mulher 32 anos, SLEDAI 14, falha HCQ+azatioprina, solicitando belimumabe
+  // LES — Juliana Costa Mendonça, 32 anos, SLEDAI 15, nefrite+hematológico, falha Aza+MMF → Belimumabe SC
+  // ══════════════════════════════════════════════════════════════════════════════
     setVal('p_nome','Juliana Costa Mendonça'); setVal('p_dn',anosAtras(32)); calcAge();
-    fd.sexo='F'; document.querySelectorAll('#tab-pac .pill').forEach(p=>{if(p.textContent==='Feminino')p.classList.add('selected');});
+    clickPill('#tab-pac','Feminino');
     setVal('p_cid','M32.9 — Lúpus Eritematoso Sistêmico');
-    setVal('les_dur', anosAtras(5)); fd.data_diag=anosAtras(5);
 
+    setVal('les_dur','5 anos'); fd.duracao='5 anos';
+    fd.data_diag = anosAtras(5);
+
+    // Sorologias LES
     setVal('les_ana','ANA 1:640, padrão nuclear homogêneo'); fd.les_ana='ANA 1:640, padrão nuclear homogêneo';
-    setVal('les_dsdna','Anti-dsDNA 280 UI/mL (VR < 30)'); fd.les_dsdna='Anti-dsDNA 280 UI/mL (VR < 30)';
-    setVal('les_c3_comp','62'); setVal('les_c4_comp','7');
-    fd.les_c3='62'; fd.les_c4='7'; updComplemento();
-    setVal('les_prot','1,8 g/24h'); fd.les_prot='1,8 g/24h';
+    setVal('les_dsdna','Anti-dsDNA 280 UI/mL (VR < 30 — elevado)'); fd.les_dsdna='Anti-dsDNA 280 UI/mL (VR < 30 — elevado)';
+    clickPill('#diag-les .field-group:nth-child(3)','Positivo'); // Anti-Sm
 
-    // SLEDAI itens: Artrite(4), Rash(2), Alopecia(2), Proteinúria(4), Leucopenia(1), Complemento baixo(2) = 15
-    [0,1,2,3,14,16].forEach(idx=>{
+    // Complemento
+    setVal('les_c3_comp','62'); setVal('les_c4_comp','7'); setVal('les_ch50','42');
+    fd.les_c3='62'; fd.les_c4='7'; fd.les_ch50='42';
+    if(typeof updComplemento==='function') updComplemento();
+
+    // Proteinúria
+    setVal('les_prot','1,8 g/24h'); fd.les_prot='1,8 g/24h';
+    setVal('les_proteinuria_24h','1800'); fd.les_proteinuria_24h='1800';
+    setVal('les_prot_creat','1.2'); fd.les_prot_creat='1.2';
+    setVal('les_cilindros','Cilindros granulosos ocasionais'); fd.les_cilindros='Cilindros granulosos ocasionais';
+
+    // SLEDAI: Artrite(4), Rash(2), Alopecia(2), Proteinúria(4), Leucopenia(1), Complemento baixo(2), Anti-dsDNA aumentado(2) = 17
+    const sledaiIdx = [8,14,15,12,23,19,20];
+    sledaiIdx.forEach(idx=>{
       const cb=document.getElementById('sc'+idx); const li=document.getElementById('si'+idx);
       if(cb&&!cb.checked){cb.checked=true;if(li)li.classList.add('checked');}
     });
     updSLEDAI();
 
-    setExam('hemograma','Hb 10,8 / Ht 32 / Leucócitos 2.900 / Linfócitos 820 / Plaquetas 98.000', labDate);
-    setExam('tgo_tgp','TGO 28 / TGP 32', labDate);
-    setExam('creatinina','0,7 mg/dL', labDate);
-    setExam('pcr_vhs','PCR 12 mg/L / VHS 48 mm/h', labDate);
-    setExam('ppd','Negativo', diasAtras(30));
-    setExam('rx_torax','Pequeno derrame pleural bilateral. Pulmões sem consolidações ou nódulos. Mediastino centrado. Área cardíaca no limite superior da normalidade.', diasAtras(30));
+    // Exames
+    setExam('hemograma','Hb 10,8 g/dL / Ht 32% / Leucócitos 2.900/mm³ / Linfócitos 820/mm³ / Plaquetas 98.000/mm³', labDate);
+    setExam('tgo_tgp','TGO 28 U/L / TGP 32 U/L', labDate);
+    setExam('creatinina','0,7 mg/dL (TFG: 108 mL/min)', labDate);
+    setExam('pcr_vhs','PCR 12,0 mg/L / VHS 48 mm/h', labDate);
+    setExam('ppd','Não reator (induração 0 mm)', diasAtras(30));
+    setExam('rx_torax','Pequeno derrame pleural bilateral, maior à direita. Pulmões sem consolidações ou nódulos. Mediastino centrado. Área cardíaca no limite superior da normalidade.', diasAtras(30));
 
+    // Medicações atuais
     dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
-    addDmardAtual({med:'Hidroxicloroquina',dose:'400mg/dia',dataInicio: anosAtras(5)});
-    addDmardAtual({med:'Prednisona',dose:'10mg/dia',dataInicio: mesesAtras(4)});
+    addDmardAtual({med:'Hidroxicloroquina',dose:'400 mg/dia VO',dataInicio: anosAtras(5)});
+    addDmardAtual({med:'Prednisona',dose:'20 mg/dia VO (em desmame progressivo)',dataInicio: mesesAtras(4)});
+    addDmardAtual({med:'Pantoprazol',dose:'40 mg/dia VO (gastroproteção)',dataInicio: mesesAtras(4)});
 
+    // Uso prévio
     dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Azatioprina',dose:'150mg/dia',dataInicio:anosAtras(4),dataSuspensao:mesesAtras(4),motivo:'Falha — atividade renal e hematológica persistente'});
-    addDmard({med:'Micofenolato de Mofetila',dose:'2g/dia',dataInicio:anosAtras(3),dataSuspensao:mesesAtras(8),motivo:'Intolerância gastrointestinal grave'});
+    addDmard({med:'Azatioprina',dose:'150 mg/dia VO',dataInicio:anosAtras(4),dataSuspensao:mesesAtras(8),motivo:'Falha — atividade renal e hematológica persistente (SLEDAI persistente ≥10)'});
+    addDmard({med:'Micofenolato de Mofetila',dose:'2 g/dia VO',dataInicio:anosAtras(3),dataSuspensao:mesesAtras(4),motivo:'Intolerância gastrointestinal grave — diarreia e vômitos refratários'});
 
-    fd.med_nome='Belimumabe'; fd.med_via='SC'; fd.med_posologia='Belimumabe 200mg SC uma vez por semana.'; fd.peso=58;
+    // Imagem
+    imagens=[]; document.getElementById('imagem-container').innerHTML=''; addImagem();
+    fillImg(0,'USG de rins e vias urinárias','Rins com dimensões e ecotextura normais. Sem hidronefrose ou litíase. Bexiga com paredes regulares.',diasAtras(45));
 
+    // Medicamento — Belimumabe SC
+    setMed('Belimumabe', 58, 'Subcutânea (SC)',
+      'Belimumabe 200 mg SC uma vez por semana.',
+      'Paciente com lúpus eritematoso sistêmico em atividade moderada-alta (SLEDAI-2K: 17 — atividade alta), com comprometimento renal (proteinúria 1,8 g/24h), hematológico (leucopenia 2.900 células/mm³, plaquetopenia 98.000/mm³), articular e mucocutâneo, com complemento consumido (C3 62 mg/dL, C4 7 mg/dL) e Anti-dsDNA elevado (280 UI/mL), refratária a dois imunossupressores convencionais em doses adequadas (azatioprina e micofenolato de mofetila), mantendo uso de hidroxicloroquina. Indicado belimumabe (anti-BLyS), aprovado para LES ativo em pacientes com anticorpos positivos e uso de terapia padrão, conforme RN ANS 612/2024.');
+
+  // ══════════════════════════════════════════════════════════════════════════════
   } else if(d==='vasc'){
-    // Vasculite ANCA: homem 55 anos, GPA, PR3-ANCA+, BVAS 14, solicitando rituximabe
+  // Vasculite — Carlos Eduardo Pinto Lima, 55 anos, GPA, PR3-ANCA 1:320, BVAS 14 → Rituximabe EV
+  // ══════════════════════════════════════════════════════════════════════════════
     setVal('p_nome','Carlos Eduardo Pinto Lima'); setVal('p_dn',anosAtras(55)); calcAge();
-    fd.sexo='M'; document.querySelectorAll('#tab-pac .pill').forEach(p=>{if(p.textContent==='Masculino')p.classList.add('selected');});
+    clickPill('#tab-pac','Masculino');
     setVal('p_cid','M31.3 — Granulomatose com Poliangiite (GPA)');
-    setVal('vasc_dur', mesesAtras(8)); fd.data_diag=mesesAtras(8);
 
-    fd.vasc_tipo='gpa'; fd.vasc_anca='pr3';
+    setVal('vasc_dur','14 meses'); fd.duracao='14 meses';
+    fd.data_diag = mesesAtras(14);
+
+    clickPill('#diag-vasc .field-group:nth-child(1)','GPA (ex-Wegener)');
+    clickPill('#diag-vasc .field-group:nth-child(2)','PR3-ANCA (c-ANCA)');
     setVal('vasc_anca_tit','1:320'); fd.vasc_anca_tit='1:320';
     setVal('vasc_bvas','14'); fd.vasc_bvas='14';
-    setVal('vasc_creat','1,6'); fd.vasc_creat='1,6';
+    setVal('vasc_creat','1.6'); fd.vasc_creat='1.6';
     setVal('vasc_tfg','48'); fd.vasc_tfg='48';
 
-    setExam('hemograma','Hb 10,2 / Ht 30 / Leucócitos 9.400 / Plaquetas 380.000', labDate);
-    setExam('tgo_tgp','TGO 22 / TGP 18', labDate);
-    setExam('creatinina','1,6 mg/dL', labDate);
-    setExam('pcr_vhs','PCR 42 mg/L / VHS 68 mm/h', labDate);
-    setExam('ppd','Negativo', diasAtras(30));
-    setExam('rx_torax','Nódulo pulmonar no lobo superior direito com 1,8 cm, de bordas espiculadas. Sem derrame pleural. Mediastino centrado.', diasAtras(30));
+    // Órgãos comprometidos
+    clickMultiPill('#diag-vasc .field-group:nth-child(7)','Renal');
+    clickMultiPill('#diag-vasc .field-group:nth-child(7)','Pulmonar');
+    clickMultiPill('#diag-vasc .field-group:nth-child(7)','ORL');
 
+    clickPill('#diag-vasc .field-group:nth-child(8)','Sim'); // Biópsia
+    setVal('vasc_biopsia_res','Biópsia renal: glomerulonefrite com crescentes em 40% dos glomérulos, sem depósito imune (pauci-imune). Granulomas necrosantes perivasculares. Achados compatíveis com vasculite ANCA-associada (GPA).'); fd.vasc_biopsia_res='Biópsia renal: glomerulonefrite com crescentes em 40% dos glomérulos, sem depósito imune (pauci-imune). Granulomas necrosantes perivasculares.';
+
+    // Avaliação renal
+    setVal('vasc_proteinuria_24h','980'); fd.vasc_proteinuria_24h='980';
+    setVal('vasc_prot_creat','0.8'); fd.vasc_prot_creat='0.8';
+    setVal('vasc_cilindros','Cilindros hemáticos presentes'); fd.vasc_cilindros='Cilindros hemáticos presentes';
+
+    // Exames
+    setExam('hemograma','Hb 10,2 g/dL / Ht 30% / Leucócitos 9.400/mm³ / Plaquetas 380.000/mm³', labDate);
+    setExam('tgo_tgp','TGO 22 U/L / TGP 18 U/L', labDate);
+    setExam('creatinina','1,6 mg/dL (TFG: 48 mL/min — redução de 35% em 3 meses)', labDate);
+    setExam('pcr_vhs','PCR 42,0 mg/L / VHS 68 mm/h', labDate);
+    setExam('ppd','Não reator (induração 0 mm)', diasAtras(30));
+    setExam('rx_torax','Nódulo pulmonar no lobo superior direito medindo 1,8 cm, com cavitação central. Opacidades alveolares bilaterais perihilares. Sem derrame pleural. Mediastino centrado.', diasAtras(30));
+
+    // Medicações atuais
     dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
-    addDmardAtual({med:'Prednisona',dose:'60mg/dia',dataInicio: mesesAtras(4)});
-    addDmardAtual({med:'Cotrimoxazol',dose:'800/160mg 3x/semana (profilaxia)',dataInicio: mesesAtras(4)});
+    addDmardAtual({med:'Prednisona',dose:'60 mg/dia VO (1 mg/kg/dia)',dataInicio: mesesAtras(5)});
+    addDmardAtual({med:'Cotrimoxazol (SMX/TMP)',dose:'800/160 mg 3×/semana (profilaxia Pneumocystis)',dataInicio: mesesAtras(5)});
+    addDmardAtual({med:'Omeprazol',dose:'40 mg/dia VO',dataInicio: mesesAtras(5)});
 
+    // Uso prévio
     dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Ciclofosfamida',dose:'15mg/kg EV a cada 3 semanas',dataInicio:mesesAtras(6),dataSuspensao:mesesAtras(1),motivo:'Recidiva grave após 6 pulsos — indicação de rituximabe'});
+    addDmard({med:'Ciclofosfamida',dose:'15 mg/kg EV a cada 3 semanas (pulsos)',dataInicio:mesesAtras(8),dataSuspensao:mesesAtras(1),motivo:'Recidiva grave após 6 pulsos — BVAS de 3 elevou para 14 com progressão renal e pulmonar'});
+    addDmard({med:'Azatioprina',dose:'2 mg/kg/dia VO (manutenção tentada)',dataInicio:mesesAtras(4),dataSuspensao:mesesAtras(2),motivo:'Intolerância hematológica — leucopenia grave (neutrófilos <1.000/mm³)'});
 
-    imagens=[]; document.getElementById('imagem-container').innerHTML='';
+    // Imagem
+    imagens=[]; document.getElementById('imagem-container').innerHTML=''; addImagem();
+    fillImg(0,'TC de tórax de alta resolução','Nódulo pulmonar escavado no lobo superior direito medindo 2,2 cm. Opacidades em vidro fosco bilaterais perihilares, sugestivas de hemorragia alveolar difusa. Ausência de derrame pleural. Mediastino centrado. Achados compatíveis com manifestação pulmonar de GPA.',diasAtras(15));
     addImagem();
-    imagens[0]={tipo:'TC de tórax de alta resolução',laudo:'Nódulo pulmonar escavado no lobo superior direito medindo 2,2 cm. Opacidades em vidro fosco perihilares bilaterais. Sem derrame pleural.',data:diasAtras(15)};
-    const iv0=document.getElementById('img0');
-    if(iv0){iv0.querySelectorAll('input')[0].value=imagens[0].tipo;iv0.querySelectorAll('textarea')[0].value=imagens[0].laudo;iv0.querySelectorAll('input[type=date]')[0].value=imagens[0].data;}
+    fillImg(1,'Sinusoscopia / TC de seios paranasais','Espessamento mucoso pansinusal com destruição óssea do septo nasal e da parede medial dos seios maxilares bilateralmente. Achados compatíveis com GPA com comprometimento ORL grave.',diasAtras(20));
 
-    fd.med_nome='Rituximabe'; fd.med_via='EV'; fd.med_posologia='Rituximabe 375mg/m² EV semanalmente por 4 semanas (BSA 1,9 m² — dose total ~2.800mg).'; fd.peso=78;
+    // Medicamento — Rituximabe EV
+    setMed('Rituximabe', 78, 'Endovenosa (EV)',
+      'Rituximabe 375 mg/m² EV semanalmente por 4 semanas consecutivas. BSA estimada: 1,9 m². Dose por infusão: aproximadamente 712 mg. Total do ciclo: ~2.848 mg. Pré-medicação: metilprednisolona 100 mg EV, paracetamol 750 mg VO e difenidramina 50 mg EV 30 min antes de cada infusão.',
+      'Paciente com GPA (granulomatose com poliangiite) em atividade grave (BVAS 14), PR3-ANCA 1:320, com envolvimento renal (TFG 48 mL/min, hematúria, cilindros hemáticos, proteinúria 980 mg/24h — biópsia com crescentes em 40% dos glomérulos), pulmonar (nódulo escavado, hemorragia alveolar) e ORL, refratária a ciclofosfamida EV (6 pulsos) com recidiva documentada e intolerante a azatioprina. Rituximabe é aprovado para indução de remissão em vasculites ANCA-associadas graves e refratárias, com eficácia equivalente ou superior à ciclofosfamida (estudo RAVE), sendo a opção terapêutica mais adequada neste caso.');
 
+  // ══════════════════════════════════════════════════════════════════════════════
   } else if(d==='dm'){
-    // Dermatomiosite: mulher 38 anos, anti-MDA5, fraqueza proximal, falha prednisona+MTX
+  // DM — Fernanda Rocha Vieira, 38 anos, dermatomiosite anti-MDA5, DPI, falha corticoide+MTX(CI) → Rituximabe
+  // ══════════════════════════════════════════════════════════════════════════════
     setVal('p_nome','Fernanda Rocha Vieira'); setVal('p_dn',anosAtras(38)); calcAge();
-    fd.sexo='F'; document.querySelectorAll('#tab-pac .pill').forEach(p=>{if(p.textContent==='Feminino')p.classList.add('selected');});
+    clickPill('#tab-pac','Feminino');
     setVal('p_cid','M33.0 — Dermatomiosite');
+
+    setVal('dm_dur','22 meses'); fd.duracao='22 meses';
+    fd.data_diag = mesesAtras(22);
+    clickPill('#diag-dm .section-card:nth-child(1) .pill-group','Dermatomiosite');
 
     // MMT-8
     [7,7,6,7,6,6,7,7].forEach((v,i)=>{const el=document.getElementById('mm'+i);if(el){el.value=v;el.dispatchEvent(new Event('input'));}});
     updMMT8();
 
+    // Enzimas
     setVal('dm_ck','2840'); fd.dm_ck='2840';
-    setVal('dm_aldolase','18'); fd.dm_aldolase='18';
+    setVal('dm_aldolase','18.4'); fd.dm_aldolase='18.4';
     setVal('dm_ldh','480'); fd.dm_ldh='480';
     setVal('dm_tgo','62'); fd.dm_tgo='62';
 
-    setExam('hemograma','Hb 12,2 / Ht 36 / Leucócitos 6.400 / Plaquetas 286.000', labDate);
-    setExam('tgo_tgp','TGO 62 / TGP 48', labDate);
-    setExam('creatinina','0,7 mg/dL', labDate);
-    setExam('pcr_vhs','PCR 22 mg/L / VHS 38 mm/h', labDate);
-    setExam('ppd','Negativo', diasAtras(30));
-    setExam('rx_torax','Velamento intersticial bilateral em bases, compatível com doença pulmonar intersticial em fase inicial. Mediastino centrado.', diasAtras(30));
+    // Anticorpos — Anti-MDA5
+    clickMultiPill('#diag-dm .section-card:nth-child(3) .field-group:nth-child(1)','Anti-MDA5');
 
+    // Manifestações
+    clickMultiPill('#diag-dm .section-card:nth-child(3) .field-group:nth-child(2)','Fraqueza proximal');
+    clickMultiPill('#diag-dm .section-card:nth-child(3) .field-group:nth-child(2)','Rash (Gottron/heliotropo)');
+    clickMultiPill('#diag-dm .section-card:nth-child(3) .field-group:nth-child(2)','Disfagia');
+    clickMultiPill('#diag-dm .section-card:nth-child(3) .field-group:nth-child(2)','Doença Pulmonar Intersticial');
+
+    // DPI
+    setVal('dm_cvf','52'); fd.dm_cvf='52';
+    setVal('dm_dlco','48'); fd.dm_dlco='48';
+    setVal('dm_tcar','Padrão em vidro fosco e reticular bibasal, com tração bronquiectásica. Achados compatíveis com pneumonia intersticial não-específica (PINE) em fase ativa.'); fd.dm_tcar='Padrão em vidro fosco e reticular bibasal.';
+
+    // Função pulmonar detalhada
+    setVal('dm_fev1','58'); setVal('dm_cvf2','52'); setVal('dm_fev1cvf','0.82');
+    setVal('dm_dlco2','48'); setVal('dm_espiro_data', diasAtras(30));
+    setVal('dm_espiro_laudo','Padrão restritivo moderado (CVF 52% do previsto). DLCO reduzido (48% do previsto), indicando acometimento parenquimatoso. Relação FEV1/CVF preservada, sem obstrução.');
+
+    // TCAR detalhada
+    setVal('dm_tcar_laudo','Opacidades em vidro fosco e reticulações subpleurais nos lobos inferiores bilateralmente, com tração bronquiectásica. Bronquiectasias de tração. Ausência de faveolamento. Padrão compatível com Pneumonia Intersticial Não-Específica (PINE) em atividade.');
+    setVal('dm_tcar_data', diasAtras(20));
+
+    // Exames
+    setExam('hemograma','Hb 12,2 g/dL / Ht 36% / Leucócitos 6.400/mm³ / Plaquetas 286.000/mm³', labDate);
+    setExam('tgo_tgp','TGO 62 U/L (elevado) / TGP 48 U/L (elevado)', labDate);
+    setExam('creatinina','0,7 mg/dL (TFG: 105 mL/min)', labDate);
+    setExam('pcr_vhs','PCR 22,0 mg/L / VHS 38 mm/h', labDate);
+    setExam('ppd','Não reator (induração 0 mm)', diasAtras(30));
+    setExam('rx_torax','Velamento intersticial bilateral em bases, compatível com doença pulmonar intersticial em fase ativa. Sem consolidações ou nódulos. Mediastino centrado. Área cardíaca normal.', diasAtras(30));
+
+    // Biológico anterior — IVIG tentada
+    const bac = document.getElementById('bioanterior-container'); if(bac) bac.innerHTML='';
+    bioAnteriores = [];
+    addBioAnterior({med:'Imunoglobulina Humana IV (IVIG)', motivo:'Ineficácia secundária (perda de resposta)', duracao:'4 meses', obs:'Melhora inicial parcial da fraqueza, sem melhora da DPI; CK persistentemente elevada'});
+
+    // Medicações atuais
     dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
-    addDmardAtual({med:'Prednisona',dose:'60mg/dia',dataInicio: mesesAtras(6)});
-    addDmardAtual({med:'Azatioprina',dose:'150mg/dia',dataInicio: mesesAtras(3)});
+    addDmardAtual({med:'Prednisona',dose:'40 mg/dia VO (em desmame lento)',dataInicio: mesesAtras(18)});
+    addDmardAtual({med:'Azatioprina',dose:'150 mg/dia VO',dataInicio: mesesAtras(10)});
+    addDmardAtual({med:'Tacrolimo',dose:'3 mg/dia VO (associado para DPI)',dataInicio: mesesAtras(6)});
+    addDmardAtual({med:'Cotrimoxazol (SMX/TMP)',dose:'800/160 mg 3×/semana (profilaxia)',dataInicio: mesesAtras(12)});
 
+    // Uso prévio
     dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Metotrexato',dose:'25mg/semana IM',dataInicio:mesesAtras(5),dataSuspensao:mesesAtras(2),motivo:'Contraindicado — DPI associada (risco de toxicidade pulmonar)'});
+    addDmard({med:'Metotrexato',dose:'25 mg/semana IM',dataInicio:mesesAtras(18),dataSuspensao:mesesAtras(12),motivo:'Contraindicado — DPI rapidamente progressiva associada (risco de toxicidade pulmonar)'});
+    addDmard({med:'Ciclosporina',dose:'3 mg/kg/dia VO',dataInicio:mesesAtras(14),dataSuspensao:mesesAtras(8),motivo:'Intolerância — hipertensão arterial sistêmica e piora da função renal'});
 
-    imagens=[]; document.getElementById('imagem-container').innerHTML='';
+    // Imagem
+    imagens=[]; document.getElementById('imagem-container').innerHTML=''; addImagem();
+    fillImg(0,'TC de tórax de alta resolução — controle','Progressão das opacidades reticulares e em vidro fosco bibasais comparando com exame prévio. Tração bronquiectásica mais evidente. Sem faveolamento. Padrão PINE em progressão a despeito da terapia atual.',diasAtras(20));
     addImagem();
-    imagens[0]={tipo:'TC de tórax de alta resolução',laudo:'Padrão em vidro fosco e reticular bibasal, com tração bronquiectásica. Achados compatíveis com pneumonia intersticial não-específica (PINE) em fase ativa.',data:diasAtras(20)};
-    const id0=document.getElementById('img0');
-    if(id0){id0.querySelectorAll('input')[0].value=imagens[0].tipo;id0.querySelectorAll('textarea')[0].value=imagens[0].laudo;id0.querySelectorAll('input[type=date]')[0].value=imagens[0].data;}
+    fillImg(1,'Eletromiografia (EMG)','Padrão miopático: potenciais de curta duração, baixa amplitude e polifásicos nos músculos proximais dos membros (deltoides e quadríceps bilateralmente). Sem evidência de neuropatia periférica associada.',diasAtras(45));
 
-    fd.med_nome='Rituximabe'; fd.med_via='EV'; fd.med_posologia='Rituximabe 1g EV em 2 doses com intervalo de 2 semanas (D0 e D14), repetir em 6 meses.'; fd.peso=55;
+    // Medicamento — Rituximabe EV
+    setMed('Rituximabe', 55, 'Endovenosa (EV)',
+      'Rituximabe 1.000 mg EV em 2 doses com intervalo de 15 dias (Dia 0 e Dia 15), com repetição do ciclo em 6 meses. Pré-medicação: metilprednisolona 100 mg EV, paracetamol 750 mg VO e difenidramina 50 mg EV 30 min antes de cada infusão.',
+      'Paciente com dermatomiosite (anticorpo Anti-MDA5 positivo) associada à doença pulmonar intersticial rapidamente progressiva (CVF 52%, DLCO 48%, TCAR com PINE em progressão), fraqueza muscular proximal grave (MMT-8: 53/80), CK 2.840 U/L, refratária a corticosteroide em dose plena associado a azatioprina e tacrolimo. Metotrexato contraindicado por DPI. IVIG tentada com resposta parcial insuficiente. Rituximabe demonstrou eficácia comprovada em miopatias inflamatórias refratárias, especialmente em pacientes Anti-MDA5 positivos com DPI, sendo a opção terapêutica com maior suporte em evidências neste cenário clínico.');
   }
 
-  alert('Dados de teste preenchidos! Navegue pelas abas para revisar e depois avance para visualizar o laudo.');
+  alert('✅ Dados de paciente teste preenchidos! Navegue pelas abas (Diagnóstico → Tratamento → Exames → Medicamento) para revisar todos os campos, depois clique em "Ver Prévia do Laudo".');
 }
 
 function marcarSorologiasNegativas() {
