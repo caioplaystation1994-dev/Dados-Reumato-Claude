@@ -1822,6 +1822,157 @@ function narrative() {
   return {intro,atv,trat,bioAntTxt,med};
 }
 
+// ─── HELPERS NARRATIVA CLÍNICA ───────────────────────────────────────────────
+function buildLabLine() {
+  // Builds inline lab line: "HLA-B27 positivo / FR negativo / HB 14,6 / ..."
+  const parts = [];
+  const examMap = {};
+  EXAMES_BASE.forEach(e => { if(exams[e.id]?.result) examMap[e.id] = {l: e.l, r: exams[e.id].result, d: e.ownDate ? fmtDate(exams[e.id].date) : fmtDate(examDateGlobal)}; });
+
+  // HLA-B27 and FR first if present
+  ['hlab27','fr_exam'].forEach(id => { if(examMap[id]) parts.push(`${examMap[id].l} ${examMap[id].r}`); delete examMap[id]; });
+
+  // Group by date for remaining exams
+  const byDate = {};
+  Object.entries(examMap).forEach(([id,v]) => {
+    const d = v.d || '—';
+    if(!byDate[d]) byDate[d] = [];
+    byDate[d].push(`${v.l} ${v.r}`);
+  });
+  Object.entries(byDate).forEach(([d, items]) => {
+    const prefix = d && d !== '—' ? `${d} — ` : '';
+    parts.push(prefix + items.join(' / '));
+  });
+  return parts.join('\n');
+}
+
+function buildScoreLine() {
+  const d = disease; const f = fd;
+  const parts = [];
+  if(d==='ar'){
+    if(f.das28) parts.push(`DAS28-${f.das28_tipo==='vhs'?'VHS':'PCR'}: ${f.das28}`);
+    if(f.cdai) parts.push(`CDAI: ${f.cdai}`);
+    if(f.sdai) parts.push(`SDAI: ${f.sdai}`);
+  } else if(d==='ea'){
+    if(f.basdai) parts.push(`BASDAI: ${f.basdai}`);
+    if(f.asdas) parts.push(`ASDAS-PCR: ${f.asdas}`);
+  } else if(d==='aps'){
+    if(f.dapsa) parts.push(`DAPSA: ${f.dapsa}`);
+  } else if(d==='les'){
+    if(f.sledai!==undefined) parts.push(`SLEDAI-2K: ${f.sledai}`);
+  } else if(d==='vasc'){
+    if(f.vasc_bvas) parts.push(`BVAS: ${f.vasc_bvas}`);
+  } else if(d==='dm'){
+    if(f.mmt8!==undefined) parts.push(`MMT-8: ${f.mmt8}/80`);
+    if(f.dm_ck) parts.push(`CK: ${f.dm_ck} U/L`);
+  }
+  return parts.join('\n');
+}
+
+function buildMedList(label, list) {
+  // Returns numbered list as plain text
+  const items = list.filter(x=>x.med);
+  if(!items.length) return '';
+  let out = label + '\n';
+  items.forEach((x,i) => {
+    let line = `${i+1}. ${x.med.toUpperCase()}`;
+    if(x.dose) line += ` ${x.dose.toUpperCase()}`;
+    if(x.dur) line += ` - ${x.dur.toUpperCase()}`;
+    if(x.motivo) line += ` - ${x.motivo.toUpperCase()}`;
+    out += line + '\n';
+  });
+  return out.trim();
+}
+
+function buildMedListAtual() {
+  // Separate current (no end date / still current) from previous
+  const todos = dmards.filter(x => x.med);
+  // If motivo is empty => current; if motivo has "suspensão" / end date => previous
+  // Use motivo field: empty = current, filled = previous
+  const atuais = todos.filter(x => !x.motivo || x.motivo.trim()==='');
+  const anteriores = todos.filter(x => x.motivo && x.motivo.trim()!=='');
+  return {atuais, anteriores};
+}
+
+function buildIntroClinica() {
+  const f = fd; const d = disease;
+  const nome = (f.nome||'[nome do paciente]').toUpperCase();
+  const idade = f.idade || document.getElementById('p_idade').value || '';
+  const sexo = f.sexo === 'M' ? 'SEXO MASCULINO' : f.sexo === 'F' ? 'SEXO FEMININO' : '';
+  const cid = document.getElementById('p_cid').value || '';
+  const dataDiag = f.data_diag ? fmtDate(f.data_diag) : '';
+  const doenca = (D_NAMES[d]||d).toUpperCase();
+
+  let txt = `PACIENTE ${nome}`;
+  if(idade) txt += `, ${idade}`;
+  if(sexo) txt += `, ${sexo}`;
+  txt += `, DIAGNÓSTICO DE ${doenca}`;
+  if(dataDiag) txt += ` EM ${dataDiag}`;
+  txt += '.';
+
+  // Disease-specific clinical detail
+  if(d==='ea'){
+    const tipo = f.ea_tipo === 'rad' ? 'ESPONDILOARTRITE AXIAL RADIOGRÁFICA' : f.ea_tipo === 'nrad' ? 'ESPONDILOARTRITE AXIAL NÃO-RADIOGRÁFICA' : '';
+    if(tipo) txt = txt.replace(`DIAGNÓSTICO DE ${doenca}`, `DIAGNÓSTICO DE ${tipo}`);
+    txt += ' MANTENDO QUADRO DE DOR LOMBAR INFLAMATÓRIA REFRATÁRIA AO TRATAMENTO COM AINE.';
+  } else if(d==='ar'){
+    const cls = f.das28_class ? f.das28_class.toUpperCase() : 'ATIVIDADE MODERADA A ALTA';
+    txt += ` APRESENTANDO ${cls} DE DOENÇA.`;
+  } else if(d==='aps'){
+    txt += ' APRESENTANDO DOENÇA COM ATIVIDADE MODERADA A ALTA REFRATÁRIA A DMARD CONVENCIONAL.';
+  } else if(d==='les'){
+    txt += ` SLEDAI-2K: ${f.sledai||'—'}.`;
+    if(f.sledai_active) txt += ` MANIFESTAÇÕES ATIVAS: ${f.sledai_active.toUpperCase()}.`;
+  } else if(d==='vasc'){
+    const tipo = f.vasc_tipo==='gpa'?'GPA':f.vasc_tipo==='pam'?'PAM':f.vasc_tipo==='gepa'?'GEPA':'';
+    if(tipo) txt = txt.replace(`DIAGNÓSTICO DE ${doenca}`, `DIAGNÓSTICO DE VASCULITE ANCA-ASSOCIADA (${tipo})`);
+  } else if(d==='dm'){
+    const sub = f.dm_subtipo==='dm'?'DERMATOMIOSITE':f.dm_subtipo==='pm'?'POLIMIOSITE':f.dm_subtipo==='imnm'?'MIOPATIA NECROSANTE (IMNM)':f.dm_subtipo==='anti_sint'?'SÍNDROME ANTI-SINTETASE':f.dm_subtipo==='cadm'?'DM AMIOPÁTICA (CADM)':'';
+    if(sub) txt = txt.replace(`DIAGNÓSTICO DE ${doenca}`, `DIAGNÓSTICO DE ${sub}`);
+  }
+  return txt;
+}
+
+function buildConclusao() {
+  const f = fd; const d = disease;
+  const med = (f.med_nome||'[MEDICAMENTO]').toUpperCase();
+  const via = (f.med_via||'').toUpperCase();
+  let doenca = (D_NAMES[d]||d).toUpperCase();
+  if(d==='ea') doenca = 'ESPONDILOARTRITE AXIAL';
+
+  let motivo = 'REFRATÁRIA AO TRATAMENTO CONVENCIONAL';
+  if(d==='ea') motivo = 'REFRATÁRIA AO TRATAMENTO COM AINE';
+  else if(d==='ar') motivo = 'REFRATÁRIA AO TRATAMENTO COM DMARD CONVENCIONAL';
+  else if(d==='aps') motivo = 'REFRATÁRIA AO TRATAMENTO COM DMARD';
+  else if(d==='les') motivo = 'COM ATIVIDADE PERSISTENTE APESAR DO TRATAMENTO IMUNOSSUPRESSOR';
+  else if(d==='vasc') motivo = 'REFRATÁRIA/RECIDIVANTE AO TRATAMENTO CONVENCIONAL';
+
+  let txt = `DESSA FORMA, VISTO QUADRO DE ${doenca} ${motivo}, SOLICITO INTRODUÇÃO DE ${med}`;
+  if(via) txt += ` ${via}`;
+  if(f.med_posologia) txt += `, CONFORME POSOLOGIA ABAIXO,`;
+  txt += ` PARA CONTROLE DE ATIVIDADE DE DOENÇA.`;
+  return txt;
+}
+
+function buildPrescricao() {
+  const f = fd;
+  const med = (f.med_nome||'[MEDICAMENTO]').toUpperCase();
+  const pos = f.med_posologia || '';
+  const via = (f.med_via||'').toUpperCase();
+  const cid = document.getElementById('p_cid').value || '';
+  const dut = D_DUT[disease] || '';
+
+  let txt = '';
+  if(via && (via.includes('EV') || via.includes('ENDOVEN') || via.includes('IV'))) txt += 'USO ENDOVENOSO CONTÍNUO\n';
+  else if(via) txt += `VIA: ${via}\n`;
+  txt += `1. ${med}\n`;
+  if(pos) txt += `${pos.toUpperCase()}\n`;
+  if(f.peso) txt += `\nPESO PACIENTE: ${f.peso}KG\n`;
+  if(cid) txt += `CID ${cid.split(' ')[0]}\n`;
+  if(dut) txt += `\nFundamentação: ${dut}`;
+  return txt.trim();
+}
+
 // ─── PRÉVIA ───────────────────────────────────────────────────────────────────
 function buildPreview() {
   const crit=validate();
@@ -1833,137 +1984,227 @@ function buildPreview() {
     li.innerHTML=`<span class="v-icon">${c.pass?'✅':'⚠️'}</span><div><strong>${c.l}</strong><br><span style="font-size:11px;opacity:.85">${c.det}</span></div>`;
     vlist.appendChild(li);
   });
-  const n=narrative(); const f=fd;
+
+  const f=fd;
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
   const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
-  const examRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
-    .map(e=>`<tr><td>${e.l}</td><td>${exams[e.id].result||'—'}</td><td>${e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—'}</td></tr>`).join('');
-  const tbTxt = fd.tb_igra_positivo ? `<p style="background:#fffbeb;border:1px solid #f6ad55;padding:8px 12px;border-radius:6px;font-size:11px;margin-top:6px"><b>⚠️ IGRA/PPD Positivo.</b> Profilaxia de TB: ${fd.tb_profilaxia_med||'não registrada'}${fd.tb_profilaxia_inicio?' — iniciada em '+fmtDate(fd.tb_profilaxia_inicio):''}. Status: ${fd.tb_profilaxia_status||'—'}.</p>` : '';
-  const dmardRows=dmards.filter(x=>x.med)
-    .map(x=>`<tr><td>${x.med}</td><td>${x.dose||'—'}</td><td>${x.dur||'—'}</td><td>${x.motivo||'—'}</td></tr>`).join('');
-  const critRows=crit.map(c=>`<tr><td>${c.pass?'✅':'⚠️'}</td><td>${c.l}</td></tr>`).join('');
   const localLaudo = document.getElementById('select-local-laudo')?.value || '';
   const logoSrcPrev = LOGOS[localLaudo] || '';
-  document.getElementById('preview-box').innerHTML=`
-    <div class="rpt-header">
-      ${logoSrcPrev ? `<img src="${logoSrcPrev}" style="display:block;max-height:52px;max-width:110px;object-fit:contain;margin-bottom:6px">` : ''}
-      ${localLaudo ? `<div style="font-size:12px;font-weight:700;color:#1a56a0;margin-bottom:4px">${localLaudo}</div>` : ''}
-      <div class="rpt-title">LAUDO MÉDICO — SOLICITAÇÃO DE MEDICAMENTO ESPECIAL</div>
-      <div class="rpt-sub">${D_DUT[disease]||''}</div>
-    </div>
-    <h2>Identificação do Paciente</h2>
-    <table><tr><td><b>Nome:</b> ${f.nome||'—'}</td><td><b>DN:</b> ${dnFmt}${f.idade?' ('+f.idade+')':''}</td><td><b>Sexo:</b> ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}</td></tr>
-    <tr><td colspan="3"><b>CID-10:</b> ${document.getElementById('p_cid').value||'—'}</td></tr></table>
-    <h2>Médico Responsável</h2>
-    <table><tr><td><b>Dr(a).</b> ${f.medico||'—'}</td><td><b>CRM:</b> ${f.crm||'—'}</td><td><b>Data:</b> ${dataL}</td></tr></table>
-    <h2>1. Diagnóstico e Justificativa Clínica</h2><p>${n.intro}</p>
-    <h2>2. Atividade de Doença</h2><p>${n.atv}</p>
-    <h2>3. Histórico de Tratamento</h2>
-    ${dmardRows?`<table><tr><th>Medicamento</th><th>Dose</th><th>Duração</th><th>Motivo de suspensão</th></tr>${dmardRows}</table>`:'<p>Nenhum medicamento registrado.</p>'}
-    ${n.bioAntTxt?`<pre style="font-size:12px;white-space:pre-wrap;margin-top:8px">${n.bioAntTxt}</pre>`:''}
-    <h2>4. Exames Pré-Autorização</h2>
-    ${examRows?`<table><tr><th>Exame</th><th>Resultado</th><th>Data</th></tr>${examRows}</table>`:'<p>Nenhum exame laboratorial registrado.</p>'}
-    ${tbTxt}
-    ${imagens.filter(i=>i.tipo).length>0?`<h3 style="margin:10px 0 6px">Exames de Imagem</h3><table><tr><th>Exame</th><th>Laudo</th><th>Data</th></tr>${imagens.filter(i=>i.tipo).map(i=>`<tr><td>${i.tipo}</td><td>${i.laudo||'—'}</td><td>${fmtDate(i.data)||'—'}</td></tr>`).join('')}</table>`:''}
-    <h2>5. Critérios ANS/DUT Atendidos</h2>
-    <table>${critRows}</table>
-    <h2>6. Medicamento Solicitado</h2>
-    <table>
-      <tr><td><b>Medicamento:</b> ${f.med_nome||'—'}</td><td><b>Via:</b> ${f.med_via||'—'}</td></tr>
-      <tr><td colspan="2"><b>Posologia:</b> ${f.med_posologia||'—'}</td></tr>
-      ${f.med_justificativa?`<tr><td colspan="2"><b>Justificativa:</b> ${f.med_justificativa}</td></tr>`:''}
-      <tr><td colspan="2"><b>Fundamentação normativa:</b> ${D_DUT[disease]||''}</td></tr>
-    </table>
-    <div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px;font-size:11px;color:#4a5568">
-      <p>Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos estabelecidos para uso do medicamento solicitado.</p>
-      <br><p style="margin-top:24px">_______________________________</p>
-      <p><b>Dr(a). ${f.medico||'_______________'}</b></p>
-      <p>CRM: ${f.crm||'_______________'}</p>
-      <p>${f.cidade||'_______________'}, ${dataL}</p>
-    </div>`;
-}
+  const {atuais, anteriores} = buildMedListAtual();
+  const scoreLine = buildScoreLine();
+  const labLine = buildLabLine();
+  const introClinica = buildIntroClinica();
+  const conclusao = buildConclusao();
+  const prescricao = buildPrescricao();
 
-// ─── GERAÇÃO PDF ─────────────────────────────────────────────────────────────
-function genPDF() {
-  if(!window.jspdf){alert('Biblioteca jsPDF não carregada. Verifique sua conexão com a internet.');return;}
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const f=fd; const n=narrative(); const crit=validate();
-  const M=20; const TW=170; let y=20;
-  const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
-  const dnFmt=fmtDate(document.getElementById('p_dn').value);
+  // Build exam images section
+  let imgSection = '';
+  imagens.filter(i=>i.tipo).forEach(img => {
+    imgSection += `<p style="margin:12px 0 2px"><strong>${img.tipo.toUpperCase()}${img.data?' '+fmtDate(img.data):''}</strong></p>`;
+    if(img.laudo) imgSection += `<p style="margin:0 0 4px;line-height:1.6">${img.laudo}</p>`;
+  });
 
-  const addText=(txt,size=10,style='normal',color=[30,30,30])=>{
-    doc.setFontSize(size);doc.setFont('helvetica',style);doc.setTextColor(...color);
-    const lines=doc.splitTextToSize(String(txt||''),TW);
-    lines.forEach(l=>{if(y>270){doc.addPage();y=20;}doc.text(l,M,y);y+=size*0.42;});
-    y+=2;
-  };
-  const addSec=(t)=>{
-    if(y>255){doc.addPage();y=20;}
-    y+=3;
-    doc.setFillColor(26,86,160);doc.rect(M,y-5,TW,7,'F');
-    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-    doc.text(t,M+2,y);y+=6;doc.setTextColor(30,30,30);
-  };
-
-  doc.setFillColor(26,86,160);doc.rect(0,0,210,16,'F');
-  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-  doc.text('LAUDO MÉDICO — SOLICITAÇÃO DE MEDICAMENTO ESPECIAL',M,10);
-  y=22;
-  addText(D_DUT[disease]||'',8,'italic',[100,100,100]);y+=2;
-
-  addSec('IDENTIFICAÇÃO DO PACIENTE');
-  addText(`Nome: ${f.nome||'—'}     DN: ${dnFmt}${f.idade?' ('+f.idade+')':''}     Sexo: ${f.sexo==='M'?'Masculino':f.sexo==='F'?'Feminino':'—'}`);
-  addText(`CID-10: ${document.getElementById('p_cid').value||'—'}`);
-
-  addSec('1. DIAGNÓSTICO E JUSTIFICATIVA CLÍNICA');
-  addText(n.intro);
-
-  addSec('2. ATIVIDADE DE DOENÇA');
-  addText(n.atv);
-
-  addSec('3. HISTÓRICO DE TRATAMENTO CONVENCIONAL');
-  const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',x.dur||'—',x.motivo||'—']);
-  if(dRows.length>0){
-    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Medicamento','Dose','Duração','Motivo']],body:dRows,
-      styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]},alternateRowStyles:{fillColor:[240,244,248]}});
-    y=doc.lastAutoTable.finalY+4;
-  } else addText('Nenhum medicamento convencional registrado.');
-
-  addSec('4. EXAMES PRÉ-AUTORIZAÇÃO');
-  const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
-    .map(e=>[e.l,exams[e.id].result||'—',e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—']);
-  if(eRows.length>0){
-    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Exame','Resultado','Data']],body:eRows,
-      styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]}});
-    y=doc.lastAutoTable.finalY+4;
-  } else addText('Nenhum exame laboratorial registrado.');
-  const imgRows=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
-  if(imgRows.length>0){
-    addText('Exames de Imagem:',10);
-    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['Exame','Laudo','Data']],body:imgRows,
-      styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,160]}});
-    y=doc.lastAutoTable.finalY+4;
+  // TB IGRA
+  let igraLine = '';
+  if(fd.tb_igra_positivo) {
+    igraLine = `<p style="margin:10px 0 2px"><strong>IGRA POSITIVO</strong></p><p style="margin:0">Profilaxia TB: ${fd.tb_profilaxia_med||'—'}${fd.tb_profilaxia_inicio?' — iniciada em '+fmtDate(fd.tb_profilaxia_inicio):''}. Status: ${fd.tb_profilaxia_status||'—'}.</p>`;
+  } else {
+    // Check if IGRA exam was filled
+    const igra = EXAMES_BASE.find(e=>e.id==='igra');
+    if(igra && exams['igra']?.result) {
+      igraLine = `<p style="margin:10px 0 2px"><strong>IGRA ${fmtDate(exams['igra'].date)||dataL}</strong></p><p style="margin:0">${exams['igra'].result.toUpperCase()}</p>`;
+    }
   }
 
-  addSec('5. CRITÉRIOS ANS/DUT ATENDIDOS');
-  crit.forEach(c=>addText((c.pass?'✓  ':'⚠  ')+c.l,9));
+  const pStyle = 'style="font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c"';
+  const boldLabel = (t) => `<strong style="display:block;margin-top:14px;margin-bottom:2px">${t}</strong>`;
 
-  addSec('6. MEDICAMENTO SOLICITADO');
-  addText(`Medicamento: ${f.med_nome||'—'}     Via: ${f.med_via||'—'}`);
-  addText(`Posologia: ${f.med_posologia||'—'}`);
-  if(f.med_justificativa) addText(`Justificativa: ${f.med_justificativa}`);
-  addText(`Fundamentação: ${D_DUT[disease]||''}`,9,'italic',[80,80,80]);
+  document.getElementById('preview-box').innerHTML = `
+    <div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c;max-width:680px">
 
-  y=Math.max(y+10,235);
-  if(y>265){doc.addPage();y=25;}
-  doc.setDrawColor(180,180,180);doc.line(M,y,M+80,y);y+=4;
-  addText('Declaro que as informações acima são precisas e que o paciente preenche os critérios clínicos para uso do medicamento solicitado.',9,'italic');
-  y+=6;doc.line(M,y,M+70,y);y+=5;
-  addText(`Dr(a). ${f.medico||'_______________'}`,10,'bold');
-  addText(`CRM: ${f.crm||'_______________'}`);
-  addText(`${f.cidade||'_______________'}, ${dataL}`);
+      ${logoSrcPrev ? `<img src="${logoSrcPrev}" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:10px;display:block">` : ''}
+      ${localLaudo ? `<p style="font-weight:700;font-size:14px;margin:0 0 16px">${localLaudo}</p>` : ''}
+
+      <p style="font-weight:700;font-size:15px;text-align:center;border-bottom:1px solid #000;padding-bottom:10px;margin-bottom:14px">RECEITUÁRIO</p>
+
+      <p ${pStyle}><strong>Para Sr(a).</strong></p>
+      <p ${pStyle}><strong>${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}</strong></p>
+      ${f.endereco ? `<p ${pStyle}>${f.endereco}</p>` : ''}
+
+      <p style="margin-top:18px;font-weight:700;font-size:13px">RELATÓRIO MÉDICO - SOLICITAÇÃO MEDICAÇÃO IMUNOBIOLÓGICA: ${(f.med_nome||'[MEDICAMENTO]').toUpperCase()}</p>
+
+      <p ${pStyle} style="margin-top:14px;font-weight:700;font-size:13px">${introClinica}</p>
+
+      ${scoreLine ? `<p style="margin-top:14px;white-space:pre-line;font-size:13px">${scoreLine}</p>` : ''}
+
+      ${atuais.length > 0 ? `${boldLabel('MEDICAÇÕES ATUAIS')}${atuais.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med.toUpperCase()}${x.dose?' '+x.dose.toUpperCase():''}${x.dur?' - INICIO EM '+x.dur.toUpperCase():''}${x.motivo?' - '+x.motivo.toUpperCase():' - ATUAL'}</p>`).join('')}` : ''}
+
+      ${anteriores.length > 0 ? `${boldLabel('USO PRÉVIO')}${anteriores.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med.toUpperCase()}${x.dose?' '+x.dose.toUpperCase():''}${x.dur?' - '+x.dur.toUpperCase():''}${x.motivo?' - '+x.motivo.toUpperCase():''}</p>`).join('')}` : ''}
+
+      ${bioAnteriores.filter(b=>b.med).length>0 ? `${boldLabel('BIOLÓGICOS ANTERIORES')}${bioAnteriores.filter(b=>b.med).map((b,i)=>`<p style="margin:0">${i+1}. ${b.med.toUpperCase()}${b.duracao?' ('+b.duracao+')':''}${b.motivo?' — '+b.motivo:''}</p>`).join('')}` : ''}
+
+      ${igraLine}
+
+      ${labLine ? `<p style="margin-top:14px;white-space:pre-line;font-size:13px">${labLine}</p>` : ''}
+
+      ${imgSection ? `<div style="margin-top:14px">${imgSection}</div>` : ''}
+
+      <p ${pStyle} style="margin-top:18px;font-weight:700;font-size:13px">${conclusao}</p>
+
+      <div style="border-top:1px solid #ccc;margin-top:32px;padding-top:16px">
+        <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px"><strong>${f.medico||'Dr(a). _______________'}</strong><br>CRM: ${f.crm||'_______________'}</p>
+      </div>
+
+      <hr style="border:2px solid #1a56a0;margin:30px 0 20px">
+
+      <p style="font-weight:700;font-size:13px;text-align:center;margin-bottom:14px">RECEITUÁRIO — PRESCRIÇÃO</p>
+      <p ${pStyle}><strong>Para Sr(a).</strong></p>
+      <p ${pStyle}><strong>${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}</strong></p>
+      ${f.endereco ? `<p ${pStyle}>${f.endereco}</p>` : ''}
+
+      <pre style="margin-top:18px;font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:1.8">${prescricao}</pre>
+
+      <div style="border-top:1px solid #ccc;margin-top:32px;padding-top:16px">
+        <p>${f.cidade||'_______________'}, ${dataL}</p>
+        <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px"><strong>${f.medico||'Dr(a). _______________'}</strong><br>CRM: ${f.crm||'_______________'}</p>
+      </div>
+    </div>`;
+}
+// ─── GERAÇÃO PDF ─────────────────────────────────────────────────────────────
+function genPDF() {
+  if(!window.jspdf){alert('Biblioteca jsPDF não carregada.');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const f=fd;
+  const M=20; const TW=170; let y=25;
+  const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
+  const dnFmt=fmtDate(document.getElementById('p_dn').value);
+  const localLaudo = document.getElementById('select-local-laudo')?.value || '';
+  const logoSrc = LOGOS[localLaudo] || '';
+
+  const nl=(n=4)=>{y+=n;};
+  const checkPage=(need=10)=>{if(y+need>278){doc.addPage();y=20;}};
+  const txt=(t,size=10,bold=false,color=[20,20,20])=>{
+    if(!t) return;
+    checkPage(size*0.5+2);
+    doc.setFontSize(size);doc.setFont('helvetica',bold?'bold':'normal');doc.setTextColor(...color);
+    const lines=doc.splitTextToSize(String(t),TW);
+    lines.forEach(l=>{checkPage(size*0.5);doc.text(l,M,y);y+=size*0.42;});
+  };
+  const sep=()=>{checkPage(6);doc.setDrawColor(180,180,180);doc.line(M,y,M+TW,y);nl(5);};
+
+  // Logo
+  if(logoSrc){
+    try{
+      const img=new Image();img.src=logoSrc;
+      doc.addImage(logoSrc,'PNG',M,y-6,35,14);y+=12;
+    }catch(e){}
+  }
+  if(localLaudo){txt(localLaudo,10,true);nl(2);}
+
+  // Title
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
+  doc.text('RECEITUÁRIO',210/2,y,{align:'center'});
+  y+=6;doc.setDrawColor(20,20,20);doc.line(M,y,M+TW,y);nl(6);
+
+  // Patient
+  txt('Para Sr(a).',10,false);nl(1);
+  txt(`${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}`,11,true);nl(1);
+  if(f.endereco){txt(f.endereco,10,false);nl(1);}
+  nl(4);
+
+  // Title relatorio
+  txt(`RELATÓRIO MÉDICO - SOLICITAÇÃO MEDICAÇÃO IMUNOBIOLÓGICA: ${(f.med_nome||'[MEDICAMENTO]').toUpperCase()}`,11,true);
+  nl(4);
+
+  // Clinical intro
+  txt(buildIntroClinica(),11,true);nl(4);
+
+  // Scores
+  const scoreLine=buildScoreLine();
+  if(scoreLine){txt(scoreLine,10,false);nl(3);}
+
+  // Medications
+  const {atuais,anteriores}=buildMedListAtual();
+  if(atuais.length>0){
+    txt('MEDICAÇÕES ATUAIS',10,true);nl(1);
+    atuais.forEach((x,i)=>{
+      let line=`${i+1}. ${x.med.toUpperCase()}`;
+      if(x.dose) line+=` ${x.dose.toUpperCase()}`;
+      if(x.dur) line+=` - INICIO EM ${x.dur.toUpperCase()}`;
+      if(!x.motivo) line+=' - ATUAL';
+      txt(line,10,false);nl(1);
+    });nl(2);
+  }
+  if(anteriores.length>0){
+    txt('USO PRÉVIO',10,true);nl(1);
+    anteriores.forEach((x,i)=>{
+      let line=`${i+1}. ${x.med.toUpperCase()}`;
+      if(x.dose) line+=` ${x.dose.toUpperCase()}`;
+      if(x.dur) line+=` - ${x.dur.toUpperCase()}`;
+      if(x.motivo) line+=` - ${x.motivo.toUpperCase()}`;
+      txt(line,10,false);nl(1);
+    });nl(2);
+  }
+  if(bioAnteriores.filter(b=>b.med).length>0){
+    txt('BIOLÓGICOS ANTERIORES',10,true);nl(1);
+    bioAnteriores.filter(b=>b.med).forEach((b,i)=>{
+      let line=`${i+1}. ${b.med.toUpperCase()}`;
+      if(b.duracao) line+=` (${b.duracao})`;
+      if(b.motivo) line+=` — ${b.motivo}`;
+      txt(line,10,false);nl(1);
+    });nl(2);
+  }
+
+  // IGRA
+  const igra=EXAMES_BASE.find(e=>e.id==='igra');
+  if(igra&&exams['igra']?.result){
+    txt(`IGRA ${fmtDate(exams['igra'].date)||dataL}`,10,true);nl(1);
+    txt(exams['igra'].result.toUpperCase(),10,false);nl(3);
+  } else if(fd.tb_igra_positivo){
+    txt('IGRA POSITIVO',10,true);nl(1);
+    txt(`Profilaxia TB: ${fd.tb_profilaxia_med||'—'}. Status: ${fd.tb_profilaxia_status||'—'}.`,10,false);nl(3);
+  }
+
+  // Lab results inline
+  const labLine=buildLabLine();
+  if(labLine){txt(labLine,10,false);nl(3);}
+
+  // Imaging
+  imagens.filter(i=>i.tipo).forEach(img=>{
+    txt(`${img.tipo.toUpperCase()}${img.data?' '+fmtDate(img.data):''}`,10,true);nl(1);
+    if(img.laudo){txt(img.laudo,10,false);}nl(3);
+  });
+
+  nl(2);
+  // Conclusão
+  txt(buildConclusao(),11,true);nl(6);
+
+  // Signature
+  sep();
+  txt(`${f.medico||'Dr(a). _______________'}`,10,true);nl(1);
+  txt(`CRM: ${f.crm||'_______________'}`,10,false);nl(10);
+
+  // ─── PAGE 2: Prescrição ───────────────────────────────────────────────────
+  doc.addPage();y=25;
+
+  if(logoSrc){try{doc.addImage(logoSrc,'PNG',M,y-6,35,14);y+=12;}catch(e){}}
+  if(localLaudo){txt(localLaudo,10,true);nl(2);}
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
+  doc.text('RECEITUÁRIO',210/2,y,{align:'center'});
+  y+=6;doc.setDrawColor(20,20,20);doc.line(M,y,M+TW,y);nl(6);
+
+  txt('Para Sr(a).',10,false);nl(1);
+  txt(`${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}`,11,true);nl(1);
+  if(f.endereco){txt(f.endereco,10,false);nl(1);}
+  nl(6);
+
+  txt(buildPrescricao(),10,false);nl(8);
+
+  txt(`${f.cidade||'_______________'}, ${dataL}`,10,false);nl(10);
+  sep();
+  txt(`${f.medico||'Dr(a). _______________'}`,10,true);nl(1);
+  txt(`CRM: ${f.crm||'_______________'}`,10,false);
 
   const nome=(f.nome||'paciente').replace(/\s+/g,'_').toLowerCase();
   doc.save(`laudo_imunobio_${nome}_${new Date().toISOString().split('T')[0]}.pdf`);
