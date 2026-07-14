@@ -999,6 +999,26 @@ header h1{font-size:15px;font-weight:700}
 
   <!-- TAB EXAMES -->
   <div class="tab-content" id="tab-exam">
+    <!-- Lab Import Section -->
+    <div class="section-card import-lab-section collapsed" id="lab-import-section">
+      <div onclick="toggleLabImport()" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+        <span style="font-size:13px;font-weight:700;color:#1a56a0">📋 Importar exames por texto</span>
+        <span id="lab-import-arrow" style="margin-left:auto;color:#718096">▼</span>
+      </div>
+      <div class="import-lab-body" style="margin-top:12px">
+        <div style="font-size:12px;color:#4a5568;margin-bottom:8px">Cole o texto do laudo laboratorial (copiado de PDF, sistema ou prontuário) e clique em "Extrair Exames".</div>
+        <textarea id="lab-import-text" rows="6" placeholder="Cole aqui o texto do laudo laboratorial..." style="width:100%;border:1px solid #cbd5e0;border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-primary" style="font-size:12px;padding:7px 16px" onclick="extrairExames()">🔍 Extrair Exames</button>
+          <button class="btn-secondary" style="font-size:12px;padding:6px 14px" onclick="document.getElementById('lab-import-text').value=''">Limpar</button>
+        </div>
+        <div id="lab-import-preview" style="margin-top:12px;display:none">
+          <div style="font-size:12px;font-weight:700;color:#1a56a0;margin-bottom:8px">Exames encontrados — marque os que deseja aplicar:</div>
+          <div id="lab-import-items"></div>
+          <button class="btn-primary" style="margin-top:10px;font-size:12px;padding:7px 16px" onclick="aplicarExamesImportados()">✅ Aplicar Selecionados</button>
+        </div>
+      </div>
+    </div>
     <div class="section-card">
       <div class="section-title">Triagem Pré-Biológico <span class="badge-req">Obrigatório pela DUT</span></div>
       <div id="exames-container"></div>
@@ -1027,7 +1047,7 @@ header h1{font-size:15px;font-weight:700}
         </div>
         <div class="field-group">
           <label>Peso do paciente (kg)</label>
-          <input type="number" id="med_peso" min="1" max="300" step="0.1" placeholder="Ex: 72" oninput="fd.med_peso=+this.value;onPesoChange()">
+          <input type="number" id="med_peso" min="1" max="300" step="0.1" placeholder="Ex: 72" oninput="fd.med_peso=+this.value;onPesoChange();updDoseCalc()">
         </div>
         <div class="field-group" id="med_via_group">
           <label>Via de administração</label>
@@ -1036,6 +1056,20 @@ header h1{font-size:15px;font-weight:700}
         <div class="field-group">
           <label>Concentração por unidade</label>
           <input type="text" id="med_concentracao" placeholder="Ex: 5mg, 100mg/10ml, 150mg/ml" oninput="fd.med_concentracao=this.value">
+        </div>
+      </div>
+      <!-- Dose Calculator -->
+      <div id="dose-calc-panel" style="margin-top:14px;display:none">
+        <div onclick="toggleDoseCalc()" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;background:#eef2ff;border-radius:8px 8px 0 0;border:1px solid #c7d2fe;user-select:none">
+          <span style="font-size:13px;font-weight:700;color:#3730a3">💉 Calculadora de Doses EV</span>
+          <span id="dose-calc-arrow" style="margin-left:auto;color:#6366f1">▼</span>
+        </div>
+        <div id="dose-calc-body" style="border:1px solid #c7d2fe;border-top:none;border-radius:0 0 8px 8px;padding:12px;background:#f5f3ff">
+          <table class="dose-calc-table">
+            <thead><tr><th>Medicamento</th><th>Dose calculada</th><th>Via</th></tr></thead>
+            <tbody id="dose-calc-tbody"></tbody>
+          </table>
+          <div style="font-size:11px;color:#6366f1;margin-top:6px">Clique em uma linha para selecionar o medicamento</div>
         </div>
       </div>
       <div class="field-group" style="margin-top:12px">
@@ -1173,6 +1207,8 @@ let dmards = [];
 let dmardAtuais = [];
 let exams = {};
 let imagens = [];
+let isRetorno = false;
+let previewDebounceTimer = null;
 
 const D_NAMES = {
   ar:'Artrite Reumatoide',
@@ -2310,6 +2346,7 @@ function onMedChange() {
     document.getElementById('med_posologia').value=posText;
     fd.med_posologia=posText;
   }
+  updDoseCalc();
 }
 
 function onViaChange(via) {
@@ -3065,6 +3102,7 @@ function renderLaudos(filtro) {
         <div style="font-size:11px;color:#718096;margin-top:2px">${D_NAMES[l.disease]||l.disease} · ${l.med} · ${fmtDate(l.data)||l.data}</div>
       </div>
       <button class="btn-secondary" style="padding:5px 12px;font-size:12px" onclick="carregarLaudo(${l.id})">Carregar</button>
+      <button class="btn-secondary" style="padding:5px 12px;font-size:12px;background:#d1fae5;color:#065f46;border-color:#6ee7b7" onclick="carregarLaudoRetorno(${l.id})">🔄 Retorno</button>
       <button class="btn-danger" onclick="excluirLaudo(${l.id})">✕</button>
     </div>`).join('');
 }
@@ -3319,6 +3357,331 @@ function novaConsulta() {
   const dr=document.getElementById('das_result'); if(dr) dr.textContent='—';
   const dc=document.getElementById('das_class'); if(dc) dc.textContent='Não calculado';
   goPage(0); renderLaudos();
+}
+
+// ─── FEATURE 1 & 2: HISTORY + RETORNO ────────────────────────────────────────
+function salvarLaudoSilencioso() {
+  // Auto-save on PDF/Word generation (no alert)
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
+  const id = Date.now();
+  const snap = {
+    id, disease,
+    nome: fd.nome||'Paciente sem nome',
+    data: fd.data_laudo||new Date().toISOString().split('T')[0],
+    med: fd.med_nome||'—',
+    fd: JSON.parse(JSON.stringify(fd)),
+    mv: JSON.parse(JSON.stringify(mv)),
+    dmards: JSON.parse(JSON.stringify(dmards)),
+    dmardAtuais: JSON.parse(JSON.stringify(dmardAtuais)),
+    imagens: JSON.parse(JSON.stringify(imagens)),
+  };
+  laudos.unshift(snap);
+  if(laudos.length>30) laudos.pop();
+  localStorage.setItem('reumaLaudos', JSON.stringify(laudos));
+  registrarEstatistica(disease);
+}
+
+function fillFormFromFd(savedFd) {
+  // Repopulate simple text/number/date inputs from fd object
+  const mapping = {
+    'p_nome':'nome','p_dn':'dn','p_medico':'medico','p_crm':'crm',
+    'p_data_laudo':'data_laudo','p_cidade':'cidade',
+    'das_td':'das_td','das_te':'das_te','das_eva':'das_eva','das_marker':'das_marker',
+    'cdai_ega':'cdai_ega','cdai_pga':'cdai_pga','cdai_pcr':'cdai_pcr',
+    'ar_fr_val':'fr_val','ar_fr_data':'fr_data','ar_anticcp_val':'anticcp_val','ar_anticcp_data':'anticcp_data',
+    'ar_pcr':'ar_pcr','ar_vhs':'ar_vhs','ar_data_diag':'data_diag',
+    'ar_fev1':'ar_fev1','ar_cvf':'ar_cvf',
+    'dm_ck':'dm_ck','dm_aldolase':'dm_aldolase',
+    'vasc_bvas':'vasc_bvas',
+    'med_nome':'med_nome','med_peso':'med_peso','med_concentracao':'med_concentracao',
+    'med_posologia':'med_posologia','med_justificativa':'med_justificativa',
+  };
+  Object.entries(mapping).forEach(([elId, fdKey]) => {
+    const el = document.getElementById(elId);
+    if(el && savedFd[fdKey]!==undefined) el.value = savedFd[fdKey];
+  });
+  if(savedFd.nome) document.getElementById('p_nome').value = savedFd.nome;
+  if(savedFd.dn) { document.getElementById('p_dn').value = savedFd.dn; calcAge(); }
+  if(savedFd.med_nome) {
+    const sel = document.getElementById('med_nome');
+    if(sel) { sel.value = savedFd.med_nome; onMedChange(); }
+  }
+  if(savedFd.med_peso) {
+    const wp = document.getElementById('med_peso');
+    if(wp) { wp.value = savedFd.med_peso; }
+  }
+  if(savedFd.med_posologia) {
+    const mp = document.getElementById('med_posologia');
+    if(mp) mp.value = savedFd.med_posologia;
+  }
+}
+
+function carregarLaudoRetorno(id) {
+  const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
+  const snap = laudos.find(l=>l.id===id);
+  if(!snap) return;
+  isRetorno = true;
+  selectDisease(snap.disease);
+  setTimeout(()=>{
+    // Load demographics and history
+    const savedFd = snap.fd;
+    fd = JSON.parse(JSON.stringify(savedFd));
+    mv = JSON.parse(JSON.stringify(snap.mv||{}));
+
+    // Clear activity scores and recent labs
+    const clearFields = ['das28','cdai','sdai','basdai','asdas','sledai','mmt8','vasc_bvas',
+      'das_td','das_te','das_eva','das_marker','cdai_ega','cdai_pga','cdai_pcr'];
+    clearFields.forEach(k=>{ fd[k]=undefined; });
+
+    // Clear lab exams (keep imaging and TB tests)
+    ['hemograma','tgo_tgp','creatinina','pcr_vhs','urina'].forEach(id=>{
+      if(exams[id]) { exams[id].result=''; exams[id].date=''; }
+      const inp = document.getElementById('exam_result_'+id);
+      if(inp) inp.value = '';
+    });
+
+    // Restore DMARD history
+    dmards=[]; dmardAtuais=[];
+    document.getElementById('dmard-tbody').innerHTML='';
+    document.getElementById('dmard-atual-tbody').innerHTML='';
+    snap.dmards.forEach(d=>addDmard(d));
+    (snap.dmardAtuais||[]).forEach(d=>addDmardAtual(d));
+
+    // Refill form inputs
+    fillFormFromFd(fd);
+
+    // Show retorno banner
+    document.getElementById('retorno-banner').style.display='';
+
+    // Navigate to activity score tab
+    showTabByName('tab-diag');
+  }, 150);
+}
+
+// ─── FEATURE 3: DOSE CALCULATOR ───────────────────────────────────────────────
+let doseCalcOpen = true;
+
+function toggleDoseCalc() {
+  doseCalcOpen = !doseCalcOpen;
+  document.getElementById('dose-calc-body').style.display = doseCalcOpen ? '' : 'none';
+  document.getElementById('dose-calc-arrow').textContent = doseCalcOpen ? '▲' : '▼';
+}
+
+function updDoseCalc() {
+  const peso = fd.med_peso || (+document.getElementById('med_peso').value) || 0;
+  const panel = document.getElementById('dose-calc-panel');
+  if(!panel) return;
+  if(!peso || !disease) { panel.style.display='none'; return; }
+
+  const relevantMeds = MED_OPTS[disease] || [];
+  const rows = [];
+  relevantMeds.forEach(medName => {
+    const info = MED_INFO[medName];
+    if(!info || !info.pesoDep) return;
+    const via = Array.isArray(info.via) ? info.via[0] : info.via;
+    const isEV = via && (via.includes('EV') || via.includes('Endoven'));
+    if(!isEV) return;
+    let dose = '';
+    if(info.posPeso) {
+      dose = info.posPeso(peso).split('\n')[0];
+    } else if(info.pos && typeof info.pos === 'object' && info.pos.evPeso) {
+      dose = info.pos.evPeso(peso).split('\n')[0];
+    } else if(typeof info.pos === 'string') {
+      dose = info.pos;
+    }
+    if(dose) rows.push({medName, dose, via});
+  });
+
+  if(rows.length === 0) { panel.style.display='none'; return; }
+  panel.style.display = '';
+  const tbody = document.getElementById('dose-calc-tbody');
+  tbody.innerHTML = rows.map(r=>`
+    <tr class="selectable" onclick="selectMedFromCalc('${r.medName.replace(/'/g,"\\'")}')">
+      <td style="font-weight:600">${r.medName}</td>
+      <td style="color:#1e293b">${r.dose}</td>
+      <td style="color:#718096">${r.via}</td>
+    </tr>`).join('');
+}
+
+function selectMedFromCalc(medName) {
+  const sel = document.getElementById('med_nome');
+  if(sel) { sel.value = medName; onMedChange(); }
+}
+
+// ─── FEATURE 4: LIVE PREVIEW (SPLIT SCREEN) ───────────────────────────────────
+let splitPreviewVisible = false;
+
+function toggleSplitPreview() {
+  splitPreviewVisible = !splitPreviewVisible;
+  const panel = document.getElementById('split-preview-panel');
+  const btn = document.getElementById('btn-live-preview');
+  if(panel) panel.classList.toggle('hidden', !splitPreviewVisible);
+  if(btn) {
+    btn.textContent = splitPreviewVisible ? '👁 Ocultar Prévia' : '👁 Prévia ao Vivo';
+    btn.style.background = splitPreviewVisible ? '#1a56a0' : '';
+    btn.style.color = splitPreviewVisible ? '#fff' : '';
+  }
+  if(splitPreviewVisible) schedulePreviewUpdate();
+}
+
+function schedulePreviewUpdate() {
+  // Only update if on page 2
+  const page2 = document.getElementById('page2');
+  if(!page2 || !page2.classList.contains('active')) return;
+  if(!splitPreviewVisible) return;
+  clearTimeout(previewDebounceTimer);
+  previewDebounceTimer = setTimeout(()=>{
+    updateSplitPreview();
+  }, 400);
+}
+
+function updateSplitPreview() {
+  const panel = document.getElementById('split-preview-content');
+  if(!panel || !splitPreviewVisible || !disease) return;
+  const f = fd;
+  const dnFmt = (f.dn && fmtDate) ? fmtDate(f.dn) : '';
+  const dataL = (f.data_laudo && fmtDate) ? fmtDate(f.data_laudo) : new Date().toLocaleDateString('pt-BR');
+  try {
+    const introClinica = buildIntroClinica ? buildIntroClinica() : '';
+    const scoreLine = buildScoreLine ? buildScoreLine() : '';
+    const conclusao = buildConclusao ? buildConclusao() : '';
+    panel.innerHTML = `
+      <div style="border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin-bottom:10px;text-align:center;font-size:10px;color:#718096;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Prévia do Laudo</div>
+      <p style="margin-bottom:6px"><strong>${f.nome||'[Paciente]'}</strong>${dnFmt?', '+dnFmt:''}</p>
+      ${introClinica?`<p style="margin-bottom:6px;font-size:11px">${introClinica}</p>`:''}
+      ${scoreLine?`<p style="margin-bottom:6px;font-size:11px;color:#1a56a0">${scoreLine}</p>`:''}
+      ${conclusao?`<p style="margin-top:10px;font-size:11px;font-style:italic">${conclusao}</p>`:''}
+      <p style="margin-top:10px;font-size:10px;color:#718096">${f.cidade||''}${f.cidade&&dataL?', ':''}${dataL}</p>
+      <p style="font-size:10px;color:#718096">${f.medico||''}</p>`;
+  } catch(e) { panel.innerHTML = '<p style="color:#999;font-size:11px">Preencha o formulário para ver a prévia.</p>'; }
+}
+
+// Hook into form input events for live preview
+document.addEventListener('input', (e) => {
+  const page2 = document.getElementById('page2');
+  if(page2 && page2.classList.contains('active') && splitPreviewVisible) {
+    schedulePreviewUpdate();
+  }
+}, true);
+
+// ─── FEATURE 5 helper: toggle lab import section ──────────────────────────────
+function toggleLabImport() {
+  const sec = document.getElementById('lab-import-section');
+  sec.classList.toggle('collapsed');
+  document.getElementById('lab-import-arrow').textContent = sec.classList.contains('collapsed') ? '▼' : '▲';
+}
+
+// ─── FEATURE 7: LAB TEXT IMPORT ───────────────────────────────────────────────
+function extrairExames() {
+  const txt = document.getElementById('lab-import-text').value;
+  if(!txt.trim()) { alert('Cole o texto do laudo antes de extrair.'); return; }
+  const found = [];
+
+  const num = (s) => { const m=s.match(/[\d,\.]+/); return m?m[0].replace(',','.'):null; };
+
+  // Hemograma
+  const hbM = txt.match(/(?:Hb|Hemoglobina)[:\s]*([0-9][0-9,\.]*)\s*g/i);
+  const htM = txt.match(/(?:Ht|Hematócrito|Hematocrito)[:\s]*([0-9][0-9,\.]*)\s*%/i);
+  const leucM = txt.match(/(?:Leucócitos|Leucocitos|WBC)[:\s]*([0-9][0-9,\.]*)/i);
+  const platM = txt.match(/(?:Plaquetas|PLT)[:\s]*([0-9][0-9,\.]*)/i);
+  const vcmM = txt.match(/(?:VCM|MCV)[:\s]*([0-9][0-9,\.]*)/i);
+  if(hbM||htM||leucM||platM) {
+    let hem = [];
+    if(hbM) hem.push(`Hb ${hbM[1]} g/dL`);
+    if(htM) hem.push(`Ht ${htM[1]}%`);
+    if(vcmM) hem.push(`VCM ${vcmM[1]} fL`);
+    if(leucM) hem.push(`Leucócitos ${leucM[1]}/mm³`);
+    if(platM) hem.push(`Plaquetas ${platM[1]}/mm³`);
+    found.push({id:'hemograma', label:'Hemograma', value: hem.join(' / ')});
+  }
+
+  // TGO/TGP
+  const tgoM = txt.match(/(?:TGO|AST)[:\s]*([0-9][0-9,\.]*)\s*U/i);
+  const tgpM = txt.match(/(?:TGP|ALT)[:\s]*([0-9][0-9,\.]*)\s*U/i);
+  if(tgoM||tgpM) {
+    let val = [];
+    if(tgoM) val.push(`TGO ${tgoM[1]} U/L`);
+    if(tgpM) val.push(`TGP ${tgpM[1]} U/L`);
+    found.push({id:'tgo_tgp', label:'TGO/TGP', value: val.join(' / ')});
+  }
+
+  // Creatinina + TFG
+  const creatM = txt.match(/(?:Creatinina)[:\s]*([0-9][0-9,\.]*)\s*mg/i);
+  const tfgM = txt.match(/(?:TFG|eGFR)[:\s]*([0-9][0-9,\.]*)/i);
+  if(creatM) {
+    let val = `Creatinina ${creatM[1]} mg/dL`;
+    if(tfgM) val += ` (TFG: ${tfgM[1]} mL/min)`;
+    found.push({id:'creatinina', label:'Creatinina', value: val});
+  }
+
+  // PCR + VHS
+  const pcrM = txt.match(/(?:PCR|CRP)[:\s]*([0-9][0-9,\.]*)\s*mg/i);
+  const vhsM = txt.match(/(?:VHS|ESR)[:\s]*([0-9][0-9,\.]*)\s*mm/i);
+  if(pcrM||vhsM) {
+    let val = [];
+    if(pcrM) val.push(`PCR ${pcrM[1]} mg/L`);
+    if(vhsM) val.push(`VHS ${vhsM[1]} mm/h`);
+    found.push({id:'pcr_vhs', label:'PCR / VHS', value: val.join(' / ')});
+  }
+
+  // Sorologias
+  const sorolMap = [
+    {id:'hbsag', patterns:[/HBsAg[:\s]*(Reagente|Não\s*[Rr]eagente|Reactivo|Não\s*[Rr]eativo|Negativo|Positivo)/i]},
+    {id:'anti_hbc', patterns:[/Anti[\-\s]HBc[:\s]*(Reagente|Não\s*[Rr]eagente|Negativo|Positivo)/i]},
+    {id:'anti_hcv', patterns:[/Anti[\-\s]HCV[:\s]*(Reagente|Não\s*[Rr]eagente|Negativo|Positivo)/i]},
+    {id:'hiv', patterns:[/Anti[\-\s]HIV[:\s]*(Reagente|Não\s*[Rr]eagente|Negativo|Positivo)/i,/HIV[:\s]*(Reagente|Não\s*[Rr]eagente|Negativo|Positivo)/i]},
+  ];
+  const sorolLabels = {hbsag:'HBsAg', anti_hbc:'Anti-HBc', anti_hcv:'Anti-HCV', hiv:'Anti-HIV'};
+  sorolMap.forEach(({id, patterns}) => {
+    for(const pat of patterns) {
+      const m = txt.match(pat);
+      if(m) { found.push({id, label: sorolLabels[id], value: m[1]}); break; }
+    }
+  });
+
+  // PPD / IGRA
+  const ppdM = txt.match(/PPD[:\s]*([0-9]+)\s*mm/i);
+  const igraM = txt.match(/(?:IGRA|Quantiferon)[:\s]*(Reagente|Não\s*[Rr]eagente|Positivo|Negativo|Indeterminado)/i);
+  if(ppdM) found.push({id:'ppd', label:'PPD', value:`${ppdM[1]}mm de induração`});
+  else if(igraM) found.push({id:'ppd', label:'IGRA', value:igraM[1]});
+
+  // FR
+  const frM = txt.match(/(?:FR|Fator\s*Reumatoide)[:\s]*([0-9][0-9,\.]*)\s*(?:UI\/mL|UI\/L)?/i);
+  if(frM) { fd.fr_val = frM[1]+' UI/mL'; const el=document.getElementById('ar_fr_val'); if(el) el.value=fd.fr_val; }
+
+  // Anti-CCP
+  const ccpM = txt.match(/Anti[\-\s]CCP[:\s]*([0-9][0-9,\.]*)\s*(?:U\/mL)?/i);
+  if(ccpM) { fd.anticcp_val = ccpM[1]+' U/mL'; const el=document.getElementById('ar_anticcp_val'); if(el) el.value=fd.anticcp_val; }
+
+  if(found.length===0) { alert('Nenhum exame reconhecido no texto. Verifique o formato e tente novamente.'); return; }
+
+  // Show preview with checkboxes
+  const preview = document.getElementById('lab-import-preview');
+  const items = document.getElementById('lab-import-items');
+  items.innerHTML = found.map((f,i)=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:6px;cursor:pointer;background:#fff">
+      <input type="checkbox" id="labchk${i}" checked style="width:16px;height:16px;accent-color:#1a56a0">
+      <span><strong>${f.label}</strong>: ${f.value}</span>
+    </label>`).join('');
+  items.dataset.found = JSON.stringify(found);
+  preview.style.display = '';
+}
+
+function aplicarExamesImportados() {
+  const items = document.getElementById('lab-import-items');
+  const found = JSON.parse(items.dataset.found||'[]');
+  found.forEach((f,i) => {
+    const chk = document.getElementById('labchk'+i);
+    if(!chk || !chk.checked) return;
+    if(exams[f.id] !== undefined) {
+      exams[f.id].result = f.value;
+      const inp = document.getElementById('exam_result_'+f.id);
+      if(inp) inp.value = f.value;
+    }
+  });
+  document.getElementById('lab-import-preview').style.display = 'none';
+  document.getElementById('lab-import-text').value = '';
+  alert('Exames aplicados com sucesso!');
 }
 
 // ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────────
