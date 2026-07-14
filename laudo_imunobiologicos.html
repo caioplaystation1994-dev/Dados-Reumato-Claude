@@ -2440,7 +2440,7 @@ function buildIntroClinica() {
     if(tipo) txt = txt.replace(`diagnóstico de ${doenca}`, `diagnóstico de ${tipo}`);
     txt += ' Mantendo quadro de dor lombar inflamatória refratária ao tratamento com AINE.';
   } else if(d==='ar'){
-    const cls = f.das28_class ? f.das28_class : 'atividade moderada a alta';
+    const cls = f.das28_class ? f.das28_class.replace(/\s*\([^)]+\)/g,'').trim() : 'atividade moderada a alta';
     txt += ` Apresentando ${cls} de doença.`;
   } else if(d==='aps'){
     txt += ' Apresentando doença com atividade moderada a alta refratária a DMARD convencional.';
