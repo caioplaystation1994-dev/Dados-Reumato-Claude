@@ -2672,19 +2672,23 @@ function genPDF() {
   });
 
   nl(16);
-  // Conclusão — destaque máximo
-  txt(buildConclusao(),13,true);nl(8);
+  // Conclusão — mesmo tamanho do corpo, negrito
+  txt(buildConclusao(),10,true);nl(8);
 
-  // Bloco prescrição com fundo (simulado por rect)
+  // Bloco prescrição
   const prescTxt = buildPrescricao();
   const prescLines2 = prescTxt.split('\n');
   prescLines2.forEach(l => { txt(l,10,true); nl(l?3:2); });
-  nl(8);
 
-  txt(`${f.cidade||'_______________'}, ${dataL}`,10,false);nl(10);
-  sep();
-  txt(`${f.medico||'Dr(a). _______________'}`,10,true);nl(1);
-  txt(`CRM: ${f.crm||'_______________'}`,10,false);
+  // Rodapé fixo no fundo da página atual (y absoluto)
+  const footerY1 = 258;
+  doc.setDrawColor(180,180,180);doc.line(M,footerY1,M+TW,footerY1);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);
+  doc.text(`${f.cidade||'_______________'}, ${dataL}`,M,footerY1+5);
+  doc.setFont('helvetica','bold');
+  doc.text(`${f.medico||'Dr(a). _______________'}`,M,footerY1+13);
+  doc.setFont('helvetica','normal');
+  doc.text(`CRM: ${f.crm||'_______________'}`,M,footerY1+18);
 
   // ─── PÁGINA 2: Prescrição separada ───────────────────────────────────────────
   doc.addPage(); y=25;
@@ -2701,12 +2705,16 @@ function genPDF() {
 
   const prescLines3 = prescTxt.split('\n');
   prescLines3.forEach(l => { txt(l,11,true); nl(l?4:2); });
-  nl(10);
 
-  txt(`${f.cidade||'_______________'}, ${dataL}`,10,false);nl(10);
-  sep();
-  txt(`${f.medico||'Dr(a). _______________'}`,10,true);nl(1);
-  txt(`CRM: ${f.crm||'_______________'}`,10,false);
+  // Rodapé fixo no fundo da página de prescrição
+  const footerY2 = 258;
+  doc.setDrawColor(180,180,180);doc.line(M,footerY2,M+TW,footerY2);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);
+  doc.text(`${f.cidade||'_______________'}, ${dataL}`,M,footerY2+5);
+  doc.setFont('helvetica','bold');
+  doc.text(`${f.medico||'Dr(a). _______________'}`,M,footerY2+13);
+  doc.setFont('helvetica','normal');
+  doc.text(`CRM: ${f.crm||'_______________'}`,M,footerY2+18);
 
   const nome=(f.nome||'paciente').replace(/\s+/g,'_').toLowerCase();
   doc.save(`laudo_imunobio_${nome}_${new Date().toISOString().split('T')[0]}.pdf`);
