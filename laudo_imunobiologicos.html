@@ -2420,7 +2420,7 @@ function buildMedListAtual() {
 
 function buildIntroClinica() {
   const f = fd; const d = disease;
-  const nome = (f.nome||'[nome do paciente]').toUpperCase();
+  const nome = f.nome||'[Nome do paciente]';
   const idade = f.idade || document.getElementById('p_idade').value || '';
   const sexo = f.sexo === 'M' ? 'sexo masculino' : f.sexo === 'F' ? 'sexo feminino' : '';
   const cid = document.getElementById('p_cid').value || '';
@@ -2586,18 +2586,18 @@ function buildPreview() {
         <p style="font-size:11px;text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:14px;font-family:Arial,sans-serif;color:#1a202c">RELATÓRIO MÉDICO — SOLICITAÇÃO DE MEDICAÇÃO IMUNOBIOLÓGICA</p>
 
         <p ${pStyle}>Para Sr(a).</p>
-        <p ${pStyle}>${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}</p>
+        <p ${pStyle}>${f.nome||'[Nome do paciente]'}${dnFmt?', '+dnFmt:''}</p>
         ${f.endereco ? `<p ${pStyle}>${f.endereco}</p>` : ''}
 
         <p ${pStyle} style="margin-top:18px">${introClinica}</p>
 
         ${scoreLine ? `<div style="margin-top:14px">${scoreLine.split('\n').filter(l=>l.trim()).map(l=>`<p style="margin:2px 0;font-size:13px">${l}</p>`).join('')}</div>` : ''}
 
-        ${atuais.length > 0 ? `${sectionLabel('MEDICAÇÕES ATUAIS')}${atuais.map((x,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início em '+fmtDate(x.dataInicio):''}</p>`).join('')}` : ''}
+        ${atuais.length > 0 ? `${sectionLabel('Medicações atuais')}${atuais.map((x,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início em '+fmtDate(x.dataInicio):''}</p>`).join('')}` : ''}
 
-        ${anteriores.length > 0 ? `${sectionLabel('USO PRÉVIO / SUSPENSOS')}${anteriores.map((x,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início '+fmtDate(x.dataInicio):''}${x.dataSuspensao?' — suspensão '+fmtDate(x.dataSuspensao):''}${x.motivo?' ('+x.motivo+')':''}</p>`).join('')}` : ''}
+        ${anteriores.length > 0 ? `${sectionLabel('Uso prévio / suspensos')}${anteriores.map((x,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início '+fmtDate(x.dataInicio):''}${x.dataSuspensao?' — suspensão '+fmtDate(x.dataSuspensao):''}${x.motivo?' ('+x.motivo+')':''}</p>`).join('')}` : ''}
 
-        ${bioAnteriores.filter(b=>b.med).length>0 ? `${sectionLabel('BIOLÓGICOS ANTERIORES')}${bioAnteriores.filter(b=>b.med).map((b,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${b.med}${b.duracao?' ('+b.duracao+')':''}${b.motivo?' — '+b.motivo:''}</p>`).join('')}` : ''}
+        ${bioAnteriores.filter(b=>b.med).length>0 ? `${sectionLabel('Biológicos anteriores')}${bioAnteriores.filter(b=>b.med).map((b,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${b.med}${b.duracao?' ('+b.duracao+')':''}${b.motivo?' — '+b.motivo:''}</p>`).join('')}` : ''}
 
         ${labLines.igra ? `<p style="margin-top:14px;font-size:13px">${labLines.igra}</p>` : ''}
         ${labLines.frAnticcp ? `<p style="margin-top:10px;font-size:13px">${labLines.frAnticcp}</p>` : ''}
@@ -2612,7 +2612,7 @@ function buildPreview() {
 
       <div style="${footerStyle}">
         <p style="font-size:13px">${f.cidade||'_______________'}, ${dataL}</p>
-        <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px"><strong>${f.medico||'Dr(a). _______________'}</strong><br>CRM: ${f.crm||'_______________'}</p>
+        <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px">${f.medico||'Dr(a). _______________'}<br>CRM: ${f.crm||'_______________'}</p>
       </div>
     </div>
 
@@ -2620,13 +2620,13 @@ function buildPreview() {
 
     <div style="${pgStyle}">
         ${logoSrcPrev ? `<img src="${logoSrcPrev}" style="max-height:52px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block">` : ''}
-        <p style="font-size:13px;text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:18px;font-family:Arial,sans-serif">PRESCRIÇÃO MÉDICA</p>
+        <p style="font-size:11px;text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:18px;font-family:Arial,sans-serif">PRESCRIÇÃO MÉDICA</p>
         <p ${pStyle}>Para Sr(a).</p>
-        <p ${pStyle}>${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}</p>
+        <p ${pStyle}>${f.nome||'[Nome do paciente]'}${dnFmt?', '+dnFmt:''}</p>
         <pre style="margin-top:24px;font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:2.1;color:#1a202c">${prescricao}</pre>
       <div style="${footerStyle}">
         <p style="font-size:13px">${f.cidade||'_______________'}, ${dataL}</p>
-        <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px"><strong>${f.medico||'Dr(a). _______________'}</strong><br>CRM: ${f.crm||'_______________'}</p>
+        <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px">${f.medico||'Dr(a). _______________'}<br>CRM: ${f.crm||'_______________'}</p>
       </div>
     </div>`;
 
@@ -2665,9 +2665,7 @@ function genPDF() {
     doc.setDrawColor(180,180,180);doc.line(M,258,M+TW,258);
     doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);
     doc.text(san(`${f.cidade||'_______________'}, ${dataL}`),M,263);
-    doc.setFont('helvetica','bold');
     doc.text(san(f.medico||'Dr(a). _______________'),M,271);
-    doc.setFont('helvetica','normal');
     doc.text(san(`CRM: ${f.crm||'_______________'}`),M,276);
   };
 
@@ -2681,7 +2679,7 @@ function genPDF() {
 
   // ── Paciente (sem negrito, mesmo tamanho) ───────────────────────────────────
   txt('Para Sr(a).',10,false);nl(1);
-  txt(`${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}`,10,false);nl(1);
+  txt(`${f.nome||'[Nome do paciente]'}${dnFmt?', '+dnFmt:''}`,10,false);nl(1);
   if(f.endereco){txt(f.endereco,10,false);nl(1);}
   nl(4);
 
@@ -2695,7 +2693,7 @@ function genPDF() {
   // ── Medicações atuais ───────────────────────────────────────────────────────
   const {atuais,anteriores}=buildMedListAtual();
   if(atuais.length>0){
-    txt('MEDICAÇÕES ATUAIS',10,false);nl(1);
+    txt('Medicações atuais',10,false);nl(1);
     atuais.forEach((x,i)=>{
       let line=`${i+1}. ${x.med}`;
       if(x.dose) line+=` — ${x.dose}`;
@@ -2704,7 +2702,7 @@ function genPDF() {
     });nl(2);
   }
   if(anteriores.length>0){
-    txt('USO PRÉVIO / SUSPENSOS',10,false);nl(1);
+    txt('Uso prévio / suspensos',10,false);nl(1);
     anteriores.forEach((x,i)=>{
       let line=`${i+1}. ${x.med}`;
       if(x.dose) line+=` — ${x.dose}`;
@@ -2715,7 +2713,7 @@ function genPDF() {
     });nl(2);
   }
   if(bioAnteriores.filter(b=>b.med).length>0){
-    txt('BIOLÓGICOS ANTERIORES',10,false);nl(1);
+    txt('Biológicos anteriores',10,false);nl(1);
     bioAnteriores.filter(b=>b.med).forEach((b,i)=>{
       let line=`${i+1}. ${b.med}`;
       if(b.duracao) line+=` (${b.duracao})`;
@@ -2756,12 +2754,12 @@ function genPDF() {
   // ── Página de prescrição separada ─────────────────────────────────────────────
   doc.addPage(); y=25;
   if(logoSrc){try{doc.addImage(logoSrc,'PNG',M,y-6,35,14);y+=12;}catch(e){}}
-  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
+  doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);
   doc.text('PRESCRIÇÃO MÉDICA',210/2,y,{align:'center'});
   y+=6;doc.setDrawColor(20,20,20);doc.line(M,y,M+TW,y);nl(6);
 
   txt('Para Sr(a).',10,false);nl(1);
-  txt(`${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}`,10,false);nl(1);
+  txt(`${f.nome||'[Nome do paciente]'}${dnFmt?', '+dnFmt:''}`,10,false);nl(1);
   if(f.endereco){txt(f.endereco,10,false);nl(1);}
   nl(8);
 
