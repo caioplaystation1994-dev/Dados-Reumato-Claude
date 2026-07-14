@@ -80,6 +80,10 @@ tr:hover td{background:#f7faff}
 .toast{position:fixed;bottom:20px;right:20px;background:#1a202c;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 
+.export-banner{display:none;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;background:#fffbea;border-bottom:2px solid #f6ad55;color:#7b341e;padding:10px 24px;font-size:13px}
+.export-banner button{flex-shrink:0}
+.last-export-info{color:rgba(255,255,255,.75);font-size:11px;margin-left:10px;white-space:nowrap}
+
 @media print{
  header,nav,.no-print{display:none!important}
  body{background:#fff}
@@ -101,8 +105,15 @@ tr:hover td{background:#f7faff}
     <button onclick="exportJSON()">Exportar backup</button>
     <button onclick="document.getElementById('import-file').click()">Importar backup</button>
     <input type="file" id="import-file" accept="application/json" style="display:none" onchange="importJSON(this)">
+    <span class="last-export-info" id="last-export-info"></span>
   </nav>
 </header>
+
+<div class="export-banner no-print" id="export-banner">
+  <span id="export-banner-msg"></span>
+  <button class="btn-primary btn-sm" onclick="exportJSON()">Exportar agora</button>
+  <button class="btn-secondary btn-sm" onclick="snoozeExportReminder()">Lembrar amanhã</button>
+</div>
 
 <!-- PÁGINA: LISTA DE PACIENTES -->
 <div id="page-pacientes" class="page active">
@@ -266,6 +277,9 @@ tr:hover td{background:#f7faff}
 
 <script>
 const DB_KEY = 'prontuario_db';
+const EXPORT_AT_KEY = 'prontuario_last_export_at';
+const EXPORT_SNOOZE_KEY = 'prontuario_export_snooze_until';
+const EXPORT_REMINDER_DAYS = 7;
 let currentPatientId = null;
 let editingEvolucaoIdx = null;
 
@@ -355,6 +369,7 @@ function novoPaciente(){
   };
   db.push(p);
   setData(db);
+  updateExportStatus();
   abrirPaciente(p.id);
 }
 
@@ -439,6 +454,7 @@ function excluirPacienteAtual(){
   setData(db);
   currentPatientId = null;
   showPage('page-pacientes');
+  updateExportStatus();
   showToast('Paciente excluído');
 }
 
@@ -446,6 +462,7 @@ function excluirPaciente(id){
   if(!confirm('Excluir este paciente e todo o seu prontuário? Esta ação não pode ser desfeita.')) return;
   setData(getData().filter(p=>p.id!==id));
   renderPatientList();
+  updateExportStatus();
   showToast('Paciente excluído');
 }
 
@@ -654,6 +671,38 @@ function imprimirFicha(){
   }, 300);
 }
 
+/* ---------- LEMBRETE DE BACKUP ---------- */
+function fmtDataHora(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+function updateExportStatus(){
+  const infoEl = document.getElementById('last-export-info');
+  const last = localStorage.getItem(EXPORT_AT_KEY);
+  infoEl.textContent = last ? ('Último backup: ' + fmtDataHora(last)) : 'Nenhum backup realizado ainda';
+  checkExportReminder();
+}
+function checkExportReminder(){
+  const banner = document.getElementById('export-banner');
+  if(getData().length === 0){ banner.style.display = 'none'; return; }
+  const snoozeUntil = localStorage.getItem(EXPORT_SNOOZE_KEY);
+  if(snoozeUntil && new Date() < new Date(snoozeUntil)){ banner.style.display = 'none'; return; }
+  const last = localStorage.getItem(EXPORT_AT_KEY);
+  const diasSemBackup = last ? (Date.now() - new Date(last).getTime()) / 86400000 : Infinity;
+  if(diasSemBackup >= EXPORT_REMINDER_DAYS){
+    document.getElementById('export-banner-msg').textContent = last
+      ? `⚠️ Já se passaram ${Math.floor(diasSemBackup)} dias desde o último backup. Exporte os dados para não correr risco de perdê-los.`
+      : '⚠️ Você ainda não fez nenhum backup. Exporte para proteger o prontuário dos seus pacientes.';
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+function snoozeExportReminder(){
+  localStorage.setItem(EXPORT_SNOOZE_KEY, new Date(Date.now() + 24*3600*1000).toISOString());
+  document.getElementById('export-banner').style.display = 'none';
+}
+
 /* ---------- BACKUP ---------- */
 function exportJSON(){
   const blob = new Blob([JSON.stringify(getData(), null, 2)], {type:'application/json'});
@@ -663,6 +712,10 @@ function exportJSON(){
   a.download = `prontuario_backup_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  localStorage.setItem(EXPORT_AT_KEY, new Date().toISOString());
+  localStorage.removeItem(EXPORT_SNOOZE_KEY);
+  updateExportStatus();
+  showToast('Backup exportado');
 }
 function importJSON(input){
   const file = input.files[0];
@@ -682,6 +735,7 @@ function importJSON(input){
       });
       setData(db);
       renderPatientList();
+      updateExportStatus();
       showToast(`${novos} paciente(s) importado(s)`);
     }catch(err){
       alert('Erro ao importar arquivo: ' + err.message);
@@ -692,6 +746,7 @@ function importJSON(input){
 }
 
 renderPatientList();
+updateExportStatus();
 </script>
 </body>
 </html>
