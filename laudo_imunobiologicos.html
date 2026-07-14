@@ -1465,7 +1465,12 @@ function calcAge() {
 
 function fmtDate(s) {
   if(!s) return '—';
-  try{return new Date(s+'T12:00:00').toLocaleDateString('pt-BR');}catch(e){return s;}
+  try {
+    const iso = String(s).split('T')[0];
+    const parts = iso.split('-');
+    if(parts.length===3 && parts[0].length===4) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return iso;
+  } catch(e) { return String(s); }
 }
 
 // ─── PACIENTE TESTE ───────────────────────────────────────────────────────────
@@ -2755,7 +2760,7 @@ function buildPreview() {
 
   const f=fd;
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
-  const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
+  const dataL=fmtDate(f.data_laudo)||new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   const localLaudo = document.getElementById('select-local-laudo')?.value || '';
   const logoSrcPrev = LOGOS[localLaudo] || '';
   const {atuais, anteriores} = buildMedListAtual();
@@ -2839,7 +2844,7 @@ function genPDF() {
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const f=fd;
   const M=20; const TW=170; let y=25;
-  const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
+  const dataL=fmtDate(f.data_laudo)||new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
   const localLaudo = document.getElementById('select-local-laudo')?.value || '';
   const logoSrc = LOGOS[localLaudo] || '';
@@ -2982,7 +2987,7 @@ function genDOCX() {
   if(typeof docx==='undefined'){alert('Biblioteca docx.js não carregada. Verifique sua conexão com a internet.');return;}
   const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,HeadingLevel}=docx;
   const f=fd; const n=narrative(); const crit=validate();
-  const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
+  const dataL=fmtDate(f.data_laudo)||new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
 
   const h1=(t)=>new Paragraph({text:t,heading:HeadingLevel.HEADING_1,spacing:{after:200}});
@@ -3153,7 +3158,7 @@ function genRecursoPDF() {
   const M=20, W=170;
   let y=20;
   const f=fd;
-  const dataL=fmtDate(f.data_laudo)||new Date().toLocaleDateString('pt-BR');
+  const dataL=fmtDate(f.data_laudo)||new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   const dataNeg=fmtDate(document.getElementById('rec_data_negativa').value)||'—';
   const prot=document.getElementById('rec_protocolo').value||'';
   const motivo=document.getElementById('rec_motivo').value||'';
@@ -3540,7 +3545,7 @@ function updateSplitPreview() {
   if(!panel || !splitPreviewVisible || !disease) return;
   const f = fd;
   const dnFmt = (f.dn && fmtDate) ? fmtDate(f.dn) : '';
-  const dataL = (f.data_laudo && fmtDate) ? fmtDate(f.data_laudo) : new Date().toLocaleDateString('pt-BR');
+  const dataL = (f.data_laudo && fmtDate) ? fmtDate(f.data_laudo) : new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   try {
     const introClinica = buildIntroClinica ? buildIntroClinica() : '';
     const scoreLine = buildScoreLine ? buildScoreLine() : '';
