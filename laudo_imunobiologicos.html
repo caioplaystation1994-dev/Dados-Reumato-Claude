@@ -101,6 +101,56 @@ header h1{font-size:15px;font-weight:700}
 .badge-req{font-size:10px;background:#fed7d7;color:#742a2a;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle}
 @media(max-width:600px){.field-grid{grid-template-columns:1fr}.disease-grid{grid-template-columns:1fr}.slider-row{flex-wrap:wrap}}
 @media print{header,.form-actions,.tabs,.btn-primary,.btn-secondary,.btn-add{display:none!important}.page{display:block!important;padding:0}}
+/* ── Mobile responsive ── */
+@media(max-width:768px){
+  header h1{font-size:12px}
+  .step-indicator{gap:4px}
+  .step-dot{width:24px;height:24px;font-size:11px}
+  .page{padding:12px 14px}
+  .section-card{padding:14px 14px}
+  .field-grid{grid-template-columns:1fr!important}
+  .tabs{padding:0 4px;gap:0}
+  .tab-btn{padding:8px 10px;font-size:11px}
+  .disease-grid{grid-template-columns:1fr}
+  .form-actions{flex-wrap:wrap}
+  .form-actions button{width:100%}
+  .exam-row{grid-template-columns:1fr!important}
+  .btn-primary,.btn-secondary{font-size:12px;padding:8px 14px}
+  .score-val{font-size:28px}
+  .dmard-table{font-size:11px}
+  .dmard-table td input,.dmard-table td select{font-size:11px;padding:3px 5px}
+  .slider-row input[type=range]{width:100px}
+  #split-preview-panel{display:none!important}
+}
+@media(max-width:480px){
+  header{padding:10px 12px}
+  header h1{font-size:11px}
+  .page-title{font-size:16px}
+  .section-title{font-size:11px}
+  .tab-btn{padding:7px 8px;font-size:10px}
+  .disease-card{padding:14px}
+  .dc-icon{font-size:20px}
+  .dc-name{font-size:13px}
+}
+/* ── Split screen (>= 1200px) ── */
+@media(min-width:1200px){
+  #page2-inner{display:flex;gap:16px;align-items:flex-start}
+  #page2-form{flex:0 0 55%;min-width:0}
+  #split-preview-panel{flex:0 0 42%;min-width:0;position:sticky;top:70px;max-height:calc(100vh - 80px);overflow-y:auto;border-radius:10px;border:1px solid #e2e8f0;background:#fff;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  #split-preview-panel.hidden{display:none}
+  #page2-form .page-title,#page2-form .tabs{/* normal */}
+}
+/* ── Retorno banner ── */
+#retorno-banner{display:none;background:#d1fae5;border:1.5px solid #6ee7b7;color:#065f46;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:13px;font-weight:600}
+/* ── Dose calc table ── */
+.dose-calc-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.dose-calc-table th{background:#eef2ff;padding:7px 10px;text-align:left;font-weight:600;color:#3730a3;border-bottom:2px solid #c7d2fe}
+.dose-calc-table td{padding:6px 10px;border-bottom:1px solid #f0f0f0}
+.dose-calc-table tr.selectable{cursor:pointer}
+.dose-calc-table tr.selectable:hover{background:#eef2ff}
+/* ── Lab import ── */
+.import-lab-section{background:#f8fafc;border:1px dashed #94a3b8;border-radius:8px;padding:14px;margin-top:12px}
+.import-lab-section.collapsed .import-lab-body{display:none}
 #logo-hospital-laudo{height:38px;max-width:120px;object-fit:contain;display:none;filter:brightness(0) invert(1);flex-shrink:0}
 .header-local-select{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;flex-shrink:0}
 .header-local-select option{color:#1a202c;background:#fff}
@@ -221,7 +271,13 @@ header h1{font-size:15px;font-weight:700}
 
 <!-- PASSO 2: Formulário -->
 <div class="page" id="page2">
-  <div id="form-disease-title" class="page-title" style="margin-top:20px"></div>
+  <div id="retorno-banner">🔄 Modo Retorno: dados do paciente pré-carregados. Atualize os índices de atividade e exames recentes.</div>
+  <div id="page2-inner">
+  <div id="page2-form" style="flex:1;min-width:0">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:8px">
+    <div id="form-disease-title" class="page-title"></div>
+    <button id="btn-live-preview" class="btn-secondary" style="font-size:12px;padding:5px 14px" onclick="toggleSplitPreview()">👁 Prévia ao Vivo</button>
+  </div>
   <div class="tabs">
     <button class="tab-btn active" data-tab="tab-pac" onclick="showTab('tab-pac',this)">👤 Paciente</button>
     <button class="tab-btn" data-tab="tab-diag" onclick="showTab('tab-diag',this)">📊 Diagnóstico</button>
@@ -1022,6 +1078,16 @@ header h1{font-size:15px;font-weight:700}
       <button class="btn-primary" onclick="goPage(3)">Ver Prévia do Laudo →</button>
     </div>
   </div>
+  </div><!-- /page2-form -->
+  <!-- Split live preview panel -->
+  <div id="split-preview-panel" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:#1a56a0">Prévia ao Vivo</div>
+      <button onclick="toggleSplitPreview()" style="background:none;border:none;cursor:pointer;font-size:16px;color:#718096" title="Fechar prévia">✕</button>
+    </div>
+    <div id="split-preview-content" style="font-size:11px;line-height:1.6;color:#1a202c"></div>
+  </div>
+  </div><!-- /page2-inner -->
 </div>
 
 <!-- PASSO 3: Prévia e Exportação -->
@@ -1042,10 +1108,10 @@ header h1{font-size:15px;font-weight:700}
   <div class="section-card">
     <div class="section-title">Exportar</div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-      <button class="btn-primary" onclick="genPDF()">📄 Gerar PDF</button>
-      <button class="btn-primary" style="background:#276749" onclick="genDOCX()">📝 Gerar Word (.docx)</button>
+      <button class="btn-primary" onclick="genPDF();salvarLaudoSilencioso()">📄 Gerar PDF</button>
+      <button class="btn-primary" style="background:#276749" onclick="genDOCX();salvarLaudoSilencioso()">📝 Gerar Word (.docx)</button>
       <button class="btn-primary" style="background:#6b46c1" onclick="genRecurso()">📨 Gerar Carta de Recurso</button>
-      <button class="btn-primary" style="background:#2d7d46" onclick="salvarLaudo()">💾 Salvar no Banco</button>
+      <button class="btn-primary" style="background:#2d7d46" onclick="salvarLaudo()">💾 Salvar Laudo</button>
       <button class="btn-secondary" onclick="goPage(2);showTabByName('tab-pac')">✏️ Editar</button>
       <button class="btn-secondary" onclick="novaConsulta()">🔄 Nova Consulta</button>
       <button class="btn-secondary" onclick="goPage(0);renderLaudos()">← Banco de Laudos</button>
