@@ -182,8 +182,9 @@ tr:hover td{background:#f7faff}
     <div class="section-card">
       <div class="section-title">Alergias</div>
       <div id="alergias-tags"></div>
-      <div class="add-row-form no-print" style="grid-template-columns:1fr auto">
-        <div><label>Adicionar alergia</label><input type="text" id="nova-alergia" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarAlergia();}"></div>
+      <div class="add-row-form no-print" style="grid-template-columns:1fr 1fr auto">
+        <div><label>Selecionar da lista de medicações comuns</label><select id="alergia-select" onchange="adicionarAlergiaDaLista()"><option value="">+ Selecionar...</option></select></div>
+        <div><label>Ou digitar outra alergia</label><input type="text" id="nova-alergia" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarAlergia();}"></div>
         <button class="btn-secondary btn-sm" onclick="adicionarAlergia()">Adicionar</button>
       </div>
     </div>
@@ -202,7 +203,8 @@ tr:hover td{background:#f7faff}
     <div class="section-card">
       <div class="section-title">Medicações em uso</div>
       <div class="add-row-form no-print" id="med-form">
-        <div><label>Medicamento</label><input type="text" id="med-nome"></div>
+        <div><label>Medicamento (digite nome genérico ou comercial)</label><input type="text" id="med-nome" list="medicamentos-comuns" autocomplete="off"></div>
+        <datalist id="medicamentos-comuns"></datalist>
         <div><label>Dose</label><input type="text" id="med-dose"></div>
         <div><label>Posologia</label><input type="text" id="med-posologia" placeholder="ex: 1x/dia"></div>
         <div><label>Início</label><input type="date" id="med-inicio"></div>
@@ -239,6 +241,20 @@ tr:hover td{background:#f7faff}
       <div class="field-grid">
         <div class="field-group"><label>Data</label><input type="date" id="evo-data"></div>
         <div class="field-group"><label>Profissional</label><input type="text" id="evo-prof"></div>
+        <div class="field-group"><label>Tipo de consulta</label>
+          <select id="evo-tipo" onchange="onTipoConsultaChange()">
+            <option value="primeira">Primeira consulta</option>
+            <option value="retorno">Retorno (seguimento)</option>
+          </select>
+        </div>
+        <div class="field-group wide" id="hpma-primeira-wrap">
+          <label>HPMA — História da Moléstia Atual</label>
+          <textarea id="evo-hpma" placeholder="Registrada na primeira consulta e replicada automaticamente nos retornos"></textarea>
+        </div>
+        <div class="field-group wide" id="hpma-retorno-wrap" style="display:none">
+          <label>HPMA (registrada na primeira consulta)</label>
+          <div id="hpma-readonly-box" style="background:#f7faff;border:1px solid #cbd5e0;border-radius:6px;padding:8px 10px;font-size:13px;color:#2d3748;white-space:pre-wrap;min-height:40px"></div>
+        </div>
         <div class="field-group wide"><label>Subjetivo (queixas do paciente)</label><textarea id="evo-s"></textarea></div>
         <div class="field-group wide"><label>Objetivo (exame físico)</label><textarea id="evo-o"></textarea></div>
         <div class="field-group wide"><label>Avaliação</label><textarea id="evo-a"></textarea></div>
@@ -258,16 +274,40 @@ tr:hover td{background:#f7faff}
   <!-- EXAMES -->
   <div class="tab-content" id="tab-exames">
     <div class="section-card">
-      <div class="section-title">Exames</div>
+      <div class="section-title">Adicionar exame</div>
       <div class="add-row-form no-print" id="exame-form">
+        <div><label>Categoria</label>
+          <select id="exame-categoria">
+            <option value="laboratorial">Laboratorial</option>
+            <option value="imagem">Imagem</option>
+            <option value="biopsia">Biópsia</option>
+          </select>
+        </div>
         <div><label>Data</label><input type="date" id="exame-data"></div>
         <div><label>Tipo/Nome</label><input type="text" id="exame-tipo"></div>
         <div style="grid-column:span 2"><label>Resultado/Observação</label><input type="text" id="exame-resultado"></div>
         <button class="btn-secondary btn-sm" onclick="adicionarExame()">+ Adicionar</button>
       </div>
-      <table class="mini-table" id="exame-table">
+    </div>
+    <div class="section-card">
+      <div class="section-title">Exames Laboratoriais</div>
+      <table class="mini-table" id="exame-table-laboratorial">
         <thead><tr><th>Data</th><th>Tipo</th><th>Resultado/Observação</th><th class="no-print"></th></tr></thead>
-        <tbody id="exame-tbody"></tbody>
+        <tbody id="exame-tbody-laboratorial"></tbody>
+      </table>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Exames de Imagem</div>
+      <table class="mini-table" id="exame-table-imagem">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Resultado/Observação</th><th class="no-print"></th></tr></thead>
+        <tbody id="exame-tbody-imagem"></tbody>
+      </table>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Biópsias</div>
+      <table class="mini-table" id="exame-table-biopsia">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Resultado/Observação</th><th class="no-print"></th></tr></thead>
+        <tbody id="exame-tbody-biopsia"></tbody>
       </table>
     </div>
   </div>
@@ -282,6 +322,72 @@ const EXPORT_SNOOZE_KEY = 'prontuario_export_snooze_until';
 const EXPORT_REMINDER_DAYS = 7;
 let currentPatientId = null;
 let editingEvolucaoIdx = null;
+
+const ALERGIAS_COMUNS = [
+  'Dipirona (Novalgina)','Paracetamol (Tylenol)','Ácido acetilsalicílico (AAS, Aspirina)',
+  'Ibuprofeno (Alivium, Advil)','Diclofenaco (Voltaren, Cataflam)','Nimesulida (Nisulid)',
+  'Cetoprofeno (Profenid)','Naproxeno (Flanax)','Meloxicam (Movatec)','Celecoxibe (Celebra)',
+  'Etoricoxibe (Arcoxia)','Piroxicam (Feldene)','Penicilina','Amoxicilina (Amoxil)',
+  'Amoxicilina + Clavulanato (Clavulin)','Ampicilina','Cefalexina (Keflex)','Ceftriaxona (Rocefin)',
+  'Sulfametoxazol + Trimetoprima (Bactrim)','Sulfassalazina (Azulfin)','Azitromicina (Zitromax)',
+  'Claritromicina (Klaricid)','Eritromicina','Clindamicina (Dalacin)','Vancomicina',
+  'Ciprofloxacino (Cipro)','Levofloxacino (Levaquin)','Metronidazol (Flagyl)','Codeína',
+  'Tramadol (Tramal)','Morfina (Dimorf)','Contraste iodado','Contraste à base de gadolínio',
+  'Heparina','Enoxaparina (Clexane)','Insulina','Ácido valproico (Depakene)',
+  'Carbamazepina (Tegretol)','Fenitoína (Hidantal)','Alopurinol (Zyloric)','Metotrexato',
+  'Sulfonamidas','Hidroxicloroquina (Plaquinol)','Leflunomida (Arava)','Vacina influenza',
+  'Anestésicos locais (Lidocaína)','Ácido nalidíxico','Captopril (Capoten)','Enalapril (Renitec)',
+  'Losartana potássica (Cozaar)'
+];
+
+const MEDICACOES_COMUNS = [
+  'Metotrexato (Reumatrex, Texate)','Leflunomida (Arava)','Sulfassalazina (Azulfin)',
+  'Hidroxicloroquina (Plaquinol)','Cloroquina (Difosfato de cloroquina)','Azatioprina (Imuran)',
+  'Ciclosporina (Sandimmun)','Ciclofosfamida (Genuxal)','Micofenolato de mofetila (Cellcept)',
+  'Micofenolato sódico (Myfortic)','Tacrolimo (Prograf)','Adalimumabe (Humira)',
+  'Etanercepte (Enbrel)','Infliximabe (Remicade)','Golimumabe (Simponi)',
+  'Certolizumabe pegol (Cimzia)','Rituximabe (Mabthera)','Tocilizumabe (Actemra)',
+  'Abatacepte (Orencia)','Secuquinumabe (Cosentyx)','Ustequinumabe (Stelara)',
+  'Belimumabe (Benlysta)','Tofacitinibe (Xeljanz)','Baricitinibe (Olumiant)',
+  'Upadacitinibe (Rinvoq)','Prednisona (Meticorten)','Prednisolona (Prelone)',
+  'Deflazacorte (Calcort)','Metilprednisolona (Depo-Medrol, Solu-Medrol)','Dexametasona (Decadron)',
+  'Hidrocortisona','Paracetamol (Tylenol)','Dipirona (Novalgina)','Ácido acetilsalicílico (AAS)',
+  'Ibuprofeno (Alivium, Advil)','Diclofenaco (Voltaren, Cataflam)','Nimesulida (Nisulid)',
+  'Naproxeno (Flanax)','Cetoprofeno (Profenid)','Meloxicam (Movatec)','Celecoxibe (Celebra)',
+  'Etoricoxibe (Arcoxia)','Tramadol (Tramal)','Codeína + Paracetamol (Tylex)','Colchicina (Colchis)',
+  'Alopurinol (Zyloric)','Febuxostate (Uloric)','Omeprazol (Losec)','Pantoprazol (Pantozol)',
+  'Esomeprazol (Nexium)','Ranitidina','Domperidona (Motilium)','Alendronato de sódio (Fosamax)',
+  'Risedronato de sódio (Actonel)','Ácido zoledrônico (Aclasta)','Denosumabe (Prolia)',
+  'Carbonato de cálcio + Vitamina D (Caltrate)','Colecalciferol - Vitamina D3 (Addera D3, Depura)',
+  'Losartana potássica (Cozaar)','Enalapril (Renitec)','Captopril (Capoten)','Anlodipino (Norvasc)',
+  'Hidroclorotiazida (Clorana)','Furosemida (Lasix)','Espironolactona (Aldactone)',
+  'Atenolol (Atenol)','Carvedilol (Coreg)','Metoprolol (Selozok)','Sinvastatina (Zocor)',
+  'Atorvastatina (Lipitor)','Rosuvastatina (Crestor)','Cardioaspirina (AAS 100mg)',
+  'Varfarina (Marevan)','Rivaroxabana (Xarelto)','Apixabana (Eliquis)','Metformina (Glifage)',
+  'Glibenclamida (Daonil)','Gliclazida (Diamicron)','Insulina NPH','Insulina Regular',
+  'Insulina Glargina (Lantus)','Levotiroxina sódica (Puran T4, Synthroid)','Metimazol (Tapazol)',
+  'Sertralina (Zoloft)','Fluoxetina (Prozac)','Escitalopram (Lexapro)','Amitriptilina (Tryptanol)',
+  'Duloxetina (Cymbalta)','Clonazepam (Rivotril)','Alprazolam (Frontal)','Bupropiona (Wellbutrin)',
+  'Loratadina (Claritin)','Desloratadina (Desalex)','Salbutamol (Aerolin)',
+  'Budesonida + Formoterol (Alenia, Symbicort)','Losartana + Hidroclorotiazida (Cozaar HCT)',
+  'Ácido fólico','Sulfato ferroso','Complexo B','Anticoncepcional (Etinilestradiol + Levonorgestrel)'
+];
+
+function popularListasComuns(){
+  const select = document.getElementById('alergia-select');
+  ALERGIAS_COMUNS.slice().sort((a,b)=>a.localeCompare(b)).forEach(nome=>{
+    const opt = document.createElement('option');
+    opt.value = nome;
+    opt.textContent = nome;
+    select.appendChild(opt);
+  });
+  const datalist = document.getElementById('medicamentos-comuns');
+  MEDICACOES_COMUNS.slice().sort((a,b)=>a.localeCompare(b)).forEach(nome=>{
+    const opt = document.createElement('option');
+    opt.value = nome;
+    datalist.appendChild(opt);
+  });
+}
 
 function getData(){ return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); }
 function setData(arr){ localStorage.setItem(DB_KEY, JSON.stringify(arr)); }
@@ -363,7 +469,7 @@ function novoPaciente(){
   const p = {
     id: uid(), nome:'', dataNascimento:'', sexo:'', cpf:'', rg:'', telefone:'', email:'',
     profissao:'', endereco:'', convenio:'', carteirinha:'', emergenciaNome:'', emergenciaTel:'',
-    alergias:[], antecedentesPessoais:'', antecedentesFamiliares:'',
+    alergias:[], antecedentesPessoais:'', antecedentesFamiliares:'', hpma:'',
     medicacoes:[], diagnosticos:[], evolucoes:[], exames:[],
     criadoEm: new Date().toISOString()
   };
@@ -483,6 +589,14 @@ function adicionarAlergia(){
   input.value = '';
   renderAlergias(p);
 }
+function adicionarAlergiaDaLista(){
+  const select = document.getElementById('alergia-select');
+  const val = select.value;
+  if(!val) return;
+  const p = atualizarPaciente(p=>{ p.alergias = p.alergias || []; p.alergias.push(val); });
+  select.value = '';
+  renderAlergias(p);
+}
 function removerAlergia(i){
   const p = atualizarPaciente(p=>{ p.alergias.splice(i,1); });
   renderAlergias(p);
@@ -567,9 +681,10 @@ function renderEvolucoes(p){
   const ordenadas = p.evolucoes.map((e,i)=>({...e, _idx:i})).sort((a,b)=> b.data.localeCompare(a.data));
   list.innerHTML = ordenadas.map(e=>`<div class="evo-card">
     <div class="evo-card-header">
-      <span class="evo-date">${fmtData(e.data)}</span>
+      <span class="evo-date">${fmtData(e.data)} <span class="tag" style="margin-left:6px">${e.tipoConsulta==='primeira'?'Primeira consulta':'Retorno'}</span></span>
       <span class="evo-prof">${escapeHtml(e.profissional||'')}</span>
     </div>
+    ${e.hpma?`<div class="evo-field"><b>HPMA</b><p>${escapeHtml(e.hpma)}</p></div>`:''}
     ${e.s?`<div class="evo-field"><b>Subjetivo</b><p>${escapeHtml(e.s)}</p></div>`:''}
     ${e.o?`<div class="evo-field"><b>Objetivo</b><p>${escapeHtml(e.o)}</p></div>`:''}
     ${e.a?`<div class="evo-field"><b>Avaliação</b><p>${escapeHtml(e.a)}</p></div>`:''}
@@ -580,12 +695,31 @@ function renderEvolucoes(p){
     </div>
   </div>`).join('');
 }
+function onTipoConsultaChange(){
+  const isPrimeira = document.getElementById('evo-tipo').value === 'primeira';
+  document.getElementById('hpma-primeira-wrap').style.display = isPrimeira ? '' : 'none';
+  document.getElementById('hpma-retorno-wrap').style.display = isPrimeira ? 'none' : '';
+  if(!isPrimeira){
+    const p = getPaciente(currentPatientId);
+    document.getElementById('hpma-readonly-box').textContent = (p && p.hpma) ? p.hpma : '(nenhuma HPMA registrada ainda — registre na primeira consulta)';
+  }
+}
 function salvarEvolucao(){
   const data = document.getElementById('evo-data').value;
   if(!data){ showToast('Informe a data'); return; }
+  const tipoConsulta = document.getElementById('evo-tipo').value;
+  let hpma;
+  if(tipoConsulta === 'primeira'){
+    hpma = document.getElementById('evo-hpma').value.trim();
+    atualizarPaciente(p=>{ p.hpma = hpma; });
+  } else {
+    hpma = (getPaciente(currentPatientId).hpma || '');
+  }
   const entry = {
     data,
     profissional: document.getElementById('evo-prof').value.trim(),
+    tipoConsulta,
+    hpma,
     s: document.getElementById('evo-s').value.trim(),
     o: document.getElementById('evo-o').value.trim(),
     a: document.getElementById('evo-a').value.trim(),
@@ -607,6 +741,10 @@ function editarEvolucao(idx){
   editingEvolucaoIdx = idx;
   document.getElementById('evo-data').value = e.data || '';
   document.getElementById('evo-prof').value = e.profissional || '';
+  document.getElementById('evo-tipo').value = e.tipoConsulta || 'primeira';
+  onTipoConsultaChange();
+  if(e.tipoConsulta === 'primeira'){ document.getElementById('evo-hpma').value = e.hpma || ''; }
+  else { document.getElementById('hpma-readonly-box').textContent = e.hpma || '(nenhuma HPMA registrada)'; }
   document.getElementById('evo-s').value = e.s || '';
   document.getElementById('evo-o').value = e.o || '';
   document.getElementById('evo-a').value = e.a || '';
@@ -618,7 +756,10 @@ function editarEvolucao(idx){
 }
 function cancelarEdicaoEvolucao(){
   editingEvolucaoIdx = null;
-  ['evo-data','evo-prof','evo-s','evo-o','evo-a','evo-p'].forEach(id=>document.getElementById(id).value='');
+  ['evo-data','evo-prof','evo-s','evo-o','evo-a','evo-p','evo-hpma'].forEach(id=>document.getElementById(id).value='');
+  const p = getPaciente(currentPatientId);
+  document.getElementById('evo-tipo').value = (p && p.evolucoes && p.evolucoes.length > 0) ? 'retorno' : 'primeira';
+  onTipoConsultaChange();
   document.getElementById('evo-form-title').textContent = 'Nova evolução';
   document.getElementById('evo-cancel-btn').style.display = 'none';
 }
@@ -630,26 +771,34 @@ function removerEvolucao(idx){
 }
 
 /* ---------- EXAMES ---------- */
+const EXAME_CATEGORIAS = ['laboratorial','imagem','biopsia'];
 function renderExames(p){
-  const tbody = document.getElementById('exame-tbody');
-  if(!p.exames || p.exames.length === 0){
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-msg">Nenhum exame registrado.</div></td></tr>`;
-    return;
-  }
-  const ordenados = p.exames.map((e,i)=>({...e, _idx:i})).sort((a,b)=> (b.data||'').localeCompare(a.data||''));
-  tbody.innerHTML = ordenados.map(e=>`<tr>
-    <td>${fmtData(e.data)}</td><td>${escapeHtml(e.tipo||'')}</td><td>${escapeHtml(e.resultado||'')}</td>
-    <td class="no-print"><button class="btn-danger btn-sm" onclick="removerExame(${e._idx})">Remover</button></td>
-  </tr>`).join('');
+  const exames = p.exames || [];
+  EXAME_CATEGORIAS.forEach(cat=>{
+    const tbody = document.getElementById('exame-tbody-'+cat);
+    const doCategoria = exames
+      .map((e,i)=>({...e, _idx:i}))
+      .filter(e=> (e.categoria || 'laboratorial') === cat)
+      .sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+    if(doCategoria.length === 0){
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-msg">Nenhum exame registrado.</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = doCategoria.map(e=>`<tr>
+      <td>${fmtData(e.data)}</td><td>${escapeHtml(e.tipo||'')}</td><td>${escapeHtml(e.resultado||'')}</td>
+      <td class="no-print"><button class="btn-danger btn-sm" onclick="removerExame(${e._idx})">Remover</button></td>
+    </tr>`).join('');
+  });
 }
 function adicionarExame(){
   const tipo = document.getElementById('exame-tipo').value.trim();
   if(!tipo){ showToast('Informe o tipo de exame'); return; }
+  const categoria = document.getElementById('exame-categoria').value;
   const data = document.getElementById('exame-data').value;
   const resultado = document.getElementById('exame-resultado').value.trim();
   const p = atualizarPaciente(p=>{
     p.exames = p.exames || [];
-    p.exames.push({data, tipo, resultado});
+    p.exames.push({data, tipo, resultado, categoria});
   });
   document.getElementById('exame-data').value='';
   document.getElementById('exame-tipo').value='';
@@ -745,6 +894,7 @@ function importJSON(input){
   reader.readAsText(file);
 }
 
+popularListasComuns();
 renderPatientList();
 updateExportStatus();
 </script>
