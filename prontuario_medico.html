@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prontuário Médico</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a202c;font-size:14px}
+header{background:#1a56a0;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+header h1{font-size:17px;font-weight:600}
+nav button{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 16px;border-radius:6px;cursor:pointer;margin-left:6px;font-size:13px;transition:.2s}
+nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
+.page{display:none;padding:20px 24px;max-width:1080px;margin:0 auto}
+.page.active{display:block}
+
+.section-card{background:#fff;border-radius:10px;padding:20px 24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.section-title{font-size:13px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e8f0fc;display:flex;align-items:center;justify-content:space-between}
+.field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-group.wide{grid-column:1/-1}
+.field-group label{font-size:12px;font-weight:600;color:#4a5568}
+.field-group input,.field-group select,.field-group textarea{border:1px solid #cbd5e0;border-radius:6px;padding:7px 10px;font-size:13px;width:100%;background:#fafafa;font-family:inherit}
+.field-group textarea{resize:vertical;min-height:60px}
+.field-group input:focus,.field-group select:focus,.field-group textarea:focus{outline:none;border-color:#1a56a0;background:#fff}
+
+.btn-primary{background:#1a56a0;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
+.btn-primary:hover{background:#164080}
+.btn-secondary{background:#fff;color:#1a56a0;border:2px solid #1a56a0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-secondary:hover{background:#ebf2ff}
+.btn-danger{background:#e53e3e;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn-sm{padding:5px 12px;font-size:12px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+.search-bar{display:flex;gap:10px;margin-bottom:16px}
+.search-bar input{flex:1;border:1px solid #cbd5e0;border-radius:8px;padding:9px 14px;font-size:13px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+th{background:#1a56a0;color:#fff;padding:10px 14px;text-align:left;font-size:12px;font-weight:600}
+td{padding:9px 14px;border-bottom:1px solid #e8ecf0;font-size:12px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f7faff}
+.empty-msg{text-align:center;color:#a0aec0;padding:30px;font-size:13px}
+
+.ficha-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.ficha-title{font-size:20px;font-weight:700;color:#1a202c}
+.ficha-sub{font-size:12px;color:#718096;margin-top:2px}
+.ficha-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid #e2e8f0}
+.tab-btn{background:none;border:none;padding:10px 16px;font-size:13px;font-weight:600;color:#718096;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:#1a56a0;border-bottom-color:#1a56a0}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.mini-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+.mini-table th{font-size:11px;font-weight:700;color:#fff;background:#1a56a0;padding:6px 10px;text-align:left}
+.mini-table td{padding:6px 10px;border-bottom:1px solid #e8ecf0}
+.mini-table tr:nth-child(even) td{background:#f7faff}
+.mini-table input,.mini-table select{border:1px solid #cbd5e0;border-radius:4px;padding:4px 6px;font-size:11px;width:100%;background:#fff}
+.add-row-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr)) auto;gap:8px;align-items:end;background:#f7faff;padding:12px;border-radius:8px;border:1px dashed #90cdf4;margin-bottom:14px}
+.add-row-form label{font-size:11px;font-weight:600;color:#4a5568;display:block;margin-bottom:3px}
+.add-row-form input,.add-row-form select,.add-row-form textarea{border:1px solid #cbd5e0;border-radius:6px;padding:6px 8px;font-size:12px;width:100%;font-family:inherit}
+
+.evo-card{background:#f7faff;border-left:4px solid #1a56a0;border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:12px}
+.evo-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.evo-date{font-size:13px;font-weight:700;color:#1a56a0}
+.evo-prof{font-size:11px;color:#718096}
+.evo-field{margin-bottom:6px}
+.evo-field b{font-size:11px;color:#2b6cb0;text-transform:uppercase;letter-spacing:.3px}
+.evo-field p{font-size:13px;color:#2d3748;white-space:pre-wrap;margin-top:2px}
+.evo-actions{display:flex;gap:6px;margin-top:8px}
+.tag{display:inline-block;background:#e8f0fc;color:#1a56a0;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:600;margin:2px 4px 2px 0}
+.tag .x{cursor:pointer;margin-left:6px;font-weight:700}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:14px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px}
+.modal-box h2{font-size:15px;font-weight:700;margin-bottom:14px;color:#1a202c}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#1a202c;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+@media print{
+ header,nav,.no-print{display:none!important}
+ body{background:#fff}
+ .page{display:none;max-width:100%;padding:0}
+ .page.print-active{display:block!important}
+ .section-card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
+ .tabs{display:none}
+ .tab-content{display:block!important;margin-bottom:10px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 Prontuário Médico</h1>
+  <nav>
+    <button id="nav-pacientes" class="active" onclick="showPage('page-pacientes')">Pacientes</button>
+    <button onclick="novoPaciente()">+ Novo Paciente</button>
+    <button onclick="exportJSON()">Exportar backup</button>
+    <button onclick="document.getElementById('import-file').click()">Importar backup</button>
+    <input type="file" id="import-file" accept="application/json" style="display:none" onchange="importJSON(this)">
+  </nav>
+</header>
+
+<!-- PÁGINA: LISTA DE PACIENTES -->
+<div id="page-pacientes" class="page active">
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Buscar por nome ou CPF..." oninput="renderPatientList()">
+  </div>
+  <table>
+    <thead>
+      <tr><th>Nome</th><th>Data de Nasc.</th><th>Idade</th><th>Última evolução</th><th style="width:160px">Ações</th></tr>
+    </thead>
+    <tbody id="patient-table-body"></tbody>
+  </table>
+</div>
+
+<!-- PÁGINA: FICHA DO PACIENTE -->
+<div id="page-ficha" class="page">
+  <div class="ficha-header">
+    <div>
+      <div class="ficha-title" id="ficha-nome-display">Novo paciente</div>
+      <div class="ficha-sub" id="ficha-sub-display"></div>
+    </div>
+    <div class="ficha-actions no-print">
+      <button class="btn-secondary btn-sm" onclick="showPage('page-pacientes')">&larr; Voltar</button>
+      <button class="btn-secondary btn-sm" onclick="imprimirFicha()">🖨️ Imprimir</button>
+      <button class="btn-danger btn-sm" onclick="excluirPacienteAtual()">Excluir paciente</button>
+    </div>
+  </div>
+
+  <div class="tabs no-print">
+    <button class="tab-btn active" data-tab="dados" onclick="showTab('dados')">Dados Pessoais</button>
+    <button class="tab-btn" data-tab="clinico" onclick="showTab('clinico')">Antecedentes &amp; Alergias</button>
+    <button class="tab-btn" data-tab="medicacoes" onclick="showTab('medicacoes')">Medicações</button>
+    <button class="tab-btn" data-tab="diagnosticos" onclick="showTab('diagnosticos')">Diagnósticos</button>
+    <button class="tab-btn" data-tab="evolucoes" onclick="showTab('evolucoes')">Evoluções</button>
+    <button class="tab-btn" data-tab="exames" onclick="showTab('exames')">Exames</button>
+  </div>
+
+  <!-- DADOS PESSOAIS -->
+  <div class="tab-content active" id="tab-dados">
+    <div class="section-card">
+      <div class="section-title">Identificação</div>
+      <div class="field-grid">
+        <div class="field-group wide"><label>Nome completo *</label><input type="text" id="f-nome" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Data de nascimento</label><input type="date" id="f-nasc" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Sexo</label>
+          <select id="f-sexo" onchange="salvarDadosBasicos()">
+            <option value="">-</option><option>Feminino</option><option>Masculino</option><option>Outro</option>
+          </select>
+        </div>
+        <div class="field-group"><label>CPF</label><input type="text" id="f-cpf" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>RG</label><input type="text" id="f-rg" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Telefone</label><input type="text" id="f-telefone" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>E-mail</label><input type="email" id="f-email" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Profissão</label><input type="text" id="f-profissao" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group wide"><label>Endereço</label><input type="text" id="f-endereco" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Convênio/Plano</label><input type="text" id="f-convenio" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Nº carteirinha</label><input type="text" id="f-carteirinha" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Contato de emergência</label><input type="text" id="f-emergencia-nome" placeholder="Nome" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Telefone de emergência</label><input type="text" id="f-emergencia-tel" onchange="salvarDadosBasicos()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANTECEDENTES & ALERGIAS -->
+  <div class="tab-content" id="tab-clinico">
+    <div class="section-card">
+      <div class="section-title">Alergias</div>
+      <div id="alergias-tags"></div>
+      <div class="add-row-form no-print" style="grid-template-columns:1fr auto">
+        <div><label>Adicionar alergia</label><input type="text" id="nova-alergia" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarAlergia();}"></div>
+        <button class="btn-secondary btn-sm" onclick="adicionarAlergia()">Adicionar</button>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Antecedentes Pessoais</div>
+      <textarea id="f-antecedentes-pessoais" style="width:100%;min-height:90px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit" onchange="salvarDadosBasicos()"></textarea>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Antecedentes Familiares</div>
+      <textarea id="f-antecedentes-familiares" style="width:100%;min-height:90px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit" onchange="salvarDadosBasicos()"></textarea>
+    </div>
+  </div>
+
+  <!-- MEDICAÇÕES -->
+  <div class="tab-content" id="tab-medicacoes">
+    <div class="section-card">
+      <div class="section-title">Medicações em uso</div>
+      <div class="add-row-form no-print" id="med-form">
+        <div><label>Medicamento</label><input type="text" id="med-nome"></div>
+        <div><label>Dose</label><input type="text" id="med-dose"></div>
+        <div><label>Posologia</label><input type="text" id="med-posologia" placeholder="ex: 1x/dia"></div>
+        <div><label>Início</label><input type="date" id="med-inicio"></div>
+        <button class="btn-secondary btn-sm" onclick="adicionarMedicacao()">+ Adicionar</button>
+      </div>
+      <table class="mini-table" id="med-table">
+        <thead><tr><th>Medicamento</th><th>Dose</th><th>Posologia</th><th>Início</th><th>Ativo</th><th class="no-print"></th></tr></thead>
+        <tbody id="med-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DIAGNÓSTICOS -->
+  <div class="tab-content" id="tab-diagnosticos">
+    <div class="section-card">
+      <div class="section-title">Diagnósticos</div>
+      <div class="add-row-form no-print" id="diag-form">
+        <div><label>CID-10</label><input type="text" id="diag-cid" placeholder="ex: M06.9"></div>
+        <div><label>Descrição</label><input type="text" id="diag-desc"></div>
+        <div><label>Data</label><input type="date" id="diag-data"></div>
+        <button class="btn-secondary btn-sm" onclick="adicionarDiagnostico()">+ Adicionar</button>
+      </div>
+      <table class="mini-table" id="diag-table">
+        <thead><tr><th>CID-10</th><th>Descrição</th><th>Data</th><th class="no-print"></th></tr></thead>
+        <tbody id="diag-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EVOLUÇÕES -->
+  <div class="tab-content" id="tab-evolucoes">
+    <div class="section-card no-print">
+      <div class="section-title" id="evo-form-title">Nova evolução</div>
+      <div class="field-grid">
+        <div class="field-group"><label>Data</label><input type="date" id="evo-data"></div>
+        <div class="field-group"><label>Profissional</label><input type="text" id="evo-prof"></div>
+        <div class="field-group wide"><label>Subjetivo (queixas do paciente)</label><textarea id="evo-s"></textarea></div>
+        <div class="field-group wide"><label>Objetivo (exame físico)</label><textarea id="evo-o"></textarea></div>
+        <div class="field-group wide"><label>Avaliação</label><textarea id="evo-a"></textarea></div>
+        <div class="field-group wide"><label>Plano/Conduta</label><textarea id="evo-p"></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" id="evo-cancel-btn" style="display:none" onclick="cancelarEdicaoEvolucao()">Cancelar edição</button>
+        <button class="btn-primary" onclick="salvarEvolucao()">Salvar evolução</button>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Histórico de evoluções</div>
+      <div id="evo-list"></div>
+    </div>
+  </div>
+
+  <!-- EXAMES -->
+  <div class="tab-content" id="tab-exames">
+    <div class="section-card">
+      <div class="section-title">Exames</div>
+      <div class="add-row-form no-print" id="exame-form">
+        <div><label>Data</label><input type="date" id="exame-data"></div>
+        <div><label>Tipo/Nome</label><input type="text" id="exame-tipo"></div>
+        <div style="grid-column:span 2"><label>Resultado/Observação</label><input type="text" id="exame-resultado"></div>
+        <button class="btn-secondary btn-sm" onclick="adicionarExame()">+ Adicionar</button>
+      </div>
+      <table class="mini-table" id="exame-table">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Resultado/Observação</th><th class="no-print"></th></tr></thead>
+        <tbody id="exame-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DB_KEY = 'prontuario_db';
+let currentPatientId = null;
+let editingEvolucaoIdx = null;
+
+function getData(){ return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); }
+function setData(arr){ localStorage.setItem(DB_KEY, JSON.stringify(arr)); }
+function uid(){ return 'p' + Date.now() + Math.random().toString(36).slice(2,8); }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._tm);
+  showToast._tm = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('header nav button').forEach(b=>b.classList.remove('active'));
+  if(id === 'page-pacientes'){
+    document.getElementById('nav-pacientes').classList.add('active');
+    renderPatientList();
+  }
+}
+
+function showTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function calcIdade(dataNasc){
+  if(!dataNasc) return '-';
+  const nasc = new Date(dataNasc);
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if(m < 0 || (m===0 && hoje.getDate() < nasc.getDate())) idade--;
+  return idade + ' anos';
+}
+
+function fmtData(d){
+  if(!d) return '-';
+  const [y,m,day] = d.split('-');
+  return day && m && y ? `${day}/${m}/${y}` : d;
+}
+
+/* ---------- LISTA DE PACIENTES ---------- */
+function renderPatientList(){
+  const db = getData();
+  const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+  const filtered = db.filter(p => !q || (p.nome||'').toLowerCase().includes(q) || (p.cpf||'').includes(q));
+  filtered.sort((a,b)=> (a.nome||'').localeCompare(b.nome||''));
+  const tbody = document.getElementById('patient-table-body');
+  if(filtered.length === 0){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-msg">Nenhum paciente encontrado.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(p=>{
+    const ultimaEvo = (p.evolucoes && p.evolucoes.length) ? p.evolucoes.slice().sort((a,b)=>b.data.localeCompare(a.data))[0].data : null;
+    return `<tr>
+      <td>${escapeHtml(p.nome||'(sem nome)')}</td>
+      <td>${fmtData(p.dataNascimento)}</td>
+      <td>${calcIdade(p.dataNascimento)}</td>
+      <td>${ultimaEvo ? fmtData(ultimaEvo) : '-'}</td>
+      <td>
+        <button class="btn-secondary btn-sm" onclick="abrirPaciente('${p.id}')">Abrir</button>
+        <button class="btn-danger btn-sm" onclick="excluirPaciente('${p.id}')">Excluir</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- FICHA DO PACIENTE ---------- */
+function novoPaciente(){
+  const db = getData();
+  const p = {
+    id: uid(), nome:'', dataNascimento:'', sexo:'', cpf:'', rg:'', telefone:'', email:'',
+    profissao:'', endereco:'', convenio:'', carteirinha:'', emergenciaNome:'', emergenciaTel:'',
+    alergias:[], antecedentesPessoais:'', antecedentesFamiliares:'',
+    medicacoes:[], diagnosticos:[], evolucoes:[], exames:[],
+    criadoEm: new Date().toISOString()
+  };
+  db.push(p);
+  setData(db);
+  abrirPaciente(p.id);
+}
+
+function abrirPaciente(id){
+  currentPatientId = id;
+  const p = getPaciente(id);
+  if(!p) return;
+
+  document.getElementById('f-nome').value = p.nome || '';
+  document.getElementById('f-nasc').value = p.dataNascimento || '';
+  document.getElementById('f-sexo').value = p.sexo || '';
+  document.getElementById('f-cpf').value = p.cpf || '';
+  document.getElementById('f-rg').value = p.rg || '';
+  document.getElementById('f-telefone').value = p.telefone || '';
+  document.getElementById('f-email').value = p.email || '';
+  document.getElementById('f-profissao').value = p.profissao || '';
+  document.getElementById('f-endereco').value = p.endereco || '';
+  document.getElementById('f-convenio').value = p.convenio || '';
+  document.getElementById('f-carteirinha').value = p.carteirinha || '';
+  document.getElementById('f-emergencia-nome').value = p.emergenciaNome || '';
+  document.getElementById('f-emergencia-tel').value = p.emergenciaTel || '';
+  document.getElementById('f-antecedentes-pessoais').value = p.antecedentesPessoais || '';
+  document.getElementById('f-antecedentes-familiares').value = p.antecedentesFamiliares || '';
+
+  cancelarEdicaoEvolucao();
+  showTab('dados');
+  atualizarFichaHeader(p);
+  renderAlergias(p);
+  renderMedicacoes(p);
+  renderDiagnosticos(p);
+  renderEvolucoes(p);
+  renderExames(p);
+  showPage('page-ficha');
+}
+
+function getPaciente(id){
+  return getData().find(p=>p.id===id);
+}
+
+function atualizarPaciente(mutFn){
+  const db = getData();
+  const idx = db.findIndex(p=>p.id===currentPatientId);
+  if(idx === -1) return null;
+  mutFn(db[idx]);
+  setData(db);
+  return db[idx];
+}
+
+function atualizarFichaHeader(p){
+  document.getElementById('ficha-nome-display').textContent = p.nome || 'Novo paciente';
+  const partes = [];
+  if(p.dataNascimento) partes.push(`${fmtData(p.dataNascimento)} (${calcIdade(p.dataNascimento)})`);
+  if(p.cpf) partes.push('CPF: ' + p.cpf);
+  document.getElementById('ficha-sub-display').textContent = partes.join(' · ');
+}
+
+function salvarDadosBasicos(){
+  const p = atualizarPaciente(p=>{
+    p.nome = document.getElementById('f-nome').value.trim();
+    p.dataNascimento = document.getElementById('f-nasc').value;
+    p.sexo = document.getElementById('f-sexo').value;
+    p.cpf = document.getElementById('f-cpf').value.trim();
+    p.rg = document.getElementById('f-rg').value.trim();
+    p.telefone = document.getElementById('f-telefone').value.trim();
+    p.email = document.getElementById('f-email').value.trim();
+    p.profissao = document.getElementById('f-profissao').value.trim();
+    p.endereco = document.getElementById('f-endereco').value.trim();
+    p.convenio = document.getElementById('f-convenio').value.trim();
+    p.carteirinha = document.getElementById('f-carteirinha').value.trim();
+    p.emergenciaNome = document.getElementById('f-emergencia-nome').value.trim();
+    p.emergenciaTel = document.getElementById('f-emergencia-tel').value.trim();
+    p.antecedentesPessoais = document.getElementById('f-antecedentes-pessoais').value;
+    p.antecedentesFamiliares = document.getElementById('f-antecedentes-familiares').value;
+  });
+  if(p){ atualizarFichaHeader(p); showToast('Salvo'); }
+}
+
+function excluirPacienteAtual(){
+  if(!currentPatientId) return;
+  if(!confirm('Excluir este paciente e todo o seu prontuário? Esta ação não pode ser desfeita.')) return;
+  const db = getData().filter(p=>p.id!==currentPatientId);
+  setData(db);
+  currentPatientId = null;
+  showPage('page-pacientes');
+  showToast('Paciente excluído');
+}
+
+function excluirPaciente(id){
+  if(!confirm('Excluir este paciente e todo o seu prontuário? Esta ação não pode ser desfeita.')) return;
+  setData(getData().filter(p=>p.id!==id));
+  renderPatientList();
+  showToast('Paciente excluído');
+}
+
+/* ---------- ALERGIAS ---------- */
+function renderAlergias(p){
+  const el = document.getElementById('alergias-tags');
+  if(!p.alergias || p.alergias.length === 0){
+    el.innerHTML = '<span style="color:#a0aec0;font-size:12px">Nenhuma alergia registrada.</span>';
+    return;
+  }
+  el.innerHTML = p.alergias.map((a,i)=>`<span class="tag">${escapeHtml(a)}<span class="x no-print" onclick="removerAlergia(${i})">&times;</span></span>`).join('');
+}
+function adicionarAlergia(){
+  const input = document.getElementById('nova-alergia');
+  const val = input.value.trim();
+  if(!val) return;
+  const p = atualizarPaciente(p=>{ p.alergias = p.alergias || []; p.alergias.push(val); });
+  input.value = '';
+  renderAlergias(p);
+}
+function removerAlergia(i){
+  const p = atualizarPaciente(p=>{ p.alergias.splice(i,1); });
+  renderAlergias(p);
+}
+
+/* ---------- MEDICAÇÕES ---------- */
+function renderMedicacoes(p){
+  const tbody = document.getElementById('med-tbody');
+  if(!p.medicacoes || p.medicacoes.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-msg">Nenhuma medicação registrada.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = p.medicacoes.map((m,i)=>`<tr>
+    <td>${escapeHtml(m.nome)}</td><td>${escapeHtml(m.dose||'')}</td><td>${escapeHtml(m.posologia||'')}</td><td>${fmtData(m.inicio)}</td>
+    <td><input type="checkbox" ${m.ativo!==false?'checked':''} onchange="toggleMedicacaoAtiva(${i}, this.checked)"></td>
+    <td class="no-print"><button class="btn-danger btn-sm" onclick="removerMedicacao(${i})">Remover</button></td>
+  </tr>`).join('');
+}
+function adicionarMedicacao(){
+  const nome = document.getElementById('med-nome').value.trim();
+  if(!nome){ showToast('Informe o nome do medicamento'); return; }
+  const dose = document.getElementById('med-dose').value.trim();
+  const posologia = document.getElementById('med-posologia').value.trim();
+  const inicio = document.getElementById('med-inicio').value;
+  const p = atualizarPaciente(p=>{
+    p.medicacoes = p.medicacoes || [];
+    p.medicacoes.push({nome, dose, posologia, inicio, ativo:true});
+  });
+  document.getElementById('med-nome').value='';
+  document.getElementById('med-dose').value='';
+  document.getElementById('med-posologia').value='';
+  document.getElementById('med-inicio').value='';
+  renderMedicacoes(p);
+}
+function toggleMedicacaoAtiva(i, val){
+  const p = atualizarPaciente(p=>{ p.medicacoes[i].ativo = val; });
+  renderMedicacoes(p);
+}
+function removerMedicacao(i){
+  const p = atualizarPaciente(p=>{ p.medicacoes.splice(i,1); });
+  renderMedicacoes(p);
+}
+
+/* ---------- DIAGNÓSTICOS ---------- */
+function renderDiagnosticos(p){
+  const tbody = document.getElementById('diag-tbody');
+  if(!p.diagnosticos || p.diagnosticos.length === 0){
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-msg">Nenhum diagnóstico registrado.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = p.diagnosticos.map((d,i)=>`<tr>
+    <td>${escapeHtml(d.cid||'')}</td><td>${escapeHtml(d.descricao||'')}</td><td>${fmtData(d.data)}</td>
+    <td class="no-print"><button class="btn-danger btn-sm" onclick="removerDiagnostico(${i})">Remover</button></td>
+  </tr>`).join('');
+}
+function adicionarDiagnostico(){
+  const desc = document.getElementById('diag-desc').value.trim();
+  const cid = document.getElementById('diag-cid').value.trim();
+  if(!desc && !cid){ showToast('Informe ao menos o CID ou a descrição'); return; }
+  const data = document.getElementById('diag-data').value;
+  const p = atualizarPaciente(p=>{
+    p.diagnosticos = p.diagnosticos || [];
+    p.diagnosticos.push({cid, descricao:desc, data});
+  });
+  document.getElementById('diag-cid').value='';
+  document.getElementById('diag-desc').value='';
+  document.getElementById('diag-data').value='';
+  renderDiagnosticos(p);
+}
+function removerDiagnostico(i){
+  const p = atualizarPaciente(p=>{ p.diagnosticos.splice(i,1); });
+  renderDiagnosticos(p);
+}
+
+/* ---------- EVOLUÇÕES ---------- */
+function renderEvolucoes(p){
+  const list = document.getElementById('evo-list');
+  if(!p.evolucoes || p.evolucoes.length === 0){
+    list.innerHTML = '<div class="empty-msg">Nenhuma evolução registrada.</div>';
+    return;
+  }
+  const ordenadas = p.evolucoes.map((e,i)=>({...e, _idx:i})).sort((a,b)=> b.data.localeCompare(a.data));
+  list.innerHTML = ordenadas.map(e=>`<div class="evo-card">
+    <div class="evo-card-header">
+      <span class="evo-date">${fmtData(e.data)}</span>
+      <span class="evo-prof">${escapeHtml(e.profissional||'')}</span>
+    </div>
+    ${e.s?`<div class="evo-field"><b>Subjetivo</b><p>${escapeHtml(e.s)}</p></div>`:''}
+    ${e.o?`<div class="evo-field"><b>Objetivo</b><p>${escapeHtml(e.o)}</p></div>`:''}
+    ${e.a?`<div class="evo-field"><b>Avaliação</b><p>${escapeHtml(e.a)}</p></div>`:''}
+    ${e.p?`<div class="evo-field"><b>Plano</b><p>${escapeHtml(e.p)}</p></div>`:''}
+    <div class="evo-actions no-print">
+      <button class="btn-secondary btn-sm" onclick="editarEvolucao(${e._idx})">Editar</button>
+      <button class="btn-danger btn-sm" onclick="removerEvolucao(${e._idx})">Excluir</button>
+    </div>
+  </div>`).join('');
+}
+function salvarEvolucao(){
+  const data = document.getElementById('evo-data').value;
+  if(!data){ showToast('Informe a data'); return; }
+  const entry = {
+    data,
+    profissional: document.getElementById('evo-prof').value.trim(),
+    s: document.getElementById('evo-s').value.trim(),
+    o: document.getElementById('evo-o').value.trim(),
+    a: document.getElementById('evo-a').value.trim(),
+    p: document.getElementById('evo-p').value.trim()
+  };
+  const p = atualizarPaciente(p=>{
+    p.evolucoes = p.evolucoes || [];
+    if(editingEvolucaoIdx !== null){ p.evolucoes[editingEvolucaoIdx] = entry; }
+    else { p.evolucoes.push(entry); }
+  });
+  cancelarEdicaoEvolucao();
+  renderEvolucoes(p);
+  atualizarFichaHeader(p);
+  showToast('Evolução salva');
+}
+function editarEvolucao(idx){
+  const p = getPaciente(currentPatientId);
+  const e = p.evolucoes[idx];
+  editingEvolucaoIdx = idx;
+  document.getElementById('evo-data').value = e.data || '';
+  document.getElementById('evo-prof').value = e.profissional || '';
+  document.getElementById('evo-s').value = e.s || '';
+  document.getElementById('evo-o').value = e.o || '';
+  document.getElementById('evo-a').value = e.a || '';
+  document.getElementById('evo-p').value = e.p || '';
+  document.getElementById('evo-form-title').textContent = 'Editando evolução de ' + fmtData(e.data);
+  document.getElementById('evo-cancel-btn').style.display = 'inline-block';
+  showTab('evolucoes');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function cancelarEdicaoEvolucao(){
+  editingEvolucaoIdx = null;
+  ['evo-data','evo-prof','evo-s','evo-o','evo-a','evo-p'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('evo-form-title').textContent = 'Nova evolução';
+  document.getElementById('evo-cancel-btn').style.display = 'none';
+}
+function removerEvolucao(idx){
+  if(!confirm('Excluir esta evolução?')) return;
+  const p = atualizarPaciente(p=>{ p.evolucoes.splice(idx,1); });
+  renderEvolucoes(p);
+  atualizarFichaHeader(p);
+}
+
+/* ---------- EXAMES ---------- */
+function renderExames(p){
+  const tbody = document.getElementById('exame-tbody');
+  if(!p.exames || p.exames.length === 0){
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-msg">Nenhum exame registrado.</div></td></tr>`;
+    return;
+  }
+  const ordenados = p.exames.map((e,i)=>({...e, _idx:i})).sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  tbody.innerHTML = ordenados.map(e=>`<tr>
+    <td>${fmtData(e.data)}</td><td>${escapeHtml(e.tipo||'')}</td><td>${escapeHtml(e.resultado||'')}</td>
+    <td class="no-print"><button class="btn-danger btn-sm" onclick="removerExame(${e._idx})">Remover</button></td>
+  </tr>`).join('');
+}
+function adicionarExame(){
+  const tipo = document.getElementById('exame-tipo').value.trim();
+  if(!tipo){ showToast('Informe o tipo de exame'); return; }
+  const data = document.getElementById('exame-data').value;
+  const resultado = document.getElementById('exame-resultado').value.trim();
+  const p = atualizarPaciente(p=>{
+    p.exames = p.exames || [];
+    p.exames.push({data, tipo, resultado});
+  });
+  document.getElementById('exame-data').value='';
+  document.getElementById('exame-tipo').value='';
+  document.getElementById('exame-resultado').value='';
+  renderExames(p);
+}
+function removerExame(i){
+  const p = atualizarPaciente(p=>{ p.exames.splice(i,1); });
+  renderExames(p);
+}
+
+/* ---------- IMPRESSÃO ---------- */
+function imprimirFicha(){
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.add('active'));
+  window.print();
+  setTimeout(()=>{
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    document.querySelector('.tab-btn.active')?.click();
+  }, 300);
+}
+
+/* ---------- BACKUP ---------- */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(getData(), null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `prontuario_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importJSON(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const imported = JSON.parse(e.target.result);
+      if(!Array.isArray(imported)) throw new Error('Formato inválido');
+      const db = getData();
+      const existingIds = new Set(db.map(p=>p.id));
+      let novos = 0;
+      imported.forEach(p=>{
+        if(!p.id || existingIds.has(p.id)){ p.id = uid(); }
+        db.push(p);
+        novos++;
+      });
+      setData(db);
+      renderPatientList();
+      showToast(`${novos} paciente(s) importado(s)`);
+    }catch(err){
+      alert('Erro ao importar arquivo: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+renderPatientList();
+</script>
+</body>
+</html>
