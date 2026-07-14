@@ -2588,44 +2588,54 @@ function genPDF() {
   const localLaudo = document.getElementById('select-local-laudo')?.value || '';
   const logoSrc = LOGOS[localLaudo] || '';
 
+  // Sanitize special unicode chars jsPDF helvetica can't kern correctly
+  const san = t => String(t||'').replace(/≥/g,'>=').replace(/≤/g,'<=').replace(/[""]/g,'"').replace(/['']/g,"'");
+
   const nl=(n=4)=>{y+=n;};
+  // Keep 40mm clear at bottom for footer
   const checkPage=(need=10)=>{if(y+need>252){doc.addPage();y=20;}};
   const txt=(t,size=10,bold=false,color=[20,20,20])=>{
-    if(!t) return;
-    checkPage(size*0.5+2);
+    const s=san(t); if(!s) return;
     doc.setFontSize(size);doc.setFont('helvetica',bold?'bold':'normal');doc.setTextColor(...color);
-    const lines=doc.splitTextToSize(String(t),TW);
-    lines.forEach(l=>{checkPage(size*0.5);doc.text(l,M,y);y+=size*0.42;});
+    const lines=doc.splitTextToSize(s,TW);
+    // pre-flight: check if ALL lines fit on current page, if not start new page
+    const blockH = lines.length*(size*0.42)+2;
+    if(y+blockH>252){doc.addPage();y=20;}
+    lines.forEach(l=>{doc.text(l,M,y);y+=size*0.42;});
   };
-  const sep=()=>{checkPage(6);doc.setDrawColor(180,180,180);doc.line(M,y,M+TW,y);nl(5);};
 
-  // Logo
-  if(logoSrc){
-    try{
-      const img=new Image();img.src=logoSrc;
-      doc.addImage(logoSrc,'PNG',M,y-6,35,14);y+=12;
-    }catch(e){}
-  }
+  const addFooter=()=>{
+    doc.setDrawColor(180,180,180);doc.line(M,258,M+TW,258);
+    doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);
+    doc.text(san(`${f.cidade||'_______________'}, ${dataL}`),M,263);
+    doc.setFont('helvetica','bold');
+    doc.text(san(f.medico||'Dr(a). _______________'),M,271);
+    doc.setFont('helvetica','normal');
+    doc.text(san(`CRM: ${f.crm||'_______________'}`),M,276);
+  };
 
-  // Title
-  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
+  // ── Logo ────────────────────────────────────────────────────────────────────
+  if(logoSrc){try{doc.addImage(logoSrc,'PNG',M,y-6,35,14);y+=12;}catch(e){}}
+
+  // ── Título (fonte menor, sem negrito) ───────────────────────────────────────
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);
   doc.text('RELATÓRIO MÉDICO — SOLICITAÇÃO DE MEDICAÇÃO IMUNOBIOLÓGICA',210/2,y,{align:'center'});
-  y+=6;doc.setDrawColor(20,20,20);doc.line(M,y,M+TW,y);nl(6);
+  y+=4;doc.setDrawColor(20,20,20);doc.line(M,y,M+TW,y);nl(6);
 
-  // Patient
+  // ── Paciente (sem negrito, mesmo tamanho) ───────────────────────────────────
   txt('Para Sr(a).',10,false);nl(1);
-  txt(`${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}`,11,true);nl(1);
+  txt(`${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}`,10,false);nl(1);
   if(f.endereco){txt(f.endereco,10,false);nl(1);}
   nl(4);
 
-  // Clinical intro
-  txt(buildIntroClinica(),11,true);nl(4);
+  // ── Introdução clínica (sem negrito extra) ──────────────────────────────────
+  txt(buildIntroClinica(),10,false);nl(4);
 
-  // Scores
+  // ── Scores ──────────────────────────────────────────────────────────────────
   const scoreLine=buildScoreLine();
   if(scoreLine){txt(scoreLine,10,false);nl(3);}
 
-  // Medications
+  // ── Medicações atuais ───────────────────────────────────────────────────────
   const {atuais,anteriores}=buildMedListAtual();
   if(atuais.length>0){
     txt('MEDICAÇÕES ATUAIS',10,true);nl(1);
@@ -2657,39 +2667,36 @@ function genPDF() {
     });nl(2);
   }
 
-  // Lab results by category
+  // ── Exames laboratoriais ─────────────────────────────────────────────────────
   const labLines=buildLabLines();
   if(labLines.igra){txt(labLines.igra,10,false);nl(2);}
   if(labLines.frAnticcp){txt(labLines.frAnticcp,10,false);nl(2);}
   if(labLines.sorologias){txt(labLines.sorologias,10,false);nl(2);}
   if(labLines.laboratoriais){txt(labLines.laboratoriais,10,false);nl(2);}
 
-  // Imaging
+  // ── Imagens ──────────────────────────────────────────────────────────────────
   imagens.filter(i=>i.tipo).forEach(img=>{
     txt(`${img.tipo}${img.data?' — '+fmtDate(img.data):''}`,10,true);nl(1);
     if(img.laudo){txt(img.laudo,10,false);}nl(3);
   });
 
-  nl(16);
-  // Conclusão — mesmo tamanho do corpo, negrito
-  txt(buildConclusao(),10,true);nl(8);
+  nl(10);
+  // ── Conclusão ─────────────────────────────────────────────────────────────────
+  txt(buildConclusao(),10,true);nl(6);
 
-  // Bloco prescrição
+  // ── Bloco prescrição — manter junto na mesma página ──────────────────────────
   const prescTxt = buildPrescricao();
   const prescLines2 = prescTxt.split('\n');
-  prescLines2.forEach(l => { txt(l,10,false); nl(l?3:2); });
+  // Estima altura total do bloco e força quebra de página se não couber
+  const prescH2 = prescLines2.reduce((h,l)=>h+(l?10*0.42+3:10*0.42+2),0);
+  if(y+prescH2>252){doc.addPage();y=20;}
+  prescLines2.forEach(l=>{txt(l,10,false);nl(l?3:2);});
 
-  // Rodapé fixo no fundo da página atual (y absoluto)
-  const footerY1 = 258;
-  doc.setDrawColor(180,180,180);doc.line(M,footerY1,M+TW,footerY1);
-  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);
-  doc.text(`${f.cidade||'_______________'}, ${dataL}`,M,footerY1+5);
-  doc.setFont('helvetica','bold');
-  doc.text(`${f.medico||'Dr(a). _______________'}`,M,footerY1+13);
-  doc.setFont('helvetica','normal');
-  doc.text(`CRM: ${f.crm||'_______________'}`,M,footerY1+18);
+  // ── Rodapé em TODAS as páginas do relatório ───────────────────────────────────
+  const reportPages = doc.internal.getNumberOfPages();
+  for(let p=1;p<=reportPages;p++){doc.setPage(p);addFooter();}
 
-  // ─── PÁGINA 2: Prescrição separada ───────────────────────────────────────────
+  // ── Página de prescrição separada ─────────────────────────────────────────────
   doc.addPage(); y=25;
   if(logoSrc){try{doc.addImage(logoSrc,'PNG',M,y-6,35,14);y+=12;}catch(e){}}
   doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(20,20,20);
@@ -2697,22 +2704,19 @@ function genPDF() {
   y+=6;doc.setDrawColor(20,20,20);doc.line(M,y,M+TW,y);nl(6);
 
   txt('Para Sr(a).',10,false);nl(1);
-  txt(`${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}`,11,true);nl(1);
+  txt(`${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}`,10,false);nl(1);
   if(f.endereco){txt(f.endereco,10,false);nl(1);}
   nl(8);
 
+  // Bloco de prescrição junto
   const prescLines3 = prescTxt.split('\n');
-  prescLines3.forEach(l => { txt(l,11,false); nl(l?4:2); });
+  const prescH3 = prescLines3.reduce((h,l)=>h+(l?11*0.42+4:11*0.42+2),0);
+  if(y+prescH3>252){doc.addPage();y=20;}
+  prescLines3.forEach(l=>{txt(l,11,false);nl(l?4:2);});
 
-  // Rodapé fixo no fundo da página de prescrição
-  const footerY2 = 258;
-  doc.setDrawColor(180,180,180);doc.line(M,footerY2,M+TW,footerY2);
-  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(20,20,20);
-  doc.text(`${f.cidade||'_______________'}, ${dataL}`,M,footerY2+5);
-  doc.setFont('helvetica','bold');
-  doc.text(`${f.medico||'Dr(a). _______________'}`,M,footerY2+13);
-  doc.setFont('helvetica','normal');
-  doc.text(`CRM: ${f.crm||'_______________'}`,M,footerY2+18);
+  // Rodapé na página de prescrição
+  const totalPages = doc.internal.getNumberOfPages();
+  for(let p=reportPages+1;p<=totalPages;p++){doc.setPage(p);addFooter();}
 
   const nome=(f.nome||'paciente').replace(/\s+/g,'_').toLowerCase();
   doc.save(`laudo_imunobio_${nome}_${new Date().toISOString().split('T')[0]}.pdf`);
