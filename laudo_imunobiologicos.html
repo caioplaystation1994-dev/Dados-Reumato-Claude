@@ -2519,49 +2519,55 @@ function buildPreview() {
   const pStyle = 'style="font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c"';
   const boldLabel = (t) => `<strong style="display:block;margin-top:14px;margin-bottom:2px">${t}</strong>`;
 
+  const pgStyle = 'display:flex;flex-direction:column;min-height:1100px;font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c;max-width:680px';
+  const footerStyle = 'margin-top:auto;padding-top:32px;border-top:1px solid #ccc';
+
   document.getElementById('preview-box').innerHTML = `
-    <div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c;max-width:680px">
+    <div style="${pgStyle}">
 
-      ${logoSrcPrev ? `<img src="${logoSrcPrev}" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:10px;display:block">` : ''}
-      ${localLaudo ? `<p style="font-weight:700;font-size:14px;margin:0 0 16px">${localLaudo}</p>` : ''}
+      <div>
+        ${logoSrcPrev ? `<img src="${logoSrcPrev}" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:10px;display:block">` : ''}
+        ${localLaudo ? `<p style="font-weight:700;font-size:14px;margin:0 0 16px">${localLaudo}</p>` : ''}
 
-      <p style="font-weight:700;font-size:13px;text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:14px">RELATÓRIO MÉDICO — SOLICITAÇÃO DE MEDICAÇÃO IMUNOBIOLÓGICA</p>
+        <p style="font-weight:700;font-size:13px;text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:14px">RELATÓRIO MÉDICO — SOLICITAÇÃO DE MEDICAÇÃO IMUNOBIOLÓGICA</p>
 
-      <p ${pStyle}><strong>Para Sr(a).</strong></p>
-      <p ${pStyle}><strong>${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}</strong></p>
-      ${f.endereco ? `<p ${pStyle}>${f.endereco}</p>` : ''}
+        <p ${pStyle}><strong>Para Sr(a).</strong></p>
+        <p ${pStyle}><strong>${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}</strong></p>
+        ${f.endereco ? `<p ${pStyle}>${f.endereco}</p>` : ''}
 
-      <p ${pStyle} style="margin-top:18px;font-weight:700;font-size:13px">${introClinica}</p>
+        <p ${pStyle} style="margin-top:18px;font-weight:700;font-size:13px">${introClinica}</p>
 
-      ${scoreLine ? `<p style="margin-top:14px;white-space:pre-line;font-size:13px">${scoreLine}</p>` : ''}
+        ${scoreLine ? `<p style="margin-top:14px;white-space:pre-line;font-size:13px">${scoreLine}</p>` : ''}
 
-      ${atuais.length > 0 ? `${boldLabel('MEDICAÇÕES ATUAIS')}${atuais.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início em '+fmtDate(x.dataInicio):''}</p>`).join('')}` : ''}
+        ${atuais.length > 0 ? `${boldLabel('MEDICAÇÕES ATUAIS')}${atuais.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início em '+fmtDate(x.dataInicio):''}</p>`).join('')}` : ''}
 
-      ${anteriores.length > 0 ? `${boldLabel('USO PRÉVIO / SUSPENSOS')}${anteriores.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início '+fmtDate(x.dataInicio):''}${x.dataSuspensao?' — suspensão '+fmtDate(x.dataSuspensao):''}${x.motivo?' ('+x.motivo+')':''}</p>`).join('')}` : ''}
+        ${anteriores.length > 0 ? `${boldLabel('USO PRÉVIO / SUSPENSOS')}${anteriores.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início '+fmtDate(x.dataInicio):''}${x.dataSuspensao?' — suspensão '+fmtDate(x.dataSuspensao):''}${x.motivo?' ('+x.motivo+')':''}</p>`).join('')}` : ''}
 
-      ${bioAnteriores.filter(b=>b.med).length>0 ? `${boldLabel('BIOLÓGICOS ANTERIORES')}${bioAnteriores.filter(b=>b.med).map((b,i)=>`<p style="margin:0">${i+1}. ${b.med}${b.duracao?' ('+b.duracao+')':''}${b.motivo?' — '+b.motivo:''}</p>`).join('')}` : ''}
+        ${bioAnteriores.filter(b=>b.med).length>0 ? `${boldLabel('BIOLÓGICOS ANTERIORES')}${bioAnteriores.filter(b=>b.med).map((b,i)=>`<p style="margin:0">${i+1}. ${b.med}${b.duracao?' ('+b.duracao+')':''}${b.motivo?' — '+b.motivo:''}</p>`).join('')}` : ''}
 
-      ${labLines.igra ? `<p style="margin-top:14px;font-size:13px">${labLines.igra}</p>` : ''}
+        ${labLines.igra ? `<p style="margin-top:14px;font-size:13px">${labLines.igra}</p>` : ''}
+        ${labLines.frAnticcp ? `<p style="margin-top:10px;font-size:13px">${labLines.frAnticcp}</p>` : ''}
+        ${labLines.sorologias ? `<p style="margin-top:4px;font-size:13px">${labLines.sorologias}</p>` : ''}
+        ${labLines.laboratoriais ? `<p style="margin-top:4px;font-size:13px">${labLines.laboratoriais}</p>` : ''}
 
-      ${labLines.frAnticcp ? `<p style="margin-top:10px;font-size:13px">${labLines.frAnticcp}</p>` : ''}
-      ${labLines.sorologias ? `<p style="margin-top:4px;font-size:13px">${labLines.sorologias}</p>` : ''}
-      ${labLines.laboratoriais ? `<p style="margin-top:4px;font-size:13px">${labLines.laboratoriais}</p>` : ''}
+        ${imgSection ? `<div style="margin-top:14px">${imgSection}</div>` : ''}
 
-      ${imgSection ? `<div style="margin-top:14px">${imgSection}</div>` : ''}
+        <div style="margin-top:64px">
+          <p style="font-family:Arial,sans-serif;font-size:14.5px;font-weight:700;line-height:1.7;color:#1a202c">${conclusao}</p>
+        </div>
 
-      <div style="margin-top:64px">
-        <p style="font-family:Arial,sans-serif;font-size:14.5px;font-weight:700;line-height:1.7;color:#1a202c">${conclusao}</p>
+        <pre style="margin-top:18px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;white-space:pre-wrap;line-height:2;color:#1a202c">${prescricao}</pre>
       </div>
 
-      <pre style="margin-top:18px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;white-space:pre-wrap;line-height:2;color:#1a202c">${prescricao}</pre>
-
-      <div style="border-top:1px solid #ccc;margin-top:48px;padding-top:16px">
+      <div style="${footerStyle}">
         <p style="font-size:13px">${f.cidade||'_______________'}, ${dataL}</p>
         <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px"><strong>${f.medico||'Dr(a). _______________'}</strong><br>CRM: ${f.crm||'_______________'}</p>
       </div>
+    </div>
 
-      <hr style="border:none;border-top:3px double #1a56a0;margin:48px 0 32px">
+    <hr style="border:none;border-top:3px double #1a56a0;margin:48px 0 32px;max-width:680px">
 
+    <div style="${pgStyle}">
       <div>
         ${logoSrcPrev ? `<img src="${logoSrcPrev}" style="max-height:52px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block">` : ''}
         ${localLaudo ? `<p style="font-weight:700;font-size:13px;margin:0 0 14px">${localLaudo}</p>` : ''}
@@ -2569,10 +2575,10 @@ function buildPreview() {
         <p ${pStyle}><strong>Para Sr(a).</strong></p>
         <p ${pStyle}><strong>${(f.nome||'[NOME DO PACIENTE]').toUpperCase()}${dnFmt?', '+dnFmt:''}</strong></p>
         <pre style="margin-top:24px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;white-space:pre-wrap;line-height:2.1;color:#1a202c">${prescricao}</pre>
-        <div style="border-top:1px solid #ccc;margin-top:48px;padding-top:16px">
-          <p style="font-size:13px">${f.cidade||'_______________'}, ${dataL}</p>
-          <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px"><strong>${f.medico||'Dr(a). _______________'}</strong><br>CRM: ${f.crm||'_______________'}</p>
-        </div>
+      </div>
+      <div style="${footerStyle}">
+        <p style="font-size:13px">${f.cidade||'_______________'}, ${dataL}</p>
+        <p style="margin-top:40px;border-top:1px solid #000;display:inline-block;padding-top:4px;font-size:13px"><strong>${f.medico||'Dr(a). _______________'}</strong><br>CRM: ${f.crm||'_______________'}</p>
       </div>
     </div>`;
 }
