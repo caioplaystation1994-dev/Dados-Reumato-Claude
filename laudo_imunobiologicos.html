@@ -987,6 +987,31 @@ header h1{font-size:15px;font-weight:700}
         <textarea id="med_posologia" rows="3" oninput="fd.med_posologia=this.value"></textarea>
       </div>
       <div class="field-group" style="margin-top:12px">
+        <label>Pré-medicações (aparecem apenas na prescrição médica)</label>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer">
+            <input type="checkbox" id="premed_difenidr" onchange="fd.premed_difenidr=this.checked">
+            Difenidramina 50mg via endovenosa — pelo menos 30 minutos antes da infusão
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer">
+            <input type="checkbox" id="premed_paracetamol" onchange="fd.premed_paracetamol=this.checked">
+            Paracetamol 1000mg via oral — pelo menos 30 minutos antes da infusão
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer">
+            <input type="checkbox" id="premed_metilpred" onchange="fd.premed_metilpred=this.checked">
+            Metilprednisolona 100mg via endovenosa — pelo menos 30 minutos antes da infusão
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer">
+            <input type="checkbox" id="premed_dipirona" onchange="fd.premed_dipirona=this.checked">
+            Dipirona 1000mg via oral — pelo menos 30 minutos antes da infusão
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer">
+            <input type="checkbox" id="premed_furosemida" onchange="fd.premed_furosemida=this.checked">
+            Furosemida 40mg via endovenosa — pelo menos 30 minutos antes da infusão
+          </label>
+        </div>
+      </div>
+      <div class="field-group" style="margin-top:12px">
         <label>Justificativa clínica da escolha</label>
         <textarea id="med_justificativa" rows="4" placeholder="Descreva a justificativa para este medicamento específico..." oninput="fd.med_justificativa=this.value"></textarea>
       </div>
@@ -2382,7 +2407,8 @@ function stripLabUnits(s) {
     .replace(/\s*\(VR[^)]*\)/gi, '')
     .replace(/\s*\(valor[^)]*\)/gi, '')
     .replace(/\s*\(ref[^)]*\)/gi, '')
-    .replace(/\b(mg\/dL|mg\/L|g\/dL|g\/L|mm\/h|fL|mm[³3]|U\/L|mUI\/L|mUI\/mL|mL\/min|ng\/mL|pg\/mL|mcg\/L|µg\/L|mg%|UI\/mL|UI\/L|mmol\/L|nmol\/L|µmol\/L|pmol\/L|IU\/mL|copies\/mL|cel\/mm[³3])\b/g, '')
+    .replace(/\s*\/\s*mm[³3]/g, '')
+    .replace(/\b(mg\/dL|mg\/L|g\/dL|g\/L|mm\/h|fL|U\/L|mUI\/L|mUI\/mL|mL\/min|ng\/mL|pg\/mL|mcg\/L|µg\/L|mg%|UI\/mL|UI\/L|mmol\/L|nmol\/L|µmol\/L|pmol\/L|IU\/mL|copies\/mL|cel\/mm[³3])/g, '')
     .replace(/\s{2,}/g, ' ')
     .replace(/\s*\/\s*/g, ' / ')
     .trim();
@@ -2526,6 +2552,14 @@ function buildConclusao() {
   return `Dessa forma, visto quadro de ${doenca} refratária ao tratamento atual, solicito introdução de ${med}, conforme posologia abaixo, para controle de doença.`;
 }
 
+const PREMEDS = [
+  {key:'premed_difenidr',  label:'Difenidramina 50mg via endovenosa — pelo menos 30 minutos antes da infusão'},
+  {key:'premed_paracetamol',label:'Paracetamol 1000mg via oral — pelo menos 30 minutos antes da infusão'},
+  {key:'premed_metilpred', label:'Metilprednisolona 100mg via endovenosa — pelo menos 30 minutos antes da infusão'},
+  {key:'premed_dipirona',  label:'Dipirona 1000mg via oral — pelo menos 30 minutos antes da infusão'},
+  {key:'premed_furosemida',label:'Furosemida 40mg via endovenosa — pelo menos 30 minutos antes da infusão'},
+];
+
 function buildPrescricao() {
   const f = fd;
   const med = f.med_nome||'[Medicamento]';
@@ -2546,6 +2580,14 @@ function buildPrescricao() {
   const conc = f.med_concentracao ? ` ${f.med_concentracao}` : '';
   txt += `1. ${med}${conc}\n`;
   if(pos) txt += `${pos}\n`;
+
+  // Pré-medicações (somente na prescrição)
+  const premedsSelected = PREMEDS.filter(p => f[p.key]);
+  if(premedsSelected.length) {
+    txt += `\nPré-medicações (30 min antes da infusão):\n`;
+    premedsSelected.forEach((p, i) => { txt += `${i+1}. ${p.label}\n`; });
+  }
+
   if(cid) txt += `\nCID ${cid.split(' ')[0]}\n`;
   if(dut) txt += `\nFundamentação: ${dut}`;
   return txt.trim();
