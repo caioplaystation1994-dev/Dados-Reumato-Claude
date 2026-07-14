@@ -77,6 +77,14 @@ tr:hover td{background:#f7faff}
 .modal-box{background:#fff;border-radius:14px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);padding:24px}
 .modal-box h2{font-size:15px;font-weight:700;margin-bottom:14px;color:#1a202c}
 
+.exame-preview-row{display:grid;grid-template-columns:auto 110px 100px 1fr 1.3fr;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #e8ecf0;font-size:12px}
+.exame-preview-row select,.exame-preview-row input{border:1px solid #cbd5e0;border-radius:4px;padding:4px 6px;font-size:11px;width:100%}
+
+.cid10-suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e0;border-top:none;border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.cid10-item{padding:6px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #f0f0f0}
+.cid10-item:hover{background:#ebf2ff}
+.cid10-item b{color:#1a56a0}
+
 .toast{position:fixed;bottom:20px;right:20px;background:#1a202c;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 
@@ -205,8 +213,10 @@ tr:hover td{background:#f7faff}
       <div class="add-row-form no-print" id="med-form">
         <div><label>Medicamento (digite nome genérico ou comercial)</label><input type="text" id="med-nome" list="medicamentos-comuns" autocomplete="off"></div>
         <datalist id="medicamentos-comuns"></datalist>
-        <div><label>Dose</label><input type="text" id="med-dose"></div>
-        <div><label>Posologia</label><input type="text" id="med-posologia" placeholder="ex: 1x/dia"></div>
+        <div><label>Dose</label><input type="text" id="med-dose" list="doses-comuns" autocomplete="off"></div>
+        <datalist id="doses-comuns"></datalist>
+        <div><label>Posologia</label><input type="text" id="med-posologia" list="posologias-comuns" autocomplete="off" placeholder="ex: 1x/dia"></div>
+        <datalist id="posologias-comuns"></datalist>
         <div><label>Início</label><input type="date" id="med-inicio"></div>
         <button class="btn-secondary btn-sm" onclick="adicionarMedicacao()">+ Adicionar</button>
       </div>
@@ -222,7 +232,11 @@ tr:hover td{background:#f7faff}
     <div class="section-card">
       <div class="section-title">Diagnósticos</div>
       <div class="add-row-form no-print" id="diag-form">
-        <div><label>CID-10</label><input type="text" id="diag-cid" placeholder="ex: M06.9"></div>
+        <div style="position:relative">
+          <label>CID-10 (busque por código ou nome da doença)</label>
+          <input type="text" id="diag-cid" placeholder="ex: M06.9 ou artrite" autocomplete="off" oninput="buscarCID10()" onfocus="buscarCID10()">
+          <div id="cid10-suggestions" class="cid10-suggestions" style="display:none"></div>
+        </div>
         <div><label>Descrição</label><input type="text" id="diag-desc"></div>
         <div><label>Data</label><input type="date" id="diag-data"></div>
         <button class="btn-secondary btn-sm" onclick="adicionarDiagnostico()">+ Adicionar</button>
@@ -249,16 +263,17 @@ tr:hover td{background:#f7faff}
         </div>
         <div class="field-group wide" id="hpma-primeira-wrap">
           <label>HPMA — História da Moléstia Atual</label>
-          <textarea id="evo-hpma" placeholder="Registrada na primeira consulta e replicada automaticamente nos retornos"></textarea>
+          <textarea id="evo-hpma"></textarea>
         </div>
         <div class="field-group wide" id="hpma-retorno-wrap" style="display:none">
-          <label>HPMA (registrada na primeira consulta)</label>
+          <label>HPMA</label>
           <div id="hpma-readonly-box" style="background:#f7faff;border:1px solid #cbd5e0;border-radius:6px;padding:8px 10px;font-size:13px;color:#2d3748;white-space:pre-wrap;min-height:40px"></div>
         </div>
-        <div class="field-group wide"><label>Subjetivo (queixas do paciente)</label><textarea id="evo-s"></textarea></div>
-        <div class="field-group wide"><label>Objetivo (exame físico)</label><textarea id="evo-o"></textarea></div>
-        <div class="field-group wide"><label>Avaliação</label><textarea id="evo-a"></textarea></div>
-        <div class="field-group wide"><label>Plano/Conduta</label><textarea id="evo-p"></textarea></div>
+        <div class="field-group wide"><label>Atual:</label><textarea id="evo-s"></textarea></div>
+        <div class="field-group wide"><label>Exame físico</label><textarea id="evo-o"></textarea></div>
+        <div class="field-group wide"><label>Impressão</label><textarea id="evo-a"></textarea></div>
+        <div class="field-group wide"><label>Plano terapêutico</label><textarea id="evo-pt"></textarea></div>
+        <div class="field-group wide"><label>Conduta</label><textarea id="evo-p"></textarea></div>
       </div>
       <div class="form-actions">
         <button class="btn-secondary" id="evo-cancel-btn" style="display:none" onclick="cancelarEdicaoEvolucao()">Cancelar edição</button>
@@ -274,7 +289,10 @@ tr:hover td{background:#f7faff}
   <!-- EXAMES -->
   <div class="tab-content" id="tab-exames">
     <div class="section-card">
-      <div class="section-title">Adicionar exame</div>
+      <div class="section-title">
+        Adicionar exame
+        <button class="btn-secondary btn-sm no-print" onclick="abrirImportarExamesModal()">📎 Importar de texto/PDF</button>
+      </div>
       <div class="add-row-form no-print" id="exame-form">
         <div><label>Categoria</label>
           <select id="exame-categoria">
@@ -314,6 +332,37 @@ tr:hover td{background:#f7faff}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="importar-exames-modal">
+  <div class="modal-box">
+    <h2>Importar exames de texto ou PDF</h2>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Chave de API Anthropic</label>
+      <input type="password" id="exames-apikey" placeholder="sk-ant-...">
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Colar texto do laudo/exame</label>
+      <textarea id="exames-textarea" style="width:100%;min-height:120px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit" placeholder="Cole aqui o texto do laudo (ex: copiado de um PDF ou sistema de laboratório)"></textarea>
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Ou selecione um arquivo PDF</label>
+      <input type="file" id="exames-pdf-input" accept="application/pdf">
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="fecharImportarExamesModal()">Cancelar</button>
+      <button class="btn-primary" id="exames-extract-btn" onclick="extrairExamesDeArquivo()">Extrair exames</button>
+    </div>
+    <div id="exames-loading" style="display:none;text-align:center;padding:12px;color:#718096;font-size:12px">Analisando... isso pode levar alguns segundos.</div>
+    <div id="exames-erro" style="display:none;color:#c53030;font-size:12px;margin-top:8px"></div>
+    <div id="exames-preview" style="display:none;margin-top:16px">
+      <div class="section-title" style="border:none;margin-bottom:8px">Exames encontrados — revise e selecione</div>
+      <div id="exames-preview-list"></div>
+      <div class="form-actions">
+        <button class="btn-primary" onclick="adicionarExamesSelecionados()">Adicionar selecionados</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 const DB_KEY = 'prontuario_db';
@@ -373,6 +422,131 @@ const MEDICACOES_COMUNS = [
   'Ácido fólico','Sulfato ferroso','Complexo B','Anticoncepcional (Etinilestradiol + Levonorgestrel)'
 ];
 
+const DOSES_COMUNS = [
+  '0,5 mg','1 mg','2 mg','2,5 mg','5 mg','5 mg/semana','7,5 mg/semana','10 mg',
+  '10 mg/semana','15 mg','15 mg/semana','20 mg','20 mg/semana','25 mg','25 mg/semana',
+  '50 mg','100 mg','200 mg','400 mg','500 mg','1000 mg','1 comprimido','2 comprimidos',
+  '1 cápsula','5 mL','10 mL','1 ampola','1 sachê','1 aplicação subcutânea'
+];
+
+const POSOLOGIAS_COMUNS = [
+  '1x/dia','2x/dia','3x/dia','4x/dia','1x/dia pela manhã','1x/dia à noite',
+  '1x/semana','2x/semana','3x/semana','1x/mês','a cada 6 horas','a cada 8 horas',
+  'a cada 12 horas','a cada 24 horas','dias alternados','em jejum',
+  'antes das refeições','após as refeições','se necessário (S/N)',
+  '1 comprimido pela manhã e 1 à noite'
+];
+
+const CID10_DB = [
+  {c:'M05.8',d:'Outras artrites reumatoides soro-positivas'},
+  {c:'M05.9',d:'Artrite reumatoide soro-positiva não especificada'},
+  {c:'M06.0',d:'Artrite reumatoide soro-negativa'},
+  {c:'M06.1',d:'Doença de Still do adulto'},
+  {c:'M06.9',d:'Artrite reumatoide não especificada'},
+  {c:'M07.0',d:'Artropatia psoriásica interfalangiana distal'},
+  {c:'M07.3',d:'Outras artropatias psoriásicas'},
+  {c:'M07.4',d:'Artropatia em doença de Crohn'},
+  {c:'M07.5',d:'Artropatia na colite ulcerativa'},
+  {c:'M08.0',d:'Artrite reumatoide juvenil'},
+  {c:'M08.9',d:'Artrite juvenil não especificada'},
+  {c:'M10.0',d:'Gota idiopática'},
+  {c:'M10.9',d:'Gota não especificada'},
+  {c:'M11.0',d:'Doença de depósito de hidroxiapatita'},
+  {c:'M11.2',d:'Outras condrocalcinoses'},
+  {c:'M15.0',d:'Osteoartrose generalizada primária'},
+  {c:'M15.9',d:'Poliartrose não especificada'},
+  {c:'M16.0',d:'Coxartrose primária bilateral'},
+  {c:'M16.9',d:'Coxartrose não especificada'},
+  {c:'M17.0',d:'Gonartrose primária bilateral'},
+  {c:'M17.9',d:'Gonartrose não especificada'},
+  {c:'M19.9',d:'Artrose não especificada'},
+  {c:'M20.1',d:'Hálux valgo (adquirido)'},
+  {c:'M24.9',d:'Transtorno articular não especificado'},
+  {c:'M25.5',d:'Dor articular'},
+  {c:'M25.9',d:'Transtorno articular não especificado'},
+  {c:'M30.0',d:'Poliarterite nodosa'},
+  {c:'M31.3',d:'Granulomatose de Wegener'},
+  {c:'M31.4',d:'Síndrome do arco aórtico (Takayasu)'},
+  {c:'M31.6',d:'Outras arterites de células gigantes'},
+  {c:'M32.0',d:'Lúpus eritematoso sistêmico induzido por drogas'},
+  {c:'M32.1',d:'Lúpus eritematoso sistêmico com comprometimento de outros órgãos'},
+  {c:'M32.9',d:'Lúpus eritematoso sistêmico não especificado'},
+  {c:'M33.0',d:'Dermatopolimiosite juvenil'},
+  {c:'M33.1',d:'Outras dermatopolimiosites'},
+  {c:'M33.2',d:'Polimiosite'},
+  {c:'M33.9',d:'Dermatopolimiosite não especificada'},
+  {c:'M34.0',d:'Esclerose sistêmica progressiva'},
+  {c:'M34.1',d:'Síndrome CR(E)ST'},
+  {c:'M34.9',d:'Esclerose sistêmica não especificada'},
+  {c:'M35.0',d:'Síndrome de Sjögren'},
+  {c:'M35.1',d:'Outras síndromes de sobreposição'},
+  {c:'M35.2',d:'Doença de Behçet'},
+  {c:'M35.3',d:'Polimialgia reumática'},
+  {c:'M35.9',d:'Comprometimento sistêmico do tecido conjuntivo não especificado'},
+  {c:'M41.9',d:'Escoliose não especificada'},
+  {c:'M43.1',d:'Espondilolistese'},
+  {c:'M45',d:'Espondilite ancilosante'},
+  {c:'M46.0',d:'Entesopatia espinhal'},
+  {c:'M46.1',d:'Sacroileíte não classificada em outra parte'},
+  {c:'M46.9',d:'Espondilopatia inflamatória não especificada'},
+  {c:'M47.9',d:'Espondilose não especificada'},
+  {c:'M48.0',d:'Estenose da coluna vertebral'},
+  {c:'M50.0',d:'Transtorno do disco cervical com mielopatia'},
+  {c:'M51.1',d:'Transtornos dos discos lombares com radiculopatia'},
+  {c:'M54.1',d:'Radiculopatia'},
+  {c:'M54.2',d:'Cervicalgia'},
+  {c:'M54.4',d:'Lumbago com ciática'},
+  {c:'M54.5',d:'Dor lombar baixa'},
+  {c:'M54.9',d:'Dorsalgia não especificada'},
+  {c:'M60.9',d:'Miosite não especificada'},
+  {c:'M62.5',d:'Amiotrofia e atrofia muscular não classificadas em outra parte'},
+  {c:'M65.9',d:'Sinovite e tenossinovite não especificada'},
+  {c:'M70.0',d:'Sinovite crepitante crônica da mão e do punho'},
+  {c:'M75.0',d:'Capsulite adesiva do ombro'},
+  {c:'M75.1',d:'Síndrome do manguito rotador'},
+  {c:'M76.6',d:'Tendinite do calcâneo (tendão de Aquiles)'},
+  {c:'M77.0',d:'Epicondilite medial'},
+  {c:'M77.1',d:'Epicondilite lateral'},
+  {c:'M79.0',d:'Reumatismo não especificado'},
+  {c:'M79.1',d:'Mialgia'},
+  {c:'M79.7',d:'Fibromialgia'},
+  {c:'M80.0',d:'Osteoporose pós-menopáusica com fratura patológica'},
+  {c:'M80.9',d:'Osteoporose com fratura patológica não especificada'},
+  {c:'M81.0',d:'Osteoporose pós-menopáusica'},
+  {c:'M81.9',d:'Osteoporose não especificada'},
+  {c:'M86.9',d:'Osteomielite não especificada'},
+  {c:'M89.9',d:'Transtorno do osso não especificado'},
+  {c:'M94.0',d:'Síndrome da junção costocondral (Tietze)'},
+  {c:'E03.9',d:'Hipotireoidismo não especificado'},
+  {c:'E05.9',d:'Tireotoxicose não especificada'},
+  {c:'E10',d:'Diabetes mellitus tipo 1'},
+  {c:'E11',d:'Diabetes mellitus tipo 2'},
+  {c:'E55.9',d:'Deficiência de vitamina D não especificada'},
+  {c:'E66.9',d:'Obesidade não especificada'},
+  {c:'E78.0',d:'Hipercolesterolemia pura'},
+  {c:'E78.5',d:'Hiperlipidemia não especificada'},
+  {c:'F32.9',d:'Episódio depressivo não especificado'},
+  {c:'F41.1',d:'Ansiedade generalizada'},
+  {c:'F41.9',d:'Transtorno ansioso não especificado'},
+  {c:'G43.9',d:'Enxaqueca não especificada'},
+  {c:'G47.0',d:'Distúrbios de início e manutenção do sono (insônia)'},
+  {c:'I10',d:'Hipertensão essencial (primária)'},
+  {c:'I25.9',d:'Doença isquêmica crônica do coração não especificada'},
+  {c:'I48',d:'Fibrilação e flutter atrial'},
+  {c:'I50.0',d:'Insuficiência cardíaca congestiva'},
+  {c:'J06.9',d:'Infecção aguda das vias aéreas superiores não especificada'},
+  {c:'J44.9',d:'Doença pulmonar obstrutiva crônica não especificada'},
+  {c:'J45.9',d:'Asma não especificada'},
+  {c:'K21.0',d:'Doença de refluxo gastroesofágico com esofagite'},
+  {c:'K29.7',d:'Gastrite não especificada'},
+  {c:'K59.0',d:'Constipação'},
+  {c:'N18.9',d:'Doença renal crônica não especificada'},
+  {c:'N39.0',d:'Infecção do trato urinário'},
+  {c:'R52.9',d:'Dor não especificada'},
+  {c:'R53',d:'Mal estar e fadiga'},
+  {c:'Z00.0',d:'Exame médico geral'}
+];
+
 function popularListasComuns(){
   const select = document.getElementById('alergia-select');
   ALERGIAS_COMUNS.slice().sort((a,b)=>a.localeCompare(b)).forEach(nome=>{
@@ -386,6 +560,18 @@ function popularListasComuns(){
     const opt = document.createElement('option');
     opt.value = nome;
     datalist.appendChild(opt);
+  });
+  const doseList = document.getElementById('doses-comuns');
+  DOSES_COMUNS.forEach(nome=>{
+    const opt = document.createElement('option');
+    opt.value = nome;
+    doseList.appendChild(opt);
+  });
+  const posologiaList = document.getElementById('posologias-comuns');
+  POSOLOGIAS_COMUNS.forEach(nome=>{
+    const opt = document.createElement('option');
+    opt.value = nome;
+    posologiaList.appendChild(opt);
   });
 }
 
@@ -652,6 +838,29 @@ function renderDiagnosticos(p){
     <td class="no-print"><button class="btn-danger btn-sm" onclick="removerDiagnostico(${i})">Remover</button></td>
   </tr>`).join('');
 }
+function buscarCID10(){
+  const input = document.getElementById('diag-cid');
+  const q = input.value.trim().toLowerCase();
+  const box = document.getElementById('cid10-suggestions');
+  if(q.length < 2){ box.style.display='none'; box.innerHTML=''; return; }
+  const matches = CID10_DB.filter(item => item.c.toLowerCase().includes(q) || item.d.toLowerCase().includes(q)).slice(0,15);
+  if(matches.length === 0){ box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML = matches.map(item=>`<div class="cid10-item" onclick="selecionarCID10('${item.c}')"><b>${item.c}</b> — ${escapeHtml(item.d)}</div>`).join('');
+  box.style.display = 'block';
+}
+function selecionarCID10(codigo){
+  const item = CID10_DB.find(x=>x.c===codigo);
+  if(!item) return;
+  document.getElementById('diag-cid').value = item.c;
+  document.getElementById('diag-desc').value = item.d;
+  document.getElementById('cid10-suggestions').style.display = 'none';
+}
+document.addEventListener('click', function(e){
+  const box = document.getElementById('cid10-suggestions');
+  const input = document.getElementById('diag-cid');
+  if(box && e.target !== input && !box.contains(e.target)) box.style.display = 'none';
+});
+
 function adicionarDiagnostico(){
   const desc = document.getElementById('diag-desc').value.trim();
   const cid = document.getElementById('diag-cid').value.trim();
@@ -685,10 +894,11 @@ function renderEvolucoes(p){
       <span class="evo-prof">${escapeHtml(e.profissional||'')}</span>
     </div>
     ${e.hpma?`<div class="evo-field"><b>HPMA</b><p>${escapeHtml(e.hpma)}</p></div>`:''}
-    ${e.s?`<div class="evo-field"><b>Subjetivo</b><p>${escapeHtml(e.s)}</p></div>`:''}
-    ${e.o?`<div class="evo-field"><b>Objetivo</b><p>${escapeHtml(e.o)}</p></div>`:''}
-    ${e.a?`<div class="evo-field"><b>Avaliação</b><p>${escapeHtml(e.a)}</p></div>`:''}
-    ${e.p?`<div class="evo-field"><b>Plano</b><p>${escapeHtml(e.p)}</p></div>`:''}
+    ${e.s?`<div class="evo-field"><b>Atual</b><p>${escapeHtml(e.s)}</p></div>`:''}
+    ${e.o?`<div class="evo-field"><b>Exame físico</b><p>${escapeHtml(e.o)}</p></div>`:''}
+    ${e.a?`<div class="evo-field"><b>Impressão</b><p>${escapeHtml(e.a)}</p></div>`:''}
+    ${e.pt?`<div class="evo-field"><b>Plano terapêutico</b><p>${escapeHtml(e.pt)}</p></div>`:''}
+    ${e.p?`<div class="evo-field"><b>Conduta</b><p>${escapeHtml(e.p)}</p></div>`:''}
     <div class="evo-actions no-print">
       <button class="btn-secondary btn-sm" onclick="editarEvolucao(${e._idx})">Editar</button>
       <button class="btn-danger btn-sm" onclick="removerEvolucao(${e._idx})">Excluir</button>
@@ -701,7 +911,7 @@ function onTipoConsultaChange(){
   document.getElementById('hpma-retorno-wrap').style.display = isPrimeira ? 'none' : '';
   if(!isPrimeira){
     const p = getPaciente(currentPatientId);
-    document.getElementById('hpma-readonly-box').textContent = (p && p.hpma) ? p.hpma : '(nenhuma HPMA registrada ainda — registre na primeira consulta)';
+    document.getElementById('hpma-readonly-box').textContent = (p && p.hpma) ? p.hpma : '(nenhuma HPMA)';
   }
 }
 function salvarEvolucao(){
@@ -723,6 +933,7 @@ function salvarEvolucao(){
     s: document.getElementById('evo-s').value.trim(),
     o: document.getElementById('evo-o').value.trim(),
     a: document.getElementById('evo-a').value.trim(),
+    pt: document.getElementById('evo-pt').value.trim(),
     p: document.getElementById('evo-p').value.trim()
   };
   const p = atualizarPaciente(p=>{
@@ -748,6 +959,7 @@ function editarEvolucao(idx){
   document.getElementById('evo-s').value = e.s || '';
   document.getElementById('evo-o').value = e.o || '';
   document.getElementById('evo-a').value = e.a || '';
+  document.getElementById('evo-pt').value = e.pt || '';
   document.getElementById('evo-p').value = e.p || '';
   document.getElementById('evo-form-title').textContent = 'Editando evolução de ' + fmtData(e.data);
   document.getElementById('evo-cancel-btn').style.display = 'inline-block';
@@ -756,7 +968,7 @@ function editarEvolucao(idx){
 }
 function cancelarEdicaoEvolucao(){
   editingEvolucaoIdx = null;
-  ['evo-data','evo-prof','evo-s','evo-o','evo-a','evo-p','evo-hpma'].forEach(id=>document.getElementById(id).value='');
+  ['evo-data','evo-prof','evo-s','evo-o','evo-a','evo-pt','evo-p','evo-hpma'].forEach(id=>document.getElementById(id).value='');
   const p = getPaciente(currentPatientId);
   document.getElementById('evo-tipo').value = (p && p.evolucoes && p.evolucoes.length > 0) ? 'retorno' : 'primeira';
   onTipoConsultaChange();
@@ -808,6 +1020,153 @@ function adicionarExame(){
 function removerExame(i){
   const p = atualizarPaciente(p=>{ p.exames.splice(i,1); });
   renderExames(p);
+}
+
+/* ---------- IMPORTAR EXAMES (texto/PDF) ---------- */
+let examesExtraidosTemp = [];
+
+function abrirImportarExamesModal(){
+  document.getElementById('exames-apikey').value = localStorage.getItem('anthropic_key') || '';
+  document.getElementById('exames-textarea').value = '';
+  document.getElementById('exames-pdf-input').value = '';
+  document.getElementById('exames-preview').style.display = 'none';
+  document.getElementById('exames-erro').style.display = 'none';
+  document.getElementById('exames-loading').style.display = 'none';
+  examesExtraidosTemp = [];
+  document.getElementById('importar-exames-modal').classList.add('open');
+}
+function fecharImportarExamesModal(){
+  document.getElementById('importar-exames-modal').classList.remove('open');
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function extrairExamesDeArquivo(){
+  const apiKey = document.getElementById('exames-apikey').value.trim();
+  const texto = document.getElementById('exames-textarea').value.trim();
+  const file = document.getElementById('exames-pdf-input').files[0];
+  const erroEl = document.getElementById('exames-erro');
+  const loadEl = document.getElementById('exames-loading');
+  const btn = document.getElementById('exames-extract-btn');
+  const previewEl = document.getElementById('exames-preview');
+
+  erroEl.style.display = 'none';
+  previewEl.style.display = 'none';
+
+  if(!apiKey){ erroEl.textContent = 'Informe a chave de API Anthropic.'; erroEl.style.display='block'; return; }
+  if(!texto && !file){ erroEl.textContent = 'Cole um texto ou selecione um arquivo PDF.'; erroEl.style.display='block'; return; }
+
+  localStorage.setItem('anthropic_key', apiKey);
+  btn.disabled = true;
+  loadEl.style.display = 'block';
+
+  const prompt = `Você é um assistente que extrai resultados de exames médicos de laudos em português. Analise o conteúdo abaixo e retorne SOMENTE um array JSON válido, sem markdown, sem texto antes ou depois, no seguinte formato:
+[
+  {"categoria": "laboratorial" | "imagem" | "biopsia", "data": "YYYY-MM-DD" ou null, "tipo": "nome do exame", "resultado": "resultado/observação resumido"}
+]
+
+Instruções:
+- categoria "laboratorial" para exames de sangue, urina, bioquímica, sorologia etc.
+- categoria "imagem" para radiografia, ultrassom, tomografia, ressonância, densitometria etc.
+- categoria "biopsia" para biópsias e exames anatomopatológicos.
+- Crie um item por exame/parâmetro relevante encontrado.
+- Se a data não estiver explícita, use null.
+- Se não encontrar nenhum exame, retorne [].`;
+
+  let content;
+  try{
+    if(file){
+      const base64 = await fileToBase64(file);
+      content = [
+        {type:'document', source:{type:'base64', media_type:'application/pdf', data: base64}},
+        {type:'text', text: prompt + (texto ? ('\n\nTexto adicional fornecido pelo usuário:\n' + texto) : '')}
+      ];
+    } else {
+      content = prompt + '\n\nTexto do laudo:\n' + texto;
+    }
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        messages: [{ role: 'user', content }]
+      })
+    });
+    if(!resp.ok){
+      const e = await resp.json().catch(()=>({}));
+      throw new Error(e.error?.message || `HTTP ${resp.status}`);
+    }
+    const raw = await resp.json();
+    const txt = raw.content[0].text.trim();
+    const jsonMatch = txt.match(/\[[\s\S]*\]/);
+    const dados = JSON.parse(jsonMatch ? jsonMatch[0] : txt);
+
+    if(!Array.isArray(dados) || dados.length === 0){
+      erroEl.textContent = 'Nenhum exame identificado no texto/arquivo fornecido.';
+      erroEl.style.display = 'block';
+    } else {
+      examesExtraidosTemp = dados.map(d=>({
+        categoria: ['laboratorial','imagem','biopsia'].includes(d.categoria) ? d.categoria : 'laboratorial',
+        data: d.data || '',
+        tipo: d.tipo || '',
+        resultado: d.resultado || '',
+        selecionado: true
+      }));
+      renderExamesPreview();
+      previewEl.style.display = 'block';
+    }
+  }catch(e){
+    erroEl.textContent = 'Erro: ' + e.message;
+    erroEl.style.display = 'block';
+  }finally{
+    btn.disabled = false;
+    loadEl.style.display = 'none';
+  }
+}
+
+function renderExamesPreview(){
+  const list = document.getElementById('exames-preview-list');
+  list.innerHTML = examesExtraidosTemp.map((ex,i)=>`
+    <div class="exame-preview-row">
+      <input type="checkbox" ${ex.selecionado?'checked':''} onchange="examesExtraidosTemp[${i}].selecionado=this.checked">
+      <select onchange="examesExtraidosTemp[${i}].categoria=this.value">
+        <option value="laboratorial" ${ex.categoria==='laboratorial'?'selected':''}>Laboratorial</option>
+        <option value="imagem" ${ex.categoria==='imagem'?'selected':''}>Imagem</option>
+        <option value="biopsia" ${ex.categoria==='biopsia'?'selected':''}>Biópsia</option>
+      </select>
+      <input type="date" value="${ex.data||''}" onchange="examesExtraidosTemp[${i}].data=this.value">
+      <input type="text" value="${escapeHtml(ex.tipo)}" onchange="examesExtraidosTemp[${i}].tipo=this.value">
+      <input type="text" value="${escapeHtml(ex.resultado)}" onchange="examesExtraidosTemp[${i}].resultado=this.value">
+    </div>
+  `).join('');
+}
+
+function adicionarExamesSelecionados(){
+  const selecionados = examesExtraidosTemp.filter(e=>e.selecionado);
+  if(selecionados.length === 0){ showToast('Nenhum exame selecionado'); return; }
+  const p = atualizarPaciente(p=>{
+    p.exames = p.exames || [];
+    selecionados.forEach(ex=>{
+      p.exames.push({data: ex.data, tipo: ex.tipo, resultado: ex.resultado, categoria: ex.categoria});
+    });
+  });
+  renderExames(p);
+  fecharImportarExamesModal();
+  showToast(`${selecionados.length} exame(s) adicionado(s)`);
 }
 
 /* ---------- IMPRESSÃO ---------- */
