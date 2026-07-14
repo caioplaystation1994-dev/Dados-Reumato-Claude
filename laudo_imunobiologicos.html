@@ -1476,9 +1476,31 @@ const DMARD_DEFAULT_DOSE = {
   'Meloxicam': '15mg/dia por 6 semanas',
 };
 
+function addDmardAtual(data) {
+  const idx=dmardAtuais.length;
+  const d=data||{med:'',dose:'',dataInicio:''};
+  dmardAtuais.push(d);
+  const tb=document.getElementById('dmard-atual-tbody');
+  const tr=document.createElement('tr');
+  tr.id='dra'+idx;
+  const opts=(DMARD_OPTS[disease]||['Outro']).map(o=>`<option value="${o}"${d.med===o?' selected':''}>${o}</option>`).join('');
+  tr.innerHTML=`<td><select onchange="dmardAtuais[${idx}].med=this.value;var def=DMARD_DEFAULT_DOSE[this.value];if(def){dmardAtuais[${idx}].dose=def;document.getElementById('doseA${idx}').value=def;}else{dmardAtuais[${idx}].dose='';document.getElementById('doseA${idx}').value='';}"><option value="">Selecione...</option>${opts}</select></td>
+    <td><input type="text" id="doseA${idx}" placeholder="Ex: 20mg/sem" value="${d.dose||''}" oninput="dmardAtuais[${idx}].dose=this.value"></td>
+    <td><input type="date" value="${d.dataInicio||''}" oninput="dmardAtuais[${idx}].dataInicio=this.value"></td>
+    <td><button class="btn-danger" onclick="rmDmardAtual(${idx})">✕</button></td>`;
+  tb.appendChild(tr);
+}
+
+function rmDmardAtual(idx) {
+  dmardAtuais.splice(idx,1);
+  document.getElementById('dmard-atual-tbody').innerHTML='';
+  const tmp=[...dmardAtuais]; dmardAtuais=[];
+  tmp.forEach(d=>addDmardAtual(d));
+}
+
 function addDmard(data) {
   const idx=dmards.length;
-  const d=data||{med:'',dose:'',dur:'',motivo:''};
+  const d=data||{med:'',dose:'',dataInicio:'',dataSuspensao:'',motivo:''};
   dmards.push(d);
   const tb=document.getElementById('dmard-tbody');
   const tr=document.createElement('tr');
@@ -1486,8 +1508,9 @@ function addDmard(data) {
   const opts=(DMARD_OPTS[disease]||['Outro']).map(o=>`<option value="${o}"${d.med===o?' selected':''}>${o}</option>`).join('');
   const mots=MOTIVOS.map(o=>`<option value="${o}"${d.motivo===o?' selected':''}>${o}</option>`).join('');
   tr.innerHTML=`<td><select onchange="dmards[${idx}].med=this.value;var def=DMARD_DEFAULT_DOSE[this.value];if(def){dmards[${idx}].dose=def;document.getElementById('dose${idx}').value=def;}else{dmards[${idx}].dose='';document.getElementById('dose${idx}').value='';}updDutMsg()"><option value="">Selecione...</option>${opts}</select></td>
-    <td><input type="text" id="dose${idx}" placeholder="Ex: 20mg/sem" value="${d.dose}" oninput="dmards[${idx}].dose=this.value"></td>
-    <td><input type="text" placeholder="Ex: 6 meses" value="${d.dur}" oninput="dmards[${idx}].dur=this.value"></td>
+    <td><input type="text" id="dose${idx}" placeholder="Ex: 20mg/sem" value="${d.dose||''}" oninput="dmards[${idx}].dose=this.value"></td>
+    <td><input type="date" value="${d.dataInicio||''}" oninput="dmards[${idx}].dataInicio=this.value"></td>
+    <td><input type="date" value="${d.dataSuspensao||''}" oninput="dmards[${idx}].dataSuspensao=this.value"></td>
     <td><select onchange="dmards[${idx}].motivo=this.value"><option value="">Motivo...</option>${mots}</select></td>
     <td><button class="btn-danger" onclick="rmDmard(${idx})">✕</button></td>`;
   tb.appendChild(tr);
@@ -1774,8 +1797,8 @@ function narrative() {
     if(f.cdai) atv+=`, CDAI de ${f.cdai} (${f.cdai_class||'—'})`;
     if(f.sdai) atv+=`, SDAI de ${f.sdai} (${f.sdai_class||'—'})`;
     atv+='. ';
-    if(f.fr) atv+=`FR: ${f.fr==='neg'?'negativo':f.fr==='pos_baixo'?'positivo (baixo título)':'positivo (alto título)'}. `;
-    if(f.anticcp) atv+=`Anti-CCP: ${f.anticcp==='neg'?'negativo':f.anticcp==='pos_baixo'?'positivo (baixo título)':'positivo (alto título)'}.`;
+    if(f.fr_val) atv+=`FR: ${f.fr_val}${f.fr_data?' ('+fmtDate(f.fr_data)+')':''}. `;
+    if(f.anticcp_val) atv+=`Anti-CCP: ${f.anticcp_val}${f.anticcp_data?' ('+fmtDate(f.anticcp_data)+')':''}.`;
     if(f.ar_fev1||f.ar_cvf||f.ar_dlco) atv+=` Espirometria${f.ar_espiro_data?' ('+fmtDate(f.ar_espiro_data)+')':''}: FEV1 ${f.ar_fev1||'—'}%, CVF ${f.ar_cvf||'—'}%, FEV1/CVF ${f.ar_fev1cvf||'—'}, DLCO ${f.ar_dlco||'—'}%.${f.ar_espiro_laudo?' '+f.ar_espiro_laudo+'.':''}`;
   } else if(d==='ea'){
     atv=`BASDAI: ${f.basdai||'—'}/10 (${f.basdai_class||'não calculado'}). `;
@@ -1818,9 +1841,14 @@ function narrative() {
       (fd.op_frax_maior?` FRAX fratura maior: ${fd.op_frax_maior}%. FRAX fratura quadril: ${fd.op_frax_quad||'não calculado'}%.`:'');
   }
   if(fd.tb_igra_positivo) atv += ` IGRA/PPD positivo. Profilaxia para TB latente: ${fd.tb_profilaxia_med||'não registrada'} — ${fd.tb_profilaxia_status||'status não informado'}.`;
-  const trat=dmards.filter(x=>x.med).length===0
-    ?'Nenhum medicamento convencional registrado.'
-    :dmards.filter(x=>x.med).map(x=>`${x.med}${x.dose?' '+x.dose:''}${x.dur?' por '+x.dur:''}${x.motivo?' ('+x.motivo+')':''}`).join('; ')+'.';
+  const tratAtuais = dmardAtuais.filter(x=>x.med);
+  const tratPrevios = dmards.filter(x=>x.med);
+  const trat = (tratAtuais.length===0 && tratPrevios.length===0)
+    ? 'Nenhum medicamento convencional registrado.'
+    : [
+        ...tratAtuais.map(x=>`${x.med}${x.dose?' '+x.dose:''}${x.dataInicio?' (desde '+fmtDate(x.dataInicio)+')':''} — em uso`),
+        ...tratPrevios.map(x=>`${x.med}${x.dose?' '+x.dose:''}${x.dataInicio?' desde '+fmtDate(x.dataInicio):''}${x.dataSuspensao?' até '+fmtDate(x.dataSuspensao):''}${x.motivo?' ('+x.motivo+')':''}`)
+      ].join('; ')+'.';
   let bioAntTxt = '';
   if(bioAnteriores.length>0){
     const lines = bioAnteriores.filter(b=>b.med).map(b=>{
@@ -1838,26 +1866,56 @@ function narrative() {
 
 // ─── HELPERS NARRATIVA CLÍNICA ───────────────────────────────────────────────
 function buildLabLine() {
-  // Builds inline lab line: "HLA-B27 positivo / FR negativo / HB 14,6 / ..."
-  const parts = [];
-  const examMap = {};
-  EXAMES_BASE.forEach(e => { if(exams[e.id]?.result) examMap[e.id] = {l: e.l, r: exams[e.id].result, d: e.ownDate ? fmtDate(exams[e.id].date) : fmtDate(examDateGlobal)}; });
+  const lines = buildLabLines();
+  return [lines.frAnticcp, lines.sorologias, lines.igra, lines.laboratoriais].filter(Boolean).join('\n');
+}
 
-  // HLA-B27 and FR first if present
-  ['hlab27','fr_exam'].forEach(id => { if(examMap[id]) parts.push(`${examMap[id].l} ${examMap[id].r}`); delete examMap[id]; });
+function buildLabLines() {
+  // Returns categorized lab sections
+  const sorolIds = new Set(['hbsag','anti_hbc','anti_hcv','hiv']);
 
-  // Group by date for remaining exams
-  const byDate = {};
-  Object.entries(examMap).forEach(([id,v]) => {
-    const d = v.d || '—';
-    if(!byDate[d]) byDate[d] = [];
-    byDate[d].push(`${v.l} ${v.r}`);
+  // FR / Anti-CCP
+  let frAnticcpParts = [];
+  if(fd.fr_val) {
+    let fr = `FR: ${fd.fr_val}`;
+    if(fd.fr_data) fr += ` (${fmtDate(fd.fr_data)})`;
+    frAnticcpParts.push(fr);
+  }
+  if(fd.anticcp_val) {
+    let ccp = `Anti-CCP: ${fd.anticcp_val}`;
+    if(fd.anticcp_data) ccp += ` (${fmtDate(fd.anticcp_data)})`;
+    frAnticcpParts.push(ccp);
+  }
+  const frAnticcp = frAnticcpParts.join(' / ');
+
+  // IGRA
+  let igra = '';
+  const igExam = exams['ppd'];
+  if(igExam?.result) {
+    const dt = igExam.date ? fmtDate(igExam.date) : '';
+    igra = `IGRA${dt?' '+dt:''}: ${igExam.result}`;
+  } else if(fd.tb_igra_positivo) {
+    igra = `IGRA: Positivo. Profilaxia TB: ${fd.tb_profilaxia_med||'—'} (${fd.tb_profilaxia_status||'—'})`;
+  }
+
+  // Sorologias
+  const sorolParts = [];
+  sorolIds.forEach(id => {
+    if(exams[id]?.result) sorolParts.push(`${EXAMES_BASE.find(e=>e.id===id)?.l||id} ${exams[id].result}`);
   });
-  Object.entries(byDate).forEach(([d, items]) => {
-    const prefix = d && d !== '—' ? `${d} — ` : '';
-    parts.push(prefix + items.join(' / '));
+  const sorologias = sorolParts.join(' / ');
+
+  // Outros laboratoriais
+  const labParts = [];
+  EXAMES_BASE.forEach(e => {
+    if(!sorolIds.has(e.id) && e.id !== 'ppd' && e.id !== 'rx_torax' && exams[e.id]?.result) {
+      const dt = e.ownDate ? (exams[e.id].date ? fmtDate(exams[e.id].date) : '') : (examDateGlobal ? fmtDate(examDateGlobal) : '');
+      labParts.push(`${e.l}: ${exams[e.id].result}`);
+    }
   });
-  return parts.join('\n');
+  const laboratoriais = labParts.join(' / ');
+
+  return {frAnticcp, sorologias, igra, laboratoriais};
 }
 
 function buildScoreLine() {
@@ -1899,12 +1957,9 @@ function buildMedList(label, list) {
 }
 
 function buildMedListAtual() {
-  // Separate current (no end date / still current) from previous
-  const todos = dmards.filter(x => x.med);
-  // If motivo is empty => current; if motivo has "suspensão" / end date => previous
-  // Use motivo field: empty = current, filled = previous
-  const atuais = todos.filter(x => !x.motivo || x.motivo.trim()==='');
-  const anteriores = todos.filter(x => x.motivo && x.motivo.trim()!=='');
+  // Use separate arrays: dmardAtuais for current, dmards for previous/suspended
+  const atuais = dmardAtuais.filter(x => x.med);
+  const anteriores = dmards.filter(x => x.med);
   return {atuais, anteriores};
 }
 
@@ -1912,59 +1967,59 @@ function buildIntroClinica() {
   const f = fd; const d = disease;
   const nome = (f.nome||'[nome do paciente]').toUpperCase();
   const idade = f.idade || document.getElementById('p_idade').value || '';
-  const sexo = f.sexo === 'M' ? 'SEXO MASCULINO' : f.sexo === 'F' ? 'SEXO FEMININO' : '';
+  const sexo = f.sexo === 'M' ? 'sexo masculino' : f.sexo === 'F' ? 'sexo feminino' : '';
   const cid = document.getElementById('p_cid').value || '';
   const dataDiag = f.data_diag ? fmtDate(f.data_diag) : '';
-  const doenca = (D_NAMES[d]||d).toUpperCase();
+  let doenca = D_NAMES[d]||d;
 
-  let txt = `PACIENTE ${nome}`;
+  let txt = `Paciente ${nome}`;
   if(idade) txt += `, ${idade}`;
   if(sexo) txt += `, ${sexo}`;
-  txt += `, DIAGNÓSTICO DE ${doenca}`;
-  if(dataDiag) txt += ` EM ${dataDiag}`;
+  txt += `, diagnóstico de ${doenca}`;
+  if(dataDiag) txt += ` em ${dataDiag}`;
   txt += '.';
 
   // Disease-specific clinical detail
   if(d==='ea'){
-    const tipo = f.ea_tipo === 'rad' ? 'ESPONDILOARTRITE AXIAL RADIOGRÁFICA' : f.ea_tipo === 'nrad' ? 'ESPONDILOARTRITE AXIAL NÃO-RADIOGRÁFICA' : '';
-    if(tipo) txt = txt.replace(`DIAGNÓSTICO DE ${doenca}`, `DIAGNÓSTICO DE ${tipo}`);
-    txt += ' MANTENDO QUADRO DE DOR LOMBAR INFLAMATÓRIA REFRATÁRIA AO TRATAMENTO COM AINE.';
+    const tipo = f.ea_tipo === 'rad' ? 'Espondiloartrite axial radiográfica' : f.ea_tipo === 'nrad' ? 'Espondiloartrite axial não-radiográfica' : '';
+    if(tipo) txt = txt.replace(`diagnóstico de ${doenca}`, `diagnóstico de ${tipo}`);
+    txt += ' Mantendo quadro de dor lombar inflamatória refratária ao tratamento com AINE.';
   } else if(d==='ar'){
-    const cls = f.das28_class ? f.das28_class.toUpperCase() : 'ATIVIDADE MODERADA A ALTA';
-    txt += ` APRESENTANDO ${cls} DE DOENÇA.`;
+    const cls = f.das28_class ? f.das28_class : 'atividade moderada a alta';
+    txt += ` Apresentando ${cls} de doença.`;
   } else if(d==='aps'){
-    txt += ' APRESENTANDO DOENÇA COM ATIVIDADE MODERADA A ALTA REFRATÁRIA A DMARD CONVENCIONAL.';
+    txt += ' Apresentando doença com atividade moderada a alta refratária a DMARD convencional.';
   } else if(d==='les'){
     txt += ` SLEDAI-2K: ${f.sledai||'—'}.`;
-    if(f.sledai_active) txt += ` MANIFESTAÇÕES ATIVAS: ${f.sledai_active.toUpperCase()}.`;
+    if(f.sledai_active) txt += ` Manifestações ativas: ${f.sledai_active}.`;
   } else if(d==='vasc'){
     const tipo = f.vasc_tipo==='gpa'?'GPA':f.vasc_tipo==='pam'?'PAM':f.vasc_tipo==='gepa'?'GEPA':'';
-    if(tipo) txt = txt.replace(`DIAGNÓSTICO DE ${doenca}`, `DIAGNÓSTICO DE VASCULITE ANCA-ASSOCIADA (${tipo})`);
+    if(tipo) txt = txt.replace(`diagnóstico de ${doenca}`, `diagnóstico de vasculite ANCA-associada (${tipo})`);
   } else if(d==='dm'){
-    const sub = f.dm_subtipo==='dm'?'DERMATOMIOSITE':f.dm_subtipo==='pm'?'POLIMIOSITE':f.dm_subtipo==='imnm'?'MIOPATIA NECROSANTE (IMNM)':f.dm_subtipo==='anti_sint'?'SÍNDROME ANTI-SINTETASE':f.dm_subtipo==='cadm'?'DM AMIOPÁTICA (CADM)':'';
-    if(sub) txt = txt.replace(`DIAGNÓSTICO DE ${doenca}`, `DIAGNÓSTICO DE ${sub}`);
+    const sub = f.dm_subtipo==='dm'?'Dermatomiosite':f.dm_subtipo==='pm'?'Polimiosite':f.dm_subtipo==='imnm'?'Miopatia necrosante (IMNM)':f.dm_subtipo==='anti_sint'?'Síndrome anti-sintetase':f.dm_subtipo==='cadm'?'DM amiopática (CADM)':'';
+    if(sub) txt = txt.replace(`diagnóstico de ${doenca}`, `diagnóstico de ${sub}`);
   }
   return txt;
 }
 
 function buildConclusao() {
   const f = fd; const d = disease;
-  const med = (f.med_nome||'[MEDICAMENTO]').toUpperCase();
-  const via = (f.med_via||'').toUpperCase();
-  let doenca = (D_NAMES[d]||d).toUpperCase();
-  if(d==='ea') doenca = 'ESPONDILOARTRITE AXIAL';
+  const med = f.med_nome||'[medicamento]';
+  const via = f.med_via||'';
+  let doenca = D_NAMES[d]||d;
+  if(d==='ea') doenca = 'Espondiloartrite axial';
 
-  let motivo = 'REFRATÁRIA AO TRATAMENTO CONVENCIONAL';
-  if(d==='ea') motivo = 'REFRATÁRIA AO TRATAMENTO COM AINE';
-  else if(d==='ar') motivo = 'REFRATÁRIA AO TRATAMENTO COM DMARD CONVENCIONAL';
-  else if(d==='aps') motivo = 'REFRATÁRIA AO TRATAMENTO COM DMARD';
-  else if(d==='les') motivo = 'COM ATIVIDADE PERSISTENTE APESAR DO TRATAMENTO IMUNOSSUPRESSOR';
-  else if(d==='vasc') motivo = 'REFRATÁRIA/RECIDIVANTE AO TRATAMENTO CONVENCIONAL';
+  let motivo = 'refratária ao tratamento convencional';
+  if(d==='ea') motivo = 'refratária ao tratamento com AINE';
+  else if(d==='ar') motivo = 'refratária ao tratamento com DMARD convencional';
+  else if(d==='aps') motivo = 'refratária ao tratamento com DMARD';
+  else if(d==='les') motivo = 'com atividade persistente apesar do tratamento imunossupressor';
+  else if(d==='vasc') motivo = 'refratária/recidivante ao tratamento convencional';
 
-  let txt = `DESSA FORMA, VISTO QUADRO DE ${doenca} ${motivo}, SOLICITO INTRODUÇÃO DE ${med}`;
+  let txt = `Dessa forma, visto quadro de ${doenca} ${motivo}, solicito introdução de ${med}`;
   if(via) txt += ` ${via}`;
-  if(f.med_posologia) txt += `, CONFORME POSOLOGIA ABAIXO,`;
-  txt += ` PARA CONTROLE DE ATIVIDADE DE DOENÇA.`;
+  if(f.med_posologia) txt += `, conforme posologia abaixo,`;
+  txt += ` para controle de atividade de doença.`;
   return txt;
 }
 
@@ -2006,7 +2061,7 @@ function buildPreview() {
   const logoSrcPrev = LOGOS[localLaudo] || '';
   const {atuais, anteriores} = buildMedListAtual();
   const scoreLine = buildScoreLine();
-  const labLine = buildLabLine();
+  const labLines = buildLabLines();
   const introClinica = buildIntroClinica();
   const conclusao = buildConclusao();
   const prescricao = buildPrescricao();
@@ -2014,21 +2069,9 @@ function buildPreview() {
   // Build exam images section
   let imgSection = '';
   imagens.filter(i=>i.tipo).forEach(img => {
-    imgSection += `<p style="margin:12px 0 2px"><strong>${img.tipo.toUpperCase()}${img.data?' '+fmtDate(img.data):''}</strong></p>`;
+    imgSection += `<p style="margin:12px 0 2px"><strong>${img.tipo}${img.data?' — '+fmtDate(img.data):''}</strong></p>`;
     if(img.laudo) imgSection += `<p style="margin:0 0 4px;line-height:1.6">${img.laudo}</p>`;
   });
-
-  // TB IGRA
-  let igraLine = '';
-  if(fd.tb_igra_positivo) {
-    igraLine = `<p style="margin:10px 0 2px"><strong>IGRA POSITIVO</strong></p><p style="margin:0">Profilaxia TB: ${fd.tb_profilaxia_med||'—'}${fd.tb_profilaxia_inicio?' — iniciada em '+fmtDate(fd.tb_profilaxia_inicio):''}. Status: ${fd.tb_profilaxia_status||'—'}.</p>`;
-  } else {
-    // Check if IGRA exam was filled
-    const igra = EXAMES_BASE.find(e=>e.id==='igra');
-    if(igra && exams['igra']?.result) {
-      igraLine = `<p style="margin:10px 0 2px"><strong>IGRA ${fmtDate(exams['igra'].date)||dataL}</strong></p><p style="margin:0">${exams['igra'].result.toUpperCase()}</p>`;
-    }
-  }
 
   const pStyle = 'style="font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c"';
   const boldLabel = (t) => `<strong style="display:block;margin-top:14px;margin-bottom:2px">${t}</strong>`;
@@ -2051,15 +2094,17 @@ function buildPreview() {
 
       ${scoreLine ? `<p style="margin-top:14px;white-space:pre-line;font-size:13px">${scoreLine}</p>` : ''}
 
-      ${atuais.length > 0 ? `${boldLabel('MEDICAÇÕES ATUAIS')}${atuais.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med.toUpperCase()}${x.dose?' '+x.dose.toUpperCase():''}${x.dur?' - INICIO EM '+x.dur.toUpperCase():''}${x.motivo?' - '+x.motivo.toUpperCase():' - ATUAL'}</p>`).join('')}` : ''}
+      ${atuais.length > 0 ? `${boldLabel('MEDICAÇÕES ATUAIS')}${atuais.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início em '+fmtDate(x.dataInicio):''}</p>`).join('')}` : ''}
 
-      ${anteriores.length > 0 ? `${boldLabel('USO PRÉVIO')}${anteriores.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med.toUpperCase()}${x.dose?' '+x.dose.toUpperCase():''}${x.dur?' - '+x.dur.toUpperCase():''}${x.motivo?' - '+x.motivo.toUpperCase():''}</p>`).join('')}` : ''}
+      ${anteriores.length > 0 ? `${boldLabel('USO PRÉVIO / SUSPENSOS')}${anteriores.map((x,i)=>`<p style="margin:0">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início '+fmtDate(x.dataInicio):''}${x.dataSuspensao?' — suspensão '+fmtDate(x.dataSuspensao):''}${x.motivo?' ('+x.motivo+')':''}</p>`).join('')}` : ''}
 
-      ${bioAnteriores.filter(b=>b.med).length>0 ? `${boldLabel('BIOLÓGICOS ANTERIORES')}${bioAnteriores.filter(b=>b.med).map((b,i)=>`<p style="margin:0">${i+1}. ${b.med.toUpperCase()}${b.duracao?' ('+b.duracao+')':''}${b.motivo?' — '+b.motivo:''}</p>`).join('')}` : ''}
+      ${bioAnteriores.filter(b=>b.med).length>0 ? `${boldLabel('BIOLÓGICOS ANTERIORES')}${bioAnteriores.filter(b=>b.med).map((b,i)=>`<p style="margin:0">${i+1}. ${b.med}${b.duracao?' ('+b.duracao+')':''}${b.motivo?' — '+b.motivo:''}</p>`).join('')}` : ''}
 
-      ${igraLine}
+      ${labLines.igra ? `<p style="margin-top:14px;font-size:13px">${labLines.igra}</p>` : ''}
 
-      ${labLine ? `<p style="margin-top:14px;white-space:pre-line;font-size:13px">${labLine}</p>` : ''}
+      ${labLines.frAnticcp ? `<p style="margin-top:10px;font-size:13px">${labLines.frAnticcp}</p>` : ''}
+      ${labLines.sorologias ? `<p style="margin-top:4px;font-size:13px">${labLines.sorologias}</p>` : ''}
+      ${labLines.laboratoriais ? `<p style="margin-top:4px;font-size:13px">${labLines.laboratoriais}</p>` : ''}
 
       ${imgSection ? `<div style="margin-top:14px">${imgSection}</div>` : ''}
 
@@ -2143,50 +2188,43 @@ function genPDF() {
   if(atuais.length>0){
     txt('MEDICAÇÕES ATUAIS',10,true);nl(1);
     atuais.forEach((x,i)=>{
-      let line=`${i+1}. ${x.med.toUpperCase()}`;
-      if(x.dose) line+=` ${x.dose.toUpperCase()}`;
-      if(x.dur) line+=` - INICIO EM ${x.dur.toUpperCase()}`;
-      if(!x.motivo) line+=' - ATUAL';
+      let line=`${i+1}. ${x.med}`;
+      if(x.dose) line+=` — ${x.dose}`;
+      if(x.dataInicio) line+=` — início em ${fmtDate(x.dataInicio)}`;
       txt(line,10,false);nl(1);
     });nl(2);
   }
   if(anteriores.length>0){
-    txt('USO PRÉVIO',10,true);nl(1);
+    txt('USO PRÉVIO / SUSPENSOS',10,true);nl(1);
     anteriores.forEach((x,i)=>{
-      let line=`${i+1}. ${x.med.toUpperCase()}`;
-      if(x.dose) line+=` ${x.dose.toUpperCase()}`;
-      if(x.dur) line+=` - ${x.dur.toUpperCase()}`;
-      if(x.motivo) line+=` - ${x.motivo.toUpperCase()}`;
+      let line=`${i+1}. ${x.med}`;
+      if(x.dose) line+=` — ${x.dose}`;
+      if(x.dataInicio) line+=` — início ${fmtDate(x.dataInicio)}`;
+      if(x.dataSuspensao) line+=` — suspensão ${fmtDate(x.dataSuspensao)}`;
+      if(x.motivo) line+=` (${x.motivo})`;
       txt(line,10,false);nl(1);
     });nl(2);
   }
   if(bioAnteriores.filter(b=>b.med).length>0){
     txt('BIOLÓGICOS ANTERIORES',10,true);nl(1);
     bioAnteriores.filter(b=>b.med).forEach((b,i)=>{
-      let line=`${i+1}. ${b.med.toUpperCase()}`;
+      let line=`${i+1}. ${b.med}`;
       if(b.duracao) line+=` (${b.duracao})`;
       if(b.motivo) line+=` — ${b.motivo}`;
       txt(line,10,false);nl(1);
     });nl(2);
   }
 
-  // IGRA
-  const igra=EXAMES_BASE.find(e=>e.id==='igra');
-  if(igra&&exams['igra']?.result){
-    txt(`IGRA ${fmtDate(exams['igra'].date)||dataL}`,10,true);nl(1);
-    txt(exams['igra'].result.toUpperCase(),10,false);nl(3);
-  } else if(fd.tb_igra_positivo){
-    txt('IGRA POSITIVO',10,true);nl(1);
-    txt(`Profilaxia TB: ${fd.tb_profilaxia_med||'—'}. Status: ${fd.tb_profilaxia_status||'—'}.`,10,false);nl(3);
-  }
-
-  // Lab results inline
-  const labLine=buildLabLine();
-  if(labLine){txt(labLine,10,false);nl(3);}
+  // Lab results by category
+  const labLines=buildLabLines();
+  if(labLines.igra){txt(labLines.igra,10,false);nl(2);}
+  if(labLines.frAnticcp){txt(labLines.frAnticcp,10,false);nl(2);}
+  if(labLines.sorologias){txt(labLines.sorologias,10,false);nl(2);}
+  if(labLines.laboratoriais){txt(labLines.laboratoriais,10,false);nl(2);}
 
   // Imaging
   imagens.filter(i=>i.tipo).forEach(img=>{
-    txt(`${img.tipo.toUpperCase()}${img.data?' '+fmtDate(img.data):''}`,10,true);nl(1);
+    txt(`${img.tipo}${img.data?' — '+fmtDate(img.data):''}`,10,true);nl(1);
     if(img.laudo){txt(img.laudo,10,false);}nl(3);
   });
 
@@ -2243,7 +2281,8 @@ function genDOCX() {
       ...rows.map(row=>new TableRow({children:row.map(cell=>new TableCell({children:[new Paragraph({children:[new TextRun({text:String(cell||'—'),size:18})],spacing:{after:0}})]}))}))]
   });
 
-  const dRows=dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',x.dur||'—',x.motivo||'—']);
+  const dRowsAtuais=dmardAtuais.filter(x=>x.med).map(x=>[x.med,x.dose||'—',fmtDate(x.dataInicio)||'—','Em uso']);
+  const dRows=[...dRowsAtuais,...dmards.filter(x=>x.med).map(x=>[x.med,x.dose||'—',(fmtDate(x.dataInicio)||'—')+(x.dataSuspensao?'→'+fmtDate(x.dataSuspensao):''),x.motivo||'—'])];
   const eRows=EXAMES_BASE.filter(e=>exams[e.id]&&exams[e.id].result)
     .map(e=>[e.l,exams[e.id].result||'—',e.ownDate?fmtDate(exams[e.id].date):fmtDate(examDateGlobal)||'—']);
 
@@ -2258,7 +2297,7 @@ function genDOCX() {
     h2('2. ATIVIDADE DE DOENÇA'), p(n.atv),
     h2('3. HISTÓRICO DE TRATAMENTO CONVENCIONAL'),
   ];
-  if(dRows.length>0) children.push(tbl(['Medicamento','Dose','Duração','Motivo de suspensão'],dRows));
+  if(dRows.length>0) children.push(tbl(['Medicamento','Dose','Datas','Motivo de suspensão'],dRows));
   else children.push(p('Nenhum medicamento convencional registrado.'));
   children.push(h2('4. EXAMES PRÉ-AUTORIZAÇÃO'));
   if(eRows.length>0) children.push(tbl(['Exame','Resultado','Data'],eRows));
@@ -2300,6 +2339,7 @@ function salvarLaudo() {
     fd: JSON.parse(JSON.stringify(fd)),
     mv: JSON.parse(JSON.stringify(mv)),
     dmards: JSON.parse(JSON.stringify(dmards)),
+    dmardAtuais: JSON.parse(JSON.stringify(dmardAtuais)),
     imagens: JSON.parse(JSON.stringify(imagens)),
   };
   laudos.unshift(snap);
@@ -2323,8 +2363,9 @@ function carregarLaudo(id) {
   if(!snap) return;
   selectDisease(snap.disease);
   setTimeout(()=>{
-    fd=snap.fd; mv=snap.mv; dmards=[]; imagens=[];
+    fd=snap.fd; mv=snap.mv; dmards=[]; dmardAtuais=[]; imagens=[];
     snap.dmards.forEach(d=>addDmard(d));
+    (snap.dmardAtuais||[]).forEach(d=>addDmardAtual(d));
     snap.imagens.forEach(im=>{imagens.push(im);addImagem();imagens[imagens.length-1]=im;});
     alert('Laudo carregado. Verifique os campos e atualize os escores se necessário.');
   },100);
