@@ -977,6 +977,10 @@ header h1{font-size:15px;font-weight:700}
           <label>Via de administração</label>
           <input type="text" id="med_via" readonly style="background:#f0f4f8">
         </div>
+        <div class="field-group">
+          <label>Concentração por unidade</label>
+          <input type="text" id="med_concentracao" placeholder="Ex: 5mg, 100mg/10ml, 150mg/ml" oninput="fd.med_concentracao=this.value">
+        </div>
       </div>
       <div class="field-group" style="margin-top:12px">
         <label>Posologia sugerida (editável)</label>
@@ -1118,36 +1122,36 @@ const MED_OPTS = {
 // vias: array = múltiplas opções para seletor; string = via única
 // pesoDep: true = posologia calculada com peso do paciente
 const MED_INFO = {
-  'Adalimumabe':{via:'Subcutânea (SC)',pos:'40 mg SC a cada 14 dias'},
-  'Etanercepte':{via:'Subcutânea (SC)',pos:'50 mg SC uma vez por semana'},
-  'Infliximabe':{via:'Endovenosa (EV)',pos:'3–5 mg/kg EV nas semanas 0, 2, 6 e a seguir a cada 8 semanas',pesoDep:true,posPeso:(kg)=>`${(3*kg).toFixed(0)}–${(5*kg).toFixed(0)} mg EV nas semanas 0, 2, 6 e a cada 8 semanas (3–5 mg/kg; peso: ${kg} kg)`},
-  'Certolizumabe pegol':{via:'Subcutânea (SC)',pos:'400 mg SC nas semanas 0, 2 e 4 (ataque), depois 200 mg a cada 2 semanas'},
-  'Golimumabe':{via:['Subcutânea (SC)','Endovenosa (EV)'],pos:{sc:'50 mg SC mensalmente',ev:'2 mg/kg EV nas semanas 0, 4 e depois a cada 8 semanas',evPeso:(kg)=>`${(2*kg).toFixed(0)} mg EV nas semanas 0, 4 e depois a cada 8 semanas (2 mg/kg; peso: ${kg} kg)`},pesoDep:true},
-  'Tocilizumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'8 mg/kg EV a cada 4 semanas',evPeso:(kg)=>`${(8*kg).toFixed(0)} mg EV a cada 4 semanas (8 mg/kg; peso: ${kg} kg)`,sc:'162 mg SC semanalmente'},pesoDep:true},
-  'Abatacepte':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois a cada 4 semanas',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois a cada 4 semanas (10 mg/kg; peso: ${kg} kg)`,sc:'125 mg SC semanalmente'},pesoDep:true},
-  'Rituximabe':{via:'Endovenosa (EV)',pos:'1000 mg EV, 2 doses com intervalo de 15 dias (protocolo AR/vasculite)'},
-  'Baricitinibe':{via:'Oral (VO)',pos:'2–4 mg VO uma vez ao dia (ajustar conforme TFG)'},
-  'Tofacitinibe':{via:'Oral (VO)',pos:'5 mg VO duas vezes ao dia (ou 11 mg liberação prolongada uma vez ao dia)'},
-  'Upadacitinibe':{via:'Oral (VO)',pos:'15 mg VO uma vez ao dia'},
-  'Secuquinumabe':{via:'Subcutânea (SC)',pos:'150–300 mg SC nas semanas 0, 1, 2, 3, 4 (ataque), depois mensalmente'},
-  'Ixequizumabe':{via:'Subcutânea (SC)',pos:'160 mg SC (ataque), depois 80 mg a cada 2 semanas por 12 semanas, depois 80 mg mensalmente'},
-  'Ustequinumabe':{via:['Endovenosa (EV) — Ataque','Subcutânea (SC) — Manutenção'],pos:{ev:'Ataque: dose única EV peso-dependente (260 mg se ≤55 kg; 390 mg se 55–85 kg; 520 mg se >85 kg). Manutenção: 90 mg SC a cada 12 semanas a partir da semana 16.',evPeso:(kg)=>`Ataque: ${kg<=55?260:kg<=85?390:520} mg EV dose única (peso: ${kg} kg). Manutenção: 90 mg SC a cada 12 semanas a partir da semana 16.`,sc:'90 mg SC a cada 12 semanas (manutenção; após ataque EV prévio)'},pesoDep:true},
-  'Guselcumabe':{via:'Subcutânea (SC)',pos:'100 mg SC nas semanas 0, 4 e depois a cada 8 semanas'},
-  'Risanquizumabe':{via:['Endovenosa (EV) — Indução','Subcutânea (SC) — Manutenção'],pos:{ev:'Indução: 600 mg EV nas semanas 0, 4 e 8 (total de 3 infusões). Manutenção: 360 mg SC a cada 8 semanas a partir da semana 16.',sc:'360 mg SC a cada 8 semanas (manutenção; após indução EV prévia)'}},
-  'Bimekizumabe':{via:'Subcutânea (SC)',pos:'320 mg SC a cada 4 semanas nas primeiras 16 semanas (ataque), depois 320 mg SC a cada 8 semanas (manutenção)'},
-  'Apremilaste':{via:'Oral (VO)',pos:'30 mg VO duas vezes ao dia (após titulação gradual de 5 dias)'},
-  'Belimumabe':{via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois mensalmente',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois mensalmente (10 mg/kg; peso: ${kg} kg)`,sc:'200 mg SC semanalmente'},pesoDep:true},
-  'Anifrolumabe':{via:'Endovenosa (EV)',pos:'300 mg EV a cada 4 semanas'},
-  'Mepolizumabe':{via:'Subcutânea (SC)',pos:'300 mg SC a cada 4 semanas'},
-  'Imunoglobulina Humana IV (IVIG)':{via:'Endovenosa (EV)',pos:'2 g/kg EV divididos em 2–5 dias por ciclo',pesoDep:true,posPeso:(kg)=>`${(2*kg).toFixed(0)} g EV divididos em 2–5 dias por ciclo (2 g/kg; peso: ${kg} kg), repetir mensalmente por 3–6 meses`},
-  'Outro':{via:'',pos:''},
-  'Ácido zoledrônico':{via:'Endovenosa (EV)',pos:'5 mg EV em dose única anual (infusão de 15 min)'},
-  'Denosumabe':{via:'Subcutânea (SC)',pos:'60 mg SC a cada 6 meses'},
-  'Teriparatida':{via:'Subcutânea (SC)',pos:'20 mcg SC 1x/dia por até 24 meses'},
-  'Romosozumabe':{via:'Subcutânea (SC)',pos:'210 mg SC (2 injeções de 105 mg) 1x/mês por 12 meses'},
-  'Alendronato':{via:'Via oral',pos:'70 mg VO 1x/semana'},
-  'Risedronato':{via:'Via oral',pos:'35 mg VO 1x/semana'},
-  'Ibandronato':{via:'Via oral',pos:'150 mg VO 1x/mês'}
+  'Adalimumabe':{conc:'40mg/0,8ml',via:'Subcutânea (SC)',pos:'40 mg SC a cada 14 dias'},
+  'Etanercepte':{conc:'50mg/ml',via:'Subcutânea (SC)',pos:'50 mg SC uma vez por semana'},
+  'Infliximabe':{conc:'100mg/10ml',via:'Endovenosa (EV)',pos:'3–5 mg/kg EV nas semanas 0, 2, 6 e a seguir a cada 8 semanas',pesoDep:true,posPeso:(kg)=>`${(3*kg).toFixed(0)}–${(5*kg).toFixed(0)} mg EV nas semanas 0, 2, 6 e a cada 8 semanas (3–5 mg/kg; peso: ${kg} kg)`},
+  'Certolizumabe pegol':{conc:'200mg/ml',via:'Subcutânea (SC)',pos:'400 mg SC nas semanas 0, 2 e 4 (ataque), depois 200 mg a cada 2 semanas'},
+  'Golimumabe':{conc:'50mg/0,5ml',via:['Subcutânea (SC)','Endovenosa (EV)'],pos:{sc:'50 mg SC mensalmente',ev:'2 mg/kg EV nas semanas 0, 4 e depois a cada 8 semanas',evPeso:(kg)=>`${(2*kg).toFixed(0)} mg EV nas semanas 0, 4 e depois a cada 8 semanas (2 mg/kg; peso: ${kg} kg)`},pesoDep:true},
+  'Tocilizumabe':{conc:'20mg/ml',via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'8 mg/kg EV a cada 4 semanas',evPeso:(kg)=>`${(8*kg).toFixed(0)} mg EV a cada 4 semanas (8 mg/kg; peso: ${kg} kg)`,sc:'162 mg SC semanalmente'},pesoDep:true},
+  'Abatacepte':{conc:'250mg/15ml',via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois a cada 4 semanas',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois a cada 4 semanas (10 mg/kg; peso: ${kg} kg)`,sc:'125 mg SC semanalmente'},pesoDep:true},
+  'Rituximabe':{conc:'500mg/50ml',via:'Endovenosa (EV)',pos:'1000 mg EV, 2 doses com intervalo de 15 dias (protocolo AR/vasculite)'},
+  'Baricitinibe':{conc:'2mg ou 4mg',via:'Oral (VO)',pos:'2–4 mg VO uma vez ao dia (ajustar conforme TFG)'},
+  'Tofacitinibe':{conc:'5mg',via:'Oral (VO)',pos:'5 mg VO duas vezes ao dia (ou 11 mg liberação prolongada uma vez ao dia)'},
+  'Upadacitinibe':{conc:'15mg',via:'Oral (VO)',pos:'15 mg VO uma vez ao dia'},
+  'Secuquinumabe':{conc:'150mg/ml',via:'Subcutânea (SC)',pos:'150–300 mg SC nas semanas 0, 1, 2, 3, 4 (ataque), depois mensalmente'},
+  'Ixequizumabe':{conc:'80mg/ml',via:'Subcutânea (SC)',pos:'160 mg SC (ataque), depois 80 mg a cada 2 semanas por 12 semanas, depois 80 mg mensalmente'},
+  'Ustequinumabe':{conc:'45mg/0,5ml',via:['Endovenosa (EV) — Ataque','Subcutânea (SC) — Manutenção'],pos:{ev:'Ataque: dose única EV peso-dependente (260 mg se ≤55 kg; 390 mg se 55–85 kg; 520 mg se >85 kg). Manutenção: 90 mg SC a cada 12 semanas a partir da semana 16.',evPeso:(kg)=>`Ataque: ${kg<=55?260:kg<=85?390:520} mg EV dose única (peso: ${kg} kg). Manutenção: 90 mg SC a cada 12 semanas a partir da semana 16.`,sc:'90 mg SC a cada 12 semanas (manutenção; após ataque EV prévio)'},pesoDep:true},
+  'Guselcumabe':{conc:'100mg/ml',via:'Subcutânea (SC)',pos:'100 mg SC nas semanas 0, 4 e depois a cada 8 semanas'},
+  'Risanquizumabe':{conc:'150mg/ml',via:['Endovenosa (EV) — Indução','Subcutânea (SC) — Manutenção'],pos:{ev:'Indução: 600 mg EV nas semanas 0, 4 e 8 (total de 3 infusões). Manutenção: 360 mg SC a cada 8 semanas a partir da semana 16.',sc:'360 mg SC a cada 8 semanas (manutenção; após indução EV prévia)'}},
+  'Bimekizumabe':{conc:'160mg/ml',via:'Subcutânea (SC)',pos:'320 mg SC a cada 4 semanas nas primeiras 16 semanas (ataque), depois 320 mg SC a cada 8 semanas (manutenção)'},
+  'Apremilaste':{conc:'30mg',via:'Oral (VO)',pos:'30 mg VO duas vezes ao dia (após titulação gradual de 5 dias)'},
+  'Belimumabe':{conc:'200mg/ml',via:['Endovenosa (EV)','Subcutânea (SC)'],pos:{ev:'10 mg/kg EV nas semanas 0, 2, 4 e depois mensalmente',evPeso:(kg)=>`${(10*kg).toFixed(0)} mg EV nas semanas 0, 2, 4 e depois mensalmente (10 mg/kg; peso: ${kg} kg)`,sc:'200 mg SC semanalmente'},pesoDep:true},
+  'Anifrolumabe':{conc:'300mg/2ml',via:'Endovenosa (EV)',pos:'300 mg EV a cada 4 semanas'},
+  'Mepolizumabe':{conc:'100mg/ml',via:'Subcutânea (SC)',pos:'300 mg SC a cada 4 semanas'},
+  'Imunoglobulina Humana IV (IVIG)':{conc:'50mg/ml',via:'Endovenosa (EV)',pos:'2 g/kg EV divididos em 2–5 dias por ciclo',pesoDep:true,posPeso:(kg)=>`${(2*kg).toFixed(0)} g EV divididos em 2–5 dias por ciclo (2 g/kg; peso: ${kg} kg), repetir mensalmente por 3–6 meses`},
+  'Outro':{conc:'',via:'',pos:''},
+  'Ácido zoledrônico':{conc:'5mg/100ml',via:'Endovenosa (EV)',pos:'5 mg EV em dose única anual (infusão de 15 min)'},
+  'Denosumabe':{conc:'60mg/ml',via:'Subcutânea (SC)',pos:'60 mg SC a cada 6 meses'},
+  'Teriparatida':{conc:'20mcg/80mcl',via:'Subcutânea (SC)',pos:'20 mcg SC 1x/dia por até 24 meses'},
+  'Romosozumabe':{conc:'105mg/1,17ml',via:'Subcutânea (SC)',pos:'210 mg SC (2 injeções de 105 mg) 1x/mês por 12 meses'},
+  'Alendronato':{conc:'70mg',via:'Via oral',pos:'70 mg VO 1x/semana'},
+  'Risedronato':{conc:'35mg',via:'Via oral',pos:'35 mg VO 1x/semana'},
+  'Ibandronato':{conc:'150mg',via:'Via oral',pos:'150 mg VO 1x/mês'}
 };
 const DMARD_OPTS = {
   ar:['Metotrexato (MTX)','Hidroxicloroquina','Sulfassalazina','Leflunomida','Azatioprina','Outro'],
@@ -2141,7 +2145,10 @@ function rmImagem(idx) {
 function onMedChange() {
   const m=document.getElementById('med_nome').value;
   fd.med_nome=m;
-  const info=MED_INFO[m]||{via:'',pos:''};
+  const info=MED_INFO[m]||{via:'',pos:'',conc:''};
+  // Auto-fill concentration
+  const concEl=document.getElementById('med_concentracao');
+  if(concEl){ concEl.value=info.conc||''; fd.med_concentracao=info.conc||''; }
   const viaGroup=document.getElementById('med_via_group');
 
   if(Array.isArray(info.via)){
@@ -2404,7 +2411,7 @@ function buildScoreLine() {
     if(f.mmt8!==undefined) parts.push(`MMT-8: ${f.mmt8}/80`);
     if(f.dm_ck) parts.push(`CK: ${f.dm_ck} U/L`);
   }
-  return parts.join('\n');
+  return parts.join(' / ');
 }
 
 function buildMedList(label, list) {
@@ -2486,9 +2493,10 @@ function buildPrescricao() {
 
   let txt = '';
   if(header) txt += `${header}\n\n`;
-  txt += `1. ${med}\n`;
+  const conc = f.med_concentracao ? ` ${f.med_concentracao}` : '';
+  txt += `1. ${med}${conc}\n`;
   if(pos) txt += `${pos}\n`;
-  if(f.peso) txt += `\nPeso do paciente: ${f.peso} kg\n`;
+  if(f.med_peso) txt += `\nPeso do paciente: ${f.med_peso} kg\n`;
   if(cid) txt += `\nCID ${cid.split(' ')[0]}\n`;
   if(dut) txt += `\nFundamentação: ${dut}`;
   return txt.trim();
@@ -2589,7 +2597,7 @@ function buildPreview() {
 
         <p ${pStyle} style="margin-top:18px">${introClinica}</p>
 
-        ${scoreLine ? `<div style="margin-top:14px">${scoreLine.split('\n').filter(l=>l.trim()).map(l=>`<p style="margin:2px 0;font-size:13px">${l}</p>`).join('')}</div>` : ''}
+        ${scoreLine ? `<p style="margin-top:14px;margin-bottom:2px;font-size:13px">${scoreLine}</p>` : ''}
 
         ${atuais.length > 0 ? `${sectionLabel('Medicações atuais')}${atuais.map((x,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início em '+fmtDate(x.dataInicio):''}</p>`).join('')}` : ''}
 
