@@ -110,6 +110,7 @@ tr:hover td{background:#f7faff}
   <nav>
     <button id="nav-pacientes" class="active" onclick="showPage('page-pacientes')">Pacientes</button>
     <button onclick="novoPaciente()">+ Novo Paciente</button>
+    <button onclick="preencherDadosTeste()">🧪 Paciente de teste</button>
     <button onclick="exportJSON()">Exportar backup</button>
     <button onclick="document.getElementById('import-file').click()">Importar backup</button>
     <input type="file" id="import-file" accept="application/json" style="display:none" onchange="importJSON(this)">
@@ -663,6 +664,78 @@ function novoPaciente(){
   setData(db);
   updateExportStatus();
   abrirPaciente(p.id);
+}
+
+function preencherDadosTeste(){
+  if(!confirm('Isso cria um paciente fictício novo com todos os campos preenchidos, para você testar o sistema. Deseja continuar?')) return;
+
+  const hpmaTexto = 'Paciente relata dor e edema em articulações das mãos e punhos há aproximadamente 8 meses, de caráter simétrico, associada a rigidez matinal com duração superior a 1 hora. Nega febre, emagrecimento ou outras queixas sistêmicas. Procurou atendimento devido à piora progressiva da dor e dificuldade para realizar atividades manuais no trabalho.';
+
+  const db = getData();
+  const p = {
+    id: uid(),
+    nome: 'Maria Aparecida Souza',
+    dataNascimento: '1978-03-15',
+    sexo: 'Feminino',
+    cpf: '123.456.789-00',
+    rg: '12.345.678-9',
+    telefone: '(11) 98765-4321',
+    email: 'maria.souza@email.com',
+    profissao: 'Professora',
+    endereco: 'Rua das Flores, 123 - Jardim Primavera - São Paulo/SP - CEP 04567-000',
+    convenio: 'Unimed',
+    carteirinha: '0123456789',
+    emergenciaNome: 'João Souza (esposo)',
+    emergenciaTel: '(11) 91234-5678',
+    alergias: ['Dipirona (Novalgina)', 'Penicilina'],
+    antecedentesPessoais: 'Hipertensão arterial sistêmica em uso de losartana 50 mg/dia. Nega tabagismo. Etilismo social. Nega diabetes.',
+    antecedentesFamiliares: 'Mãe com artrite reumatoide. Pai hipertenso e diabético.',
+    hpma: hpmaTexto,
+    medicacoes: [
+      {nome:'Metotrexato (Reumatrex, Texate)', dose:'15 mg/semana', posologia:'1x/semana', inicio:'2025-11-10', ativo:true},
+      {nome:'Ácido fólico', dose:'5 mg', posologia:'1x/semana', inicio:'2025-11-10', ativo:true},
+      {nome:'Prednisona (Meticorten)', dose:'5 mg', posologia:'1x/dia pela manhã', inicio:'2025-11-10', ativo:true},
+      {nome:'Losartana potássica (Cozaar)', dose:'50 mg', posologia:'1x/dia', inicio:'2022-04-01', ativo:true}
+    ],
+    diagnosticos: [
+      {cid:'M06.0', descricao:'Artrite reumatoide soro-negativa', data:'2025-11-10'},
+      {cid:'I10', descricao:'Hipertensão essencial (primária)', data:'2022-04-01'}
+    ],
+    evolucoes: [
+      {
+        data:'2025-11-10', profissional:'Dr. Caio', tipoConsulta:'primeira', hpma: hpmaTexto,
+        s:'Dor e edema em mãos e punhos, rigidez matinal com duração maior que 1 hora.',
+        o:'Sinovite palpável em punhos e 2ª/3ª articulações metacarpofalangeanas bilateralmente. Sem deformidades. Demais aparelhos sem alterações.',
+        a:'Quadro clínico compatível com artrite reumatoide inicial.',
+        pt:'Iniciar metotrexato associado a corticoide em dose baixa como ponte, com orientações sobre a doença e adesão ao tratamento.',
+        p:'Solicitar fator reumatoide, anti-CCP, VHS, PCR e radiografia de mãos e punhos. Retorno em 6 semanas.'
+      },
+      {
+        data:'2026-01-05', profissional:'Dr. Caio', tipoConsulta:'retorno', hpma: hpmaTexto,
+        s:'Refere melhora significativa da dor e da rigidez matinal, hoje com duração de cerca de 15 minutos.',
+        o:'Redução do número de articulações dolorosas e edemaciadas. Sem sinovite ativa em punhos no momento.',
+        a:'Boa resposta ao tratamento instituído, doença em baixa atividade.',
+        pt:'Manter esquema atual e iniciar desmame gradual do corticoide.',
+        p:'Manter metotrexato e ácido fólico, reduzir prednisona para 2,5 mg/dia. Retorno em 3 meses com exames.'
+      }
+    ],
+    exames: [
+      {categoria:'laboratorial', data:'2025-11-12', tipo:'Fator reumatoide', resultado:'128 UI/mL (VR < 20)'},
+      {categoria:'laboratorial', data:'2025-11-12', tipo:'Anti-CCP', resultado:'> 340 U/mL (VR < 20) — fortemente positivo'},
+      {categoria:'laboratorial', data:'2025-11-12', tipo:'VHS', resultado:'42 mm/h (VR < 20)'},
+      {categoria:'laboratorial', data:'2025-11-12', tipo:'PCR', resultado:'18 mg/L (VR < 5)'},
+      {categoria:'laboratorial', data:'2026-01-03', tipo:'Hemograma completo', resultado:'Sem alterações significativas'},
+      {categoria:'imagem', data:'2025-11-15', tipo:'Radiografia de mãos e punhos', resultado:'Discreta redução do espaço articular em punhos, sem erosões ósseas.'},
+      {categoria:'biopsia', data:'2025-12-01', tipo:'Biópsia de glândula salivar labial', resultado:'Sialoadenite crônica focal leve, sem critérios diagnósticos para síndrome de Sjögren.'}
+    ],
+    criadoEm: new Date().toISOString()
+  };
+
+  db.push(p);
+  setData(db);
+  updateExportStatus();
+  abrirPaciente(p.id);
+  showToast('Paciente de teste criado com todos os campos preenchidos');
 }
 
 function abrirPaciente(id){
