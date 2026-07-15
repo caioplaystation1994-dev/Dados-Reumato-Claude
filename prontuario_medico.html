@@ -182,6 +182,7 @@ tr:hover td{background:#f7faff}
         <div class="field-group"><label>Nº carteirinha</label><input type="text" id="f-carteirinha" onchange="salvarDadosBasicos()"></div>
         <div class="field-group"><label>Contato de emergência</label><input type="text" id="f-emergencia-nome" placeholder="Nome" onchange="salvarDadosBasicos()"></div>
         <div class="field-group"><label>Telefone de emergência</label><input type="text" id="f-emergencia-tel" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group wide"><label>Resumo diagnóstico (usado no resumo de impressão)</label><input type="text" id="f-resumo-diagnostico" placeholder="ex: Artrite reumatoide, FR e anti-CCP negativos, não erosiva, Dx em 2023" onchange="salvarDadosBasicos()"></div>
       </div>
     </div>
   </div>
@@ -200,6 +201,10 @@ tr:hover td{background:#f7faff}
     <div class="section-card">
       <div class="section-title">Antecedentes Pessoais</div>
       <textarea id="f-antecedentes-pessoais" style="width:100%;min-height:90px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit" onchange="salvarDadosBasicos()"></textarea>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Hábitos</div>
+      <textarea id="f-habitos" style="width:100%;min-height:70px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit" placeholder="ex: Tabagista&#10;Musculação 3x/semana" onchange="salvarDadosBasicos()"></textarea>
     </div>
     <div class="section-card">
       <div class="section-title">Antecedentes Familiares</div>
@@ -222,7 +227,7 @@ tr:hover td{background:#f7faff}
         <button class="btn-secondary btn-sm" onclick="adicionarMedicacao()">+ Adicionar</button>
       </div>
       <table class="mini-table" id="med-table">
-        <thead><tr><th>Medicamento</th><th>Dose</th><th>Posologia</th><th>Início</th><th>Ativo</th><th class="no-print"></th></tr></thead>
+        <thead><tr><th>Medicamento</th><th>Dose</th><th>Posologia</th><th>Início</th><th>Ativo</th><th>Suspensão</th><th>Motivo suspensão</th><th class="no-print"></th></tr></thead>
         <tbody id="med-tbody"></tbody>
       </table>
     </div>
@@ -262,6 +267,8 @@ tr:hover td{background:#f7faff}
             <option value="retorno">Retorno (seguimento)</option>
           </select>
         </div>
+        <div class="field-group"><label>Peso (kg)</label><input type="text" id="evo-peso" placeholder="ex: 87"></div>
+        <div class="field-group"><label>Índice de atividade</label><input type="text" id="evo-indice-atividade" placeholder="ex: DAS28-PCR 5.2"></div>
         <div class="field-group wide" id="hpma-primeira-wrap">
           <label>HPMA — História da Moléstia Atual</label>
           <textarea id="evo-hpma"></textarea>
@@ -304,7 +311,7 @@ tr:hover td{background:#f7faff}
         </div>
         <div><label>Data</label><input type="date" id="exame-data"></div>
         <div><label>Tipo/Nome</label><input type="text" id="exame-tipo"></div>
-        <div style="grid-column:span 2"><label>Resultado/Observação</label><input type="text" id="exame-resultado"></div>
+        <div style="grid-column:span 2"><label>Resultado/Observação (aceita várias linhas)</label><textarea id="exame-resultado" style="min-height:60px"></textarea></div>
         <button class="btn-secondary btn-sm" onclick="adicionarExame()">+ Adicionar</button>
       </div>
     </div>
@@ -656,7 +663,8 @@ function novoPaciente(){
   const p = {
     id: uid(), nome:'', dataNascimento:'', sexo:'', cpf:'', rg:'', telefone:'', email:'',
     profissao:'', endereco:'', convenio:'', carteirinha:'', emergenciaNome:'', emergenciaTel:'',
-    alergias:[], antecedentesPessoais:'', antecedentesFamiliares:'', hpma:'',
+    resumoDiagnostico:'',
+    alergias:[], antecedentesPessoais:'', antecedentesFamiliares:'', habitos:'', hpma:'',
     medicacoes:[], diagnosticos:[], evolucoes:[], exames:[],
     criadoEm: new Date().toISOString()
   };
@@ -669,64 +677,80 @@ function novoPaciente(){
 function preencherDadosTeste(){
   if(!confirm('Isso cria um paciente fictício novo com todos os campos preenchidos, para você testar o sistema. Deseja continuar?')) return;
 
-  const hpmaTexto = 'Paciente relata dor e edema em articulações das mãos e punhos há aproximadamente 8 meses, de caráter simétrico, associada a rigidez matinal com duração superior a 1 hora. Nega febre, emagrecimento ou outras queixas sistêmicas. Procurou atendimento devido à piora progressiva da dor e dificuldade para realizar atividades manuais no trabalho.';
+  const hpmaTexto = 'Paciente com artralgia inflamatória de pequenas articulações, rigidez matinal associada, diagnóstico de artrite reumatoide soro negativa em 2023.';
 
   const db = getData();
   const p = {
     id: uid(),
-    nome: 'Maria Aparecida Souza',
-    dataNascimento: '1978-03-15',
-    sexo: 'Feminino',
-    cpf: '123.456.789-00',
-    rg: '12.345.678-9',
-    telefone: '(11) 98765-4321',
-    email: 'maria.souza@email.com',
-    profissao: 'Professora',
-    endereco: 'Rua das Flores, 123 - Jardim Primavera - São Paulo/SP - CEP 04567-000',
-    convenio: 'Unimed',
-    carteirinha: '0123456789',
-    emergenciaNome: 'João Souza (esposo)',
-    emergenciaTel: '(11) 91234-5678',
+    nome: 'Caio Wandenkolk',
+    dataNascimento: '1993-09-10',
+    sexo: 'Masculino',
+    cpf: '987.654.321-00',
+    rg: '98.765.432-1',
+    telefone: '(11) 99876-5432',
+    email: 'caio.wandenkolk@email.com',
+    profissao: 'Médico',
+    endereco: 'Av. Paulista, 1000 - São Paulo/SP',
+    convenio: 'Bradesco Saúde',
+    carteirinha: '9876543210',
+    emergenciaNome: 'Ana Wandenkolk (esposa)',
+    emergenciaTel: '(11) 98888-7777',
+    resumoDiagnostico: 'Artrite reumatoide, FR e anti-CCP negativos, não erosiva, Dx em 2023',
     alergias: ['Dipirona (Novalgina)', 'Penicilina'],
-    antecedentesPessoais: 'Hipertensão arterial sistêmica em uso de losartana 50 mg/dia. Nega tabagismo. Etilismo social. Nega diabetes.',
-    antecedentesFamiliares: 'Mãe com artrite reumatoide. Pai hipertenso e diabético.',
+    antecedentesPessoais: 'Asma',
+    habitos: 'Tabagista\nMusculação 3x/semana',
+    antecedentesFamiliares: 'Nada digno de nota',
     hpma: hpmaTexto,
     medicacoes: [
-      {nome:'Metotrexato (Reumatrex, Texate)', dose:'15 mg/semana', posologia:'1x/semana', inicio:'2025-11-10', ativo:true},
-      {nome:'Ácido fólico', dose:'5 mg', posologia:'1x/semana', inicio:'2025-11-10', ativo:true},
-      {nome:'Prednisona (Meticorten)', dose:'5 mg', posologia:'1x/dia pela manhã', inicio:'2025-11-10', ativo:true},
-      {nome:'Losartana potássica (Cozaar)', dose:'50 mg', posologia:'1x/dia', inicio:'2022-04-01', ativo:true}
+      {nome:'Alenia', dose:'400/12', posologia:'', inicio:'', ativo:true, fim:'', motivoSuspensao:''},
+      {nome:'Metotrexato', dose:'15mg/semana', posologia:'', inicio:'2023-05-10', ativo:true, fim:'', motivoSuspensao:''},
+      {nome:'Ácido fólico', dose:'5mg/semana', posologia:'', inicio:'', ativo:true, fim:'', motivoSuspensao:''},
+      {nome:'Golimumabe', dose:'50mg/mês', posologia:'', inicio:'2024-02-01', ativo:true, fim:'', motivoSuspensao:''},
+      {nome:'Prednisona', dose:'', posologia:'', inicio:'', ativo:false, fim:'2026-01-15', motivoSuspensao:'remissão'},
+      {nome:'Leflunomida', dose:'20mg/dia', posologia:'', inicio:'', ativo:false, fim:'2024-02-01', motivoSuspensao:'intolerância gastrointestinal'},
+      {nome:'Infliximabe', dose:'3mg/kg', posologia:'', inicio:'', ativo:false, fim:'2024-01-01', motivoSuspensao:'falha secundária'}
     ],
     diagnosticos: [
-      {cid:'M06.0', descricao:'Artrite reumatoide soro-negativa', data:'2025-11-10'},
-      {cid:'I10', descricao:'Hipertensão essencial (primária)', data:'2022-04-01'}
+      {cid:'M06.0', descricao:'Artrite reumatoide soro-negativa', data:'2023-05-10'}
     ],
     evolucoes: [
       {
-        data:'2025-11-10', profissional:'Dr. Caio', tipoConsulta:'primeira', hpma: hpmaTexto,
-        s:'Dor e edema em mãos e punhos, rigidez matinal com duração maior que 1 hora.',
-        o:'Sinovite palpável em punhos e 2ª/3ª articulações metacarpofalangeanas bilateralmente. Sem deformidades. Demais aparelhos sem alterações.',
-        a:'Quadro clínico compatível com artrite reumatoide inicial.',
-        pt:'Iniciar metotrexato associado a corticoide em dose baixa como ponte, com orientações sobre a doença e adesão ao tratamento.',
-        p:'Solicitar fator reumatoide, anti-CCP, VHS, PCR e radiografia de mãos e punhos. Retorno em 6 semanas.'
+        data:'2023-05-10', profissional:'Dr. Caio', tipoConsulta:'primeira', hpma: hpmaTexto,
+        s:'Artralgia inflamatória de pequenas articulações há vários meses, com rigidez matinal associada.',
+        o:'Sinovite de pequenas articulações das mãos bilateralmente.',
+        a:'Quadro compatível com artrite reumatoide inicial, soro-negativa.',
+        pt:'Iniciar metotrexato e ácido fólico.',
+        p:'Solicitar exames complementares. Retorno em 6 semanas.'
       },
       {
-        data:'2026-01-05', profissional:'Dr. Caio', tipoConsulta:'retorno', hpma: hpmaTexto,
-        s:'Refere melhora significativa da dor e da rigidez matinal, hoje com duração de cerca de 15 minutos.',
-        o:'Redução do número de articulações dolorosas e edemaciadas. Sem sinovite ativa em punhos no momento.',
-        a:'Boa resposta ao tratamento instituído, doença em baixa atividade.',
-        pt:'Manter esquema atual e iniciar desmame gradual do corticoide.',
-        p:'Manter metotrexato e ácido fólico, reduzir prednisona para 2,5 mg/dia. Retorno em 3 meses com exames.'
+        data:'2026-05-20', profissional:'Dr. Caio', tipoConsulta:'retorno', hpma: hpmaTexto,
+        peso:'87', indiceAtividade:'DAS28-PCR 5.2',
+        s:'Paciente mantendo queixa de artralgia inflamatória com rigidez matinal associada de aproximadamente 1 hora. Nega queixas respiratórias, oftalmológicas e cutâneas.\nBoa tolerância e adesão às medicações atuais',
+        o:'BEG, corado, hidratado, anictérico, acianótico\nMV + globalmente sem RA\nBRNF sem sopros;\nMMII sem edema, sem sinais de TVP\nSem lesões cutâneas\nSinovites de 1a, 2a e 3a MCF e IFPs de mãos direita e esquerda',
+        a:'Paciente com Artrite reumatoide mantendo atividade inflamatória apesar de tratamento com Metotrexato e Golimumabe.',
+        pt:'',
+        p:'- Introduzo prednisona 5mg/dia\n- Aumento metotrexato para 20mg/semana\n- Solicito troca de Golimumabe por tocilizumabe via convênio\n- Retorno em 30 dias com novos exames'
       }
     ],
     exames: [
-      {categoria:'laboratorial', data:'2025-11-12', tipo:'Fator reumatoide', resultado:'128 UI/mL (VR < 20)'},
-      {categoria:'laboratorial', data:'2025-11-12', tipo:'Anti-CCP', resultado:'> 340 U/mL (VR < 20) — fortemente positivo'},
-      {categoria:'laboratorial', data:'2025-11-12', tipo:'VHS', resultado:'42 mm/h (VR < 20)'},
-      {categoria:'laboratorial', data:'2025-11-12', tipo:'PCR', resultado:'18 mg/L (VR < 5)'},
-      {categoria:'laboratorial', data:'2026-01-03', tipo:'Hemograma completo', resultado:'Sem alterações significativas'},
-      {categoria:'imagem', data:'2025-11-15', tipo:'Radiografia de mãos e punhos', resultado:'Discreta redução do espaço articular em punhos, sem erosões ósseas.'},
-      {categoria:'biopsia', data:'2025-12-01', tipo:'Biópsia de glândula salivar labial', resultado:'Sialoadenite crônica focal leve, sem critérios diagnósticos para síndrome de Sjögren.'}
+      {categoria:'laboratorial', data:'2023-05-10', tipo:'FR', resultado:'10'},
+      {categoria:'laboratorial', data:'2023-05-10', tipo:'Anti-CCP', resultado:'1.1'},
+      {categoria:'laboratorial', data:'2023-03-10', tipo:'FAN', resultado:'não reagente'},
+      {categoria:'laboratorial', data:'2026-05-20', tipo:'Hb', resultado:'13,4'},
+      {categoria:'laboratorial', data:'2026-05-20', tipo:'Ht', resultado:'40'},
+      {categoria:'laboratorial', data:'2026-05-20', tipo:'VHS', resultado:'30'},
+      {categoria:'laboratorial', data:'2026-05-20', tipo:'PCR', resultado:'9 (ref < 5)'},
+      {categoria:'laboratorial', data:'2026-05-20', tipo:'TGO', resultado:'30'},
+      {categoria:'laboratorial', data:'2026-05-20', tipo:'Cr', resultado:'1.0'},
+      {categoria:'laboratorial', data:'2026-05-20', tipo:'HDL', resultado:'50'},
+      {categoria:'laboratorial', data:'2026-05-20', tipo:'Vitamina D', resultado:'32'},
+      {categoria:'laboratorial', data:'2026-01-20', tipo:'Hb', resultado:'13,2'},
+      {categoria:'laboratorial', data:'2026-01-20', tipo:'VHS', resultado:'25'},
+      {categoria:'laboratorial', data:'2026-01-20', tipo:'PCR', resultado:'12 (ref < 5)'},
+      {categoria:'laboratorial', data:'2023-12-12', tipo:'Sorologias (HBV/HCV/VDRL/HIV)', resultado:'Anti-HBs Reagente / HBsAg NR / Anti-HBc total NR / Anti-HCV NR / VDRL NR / HIV NR'},
+      {categoria:'laboratorial', data:'2023-12-10', tipo:'IGRA', resultado:'negativo'},
+      {categoria:'imagem', data:'2023-09-10', tipo:'Radiografia de mãos', resultado:'Osteopenia periarticular\nRedução do espaço articular entre falanges discreto\nEsclerose óssea entre falanges\nAusência de osteofitose'},
+      {categoria:'imagem', data:'2023-09-10', tipo:'Radiografia de tórax', resultado:'Ausência de cavitações ou consolidações\nMediastino centrado, não alargado\nÁrea cardíaca dentro da normalidade\nSem nódulos ou linfonodomegalia aparente'}
     ],
     criadoEm: new Date().toISOString()
   };
@@ -756,7 +780,9 @@ function abrirPaciente(id){
   document.getElementById('f-carteirinha').value = p.carteirinha || '';
   document.getElementById('f-emergencia-nome').value = p.emergenciaNome || '';
   document.getElementById('f-emergencia-tel').value = p.emergenciaTel || '';
+  document.getElementById('f-resumo-diagnostico').value = p.resumoDiagnostico || '';
   document.getElementById('f-antecedentes-pessoais').value = p.antecedentesPessoais || '';
+  document.getElementById('f-habitos').value = p.habitos || '';
   document.getElementById('f-antecedentes-familiares').value = p.antecedentesFamiliares || '';
 
   cancelarEdicaoEvolucao();
@@ -806,7 +832,9 @@ function salvarDadosBasicos(){
     p.carteirinha = document.getElementById('f-carteirinha').value.trim();
     p.emergenciaNome = document.getElementById('f-emergencia-nome').value.trim();
     p.emergenciaTel = document.getElementById('f-emergencia-tel').value.trim();
+    p.resumoDiagnostico = document.getElementById('f-resumo-diagnostico').value.trim();
     p.antecedentesPessoais = document.getElementById('f-antecedentes-pessoais').value;
+    p.habitos = document.getElementById('f-habitos').value;
     p.antecedentesFamiliares = document.getElementById('f-antecedentes-familiares').value;
   });
   if(p){ atualizarFichaHeader(p); showToast('Salvo'); }
@@ -865,12 +893,14 @@ function removerAlergia(i){
 function renderMedicacoes(p){
   const tbody = document.getElementById('med-tbody');
   if(!p.medicacoes || p.medicacoes.length === 0){
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-msg">Nenhuma medicação registrada.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-msg">Nenhuma medicação registrada.</div></td></tr>`;
     return;
   }
   tbody.innerHTML = p.medicacoes.map((m,i)=>`<tr>
     <td>${escapeHtml(m.nome)}</td><td>${escapeHtml(m.dose||'')}</td><td>${escapeHtml(m.posologia||'')}</td><td>${fmtData(m.inicio)}</td>
     <td><input type="checkbox" ${m.ativo!==false?'checked':''} onchange="toggleMedicacaoAtiva(${i}, this.checked)"></td>
+    <td><input type="date" value="${m.fim||''}" onchange="atualizarMedicacaoCampo(${i}, 'fim', this.value)"></td>
+    <td><input type="text" value="${escapeHtml(m.motivoSuspensao||'')}" onchange="atualizarMedicacaoCampo(${i}, 'motivoSuspensao', this.value)"></td>
     <td class="no-print"><button class="btn-danger btn-sm" onclick="removerMedicacao(${i})">Remover</button></td>
   </tr>`).join('');
 }
@@ -882,7 +912,7 @@ function adicionarMedicacao(){
   const inicio = document.getElementById('med-inicio').value;
   const p = atualizarPaciente(p=>{
     p.medicacoes = p.medicacoes || [];
-    p.medicacoes.push({nome, dose, posologia, inicio, ativo:true});
+    p.medicacoes.push({nome, dose, posologia, inicio, ativo:true, fim:'', motivoSuspensao:''});
   });
   document.getElementById('med-nome').value='';
   document.getElementById('med-dose').value='';
@@ -893,6 +923,9 @@ function adicionarMedicacao(){
 function toggleMedicacaoAtiva(i, val){
   const p = atualizarPaciente(p=>{ p.medicacoes[i].ativo = val; });
   renderMedicacoes(p);
+}
+function atualizarMedicacaoCampo(i, campo, valor){
+  atualizarPaciente(p=>{ p.medicacoes[i][campo] = valor; });
 }
 function removerMedicacao(i){
   const p = atualizarPaciente(p=>{ p.medicacoes.splice(i,1); });
@@ -963,7 +996,7 @@ function renderEvolucoes(p){
   const ordenadas = p.evolucoes.map((e,i)=>({...e, _idx:i})).sort((a,b)=> b.data.localeCompare(a.data));
   list.innerHTML = ordenadas.map(e=>`<div class="evo-card">
     <div class="evo-card-header">
-      <span class="evo-date">${fmtData(e.data)} <span class="tag" style="margin-left:6px">${e.tipoConsulta==='primeira'?'Primeira consulta':'Retorno'}</span></span>
+      <span class="evo-date">${fmtData(e.data)} <span class="tag" style="margin-left:6px">${e.tipoConsulta==='primeira'?'Primeira consulta':'Retorno'}</span>${e.peso?` <span class="tag">Peso: ${escapeHtml(e.peso)} kg</span>`:''}${e.indiceAtividade?` <span class="tag">${escapeHtml(e.indiceAtividade)}</span>`:''}</span>
       <span class="evo-prof">${escapeHtml(e.profissional||'')}</span>
     </div>
     ${e.hpma?`<div class="evo-field"><b>HPMA</b><p>${escapeHtml(e.hpma)}</p></div>`:''}
@@ -1002,6 +1035,8 @@ function salvarEvolucao(){
     data,
     profissional: document.getElementById('evo-prof').value.trim(),
     tipoConsulta,
+    peso: document.getElementById('evo-peso').value.trim(),
+    indiceAtividade: document.getElementById('evo-indice-atividade').value.trim(),
     hpma,
     s: document.getElementById('evo-s').value.trim(),
     o: document.getElementById('evo-o').value.trim(),
@@ -1026,6 +1061,8 @@ function editarEvolucao(idx){
   document.getElementById('evo-data').value = e.data || '';
   document.getElementById('evo-prof').value = e.profissional || '';
   document.getElementById('evo-tipo').value = e.tipoConsulta || 'primeira';
+  document.getElementById('evo-peso').value = e.peso || '';
+  document.getElementById('evo-indice-atividade').value = e.indiceAtividade || '';
   onTipoConsultaChange();
   if(e.tipoConsulta === 'primeira'){ document.getElementById('evo-hpma').value = e.hpma || ''; }
   else { document.getElementById('hpma-readonly-box').textContent = e.hpma || '(nenhuma HPMA registrada)'; }
@@ -1041,7 +1078,7 @@ function editarEvolucao(idx){
 }
 function cancelarEdicaoEvolucao(){
   editingEvolucaoIdx = null;
-  ['evo-data','evo-prof','evo-s','evo-o','evo-a','evo-pt','evo-p','evo-hpma'].forEach(id=>document.getElementById(id).value='');
+  ['evo-data','evo-prof','evo-s','evo-o','evo-a','evo-pt','evo-p','evo-hpma','evo-peso','evo-indice-atividade'].forEach(id=>document.getElementById(id).value='');
   const p = getPaciente(currentPatientId);
   document.getElementById('evo-tipo').value = (p && p.evolucoes && p.evolucoes.length > 0) ? 'retorno' : 'primeira';
   onTipoConsultaChange();
@@ -1070,7 +1107,7 @@ function renderExames(p){
       return;
     }
     tbody.innerHTML = doCategoria.map(e=>`<tr>
-      <td>${fmtData(e.data)}</td><td>${escapeHtml(e.tipo||'')}</td><td>${escapeHtml(e.resultado||'')}</td>
+      <td>${fmtData(e.data)}</td><td>${escapeHtml(e.tipo||'')}</td><td style="white-space:pre-wrap">${escapeHtml(e.resultado||'')}</td>
       <td class="no-print"><button class="btn-danger btn-sm" onclick="removerExame(${e._idx})">Remover</button></td>
     </tr>`).join('');
   });
@@ -1242,14 +1279,200 @@ function adicionarExamesSelecionados(){
   showToast(`${selecionados.length} exame(s) adicionado(s)`);
 }
 
-/* ---------- IMPRESSÃO ---------- */
+/* ---------- IMPRESSÃO / RESUMO ---------- */
+const AUTOANTICORPOS_KEYWORDS = ['fr','fator reumatoide','anti-ccp','anti ccp','fan','fator antinuclear','anti-dna','anti dna','anca','anti-ro','anti-la','anti-sm','anti-rnp','anticardiolipina','anti-beta2','anti-b2','beta-2-glicoproteina','c3','c4'];
+
+function isAutoanticorpo(tipo){
+  const t = (tipo||'').toLowerCase();
+  return AUTOANTICORPOS_KEYWORDS.some(k => t.includes(k));
+}
+
+function formatMesAno(iso){
+  if(!iso) return '';
+  const partes = iso.split('-');
+  if(partes.length < 2) return iso;
+  return `${partes[1]}/${partes[0]}`;
+}
+
+function agruparExamesPorData(lista){
+  const grupos = [];
+  lista.forEach(e=>{
+    const chave = e.data || '';
+    let grupo = grupos.find(g=>g.data===chave);
+    if(!grupo){ grupo = {data: chave, itens:[]}; grupos.push(grupo); }
+    grupo.itens.push(`${e.tipo}${e.resultado?' '+e.resultado:''}`);
+  });
+  grupos.sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  return grupos;
+}
+
+function gerarLinhasResumo(p){
+  const linhas = [];
+  const partesId = [p.nome || '(sem nome)'];
+  if(p.dataNascimento) partesId.push(calcIdade(p.dataNascimento));
+  if(p.profissao) partesId.push(p.profissao);
+  linhas.push(partesId.join(', '));
+  linhas.push('');
+
+  if(p.resumoDiagnostico){
+    linhas.push(p.resumoDiagnostico);
+    linhas.push('');
+  }
+
+  const exames = p.exames || [];
+  const examesLab = exames.filter(e=> (e.categoria||'laboratorial')==='laboratorial');
+  const autoExames = examesLab.filter(e=> isAutoanticorpo(e.tipo));
+  if(autoExames.length){
+    const grupos = agruparExamesPorData(autoExames);
+    grupos.forEach((g,i)=>{
+      const texto = g.itens.join(' / ');
+      linhas.push(i===0 ? `Autoanticorpos: ${texto}` : texto);
+    });
+    linhas.push('');
+  }
+
+  if(p.antecedentesPessoais){
+    linhas.push('AP:');
+    linhas.push(p.antecedentesPessoais);
+    linhas.push('');
+  }
+  if(p.habitos){
+    linhas.push('Hábitos:');
+    linhas.push(p.habitos);
+    linhas.push('');
+  }
+  if(p.antecedentesFamiliares){
+    linhas.push('AF:');
+    linhas.push(p.antecedentesFamiliares);
+    linhas.push('');
+  }
+
+  const meds = p.medicacoes || [];
+  const medsAtivas = meds.filter(m=>m.ativo!==false);
+  if(medsAtivas.length){
+    linhas.push('MUC:');
+    medsAtivas.forEach(m=>{
+      let linha = m.nome;
+      if(m.dose) linha += ' ' + m.dose;
+      if(m.posologia) linha += ' ' + m.posologia;
+      if(m.inicio) linha += ` (início em ${formatMesAno(m.inicio)})`;
+      linhas.push(linha);
+    });
+    linhas.push('');
+  }
+
+  const medsInativas = meds.filter(m=>m.ativo===false);
+  if(medsInativas.length){
+    linhas.push('Uso prévio:');
+    medsInativas.forEach(m=>{
+      let linha = '- ' + m.nome;
+      if(m.dose) linha += ' ' + m.dose;
+      if(m.fim) linha += ` — suspenso em ${formatMesAno(m.fim)}`;
+      if(m.motivoSuspensao) linha += ` por ${m.motivoSuspensao}`;
+      linhas.push(linha);
+    });
+    linhas.push('');
+  }
+
+  if(p.hpma){
+    linhas.push(`HMA: ${p.hpma}`);
+    linhas.push('');
+  }
+
+  const evolucoesOrdenadas = (p.evolucoes || []).slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  const ultima = evolucoesOrdenadas[0];
+  if(ultima){
+    if(ultima.s){
+      linhas.push(`Atual: ${ultima.s}`);
+      linhas.push('');
+    }
+    if(ultima.peso || ultima.o){
+      linhas.push('Exame físico');
+      if(ultima.peso) linhas.push(`Peso: ${ultima.peso}kg`);
+      if(ultima.o) linhas.push(ultima.o);
+      linhas.push('');
+    }
+    if(ultima.indiceAtividade){
+      linhas.push(ultima.indiceAtividade);
+      linhas.push('');
+    }
+  }
+
+  const examesLabRestantes = examesLab.filter(e=> !isAutoanticorpo(e.tipo));
+  if(examesLabRestantes.length){
+    linhas.push('Exames laboratoriais (por ordem cronológica, do mais recente para o mais antigo)');
+    linhas.push('');
+    const grupos = agruparExamesPorData(examesLabRestantes);
+    grupos.forEach(g=>{
+      if(g.data) linhas.push(fmtData(g.data));
+      linhas.push(g.itens.join(' / '));
+      linhas.push('');
+    });
+  }
+
+  const examesImagem = exames.filter(e=> e.categoria==='imagem').slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  if(examesImagem.length){
+    linhas.push('Exames de imagem');
+    linhas.push('');
+    examesImagem.forEach(e=>{
+      linhas.push(`${e.tipo}${e.data?' '+fmtData(e.data):''}`);
+      if(e.resultado) linhas.push(e.resultado);
+      linhas.push('');
+    });
+  }
+
+  const examesBiopsia = exames.filter(e=> e.categoria==='biopsia').slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  if(examesBiopsia.length){
+    linhas.push('Biópsias');
+    linhas.push('');
+    examesBiopsia.forEach(e=>{
+      linhas.push(`${e.tipo}${e.data?' '+fmtData(e.data):''}`);
+      if(e.resultado) linhas.push(e.resultado);
+      linhas.push('');
+    });
+  }
+
+  if(ultima){
+    if(ultima.a){
+      linhas.push(`Impressão: ${ultima.a}`);
+      linhas.push('');
+    }
+    if(ultima.p){
+      linhas.push('CD:');
+      linhas.push(ultima.p);
+    }
+  }
+
+  while(linhas.length && linhas[linhas.length-1] === '') linhas.pop();
+  return linhas;
+}
+
 function imprimirFicha(){
-  document.querySelectorAll('.tab-content').forEach(c=>c.classList.add('active'));
-  window.print();
-  setTimeout(()=>{
-    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-    document.querySelector('.tab-btn.active')?.click();
-  }, 300);
+  const p = getPaciente(currentPatientId);
+  if(!p){ showToast('Abra um paciente antes de imprimir'); return; }
+  const linhas = gerarLinhasResumo(p);
+  const corpo = linhas.map(l => l === ''
+    ? '<div class="resumo-vazia">&nbsp;</div>'
+    : `<div class="resumo-linha">${escapeHtml(l)}</div>`
+  ).join('');
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Resumo — ${escapeHtml(p.nome||'')}</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#111;line-height:1.5;padding:28px;max-width:720px;margin:0 auto}
+.resumo-header{font-weight:700;font-size:16px;letter-spacing:.5px;margin-bottom:4px}
+.resumo-linha{white-space:pre-wrap}
+.resumo-vazia{height:10px}
+</style></head><body>
+<div class="resumo-header">REUMATOLOGIA</div>
+<div class="resumo-vazia">&nbsp;</div>
+${corpo}
+</body></html>`;
+  const win = window.open('', '_blank');
+  if(!win){ showToast('Permita pop-ups para imprimir o resumo'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ win.print(); }, 300);
 }
 
 /* ---------- LEMBRETE DE BACKUP ---------- */
