@@ -811,14 +811,15 @@ function renderRelatedBox(a) {
     '</div></div>';
 }
 
-// ---------- PDF original (pasta "pdfs/" ao lado do HTML) ----------
+// ---------- PDF original (embutido em base64 ou pasta "pdfs/" ao lado do HTML) ----------
 function buildPdfActionsHtml(a) {
   if (!a.has_pdf) return '';
-  const href = 'pdfs/' + a.id + '.pdf';
+  const href = a.pdf_data ? 'data:application/pdf;base64,' + a.pdf_data : 'pdfs/' + a.id + '.pdf';
+  const hint = a.pdf_data ? '' : '<span class="pdf-hint">Requer a pasta "pdfs/" ao lado deste arquivo HTML.</span>';
   return '<div class="pdf-actions">' +
       '<a class="btn-secondary" href="' + href + '" target="_blank" rel="noopener">📄 Abrir PDF original</a>' +
       '<button type="button" class="btn-secondary" id="togglePdfViewer" data-href="' + href + '">🖼️ Ver PDF aqui</button>' +
-      '<span class="pdf-hint">Requer a pasta "pdfs/" ao lado deste arquivo HTML.</span>' +
+      hint +
     '</div>' +
     '<div id="pdfViewer" class="pdf-viewer"></div>';
 }

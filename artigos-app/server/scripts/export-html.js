@@ -2,14 +2,21 @@
 // do banco de dados, para o usuario poder abrir localmente sem precisar de
 // servidor. Rodar sempre que novos artigos forem classificados.
 //
-// Uso: node server/scripts/export-html.js [caminho-de-saida.html]
+// Uso: node server/scripts/export-html.js [caminho-de-saida.html] [--embed-pdfs]
+//
+// Por padrao os PDFs originais sao copiados para uma pasta "pdfs/" ao lado
+// do HTML (arquivo principal leve). Com --embed-pdfs, os PDFs sao embutidos
+// em base64 dentro do proprio HTML (arquivo unico e portatil, porem muito
+// maior — pode passar de 100MB com a biblioteca atual).
 
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
 const { UPLOAD_DIR } = require('../paths');
 
-const outPath = path.resolve(process.argv[2] || path.join(__dirname, '..', '..', '..', 'organizador_artigos.html'));
+const embedPdfs = process.argv.includes('--embed-pdfs');
+const positional = process.argv.slice(2).filter((a) => a !== '--embed-pdfs');
+const outPath = path.resolve(positional[0] || path.join(__dirname, '..', '..', '..', 'organizador_artigos.html'));
 
 const articles = db
   .prepare(
@@ -19,26 +26,48 @@ const articles = db
   )
   .all();
 
-// Copia os PDFs originais para uma pasta "pdfs/" ao lado do HTML gerado,
-// renomeados por ID, para permitir um link "Ver PDF original" sem inflar
-// o HTML em si (embutir todos os PDFs em base64 passaria de 100MB).
-const pdfsDir = path.join(path.dirname(outPath), 'pdfs');
-fs.mkdirSync(pdfsDir, { recursive: true });
 let pdfsCopied = 0;
-articles.forEach((a) => {
-  a.has_pdf = false;
-  if (!a.filename) return;
-  const src = path.join(UPLOAD_DIR, a.filename);
-  const dest = path.join(pdfsDir, a.id + '.pdf');
-  try {
-    fs.copyFileSync(src, dest);
-    a.has_pdf = true;
-    pdfsCopied++;
-  } catch (e) {
-    // PDF original ausente; o botao "Ver PDF" nao sera exibido para este artigo.
-  }
-  delete a.filename;
-});
+let pdfsDir = null;
+
+if (embedPdfs) {
+  // Embute cada PDF original em base64 diretamente nos dados do artigo,
+  // tornando o HTML totalmente autocontido e portatil (sem depender de
+  // uma pasta externa), ao custo de um arquivo final muito maior.
+  articles.forEach((a) => {
+    a.has_pdf = false;
+    a.pdf_data = null;
+    if (!a.filename) return;
+    const src = path.join(UPLOAD_DIR, a.filename);
+    try {
+      a.pdf_data = fs.readFileSync(src).toString('base64');
+      a.has_pdf = true;
+      pdfsCopied++;
+    } catch (e) {
+      // PDF original ausente; o botao "Ver PDF" nao sera exibido para este artigo.
+    }
+    delete a.filename;
+  });
+} else {
+  // Copia os PDFs originais para uma pasta "pdfs/" ao lado do HTML gerado,
+  // renomeados por ID, para permitir um link "Ver PDF original" sem inflar
+  // o HTML em si.
+  pdfsDir = path.join(path.dirname(outPath), 'pdfs');
+  fs.mkdirSync(pdfsDir, { recursive: true });
+  articles.forEach((a) => {
+    a.has_pdf = false;
+    if (!a.filename) return;
+    const src = path.join(UPLOAD_DIR, a.filename);
+    const dest = path.join(pdfsDir, a.id + '.pdf');
+    try {
+      fs.copyFileSync(src, dest);
+      a.has_pdf = true;
+      pdfsCopied++;
+    } catch (e) {
+      // PDF original ausente; o botao "Ver PDF" nao sera exibido para este artigo.
+    }
+    delete a.filename;
+  });
+}
 
 const dataJson = JSON.stringify(articles).replace(/</g, '\\u003c');
 
@@ -855,14 +884,15 @@ function renderRelatedBox(a) {
     '</div></div>';
 }
 
-// ---------- PDF original (pasta "pdfs/" ao lado do HTML) ----------
+// ---------- PDF original (embutido em base64 ou pasta "pdfs/" ao lado do HTML) ----------
 function buildPdfActionsHtml(a) {
   if (!a.has_pdf) return '';
-  const href = 'pdfs/' + a.id + '.pdf';
+  const href = a.pdf_data ? 'data:application/pdf;base64,' + a.pdf_data : 'pdfs/' + a.id + '.pdf';
+  const hint = a.pdf_data ? '' : '<span class="pdf-hint">Requer a pasta "pdfs/" ao lado deste arquivo HTML.</span>';
   return '<div class="pdf-actions">' +
       '<a class="btn-secondary" href="' + href + '" target="_blank" rel="noopener">📄 Abrir PDF original</a>' +
       '<button type="button" class="btn-secondary" id="togglePdfViewer" data-href="' + href + '">🖼️ Ver PDF aqui</button>' +
-      '<span class="pdf-hint">Requer a pasta "pdfs/" ao lado deste arquivo HTML.</span>' +
+      hint +
     '</div>' +
     '<div id="pdfViewer" class="pdf-viewer"></div>';
 }
@@ -1171,4 +1201,8 @@ renderLibrary();
 
 fs.writeFileSync(outPath, html, 'utf-8');
 console.log(`Gerado: ${outPath} (${(html.length / 1024).toFixed(0)} KB, ${articles.length} artigos)`);
-console.log(`PDFs copiados para ${pdfsDir}: ${pdfsCopied}/${articles.length}`);
+if (embedPdfs) {
+  console.log(`PDFs embutidos em base64 no HTML: ${pdfsCopied}/${articles.length}`);
+} else {
+  console.log(`PDFs copiados para ${pdfsDir}: ${pdfsCopied}/${articles.length}`);
+}
