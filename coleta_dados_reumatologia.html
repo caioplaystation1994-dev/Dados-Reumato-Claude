@@ -296,11 +296,11 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
       <div class="field-group">
         <label>5. Data da Entrevista</label>
         <div class="date-dmy">
-          <input type="number" min="1" max="31" placeholder="DD" id="f-entrevista-d" oninput="syncDate('f-entrevista');calcIdade();updateTabBadges()">
+          <input type="number" min="1" max="31" placeholder="DD" id="f-entrevista-d" oninput="syncDate('f-entrevista');calcIdade();calcTempoDiag();updateTabBadges()">
           <span>/</span>
-          <input type="number" min="1" max="12" placeholder="MM" id="f-entrevista-m" oninput="syncDate('f-entrevista');calcIdade();updateTabBadges()">
+          <input type="number" min="1" max="12" placeholder="MM" id="f-entrevista-m" oninput="syncDate('f-entrevista');calcIdade();calcTempoDiag();updateTabBadges()">
           <span>/</span>
-          <input type="number" min="1900" max="2100" placeholder="AAAA" id="f-entrevista-y" oninput="syncDate('f-entrevista');calcIdade();updateTabBadges()">
+          <input type="number" min="1900" max="2100" placeholder="AAAA" id="f-entrevista-y" oninput="syncDate('f-entrevista');calcIdade();calcTempoDiag();updateTabBadges()">
         </div>
         <input type="hidden" id="f-entrevista">
       </div>
@@ -332,8 +332,18 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <div class="options-grid" id="q-doenca"></div>
 
     <div style="margin-top:16px">
-      <div class="q-label">10. Tempo de Diagnóstico</div>
-      <div class="options-grid" id="q-tempo-diag"></div>
+      <div class="q-label">10. Data do Diagnóstico</div>
+      <div class="field-group">
+        <div class="date-dmy">
+          <input type="number" min="1" max="31" placeholder="DD" id="f-diagnostico-d" oninput="syncDate('f-diagnostico');calcTempoDiag();updateTabBadges()">
+          <span>/</span>
+          <input type="number" min="1" max="12" placeholder="MM" id="f-diagnostico-m" oninput="syncDate('f-diagnostico');calcTempoDiag();updateTabBadges()">
+          <span>/</span>
+          <input type="number" min="1900" max="2100" placeholder="AAAA" id="f-diagnostico-y" oninput="syncDate('f-diagnostico');calcTempoDiag();updateTabBadges()">
+        </div>
+        <input type="hidden" id="f-diagnostico">
+        <div id="tempo-diag-badge" style="display:none;margin-top:6px;font-size:12px;color:#718096;font-style:italic"></div>
+      </div>
     </div>
 
     <div style="margin-top:16px">
@@ -2176,7 +2186,6 @@ function initForm() {
   renderRadio('q-sexo', SEXO, 'sexo');
   renderRadio('q-etnia', ETNIA, 'etnia');
   renderRadio('q-doenca', DOENCAS, 'doenca');
-  renderRadio('q-tempo-diag', TEMPO_DIAG, 'tempo_diag');
   renderRadio('q-atividade', ATIVIDADE_GRAU, 'atividade');
   renderRadio('q-remissao-prednisona', ['Com prednisona','Sem prednisona'], 'remissao_prednisona');
   renderRadio('q-tempo-remissao', TEMPO_REMISSAO, 'tempo_remissao');
@@ -2485,6 +2494,44 @@ function calcIdade() {
   }
 }
 
+function tempoDiagBucket(years) {
+  if (years < 1)  return TEMPO_DIAG[0];
+  if (years < 3)  return TEMPO_DIAG[1];
+  if (years < 5)  return TEMPO_DIAG[2];
+  if (years < 7)  return TEMPO_DIAG[3];
+  if (years < 10) return TEMPO_DIAG[4];
+  if (years < 15) return TEMPO_DIAG[5];
+  return TEMPO_DIAG[6];
+}
+
+function calcTempoDiag() {
+  const diag = document.getElementById('f-diagnostico').value;
+  const badgeEl = document.getElementById('tempo-diag-badge');
+  if (!diag) {
+    formData.tempo_diag = '';
+    formData.data_diagnostico = '';
+    if (badgeEl) badgeEl.style.display = 'none';
+    return;
+  }
+  const entrev = document.getElementById('f-entrevista').value;
+  const d1 = new Date(diag);
+  const d2 = entrev ? new Date(entrev) : new Date();
+  const years = Math.max(0, (d2 - d1) / (1000 * 60 * 60 * 24 * 365.25));
+  const bucket = tempoDiagBucket(years);
+  formData.tempo_diag = bucket;
+  formData.data_diagnostico = diag;
+  if (badgeEl) {
+    const y = Math.floor(years);
+    const mo = Math.round((years - y) * 12);
+    const partes = [];
+    if (y > 0) partes.push(`${y} ano${y !== 1 ? 's' : ''}`);
+    if (mo > 0) partes.push(`${mo} ${mo !== 1 ? 'meses' : 'mês'}`);
+    const texto = partes.length ? partes.join(' e ') : 'menos de 1 mês';
+    badgeEl.style.display = 'block';
+    badgeEl.innerHTML = `🔢 Tempo de diagnóstico calculado: <strong>${texto}</strong> (categoria: ${bucket})`;
+  }
+}
+
 // ============================================================
 // SAVE
 // ============================================================
@@ -2509,6 +2556,7 @@ function savePatient() {
     sexo: formData.sexo || '',
     etnia: formData.etnia || '',
     doenca: formData.doenca || '',
+    data_diagnostico: document.getElementById('f-diagnostico').value,
     tempo_diag: formData.tempo_diag || '',
     atividade: formData.atividade || '',
     remissao_prednisona: formData.remissao_prednisona || '',
@@ -2633,9 +2681,10 @@ function clearForm() {
   editingRghc = null;
   document.getElementById('f-nome').value = '';
   document.getElementById('f-rghc').value = '';
-  setDateInput('f-nascimento',''); setDateInput('f-inicio-seg',''); setDateInput('f-entrevista','');
-  document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = '';
+  setDateInput('f-nascimento',''); setDateInput('f-inicio-seg',''); setDateInput('f-entrevista',''); setDateInput('f-diagnostico','');
+  document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = ''; document.getElementById('f-diagnostico').value = '';
   document.getElementById('f-idade').value = '';
+  document.getElementById('tempo-diag-badge').style.display = 'none';
   ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-intervalo'].forEach(id => {
     document.getElementById(id).value = '';
   });
@@ -2819,6 +2868,14 @@ function editPatient(idx) {
     setDateInput('f-inicio-seg', p.inicio_seg||''); document.getElementById('f-inicio-seg').value = p.inicio_seg||'';
     setDateInput('f-entrevista', p.entrevista||''); document.getElementById('f-entrevista').value = p.entrevista||'';
     document.getElementById('f-idade').value = p.idade || '';
+    if (p.data_diagnostico) {
+      setDateInput('f-diagnostico', p.data_diagnostico);
+      document.getElementById('f-diagnostico').value = p.data_diagnostico;
+      calcTempoDiag();
+    } else if (p.tempo_diag) {
+      // Registro legado sem data de diagnóstico salva — mantém a categoria já calculada
+      formData.tempo_diag = p.tempo_diag;
+    }
     // Atualiza campos de laboratório conforme a doença antes de restaurar valores
     if (p.doenca) updateLabFields(p.doenca);
     document.getElementById('f-vhs').value = p.vhs || '';
@@ -2877,7 +2934,6 @@ function editPatient(idx) {
     restore('q-etnia','etnia',p.etnia);
     restore('q-doenca','doenca',p.doenca);
     if (p.doenca) updateMetrics(p.doenca);
-    restore('q-tempo-diag','tempo_diag',p.tempo_diag);
     restore('q-atividade','atividade',p.atividade);
     if (p.atividade === 'Remissão') {
       document.getElementById('sub-remissao').classList.remove('hidden');
@@ -2968,7 +3024,7 @@ function exportCSV() {
   const db = getData();
   if (!db.length) { alert('Nenhum dado para exportar.'); return; }
   const headers = ['rghc','nome','nascimento','inicio_seg','entrevista','idade','sexo','etnia','doenca',
-    'tempo_diag','atividade','tempo_remissao','vhs','pcr','c3','c4','dsdna','cpk','dhl','das28','asdas','sledai','myoact','mmt8','bvas','itas',
+    'data_diagnostico','tempo_diag','atividade','tempo_remissao','vhs','pcr','c3','c4','dsdna','cpk','dhl','das28','asdas','sledai','myoact','mmt8','bvas','itas',
     'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
     'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas',
     'reacao','reacao_quais','intervalo','dmard_posologia',
@@ -3050,6 +3106,7 @@ const SHEET_COLS = [
   ['etnia',           'Etnia'],
   // Dados Clínicos
   ['doenca',          'Doença'],
+  ['data_diagnostico','Data do Diagnóstico'],
   ['tempo_diag',      'Tempo de Diagnóstico'],
   ['atividade',       'Atividade de Doença'],
   ['tempo_remissao',  'Tempo em Remissão'],
@@ -3789,7 +3846,7 @@ function fillTestData() {
   // ── Dados Clínicos ──
   clickOpt('q-doenca',     'Artrite reumatoide');
   updateMetrics();
-  clickOpt('q-tempo-diag', '7–9 anos');
+  setDateInput('f-diagnostico','2018-04-10'); document.getElementById('f-diagnostico').value='2018-04-10'; calcTempoDiag();
   clickOpt('q-atividade',  'Baixa atividade');
 
   // Labs
