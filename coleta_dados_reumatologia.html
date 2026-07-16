@@ -417,7 +417,8 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
 
     <div style="margin-top:16px">
       <div class="q-label">15. Uso de Corticosteroides (dose equivalente de prednisona)</div>
-      <div class="options-grid" id="q-gcs"></div>
+      <div class="numeric-inline" id="q-gcs"><label>Dose atual (mg/dia):</label><input type="number" id="f-gcs" min="0" max="200" step="0.5" placeholder="0 = não utiliza" oninput="updateTabBadges()"></div>
+      <div id="gcs-legacy-hint" style="display:none;margin-top:4px;font-size:11px;color:#a0611f;font-style:italic"></div>
     </div>
 
     <div style="margin-top:16px">
@@ -820,7 +821,6 @@ const DOENCA_BINARIO = new Set([
   'Policondrite recidivante','Arterite de Takayasu'
 ]);
 const NUM_MED = ['1','2','3','4','5','6','7','8','9','10','11 ou mais'];
-const GCS = ['Não','5 mg','6–10 mg','11–20 mg','21–40 mg','41–80 mg'];
 const CS_DMARD = ['AINE','Azatioprina','Ciclosporina','Colchicina','Dapsona','Hidroxicloroquina','Leflunomida','Metotrexato','Micofenolato de Mofetila','Sulfassalazina','Tacrolimus'];
 const B_DMARD = ['Abatacept','Adalimumabe','Anifrolumabe','Belimumabe','Certolizumabe','Etanercept','Golimumabe','Guselcumabe','Infliximabe','Ixekizumabe','Mepolizumabe','Risanquizumabe','Rituximabe','Secuquinumabe','Tocilizumabe','Ustekinumabe','Vedolizumabe'];
 const TS_DMARD = ['Baricitinibe','Tofacitinibe','Upadacitinibe'];
@@ -1282,8 +1282,9 @@ function calcTabProgress(tab) {
       return { done: f.filter(Boolean).length, total: 6 };
     }
     case 1: {
-      const f = [r.doenca, r.tempo_diag, r.atividade, r.num_med, r.gcs, r.reacao, r.intervalo];
-      return { done: f.filter(Boolean).length, total: 7 };
+      const f = [r.doenca, r.tempo_diag, r.atividade, r.num_med, r.reacao, r.intervalo];
+      const gcsFilled = gv('f-gcs') !== '' ? 1 : 0;
+      return { done: f.filter(Boolean).length + gcsFilled, total: 7 };
     }
     case 2: {
       const f = [r.religiao, r.estado_civil, r.filhos, r.escolaridade, r.renda, r.ocupacao,
@@ -1878,6 +1879,10 @@ function toggleSemImuno(forceState) {
         const posEl = document.getElementById('posologia-'+fieldsBloquear[i]);
         if (posEl) { posEl.innerHTML = ''; posEl.classList.add('hidden'); }
       }
+      if (fieldsBloquear[i] === 'gcs') {
+        const gcsInput = document.getElementById('f-gcs');
+        if (gcsInput) gcsInput.value = '';
+      }
     } else {
       cont.style.opacity = '';
       cont.style.pointerEvents = '';
@@ -2190,7 +2195,6 @@ function initForm() {
   renderRadio('q-remissao-prednisona', ['Com prednisona','Sem prednisona'], 'remissao_prednisona');
   renderRadio('q-tempo-remissao', TEMPO_REMISSAO, 'tempo_remissao');
   renderRadio('q-num-med', NUM_MED, 'num_med');
-  renderRadio('q-gcs', GCS, 'gcs');
   renderRadio('q-dsdna', ['Positivo','Negativo'], 'dsdna');
   renderCheck('q-csdmard', CS_DMARD, 'csdmard');
   renderCheck('q-bdmard', B_DMARD, 'bdmard');
@@ -2575,7 +2579,7 @@ function savePatient() {
     bvas: document.getElementById('f-bvas').value,
     itas: document.getElementById('f-itas').value,
     num_med: formData.num_med || '',
-    gcs: formData.gcs || '',
+    gcs: document.getElementById('f-gcs').value,
     csdmard: [...(formData.csdmard||[])],
     bdmard: [...(formData.bdmard||[])],
     tsdmard: [...(formData.tsdmard||[])],
@@ -2685,9 +2689,10 @@ function clearForm() {
   document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = ''; document.getElementById('f-diagnostico').value = '';
   document.getElementById('f-idade').value = '';
   document.getElementById('tempo-diag-badge').style.display = 'none';
-  ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-intervalo'].forEach(id => {
+  ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-intervalo','f-gcs'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  document.getElementById('gcs-legacy-hint').style.display = 'none';
   // Reset campos de laboratório para estado padrão (sem doença selecionada)
   document.querySelectorAll('.lab-vhs-pcr').forEach(el => el.style.display = '');
   document.querySelectorAll('.lab-lupus,.lab-miopatia').forEach(el => el.style.display = 'none');
@@ -2941,7 +2946,19 @@ function editPatient(idx) {
       restore('q-tempo-remissao','tempo_remissao',p.tempo_remissao);
     }
     restore('q-num-med','num_med',p.num_med);
-    restore('q-gcs','gcs',p.gcs);
+    const gcsHint = document.getElementById('gcs-legacy-hint');
+    if (p.gcs !== undefined && p.gcs !== '' && /^-?\d+(\.\d+)?$/.test(String(p.gcs).trim())) {
+      document.getElementById('f-gcs').value = p.gcs;
+      if (gcsHint) gcsHint.style.display = 'none';
+    } else if (p.gcs) {
+      // Registro legado com faixa (categoria antiga) — não é possível inferir a dose exata
+      if (gcsHint) {
+        gcsHint.style.display = 'block';
+        gcsHint.textContent = `⚠ Valor anterior registrado como faixa: "${p.gcs}". Informe a dose exata em mg.`;
+      }
+    } else if (gcsHint) {
+      gcsHint.style.display = 'none';
+    }
     if (p.doenca && DOENCA_LUPUS.has(p.doenca)) restore('q-dsdna','dsdna',p.dsdna);
     restoreCheck('q-csdmard','csdmard',p.csdmard);
     restoreCheck('q-bdmard','bdmard',p.bdmard);
@@ -3121,7 +3138,7 @@ const SHEET_COLS = [
   ['bvas',            'BVAS'],
   ['itas',            'ITAS'],
   ['num_med',         'Nº de Medicações'],
-  ['gcs',             'Corticosteroide (dose equiv. prednisona)'],
+  ['gcs',             'Corticosteroide - Dose de Prednisona (mg/dia)'],
   ['csdmard',         'csDMARD em Uso'],
   ['bdmard',          'bDMARD em Uso'],
   ['tsdmard',         'tsDMARD em Uso'],
@@ -3362,6 +3379,33 @@ function countMulti(db, field) {
   return Object.entries(m).sort((a,b)=>b[1]-a[1]);
 }
 
+// gcs agora é a dose exata (mg/dia) em vez de faixa; "Não" e faixas antigas
+// (ex.: "11–20 mg") são registros legados de antes dessa mudança.
+function usaCorticosteroide(gcs) {
+  if (gcs === '' || gcs === undefined || gcs === null) return false;
+  if (gcs === 'Não') return false;
+  const n = parseFloat(gcs);
+  return !isNaN(n) && n > 0;
+}
+function gcsBucketLabel(raw) {
+  if (raw === '' || raw === undefined || raw === null) return null;
+  if (raw === 'Não') return 'Não utiliza';
+  const n = parseFloat(raw);
+  if (isNaN(n)) return null;
+  if (n <= 0)  return 'Não utiliza';
+  if (n <= 5)  return '≤ 5 mg';
+  if (n <= 10) return '6–10 mg';
+  if (n <= 20) return '11–20 mg';
+  if (n <= 40) return '21–40 mg';
+  if (n <= 80) return '41–80 mg';
+  return '> 80 mg';
+}
+function countGcsBuckets(db) {
+  const m = {};
+  db.forEach(p => { const b = gcsBucketLabel(p.gcs); if (b) m[b] = (m[b]||0)+1; });
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+}
+
 function barChart(title, entries, total) {
   if (!entries.length) return document.createTextNode('');
   const d = document.createElement('div');
@@ -3468,8 +3512,8 @@ function renderStats() {
       <div class="lbl">Idade média (anos) · n=${idadeStat.n}</div>
     </div>` : ''}
     <div class="stat-card" style="border-top:3px solid ${cor}">
-      <div class="val">${db.filter(p=>p.gcs&&p.gcs!=='Não').length}</div>
-      <div class="lbl">Em uso de corticosteroide (${n?Math.round(db.filter(p=>p.gcs&&p.gcs!=='Não').length/n*100):0}%)</div>
+      <div class="val">${db.filter(p=>usaCorticosteroide(p.gcs)).length}</div>
+      <div class="lbl">Em uso de corticosteroide (${n?Math.round(db.filter(p=>usaCorticosteroide(p.gcs)).length/n*100):0}%)</div>
     </div>`;
 
   chartsEl.innerHTML = '';
@@ -3541,7 +3585,7 @@ function renderStats() {
 
   const gcsGrid = document.createElement('div');
   gcsGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px';
-  gcsGrid.appendChild(barChart('Q15 · Corticosteroide (dose equiv. prednisona)', countBy(db,'gcs'), n));
+  gcsGrid.appendChild(barChart('Q15 · Corticosteroide (dose equiv. prednisona)', countGcsBuckets(db), n));
   gcsGrid.appendChild(barChart('Q19 · Tempo desde Último DMARD Introduzido', countBy(db,'tempo_dmard'), n));
   ap(gcsGrid);
 
@@ -3856,7 +3900,7 @@ function fillTestData() {
 
   // Medicações
   clickOpt('q-num-med',    '3');
-  clickOpt('q-gcs',        '5 mg');
+  document.getElementById('f-gcs').value = '5';
   clickOpt('q-csdmard',    'Metotrexato');
   clickOpt('q-bdmard', 'Adalimumabe');
   setTimeout(() => {
