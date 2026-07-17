@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gerador de Laudos — Imunobiológicos em Reumatologia</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -1019,7 +1020,14 @@ header h1{font-size:15px;font-weight:700}
         <span id="lab-import-arrow" style="margin-left:auto;color:#718096">▼</span>
       </div>
       <div class="import-lab-body" style="margin-top:12px">
-        <div style="font-size:12px;color:#4a5568;margin-bottom:8px">Cole o texto do laudo laboratorial (copiado de PDF, sistema ou prontuário) e clique em "Extrair Exames".</div>
+        <div style="font-size:12px;color:#4a5568;margin-bottom:8px">Cole o texto do laudo laboratorial (copiado de PDF, sistema ou prontuário) e clique em "Extrair Exames" — ou importe uma foto/imagem do laudo para leitura automática (OCR).</div>
+        <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;background:#ebf8ff;color:#2b6cb0;border:1.5px solid #90cdf4;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600">
+            📷 Importar foto/imagem do laudo
+            <input type="file" accept="image/*" style="display:none" onchange="ocrImagem(this)">
+          </label>
+          <span id="ocr-status" style="font-size:12px;color:#718096;display:none"></span>
+        </div>
         <textarea id="lab-import-text" rows="6" placeholder="Cole aqui o texto do laudo laboratorial..." style="width:100%;border:1px solid #cbd5e0;border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
         <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-primary" style="font-size:12px;padding:7px 16px" onclick="extrairExames()">🔍 Extrair Exames</button>
@@ -1049,6 +1057,24 @@ header h1{font-size:15px;font-weight:700}
 
   <!-- TAB MEDICAMENTO -->
   <div class="tab-content" id="tab-med">
+
+    <!-- Troca de medicamento (switching) — só aparece em modo retorno -->
+    <div id="switching-section" class="section-card" style="display:none;border-left:4px solid #d97706;background:#fffbeb">
+      <div class="section-title" style="color:#92400e">🔄 Troca de Medicamento (Switching)</div>
+      <div style="font-size:13px;color:#78350f;margin-bottom:12px">
+        Medicamento do laudo anterior: <strong id="switching-med-anterior">—</strong>
+      </div>
+      <div class="field-grid">
+        <div class="field-group" style="grid-column:span 2">
+          <label>Motivo da troca / falha terapêutica</label>
+          <textarea id="switching-motivo" rows="3"
+            placeholder="Ex: Perda de resposta após 12 meses de uso. DAS28-PCR atual de 4.8 (anteriormente em remissão com 1.9). Sem eventos adversos."
+            oninput="fd.switching_motivo=this.value"
+            style="width:100%;border:1px solid #d97706;border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical;background:#fffdf5"></textarea>
+        </div>
+      </div>
+    </div>
+
     <div class="section-card">
       <div class="section-title">Medicamento Solicitado</div>
       <div class="field-grid">
@@ -1229,6 +1255,7 @@ let dmardAtuais = [];
 let exams = {};
 let imagens = [];
 let isRetorno = false;
+let retornoMedAnterior = '';
 let previewDebounceTimer = null;
 
 const D_NAMES = {
@@ -1450,6 +1477,11 @@ function selectDisease(d) {
   buildExams();
   buildImagens();
   updDutMsg();
+  // Reset retorno/switching state (carregarLaudoRetorno will re-set if needed)
+  isRetorno = false; retornoMedAnterior = '';
+  document.getElementById('retorno-banner').style.display='none';
+  const swSec = document.getElementById('switching-section');
+  if(swSec) swSec.style.display='none';
   goPage(2); showTab('tab-pac');
 }
 
@@ -2764,6 +2796,22 @@ function buildConclusao() {
     if(tipo) doenca = tipo;
   }
 
+  // Switching: retorno com medicamento diferente do anterior
+  const medAnt = f.retorno_med_anterior || retornoMedAnterior || '';
+  const isSwitch = isRetorno && medAnt && medAnt !== med;
+  const motivo = (f.switching_motivo || '').trim();
+
+  if(isSwitch) {
+    let txt = `Dessa forma, visto quadro de ${doenca} com falha ao ${medAnt}`;
+    if(motivo) txt += ` (${motivo})`;
+    txt += `, solicito troca para ${med}, conforme posologia abaixo, visando melhor controle de doença.`;
+    return txt;
+  }
+
+  if(isRetorno && !isSwitch) {
+    return `Dessa forma, visto quadro de ${doenca} com necessidade de continuidade terapêutica, solicito renovação de ${med}, conforme posologia abaixo, para manutenção do controle de doença.`;
+  }
+
   return `Dessa forma, visto quadro de ${doenca} refratária ao tratamento atual, solicito introdução de ${med}, conforme posologia abaixo, para controle de doença.`;
 }
 
@@ -3592,6 +3640,7 @@ function fillFormFromFd(savedFd) {
     'vasc_bvas':'vasc_bvas',
     'med_nome':'med_nome','med_peso':'med_peso','med_concentracao':'med_concentracao',
     'med_posologia':'med_posologia','med_justificativa':'med_justificativa',
+    'switching-motivo':'switching_motivo',
   };
   Object.entries(mapping).forEach(([elId, fdKey]) => {
     const el = document.getElementById(elId);
@@ -3618,6 +3667,7 @@ function carregarLaudoRetorno(id) {
   const snap = laudos.find(l=>l.id===id);
   if(!snap) return;
   isRetorno = true;
+  retornoMedAnterior = snap.fd.med_nome || snap.med || '';
   selectDisease(snap.disease);
   setTimeout(()=>{
     // Load demographics and history
@@ -3649,6 +3699,15 @@ function carregarLaudoRetorno(id) {
 
     // Show retorno banner
     document.getElementById('retorno-banner').style.display='';
+
+    // Show switching section if previous medication known
+    if(retornoMedAnterior) {
+      const swSec = document.getElementById('switching-section');
+      const swMed = document.getElementById('switching-med-anterior');
+      if(swSec) { swSec.style.display=''; }
+      if(swMed) swMed.textContent = retornoMedAnterior;
+      fd.retorno_med_anterior = retornoMedAnterior;
+    }
 
     // Navigate to activity score tab
     showTabByName('tab-diag');
@@ -3766,6 +3825,43 @@ function toggleLabImport() {
   const sec = document.getElementById('lab-import-section');
   sec.classList.toggle('collapsed');
   document.getElementById('lab-import-arrow').textContent = sec.classList.contains('collapsed') ? '▼' : '▲';
+}
+
+// ─── OCR DE IMAGEM DE LAUDO ──────────────────────────────────────────────────
+async function ocrImagem(input) {
+  const file = input.files[0];
+  if(!file) return;
+  input.value = '';
+
+  const status = document.getElementById('ocr-status');
+  status.style.display = '';
+  status.textContent = '⏳ Lendo imagem…';
+
+  try {
+    if(typeof Tesseract === 'undefined') {
+      status.textContent = '❌ Biblioteca OCR não carregada. Verifique a conexão.';
+      return;
+    }
+    const result = await Tesseract.recognize(file, 'por', {
+      logger: m => {
+        if(m.status === 'recognizing text') {
+          status.textContent = `⏳ Processando… ${Math.round((m.progress||0)*100)}%`;
+        }
+      }
+    });
+    const text = result.data.text;
+    if(!text.trim()) {
+      status.textContent = '⚠️ Nenhum texto reconhecido. Tente uma imagem mais nítida.';
+      return;
+    }
+    document.getElementById('lab-import-text').value = text;
+    status.textContent = `✅ Texto extraído (${text.split('\n').filter(l=>l.trim()).length} linhas). Revise e clique em "Extrair Exames".`;
+    // Auto-open section if collapsed
+    const sec = document.getElementById('lab-import-section');
+    if(sec.classList.contains('collapsed')) toggleLabImport();
+  } catch(e) {
+    status.textContent = '❌ Erro no OCR: ' + (e.message||e);
+  }
 }
 
 // ─── FEATURE 7: LAB TEXT IMPORT ───────────────────────────────────────────────
