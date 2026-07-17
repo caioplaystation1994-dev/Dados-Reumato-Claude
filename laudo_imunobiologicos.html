@@ -312,11 +312,24 @@ header h1{font-size:15px;font-weight:700}
         </div>
         <div class="field-group">
           <label>CID-10</label>
-          <input type="text" id="p_cid" readonly style="background:#f0f4f8">
+          <input type="text" id="p_cid" autocomplete="off" placeholder="Ex: M05.9" style="">
           <div id="ar_cid_selector" style="display:none;margin-top:6px">
             <div class="pill-group">
               <span class="pill selected" onclick="setPill(this,'ar_cid','pos');document.getElementById('p_cid').value='M05.9 — Artrite Reumatoide soropositiva'">Soropositiva (M05.9)</span>
               <span class="pill" onclick="setPill(this,'ar_cid','neg');document.getElementById('p_cid').value='M06.0 — Artrite Reumatoide soronegativa'">Soronegativa (M06.0)</span>
+            </div>
+          </div>
+          <div id="aps_cid_selector" style="display:none;margin-top:6px">
+            <div class="pill-group">
+              <span class="pill selected" onclick="setPill(this,'aps_cid','l405');document.getElementById('p_cid').value='L40.5 — Artropatia Psoriásica'">L40.5 (Artropatia Psoriásica)</span>
+              <span class="pill" onclick="setPill(this,'aps_cid','m073');document.getElementById('p_cid').value='M07.3 — Artrite Psoriásica'">M07.3 (Artrite Psoriásica)</span>
+            </div>
+          </div>
+          <div id="les_cid_selector" style="display:none;margin-top:6px">
+            <div class="pill-group">
+              <span class="pill selected" onclick="setPill(this,'les_cid','m321');document.getElementById('p_cid').value='M32.1 — LES com manifestação orgânica'">M32.1 (com manifestação orgânica)</span>
+              <span class="pill" onclick="setPill(this,'les_cid','m329');document.getElementById('p_cid').value='M32.9 — LES sem especificação'">M32.9 (sem especificação)</span>
+              <span class="pill" onclick="setPill(this,'les_cid','m320');document.getElementById('p_cid').value='M32.0 — LES induzido por drogas'">M32.0 (induzido por drogas)</span>
             </div>
           </div>
         </div>
@@ -1417,8 +1430,9 @@ function selectDisease(d) {
   document.querySelectorAll('.sledai-item.checked').forEach(s=>{s.classList.remove('checked');const cb=s.querySelector('input');if(cb)cb.checked=false;});
   document.getElementById('dmard-tbody').innerHTML='';
   document.getElementById('p_cid').value=D_CID[d];
-  const cidSel=document.getElementById('ar_cid_selector');
-  if(cidSel) cidSel.style.display=d==='ar'?'':'none';
+  document.getElementById('ar_cid_selector').style.display=d==='ar'?'':'none';
+  document.getElementById('aps_cid_selector').style.display=d==='aps'?'':'none';
+  document.getElementById('les_cid_selector').style.display=d==='les'?'':'none';
   document.getElementById('p_data_laudo').value=new Date().toISOString().split('T')[0];
   document.getElementById('dmard-tbody').innerHTML='';
   document.getElementById('dmard-atual-tbody').innerHTML='';
@@ -2621,24 +2635,40 @@ function buildLabLines() {
   });
   const sorologias = sorolParts.join(' / ');
 
-  // Outros laboratoriais — com data individual, ordenados do mais recente ao mais antigo
+  // Outros laboratoriais — agrupados por data, ordenados do mais recente ao mais antigo
   const labItems = [];
   EXAMES_BASE.forEach(e => {
     if(!sorolIds.has(e.id) && e.id !== 'ppd' && e.id !== 'rx_torax' && exams[e.id]?.result) {
       const dt = exams[e.id].date || '';
-      const dtFmt = dt ? ` (${fmtDate(dt)})` : '';
-      labItems.push({text: `${stripLabUnits(exams[e.id].result)}${dtFmt}`, date: dt});
+      labItems.push({name: stripLabUnits(exams[e.id].result), date: dt});
     }
   });
-  labItems.sort((a,b)=>{
-    if(!a.date && !b.date) return 0;
-    if(!a.date) return 1;
-    if(!b.date) return -1;
-    return b.date.localeCompare(a.date);
-  });
-  const laboratoriais = labItems.map(x=>x.text).join('\n');
 
-  return {frAnticcp, sorologias, igra, rxTorax, laboratoriais};
+  // Group by date
+  const byDate = {};
+  labItems.forEach(item => {
+    const key = item.date || '';
+    if(!byDate[key]) byDate[key] = [];
+    byDate[key].push(item.name);
+  });
+
+  // Sort groups: dates descending, no-date last
+  const sortedKeys = Object.keys(byDate).sort((a,b) => {
+    if(!a && !b) return 0;
+    if(!a) return 1;
+    if(!b) return -1;
+    return b.localeCompare(a);
+  });
+
+  const labGroups = sortedKeys.map(k => ({date: k, items: byDate[k]}));
+
+  // Flat string for backward compat (buildLabLine)
+  const laboratoriais = labGroups.map(g => {
+    const line = g.items.join(' / ');
+    return g.date ? `(${fmtDate(g.date)})\n${line}` : line;
+  }).join('\n');
+
+  return {frAnticcp, sorologias, igra, rxTorax, laboratoriais, labGroups};
 }
 
 function buildScoreLine() {
@@ -2875,7 +2905,10 @@ function buildPreview() {
         ${labLines.igra ? `<p style="margin-top:14px;font-size:13px">${labLines.igra}</p>` : ''}
         ${labLines.frAnticcp ? `<p style="margin-top:10px;font-size:13px">${labLines.frAnticcp}</p>` : ''}
         ${labLines.sorologias ? `<p style="margin-top:4px;font-size:13px">${labLines.sorologias}</p>` : ''}
-        ${labLines.laboratoriais ? labLines.laboratoriais.split('\n').map(l=>`<p style="margin-top:4px;font-size:13px">${l}</p>`).join('') : ''}
+        ${labLines.labGroups && labLines.labGroups.length ? labLines.labGroups.map(g=>`
+          ${g.date ? `<p style="margin-top:10px;font-size:11px;font-weight:600;color:#718096">(${fmtDate(g.date)})</p>` : ''}
+          <p style="margin-top:${g.date?'2':'4'}px;font-size:13px">${g.items.join(' / ')}</p>
+        `).join('') : ''}
         ${labLines.rxTorax ? `<p style="margin-top:10px;font-size:13px">${labLines.rxTorax}</p>` : ''}
 
         ${imgSection ? `<div style="margin-top:14px">${imgSection}</div>` : ''}
@@ -3006,7 +3039,13 @@ function genPDF() {
   if(labLines.igra){txt(labLines.igra,10,false);nl(2);}
   if(labLines.frAnticcp){txt(labLines.frAnticcp,10,false);nl(2);}
   if(labLines.sorologias){txt(labLines.sorologias,10,false);nl(2);}
-  if(labLines.laboratoriais){labLines.laboratoriais.split('\n').forEach(l=>{txt(l,10,false);nl(2);});}
+  if(labLines.labGroups && labLines.labGroups.length){
+    labLines.labGroups.forEach(g=>{
+      checkPage(12);
+      if(g.date){txt(`(${fmtDate(g.date)})`,8,false,[110,110,110]);nl(1);}
+      txt(g.items.join(' / '),10,false);nl(2);
+    });
+  }
   if(labLines.rxTorax){txt(labLines.rxTorax,10,false);nl(2);}
 
   // ── Imagens ──────────────────────────────────────────────────────────────────
@@ -3130,6 +3169,7 @@ function salvarLaudo() {
     nome: fd.nome||'Paciente sem nome',
     data: fd.data_laudo||new Date().toISOString().split('T')[0],
     med: fd.med_nome||'—',
+    cid: document.getElementById('p_cid').value||'',
     fd: JSON.parse(JSON.stringify(fd)),
     mv: JSON.parse(JSON.stringify(mv)),
     dmards: JSON.parse(JSON.stringify(dmards)),
@@ -3161,6 +3201,7 @@ function carregarLaudo(id) {
     snap.dmards.forEach(d=>addDmard(d));
     (snap.dmardAtuais||[]).forEach(d=>addDmardAtual(d));
     snap.imagens.forEach(im=>{imagens.push(im);addImagem();imagens[imagens.length-1]=im;});
+    if(snap.cid) document.getElementById('p_cid').value=snap.cid;
     alert('Laudo carregado. Verifique os campos e atualize os escores se necessário.');
   },100);
 }
@@ -3448,6 +3489,7 @@ function salvarLaudoSilencioso() {
     nome: fd.nome||'Paciente sem nome',
     data: fd.data_laudo||new Date().toISOString().split('T')[0],
     med: fd.med_nome||'—',
+    cid: document.getElementById('p_cid').value||'',
     fd: JSON.parse(JSON.stringify(fd)),
     mv: JSON.parse(JSON.stringify(mv)),
     dmards: JSON.parse(JSON.stringify(dmards)),
