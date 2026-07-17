@@ -1428,11 +1428,14 @@ const DMARD_OPTS = {
   op:['Alendronato','Risedronato','Ibandronato','Cálcio + Vitamina D','Outro']
 };
 const MOTIVOS = [
-  'Ineficácia primária (sem resposta inicial)',
-  'Perda de resposta / falha secundária',
-  'Intolerância / efeito adverso',
-  'Toxicidade (hepatotoxicidade, mielotoxicidade etc.)',
-  'Reação infusional / reação no local de aplicação',
+  'Refratariedade',
+  'Intolerância TGI',
+  'Hepatotoxicidade',
+  'Leucopenia / mielotoxicidade',
+  'Aumento de transaminases',
+  'Nefrotoxicidade',
+  'Reação infusional',
+  'Reação no local de aplicação',
   'Infecção grave / oportunista',
   'Contraindicação clínica',
   'Gravidez / planejamento gestacional',
@@ -2731,8 +2734,8 @@ function buildLabLines() {
   const igExam = exams['ppd'];
   const ppdTipo = fd.ppd_tipo === 'ppd' ? 'PPD' : 'IGRA';
   if(igExam?.result) {
-    const dt = igExam.date ? ` ${fmtDate(igExam.date)}` : '';
-    igra = `${ppdTipo}${dt}: ${igExam.result}`;
+    const dt = igExam.date ? `(${fmtDate(igExam.date)}) ` : '';
+    igra = `${dt}${ppdTipo}: ${igExam.result}`;
   } else if(fd.tb_igra_positivo) {
     igra = `${ppdTipo}: Positivo. Profilaxia TB: ${fd.tb_profilaxia_med||'—'} (${fd.tb_profilaxia_status||'—'})`;
   }
@@ -2740,8 +2743,8 @@ function buildLabLines() {
   // Rx tórax
   let rxTorax = '';
   if(exams['rx_torax']?.result) {
-    const dt = exams['rx_torax'].date ? ` (${fmtDate(exams['rx_torax'].date)})` : '';
-    rxTorax = `Radiografia de tórax${dt}: ${exams['rx_torax'].result}`;
+    const dt = exams['rx_torax'].date ? `(${fmtDate(exams['rx_torax'].date)}) ` : '';
+    rxTorax = `${dt}Radiografia de tórax: ${exams['rx_torax'].result}`;
   }
 
   // Sorologias — label sem nome da doença entre parênteses, sem unidades
@@ -3217,8 +3220,10 @@ function genPDF() {
   // ── Medicações atuais ───────────────────────────────────────────────────────
   const {atuais,anteriores}=buildMedListAtual();
   if(atuais.length>0){
+    checkPage(14);
     txt('Medicações atuais',10,false);nl(1);
     atuais.forEach((x,i)=>{
+      checkPage(10);
       let line=`${i+1}. ${x.med}`;
       if(x.dose) line+=` — ${x.dose}`;
       if(x.dataInicio) line+=` — início em ${fmtDate(x.dataInicio)}`;
@@ -3226,8 +3231,10 @@ function genPDF() {
     });nl(2);
   }
   if(anteriores.length>0){
+    checkPage(14);
     txt('Uso prévio / suspensos',10,false);nl(1);
     anteriores.forEach((x,i)=>{
+      checkPage(10);
       let line=`${i+1}. ${x.med}`;
       if(x.dose) line+=` — ${x.dose}`;
       if(x.dataInicio) line+=` — início ${fmtDate(x.dataInicio)}`;
@@ -3240,9 +3247,9 @@ function genPDF() {
 
   // ── Exames laboratoriais ─────────────────────────────────────────────────────
   const labLines=buildLabLines();
-  if(labLines.igra){txt(labLines.igra,10,false);nl(2);}
-  if(labLines.frAnticcp){txt(labLines.frAnticcp,10,false);nl(2);}
-  if(labLines.sorologias){txt(labLines.sorologias,10,false);nl(2);}
+  if(labLines.igra){checkPage(10);txt(labLines.igra,10,false);nl(2);}
+  if(labLines.frAnticcp){checkPage(10);txt(labLines.frAnticcp,10,false);nl(2);}
+  if(labLines.sorologias){checkPage(10);txt(labLines.sorologias,10,false);nl(2);}
   if(labLines.labGroups && labLines.labGroups.length){
     labLines.labGroups.forEach(g=>{
       checkPage(12);
@@ -3250,7 +3257,7 @@ function genPDF() {
       txt(g.items.join(' / '),10,false);nl(2);
     });
   }
-  if(labLines.rxTorax){txt(labLines.rxTorax,10,false);nl(2);}
+  if(labLines.rxTorax){checkPage(10);txt(labLines.rxTorax,10,false);nl(2);}
 
   // ── Imagens ──────────────────────────────────────────────────────────────────
   imagens.filter(i=>i.tipo).forEach(img=>{
