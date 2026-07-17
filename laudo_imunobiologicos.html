@@ -1145,9 +1145,16 @@ header h1{font-size:15px;font-weight:700}
     <ul class="validation-list" id="vlist"></ul>
   </div>
   <div class="section-card">
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       Prévia do Laudo
-      <button id="btn-hl" class="btn-secondary" style="font-size:12px;padding:4px 14px" onclick="toggleHighlightMode()">✏️ Selecionar Destaques</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button id="btn-edit-text" class="btn-secondary" style="font-size:12px;padding:4px 14px" onclick="toggleEditMode()">✏️ Editar Texto</button>
+        <button id="btn-hl" class="btn-secondary" style="font-size:12px;padding:4px 14px" onclick="toggleHighlightMode()">✏️ Selecionar Destaques</button>
+      </div>
+    </div>
+    <div id="edit-mode-banner" style="display:none;background:#ebf2ff;border:1px solid #90b5e8;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#1a56a0;align-items:center;justify-content:space-between;gap:8px">
+      <span>✏️ <strong>Modo edição ativo</strong> — edite o corpo do relatório diretamente. O PDF usará o texto editado.</span>
+      <button class="btn-secondary" style="font-size:11px;padding:3px 10px;white-space:nowrap" onclick="resetReportBody()">↺ Restaurar original</button>
     </div>
     <div style="font-size:11px;color:#718096;margin-bottom:8px" id="hl-hint" style="display:none">Clique em qualquer parágrafo para marcá-lo em negrito no PDF.</div>
     <div class="preview-box" id="preview-box"></div>
@@ -1215,6 +1222,7 @@ let disease = '';
 let fd = {};
 let pdfBoldTexts = new Set();
 let highlightModeActive = false;
+let reportBodyEdited = false;
 let mv = {};
 let dmards = [];
 let dmardAtuais = [];
@@ -2845,8 +2853,46 @@ function applyHighlightHandlers() {
   });
 }
 
+// ─── EDIÇÃO DO CORPO DO RELATÓRIO ────────────────────────────────────────────
+function toggleEditMode() {
+  const el = document.getElementById('report-body-editable');
+  const btn = document.getElementById('btn-edit-text');
+  const banner = document.getElementById('edit-mode-banner');
+  if(!el) return;
+  const isEditing = el.getAttribute('contenteditable') === 'true';
+  if(isEditing) {
+    el.setAttribute('contenteditable','false');
+    el.style.outline='';
+    el.style.background='';
+    el.style.padding='';
+    btn.textContent='✏️ Editar Texto';
+    btn.style.background='';
+    btn.style.borderColor='';
+    if(banner) banner.style.display='none';
+  } else {
+    el.setAttribute('contenteditable','true');
+    el.style.outline='2px dashed #1a56a0';
+    el.style.background='#f7faff';
+    el.style.padding='6px';
+    el.style.borderRadius='4px';
+    btn.textContent='🔒 Fechar Edição';
+    btn.style.background='#ebf2ff';
+    btn.style.borderColor='#1a56a0';
+    if(banner) banner.style.display='flex';
+    el.focus();
+  }
+}
+
+function resetReportBody() {
+  reportBodyEdited = false;
+  const el = document.getElementById('report-body-editable');
+  if(el && el.getAttribute('contenteditable')==='true') toggleEditMode();
+  buildPreview();
+}
+
 // ─── PRÉVIA ───────────────────────────────────────────────────────────────────
 function buildPreview() {
+  reportBodyEdited = false;
   const crit=validate();
   const vlist=document.getElementById('vlist');
   vlist.innerHTML='';
@@ -2892,6 +2938,8 @@ function buildPreview() {
         <p ${pStyle}>${f.nome||'[Nome do paciente]'}${dnFmt?', '+dnFmt:''}</p>
         ${f.endereco ? `<p ${pStyle}>${f.endereco}</p>` : ''}
 
+        <div id="report-body-editable" oninput="reportBodyEdited=true" style="outline:none">
+
         <p ${pStyle} style="margin-top:18px">${introClinica}</p>
 
         ${scoreLine ? `<p style="margin-top:14px;margin-bottom:2px;font-size:13px">${scoreLine}</p>` : ''}
@@ -2914,6 +2962,8 @@ function buildPreview() {
         ${imgSection ? `<div style="margin-top:14px">${imgSection}</div>` : ''}
 
         <p style="margin-top:32px;font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c">${conclusao}</p>
+
+        </div>
 
         <pre style="margin-top:18px;font-family:Arial,sans-serif;font-size:13px;white-space:pre-wrap;line-height:2;color:#1a202c">${prescricao}</pre>
 
@@ -2995,6 +3045,31 @@ function genPDF() {
   if(f.endereco){txt(f.endereco,10,false);nl(1);}
   nl(4);
 
+  if(reportBodyEdited) {
+    // ── Corpo editado manualmente ─────────────────────────────────────────────
+    const bodyEl = document.getElementById('report-body-editable');
+    if(bodyEl) {
+      // Extract text from each block element to preserve paragraph breaks
+      const blocks = bodyEl.querySelectorAll('p, div, pre');
+      let lastWasBlank = false;
+      if(blocks.length > 0) {
+        blocks.forEach(el => {
+          const t = (el.innerText || el.textContent || '').trim();
+          if(t) { checkPage(12); txt(san(t),10,false); nl(3); lastWasBlank=false; }
+          else if(!lastWasBlank) { nl(2); lastWasBlank=true; }
+        });
+      } else {
+        // Fallback: split innerText by newlines
+        const raw = (bodyEl.innerText || bodyEl.textContent || '');
+        raw.split('\n').forEach(line => {
+          const t = line.trim();
+          if(t) { checkPage(12); txt(san(t),10,false); nl(3); }
+          else nl(2);
+        });
+      }
+    }
+    nl(4);
+  } else {
   // ── Introdução clínica (sem negrito extra) ──────────────────────────────────
   txt(buildIntroClinica(),10,false);nl(4);
 
@@ -3057,6 +3132,7 @@ function genPDF() {
   nl(6);
   // ── Conclusão ─────────────────────────────────────────────────────────────────
   txt(buildConclusao(),10,false);nl(6);
+  } // end if(reportBodyEdited) else
 
   // ── Bloco prescrição — manter junto na mesma página ──────────────────────────
   const prescTxt = buildPrescricao();
