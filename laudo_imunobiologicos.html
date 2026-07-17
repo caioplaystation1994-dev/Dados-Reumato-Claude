@@ -986,11 +986,11 @@ header h1{font-size:15px;font-weight:700}
       <table class="dmard-table">
         <thead>
           <tr>
-            <th style="width:26%">Medicamento</th>
-            <th style="width:14%">Dose</th>
-            <th style="width:16%">Data de início</th>
-            <th style="width:16%">Data de suspensão</th>
-            <th style="width:20%">Motivo de suspensão</th>
+            <th style="width:24%">Medicamento</th>
+            <th style="width:13%">Dose</th>
+            <th style="width:13%">Início</th>
+            <th style="width:13%">Suspensão</th>
+            <th style="width:29%">Motivo de suspensão / detalhe</th>
             <th style="width:8%"></th>
           </tr>
         </thead>
@@ -999,12 +999,8 @@ header h1{font-size:15px;font-weight:700}
       <button class="btn-add" onclick="addDmard()">+ Adicionar medicamento prévio</button>
       <div id="dut-trat-msg" class="ref-box" style="margin-top:12px"></div>
     </div>
-    <div class="section-card" style="margin-top:16px">
-      <h4 style="margin:0 0 10px;color:#5c6bc0">💉 Biológicos Anteriores</h4>
-      <p style="font-size:13px;color:#666;margin:0 0 10px">Registre imunobiológicos utilizados anteriormente e motivo de troca/suspensão.</p>
-      <div id="bioanterior-container"></div>
-      <button onclick="addBioAnterior()" class="btn-secondary" style="margin-top:8px">+ Adicionar biológico anterior</button>
-    </div>
+    <!-- bioanterior-container mantido oculto para compatibilidade com laudos antigos -->
+    <div id="bioanterior-container" style="display:none"></div>
     <div class="form-actions">
       <button class="btn-secondary" onclick="showTabByName('tab-diag')">← Voltar</button>
       <button class="btn-primary" onclick="showTabByName('tab-exam')">Próximo: Exames →</button>
@@ -1174,6 +1170,7 @@ header h1{font-size:15px;font-weight:700}
     <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       Prévia do Laudo
       <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-secondary" style="font-size:12px;padding:4px 14px;background:#fffbeb;border-color:#d97706;color:#92400e" onclick="abrirRevisorModal()">🔍 Revisar Relatório</button>
         <button id="btn-edit-text" class="btn-secondary" style="font-size:12px;padding:4px 14px" onclick="toggleEditMode()">✏️ Editar Texto</button>
         <button id="btn-hl" class="btn-secondary" style="font-size:12px;padding:4px 14px" onclick="toggleHighlightMode()">✏️ Selecionar Destaques</button>
       </div>
@@ -1195,6 +1192,19 @@ header h1{font-size:15px;font-weight:700}
       <button class="btn-secondary" onclick="goPage(2);showTabByName('tab-pac')">✏️ Editar</button>
       <button class="btn-secondary" onclick="novaConsulta()">🔄 Nova Consulta</button>
       <button class="btn-secondary" onclick="goPage(0);renderLaudos()">← Banco de Laudos</button>
+    </div>
+  </div>
+</div>
+
+<div id="revisor-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;overflow-y:auto;padding:20px">
+  <div style="background:#fff;border-radius:12px;max-width:720px;margin:0 auto;padding:28px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <h2 style="color:#92400e;font-size:16px">🔍 Revisão do Relatório</h2>
+      <button onclick="document.getElementById('revisor-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#718096">✕</button>
+    </div>
+    <div id="revisor-content"></div>
+    <div style="margin-top:18px;text-align:right">
+      <button class="btn-secondary" onclick="document.getElementById('revisor-modal').style.display='none'">Fechar</button>
     </div>
   </div>
 </div>
@@ -1378,6 +1388,36 @@ const MED_INFO = {
   'Ibandronato':{conc:'150mg',via:'Via oral',
     pos:'Tomar 1 comprimido de 150mg por via oral uma vez ao mes, em jejum, com copo cheio de agua; permanecer em posicao ereta por pelo menos 30 minutos'}
 };
+// Lista unificada de medicamentos — usada tanto em uso atual quanto em uso prévio
+const ALL_MED_OPTS = [
+  '— Corticosteroide —',
+  'Prednisona','Metilprednisolona','Dexametasona','Betametasona',
+  '— csDMARD —',
+  'Metotrexato (MTX)','Hidroxicloroquina','Sulfassalazina','Leflunomida','Azatioprina',
+  'Micofenolato de mofetila','Ciclofosfamida','Ciclosporina','Tacrolimo',
+  '— AINE —',
+  'Naproxeno','Ibuprofeno','Diclofenaco','Indometacina','Celecoxibe','Etoricoxibe','Meloxicam',
+  '— Anti-TNF —',
+  'Adalimumabe','Etanercepte','Infliximabe','Certolizumabe pegol','Golimumabe',
+  '— IL-6 / Co-estimulação —',
+  'Tocilizumabe','Sarilumabe','Abatacepte',
+  '— Anti-CD20 —',
+  'Rituximabe',
+  '— Anti-BLyS / IFN —',
+  'Belimumabe','Anifrolumabe',
+  '— IL-17 / IL-23 —',
+  'Secuquinumabe','Ixequizumabe','Bimekizumabe','Ustequinumabe','Guselcumabe','Risanquizumabe',
+  '— iJAK —',
+  'Baricitinibe','Tofacitinibe','Upadacitinibe','Filgotinibe',
+  '— PDE4 / Outros bDMARDs —',
+  'Apremilaste','Mepolizumabe','Imunoglobulina IV (IVIG)',
+  '— Osteoporose —',
+  'Alendronato','Risedronato','Ibandronato','Ácido zoledrônico','Denosumabe','Teriparatida','Romosozumabe','Cálcio + Vitamina D',
+  '— Suporte —',
+  'Ácido fólico','Omeprazol','Pantoprazol','Cotrimoxazol (SMX/TMP)',
+  'Outro'
+];
+// Mantido para compatibilidade com código de validação DUT
 const DMARD_OPTS = {
   ar:['Metotrexato (MTX)','Hidroxicloroquina','Sulfassalazina','Leflunomida','Azatioprina','Outro'],
   ea:['Naproxeno','Ibuprofeno','Diclofenaco','Indometacina','Celecoxibe','Etoricoxibe','Meloxicam','Sulfassalazina','Outro'],
@@ -1387,7 +1427,20 @@ const DMARD_OPTS = {
   dm:['Prednisona','Azatioprina','Metotrexato (MTX)','Micofenolato de mofetila','Imunoglobulina IV (IVIG)','Ciclosporina','Tacrolimo','Outro'],
   op:['Alendronato','Risedronato','Ibandronato','Cálcio + Vitamina D','Outro']
 };
-const MOTIVOS = ['Ineficácia','Intolerância / Efeito adverso','Contraindicação','Ainda em uso (base)','Outro'];
+const MOTIVOS = [
+  'Ineficácia primária (sem resposta inicial)',
+  'Perda de resposta / falha secundária',
+  'Intolerância / efeito adverso',
+  'Toxicidade (hepatotoxicidade, mielotoxicidade etc.)',
+  'Reação infusional / reação no local de aplicação',
+  'Infecção grave / oportunista',
+  'Contraindicação clínica',
+  'Gravidez / planejamento gestacional',
+  'Remissão sustentada — desmame',
+  'Custo / acesso',
+  'Ainda em uso (base)',
+  'Outro'
+];
 const SLEDAI_ITEMS = [
   {l:'Convulsão',w:8},{l:'Psicose',w:8},{l:'Síndrome cerebral orgânica',w:8},{l:'Distúrbio visual',w:8},
   {l:'Neuropatia craniana',w:8},{l:'Cefaleia lúpica',w:8},{l:'AVC',w:8},{l:'Vasculite',w:8},
@@ -2167,6 +2220,21 @@ const DMARD_DEFAULT_DOSE = {
   'Meloxicam': '15mg/dia por 6 semanas',
 };
 
+function buildMedOpts(selectedVal) {
+  const isGroup = o => o.startsWith('—');
+  let html = '<option value="">Selecione...</option>';
+  const isCustom = selectedVal && selectedVal !== 'Outro' && !ALL_MED_OPTS.includes(selectedVal);
+  ALL_MED_OPTS.forEach(o => {
+    if(isGroup(o)) {
+      html += `<option disabled style="font-weight:700;color:#4a5568;background:#f0f4f8">${o}</option>`;
+    } else {
+      const sel = (!isCustom && selectedVal===o) ? ' selected' : '';
+      html += `<option value="${o}"${sel}>${o}</option>`;
+    }
+  });
+  return html;
+}
+
 function addDmardAtual(data) {
   const idx=dmardAtuais.length;
   const d=data||{med:'',dose:'',dataInicio:''};
@@ -2174,12 +2242,10 @@ function addDmardAtual(data) {
   const tb=document.getElementById('dmard-atual-tbody');
   const tr=document.createElement('tr');
   tr.id='dra'+idx;
-  const knownA=DMARD_OPTS[disease]||['Outro'];
-  const isCustomA=d.med&&d.med!=='Outro'&&!knownA.includes(d.med);
+  const isCustomA=d.med&&d.med!=='Outro'&&!ALL_MED_OPTS.includes(d.med);
   const selValA=isCustomA?'Outro':d.med;
-  const opts=knownA.map(o=>`<option value="${o}"${selValA===o?' selected':''}>${o}</option>`).join('');
   tr.innerHTML=`<td>
-    <select onchange="onDmardASelect(this,${idx})"><option value="">Selecione...</option>${opts}</select>
+    <select onchange="onDmardASelect(this,${idx})">${buildMedOpts(selValA)}</select>
     <input type="text" id="medCustomA${idx}" placeholder="Nome do medicamento" value="${isCustomA?d.med:''}"
       style="display:${isCustomA?'block':'none'};margin-top:4px;border:1px solid #cbd5e0;border-radius:4px;padding:4px 7px;font-size:12px;width:100%;background:#fafafa"
       oninput="dmardAtuais[${idx}].med=this.value">
@@ -2192,6 +2258,7 @@ function addDmardAtual(data) {
 
 function onDmardASelect(sel,idx){
   const val=sel.value;
+  if(!val||val.startsWith('—')){sel.value='';return;} // group header — ignore
   const custom=document.getElementById('medCustomA'+idx);
   if(val==='Outro'){
     custom.style.display='block';
@@ -2205,6 +2272,13 @@ function onDmardASelect(sel,idx){
   }
 }
 
+function onMotivoSelect(sel,idx){
+  const val=sel.value;
+  dmards[idx].motivo=val;
+  const det=document.getElementById('motivoDet'+idx);
+  if(det) det.style.display=(val==='Outro'||val==='Intolerância / efeito adverso'||val==='Toxicidade (hepatotoxicidade, mielotoxicidade etc.)'||val==='Reação infusional / reação no local de aplicação'||val==='Infecção grave / oportunista')?'block':'none';
+}
+
 function rmDmardAtual(idx) {
   dmardAtuais.splice(idx,1);
   document.getElementById('dmard-atual-tbody').innerHTML='';
@@ -2214,18 +2288,17 @@ function rmDmardAtual(idx) {
 
 function addDmard(data) {
   const idx=dmards.length;
-  const d=data||{med:'',dose:'',dataInicio:'',dataSuspensao:'',motivo:''};
+  const d=data||{med:'',dose:'',dataInicio:'',dataSuspensao:'',motivo:'',motivoDetalhe:''};
   dmards.push(d);
   const tb=document.getElementById('dmard-tbody');
   const tr=document.createElement('tr');
   tr.id='dr'+idx;
-  const knownD=DMARD_OPTS[disease]||['Outro'];
-  const isCustomD=d.med&&d.med!=='Outro'&&!knownD.includes(d.med);
+  const isCustomD=d.med&&d.med!=='Outro'&&!ALL_MED_OPTS.includes(d.med);
   const selValD=isCustomD?'Outro':d.med;
-  const opts=knownD.map(o=>`<option value="${o}"${selValD===o?' selected':''}>${o}</option>`).join('');
+  const isOutroMotivo = d.motivo==='Outro' || (d.motivoDetalhe&&!MOTIVOS.slice(0,-1).includes(d.motivo));
   const mots=MOTIVOS.map(o=>`<option value="${o}"${d.motivo===o?' selected':''}>${o}</option>`).join('');
   tr.innerHTML=`<td>
-    <select onchange="onDmardSelect(this,${idx})"><option value="">Selecione...</option>${opts}</select>
+    <select onchange="onDmardSelect(this,${idx})">${buildMedOpts(selValD)}</select>
     <input type="text" id="medCustom${idx}" placeholder="Nome do medicamento" value="${isCustomD?d.med:''}"
       style="display:${isCustomD?'block':'none'};margin-top:4px;border:1px solid #cbd5e0;border-radius:4px;padding:4px 7px;font-size:12px;width:100%;background:#fafafa"
       oninput="dmards[${idx}].med=this.value">
@@ -2233,7 +2306,12 @@ function addDmard(data) {
     <td><input type="text" id="dose${idx}" placeholder="Ex: 20mg/sem" value="${d.dose||''}" oninput="dmards[${idx}].dose=this.value"></td>
     <td><input type="date" value="${d.dataInicio||''}" oninput="dmards[${idx}].dataInicio=this.value"></td>
     <td><input type="date" value="${d.dataSuspensao||''}" oninput="dmards[${idx}].dataSuspensao=this.value"></td>
-    <td><select onchange="dmards[${idx}].motivo=this.value"><option value="">Motivo...</option>${mots}</select></td>
+    <td>
+      <select onchange="onMotivoSelect(this,${idx})"><option value="">Motivo...</option>${mots}</select>
+      <input type="text" id="motivoDet${idx}" placeholder="Descreva o motivo..." value="${d.motivoDetalhe||''}"
+        style="display:${d.motivoDetalhe||isOutroMotivo?'block':'none'};margin-top:4px;border:1px solid #cbd5e0;border-radius:4px;padding:4px 7px;font-size:11px;width:100%;background:#fafafa"
+        oninput="dmards[${idx}].motivoDetalhe=this.value">
+    </td>
     <td><button class="btn-danger" onclick="rmDmard(${idx})">✕</button></td>`;
   tb.appendChild(tr);
   updDutMsg();
@@ -2241,6 +2319,7 @@ function addDmard(data) {
 
 function onDmardSelect(sel,idx){
   const val=sel.value;
+  if(!val||val.startsWith('—')){sel.value='';return;} // group header — ignore
   const custom=document.getElementById('medCustom'+idx);
   if(val==='Outro'){
     custom.style.display='block';
@@ -2753,9 +2832,16 @@ function buildMedList(label, list) {
 }
 
 function buildMedListAtual() {
-  // Use separate arrays: dmardAtuais for current, dmards for previous/suspended
   const atuais = dmardAtuais.filter(x => x.med);
-  const anteriores = dmards.filter(x => x.med);
+  // Merge dmards + any legacy bioAnteriores entries (backward compat)
+  const prevItems = [...dmards.filter(x => x.med)];
+  if(bioAnteriores && bioAnteriores.length) {
+    bioAnteriores.filter(b=>b.med).forEach(b => {
+      prevItems.push({med:b.med, dose:'', dataInicio:'', dataSuspensao:'',
+        motivo: b.motivo||'', motivoDetalhe: b.obs||''});
+    });
+  }
+  const anteriores = prevItems;
   return {atuais, anteriores};
 }
 
@@ -2953,7 +3039,7 @@ function buildPreview() {
 
   const f=fd;
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
-  const dataL=fmtDate(f.data_laudo)||new Date().toISOString().split('T')[0].split('-').reverse().join('/');
+  const dataL=f.data_laudo?fmtDate(f.data_laudo):new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   const localLaudo = document.getElementById('select-local-laudo')?.value || '';
   const logoSrcPrev = LOGOS[localLaudo] || '';
   const {atuais, anteriores} = buildMedListAtual();
@@ -2994,9 +3080,12 @@ function buildPreview() {
 
         ${atuais.length > 0 ? `${sectionLabel('Medicações atuais')}${atuais.map((x,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início em '+fmtDate(x.dataInicio):''}</p>`).join('')}` : ''}
 
-        ${anteriores.length > 0 ? `${sectionLabel('Uso prévio / suspensos')}${anteriores.map((x,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início '+fmtDate(x.dataInicio):''}${x.dataSuspensao?' — suspensão '+fmtDate(x.dataSuspensao):''}${x.motivo?' ('+x.motivo+')':''}</p>`).join('')}` : ''}
-
-        ${bioAnteriores.filter(b=>b.med).length>0 ? `${sectionLabel('Biológicos anteriores')}${bioAnteriores.filter(b=>b.med).map((b,i)=>`<p style="margin:0;font-size:13px">${i+1}. ${b.med}${b.duracao?' ('+b.duracao+')':''}${b.motivo?' — '+b.motivo:''}</p>`).join('')}` : ''}
+        ${anteriores.length > 0 ? `${sectionLabel('Uso prévio / suspensos')}${anteriores.map((x,i)=>{
+          let txt=`${i+1}. ${x.med}${x.dose?' — '+x.dose:''}${x.dataInicio?' — início '+fmtDate(x.dataInicio):''}${x.dataSuspensao?' — suspensão '+fmtDate(x.dataSuspensao):''}`;
+          const mot = [x.motivo, x.motivoDetalhe].filter(Boolean).join(': ');
+          if(mot) txt+=` (${mot})`;
+          return `<p style="margin:0;font-size:13px">${txt}</p>`;
+        }).join('')}` : ''}
 
         ${labLines.igra ? `<p style="margin-top:14px;font-size:13px">${labLines.igra}</p>` : ''}
         ${labLines.frAnticcp ? `<p style="margin-top:10px;font-size:13px">${labLines.frAnticcp}</p>` : ''}
@@ -3043,7 +3132,7 @@ function genPDF() {
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const f=fd;
   const M=20; const TW=170; let y=25;
-  const dataL=fmtDate(f.data_laudo)||new Date().toISOString().split('T')[0].split('-').reverse().join('/');
+  const dataL=f.data_laudo?fmtDate(f.data_laudo):new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
   const localLaudo = document.getElementById('select-local-laudo')?.value || '';
   const logoSrc = LOGOS[localLaudo] || '';
@@ -3143,16 +3232,8 @@ function genPDF() {
       if(x.dose) line+=` — ${x.dose}`;
       if(x.dataInicio) line+=` — início ${fmtDate(x.dataInicio)}`;
       if(x.dataSuspensao) line+=` — suspensão ${fmtDate(x.dataSuspensao)}`;
-      if(x.motivo) line+=` (${x.motivo})`;
-      txt(line,10,false);nl(1);
-    });nl(2);
-  }
-  if(bioAnteriores.filter(b=>b.med).length>0){
-    txt('Biológicos anteriores',10,false);nl(1);
-    bioAnteriores.filter(b=>b.med).forEach((b,i)=>{
-      let line=`${i+1}. ${b.med}`;
-      if(b.duracao) line+=` (${b.duracao})`;
-      if(b.motivo) line+=` — ${b.motivo}`;
+      const mot=[x.motivo,x.motivoDetalhe].filter(Boolean).join(': ');
+      if(mot) line+=` (${mot})`;
       txt(line,10,false);nl(1);
     });nl(2);
   }
@@ -3224,7 +3305,7 @@ function genDOCX() {
   if(typeof docx==='undefined'){alert('Biblioteca docx.js não carregada. Verifique sua conexão com a internet.');return;}
   const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,HeadingLevel}=docx;
   const f=fd; const n=narrative(); const crit=validate();
-  const dataL=fmtDate(f.data_laudo)||new Date().toISOString().split('T')[0].split('-').reverse().join('/');
+  const dataL=f.data_laudo?fmtDate(f.data_laudo):new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   const dnFmt=fmtDate(document.getElementById('p_dn').value);
 
   const h1=(t)=>new Paragraph({text:t,heading:HeadingLevel.HEADING_1,spacing:{after:200}});
@@ -3386,6 +3467,136 @@ function renderStats() {
     }).join('');
 }
 
+// ─── REVISOR DE RELATÓRIO ──────────────────────────────────────────────────────
+function revisorRelatorio() {
+  const f = fd; const d = disease;
+  const findings = []; // {type:'error'|'warning'|'tip', msg, detail}
+
+  const warn  = (msg, detail='') => findings.push({type:'warning', msg, detail});
+  const error = (msg, detail='') => findings.push({type:'error',   msg, detail});
+  const tip   = (msg, detail='') => findings.push({type:'tip',     msg, detail});
+
+  // ── Dados básicos ────────────────────────────────────────────────────────────
+  if(!f.nome) error('Nome do paciente não preenchido.');
+  if(!f.dn)   warn('Data de nascimento não preenchida — pode ser exigida pela operadora.');
+  if(!document.getElementById('p_cid').value) error('CID-10 não preenchido — campo obrigatório.');
+  if(!f.medico) warn('Nome do médico não preenchido.');
+  if(!f.crm)    warn('CRM não preenchido.');
+  if(!f.med_nome) error('Nenhum medicamento selecionado.');
+
+  // ── Triagem pré-biológico ────────────────────────────────────────────────────
+  const ppdRes = exams['ppd']?.result||'';
+  if(!ppdRes) warn('IGRA/PPD não preenchido — triagem obrigatória pela DUT.');
+  else if(/positiv/i.test(ppdRes) && !fd.tb_profilaxia_status)
+    error('IGRA/PPD positivo: profilaxia de tuberculose latente deve ser documentada na seção de triagem.');
+
+  const hbsag = exams['hbsag']?.result||'';
+  if(!hbsag) warn('HBsAg não preenchido.');
+  else if(/positiv/i.test(hbsag))
+    error('HBsAg reagente: uso de imunobiológicos (especialmente anti-TNF e rituximabe) pode causar reativação de Hepatite B. Documente avaliação hepatológica e profilaxia com antivirais.');
+
+  const hiv = exams['hiv']?.result||'';
+  if(!hiv) warn('Anti-HIV não preenchido.');
+
+  const rxTorax = exams['rx_torax']?.result||'';
+  if(!rxTorax) warn('Radiografia de tórax não preenchida — exigida pela DUT.');
+  else if(/cavit/i.test(rxTorax) || /consolid/i.test(rxTorax))
+    error('Rx de tórax com achados suspeitos (cavitações/consolidações): reavalie presença de tuberculose ativa antes de iniciar imunobiológico.');
+
+  // ── Tratamento prévio (DUT) ──────────────────────────────────────────────────
+  const prevMeds = [...dmards.filter(x=>x.med)];
+  if(bioAnteriores && bioAnteriores.length) bioAnteriores.filter(b=>b.med).forEach(b=>prevMeds.push({med:b.med,motivo:b.motivo||''}));
+
+  if(d==='ar') {
+    const hasMTX = [...dmardAtuais, ...prevMeds].some(x=>/metotrexato/i.test(x.med));
+    if(!hasMTX) warn('DUT 65.1 (AR): exige falha documentada ao Metotrexato (≥15 mg/sem por ≥3 meses), salvo contraindicação. Nenhum registro de MTX encontrado.');
+    if(prevMeds.length===0) warn('Nenhum medicamento prévio/suspenso registrado — a DUT exige comprovação de falha terapêutica.');
+    const score = +f.das28;
+    if(score && score < 3.2) warn(`DAS28 atual de ${score} indica doença baixa atividade ou remissão — verifique se o valor está correto. A DUT exige atividade moderada a alta para indicação de imunobiológico.`);
+    if(score && score >= 3.2 && score < 3.5) tip(`DAS28 de ${score} está na fronteira baixa/moderada atividade — use DAS28-PCR e documente critérios clínicos adicionais se necessário.`);
+  }
+  if(d==='ea') {
+    const hasAINE = prevMeds.some(x=>/naproxeno|ibuprofeno|diclofenaco|meloxicam|celecoxibe|etoricoxibe|indometacina/i.test(x.med));
+    if(!hasAINE) warn('DUT 65.3 (EA): exige falha a ≥2 AINEs em dose plena por ≥4 semanas cada. Nenhum AINE registrado como uso prévio.');
+    if(prevMeds.filter(x=>/naproxeno|ibuprofeno|diclofenaco|meloxicam|celecoxibe|etoricoxibe|indometacina/i.test(x.med)).length < 2)
+      warn('DUT 65.3 (EA): apenas 1 AINE documentado — a DUT exige falha a pelo menos 2 AINEs distintos.');
+  }
+  if(d==='aps') {
+    const hasDmard = prevMeds.some(x=>/metotrexato|leflunomida|sulfassalazina/i.test(x.med));
+    if(!hasDmard) warn('DUT 65.4 (APS): exige falha a pelo menos 1 csDMARD (Metotrexato de preferência). Nenhum csDMARD registrado.');
+  }
+  if(d==='les') {
+    const hasHCQ = [...dmardAtuais,...prevMeds].some(x=>/hidroxicloroquina/i.test(x.med));
+    if(!hasHCQ) warn('LES (ANS): hidroxicloroquina é considerada base do tratamento e deve estar documentada em uso atual ou como tentativa prévia.');
+  }
+
+  // ── Switching ───────────────────────────────────────────────────────────────
+  const medAnt = f.retorno_med_anterior || retornoMedAnterior || '';
+  if(isRetorno && medAnt && medAnt !== f.med_nome && !f.switching_motivo)
+    error('Troca de medicamento (switching) sem motivo documentado — preencha o campo "Motivo da troca" na aba Medicamento.');
+
+  // ── Exames bioquímicos ───────────────────────────────────────────────────────
+  if(!exams['hemograma']?.result) warn('Hemograma não preenchido.');
+  if(!exams['tgo_tgp']?.result)   warn('TGO/TGP não preenchido — importante para monitorização de hepatotoxicidade.');
+  if(!exams['creatinina']?.result) tip('Creatinina não preenchida — considere incluir para avaliação de função renal.');
+
+  // ── Datas inconsistentes ─────────────────────────────────────────────────────
+  dmards.filter(x=>x.med&&x.dataInicio&&x.dataSuspensao).forEach(x=>{
+    if(x.dataSuspensao < x.dataInicio)
+      error(`Medicamento "${x.med}": data de suspensão (${fmtDate(x.dataSuspensao)}) é anterior à data de início (${fmtDate(x.dataInicio)}).`);
+  });
+
+  // ── Medicamento sem posologia ────────────────────────────────────────────────
+  if(f.med_nome && !f.med_posologia) warn('Posologia do medicamento solicitado não preenchida.');
+
+  // ── Peso ausente para medicação peso-dependente ──────────────────────────────
+  const medInfo = MED_INFO[f.med_nome]||{};
+  if(medInfo.pesoDep && !f.med_peso)
+    error(`${f.med_nome} tem posologia calculada pelo peso — preencha o peso do paciente para gerar a dose correta.`);
+
+  // ── Dicas gerais ─────────────────────────────────────────────────────────────
+  if(prevMeds.filter(x=>x.motivo).length < prevMeds.length && prevMeds.length > 0)
+    tip('Alguns medicamentos prévios estão sem motivo de suspensão documentado. A DUT valoriza a justificativa de cada falha/suspensão.');
+  if(!f.cidade) tip('Cidade não preenchida — aparecerá em branco no rodapé do relatório.');
+  if(!f.data_laudo) tip('Data do laudo não preenchida — será usada a data de hoje.');
+
+  return findings;
+}
+
+function abrirRevisorModal() {
+  const findings = revisorRelatorio();
+  const modal = document.getElementById('revisor-modal');
+  const content = document.getElementById('revisor-content');
+
+  const errors   = findings.filter(f=>f.type==='error');
+  const warnings = findings.filter(f=>f.type==='warning');
+  const tips     = findings.filter(f=>f.type==='tip');
+
+  const icon = {error:'🔴', warning:'⚠️', tip:'💡'};
+  const bg   = {error:'#fff5f5', warning:'#fffbeb', tip:'#f0fff4'};
+  const border = {error:'#fc8181', warning:'#f6ad55', tip:'#68d391'};
+  const label  = {error:'Inconsistência', warning:'Atenção', tip:'Sugestão'};
+
+  const renderGroup = (list, type) => list.map(f => `
+    <div style="background:${bg[type]};border-left:4px solid ${border[type]};border-radius:6px;padding:10px 14px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:600;color:#1a202c">${icon[type]} ${label[type]}: ${f.msg}</div>
+      ${f.detail?`<div style="font-size:12px;color:#4a5568;margin-top:4px">${f.detail}</div>`:''}
+    </div>`).join('');
+
+  if(findings.length === 0) {
+    content.innerHTML = `<div style="text-align:center;padding:24px;color:#276749;font-size:15px;font-weight:700">✅ Nenhuma inconsistência encontrada!<br><span style="font-size:13px;font-weight:400;color:#4a5568;display:block;margin-top:8px">O relatório parece completo e consistente.</span></div>`;
+  } else {
+    content.innerHTML = `
+      <div style="font-size:13px;color:#718096;margin-bottom:14px">
+        ${errors.length} inconsistência${errors.length!==1?'s':''} · ${warnings.length} aviso${warnings.length!==1?'s':''} · ${tips.length} sugestão${tips.length!==1?'ões':''}
+      </div>
+      ${renderGroup(errors,'error')}
+      ${renderGroup(warnings,'warning')}
+      ${renderGroup(tips,'tip')}`;
+  }
+  modal.style.display = '';
+}
+
 // ─── CARTA DE RECURSO ──────────────────────────────────────────────────────────
 function genRecurso() {
   document.getElementById('recurso-modal').style.display='';
@@ -3397,7 +3608,7 @@ function genRecursoPDF() {
   const M=20, W=170;
   let y=20;
   const f=fd;
-  const dataL=fmtDate(f.data_laudo)||new Date().toISOString().split('T')[0].split('-').reverse().join('/');
+  const dataL=f.data_laudo?fmtDate(f.data_laudo):new Date().toISOString().split('T')[0].split('-').reverse().join('/');
   const dataNeg=fmtDate(document.getElementById('rec_data_negativa').value)||'—';
   const prot=document.getElementById('rec_protocolo').value||'';
   const motivo=document.getElementById('rec_motivo').value||'';
