@@ -278,7 +278,50 @@ body{padding-bottom:60px}
 @media print{
   .data-extenso-print{display:block;font-size:11px;color:#555;text-align:right;margin-bottom:4px}
   .score-panel,.template-bar,.perfil-bar,.rx-action-bar,.interacao-alert{display:none!important}
+  .svitais-panel,.comor-panel{display:none!important}
 }
+
+/* ── Sinais Vitais & Função Renal ── */
+.svitais-panel{background:#f0f9ff;border:1.5px solid #90cdf4;border-radius:10px;padding:12px 16px;margin-bottom:12px}
+.svitais-titulo{font-size:11px;font-weight:700;color:#2b6cb0;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.svitais-body{margin-top:10px;display:none}
+.svitais-panel.aberto .svitais-body{display:block}
+.pa-alert{background:#fff5f5;border:1.5px solid #fc8181;border-radius:6px;padding:8px 12px;font-size:12px;color:#742a2a;margin-top:6px;display:none}
+.pa-alert.visivel{display:block}
+.tfg-result{background:#2b6cb0;color:#fff;border-radius:6px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:6px;display:none}
+.tfg-result.visivel{display:block}
+.tfg-result span{font-size:11px;opacity:.8;margin-left:6px}
+.nef-alert{background:#fffbeb;border:1.5px solid #f6ad55;border-radius:6px;padding:8px 12px;font-size:12px;color:#7b341e;margin-top:6px;display:none}
+.nef-alert.visivel{display:block}
+
+/* ── Comorbidades tags ── */
+.comor-panel{background:#fffaf0;border:1.5px solid #f6ad55;border-radius:10px;padding:12px 16px;margin-bottom:12px}
+.comor-titulo{font-size:11px;font-weight:700;color:#7b341e;text-transform:uppercase;letter-spacing:.5px}
+.comor-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.comor-tag{background:#fff;border:1.5px solid #e2e8f0;color:#4a5568;border-radius:20px;padding:4px 14px;font-size:12px;cursor:pointer;transition:.15s;user-select:none}
+.comor-tag:hover{border-color:#f6ad55;background:#fffbeb}
+.comor-tag.ativo{background:#f6ad55;border-color:#e09416;color:#7b341e;font-weight:700}
+
+/* ── Lateralidade (imagem) ── */
+.lat-btns{display:none;gap:4px;margin-left:auto;flex-shrink:0}
+.exam-item.checked .lat-btns{display:flex}
+.lat-btn{background:#e2e8f0;border:1px solid #cbd5e0;color:#4a5568;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;transition:.15s;line-height:1.4}
+.lat-btn.ativo{background:#1a56a0;border-color:#1a56a0;color:#fff}
+
+/* ── Vacinas ── */
+.vacina-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid #f0f4f8;font-size:12px}
+.vacina-row:last-child{border-bottom:none}
+.vacina-nome{font-weight:600;color:#2d3748}
+.vacina-row input[type=date],.vacina-row select{border:1px solid #cbd5e0;border-radius:5px;padding:4px 6px;font-size:12px;background:#fafafa;width:100%}
+
+/* ── Busca global (Ctrl+K) ── */
+.search-input{border:1.5px solid #bee3f8;border-radius:8px;padding:10px 14px;font-size:14px;width:100%;background:#f7faff;font-family:inherit}
+.search-input:focus{outline:none;border-color:#1a56a0;background:#fff}
+.search-results{margin-top:10px;max-height:360px;overflow-y:auto}
+.search-result-item{padding:8px 12px;border-radius:6px;cursor:pointer;border-bottom:1px solid #f0f4f8;font-size:12px;color:#2d3748}
+.search-result-item:hover{background:#ebf4ff;color:#1a56a0}
+.search-result-cat{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.4px;margin-right:6px;display:inline-block}
+.search-empty{font-size:13px;color:#a0aec0;text-align:center;padding:20px}
 
 </style>
 </head>
@@ -326,6 +369,7 @@ body{padding-bottom:60px}
         <input type="file" id="importar-json" accept=".json" style="display:none" onchange="importarDados(event)">
       </label>
       <button class="btn-print" onclick="fecharModal('modal-utils');abrirModal('modal-log')" style="text-align:center">📋 Ver log de documentos</button>
+      <button class="btn-print" onclick="fecharModal('modal-utils');abrirModal('modal-vacinas')" style="text-align:center">💉 Registro de Vacinas</button>
     </div>
   </div>
 </div>
@@ -338,6 +382,28 @@ body{padding-bottom:60px}
       <button class="btn-rx-action" onclick="limparLog()">🗑 Limpar log</button>
     </div>
     <div class="modal-corpo" id="log-corpo"><div class="hist-empty">Nenhum documento registrado.</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL VACINAS ═══════════════ -->
+<div class="modal-overlay" id="modal-vacinas">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-titulo">💉 Registro de Vacinas <button class="modal-fechar" onclick="fecharModal('modal-vacinas')">×</button></div>
+    <div style="font-size:12px;color:#718096;margin-bottom:8px">Registre datas de aplicação e status vacinal do paciente. Dados salvos por paciente no perfil.</div>
+    <div class="modal-corpo" id="vacinas-corpo"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+      <button class="btn-print" onclick="fecharModal('modal-vacinas')">Fechar</button>
+      <button class="btn-word" style="padding:8px 18px" onclick="salvarVacinas()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL BUSCA GLOBAL (Ctrl+K) ═══════════════ -->
+<div class="modal-overlay" id="modal-search">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-titulo">🔍 Busca Global <span style="font-size:11px;font-weight:400;color:#a0aec0;margin-left:4px">Ctrl+K</span><button class="modal-fechar" onclick="fecharModal('modal-search')">×</button></div>
+    <input type="text" class="search-input" id="search-input" placeholder="Buscar CID, medicamento ou paciente salvo…">
+    <div class="search-results" id="search-results"><div class="search-empty">Digite para buscar…</div></div>
   </div>
 </div>
 
@@ -425,6 +491,55 @@ body{padding-bottom:60px}
       </div>
     </div>
 
+    <div class="svitais-panel no-print" id="svitais-panel">
+      <div class="svitais-titulo" onclick="toggleSvitais()">
+        🩺 Sinais Vitais &amp; Função Renal
+        <span id="svitais-arrow">▶</span>
+      </div>
+      <div class="svitais-body">
+        <div class="field-row" style="margin-bottom:6px">
+          <div class="field-group" style="flex:0 0 110px">
+            <label>PAS (mmHg)</label>
+            <input type="number" id="sv-pas" min="60" max="280" placeholder="120" oninput="verificarPA()">
+          </div>
+          <div class="field-group" style="flex:0 0 110px">
+            <label>PAD (mmHg)</label>
+            <input type="number" id="sv-pad" min="40" max="160" placeholder="80" oninput="verificarPA()">
+          </div>
+          <div class="field-group" style="flex:0 0 90px">
+            <label>FC (bpm)</label>
+            <input type="number" id="sv-fc" min="30" max="300" placeholder="—">
+          </div>
+          <div class="field-group" style="flex:0 0 90px">
+            <label>Peso (kg)</label>
+            <input type="number" id="sv-peso" min="20" max="400" placeholder="—">
+          </div>
+        </div>
+        <div id="pa-alert" class="pa-alert">⚠️ <strong>PA ≥ 140/90 mmHg</strong> — pressão arterial elevada. Verificar e registrar no exame físico.</div>
+        <div class="section-label" style="margin:8px 0 6px">TFG / eGFR — CKD-EPI 2021</div>
+        <div class="field-row">
+          <div class="field-group" style="flex:0 0 160px">
+            <label>Creatinina (mg/dL)</label>
+            <input type="number" id="sv-creat" min="0.1" max="30" step="0.01" placeholder="—" oninput="calcTFG()">
+          </div>
+          <div class="field-group" style="flex:0 0 120px">
+            <label>Sexo</label>
+            <select id="sv-sexo" onchange="calcTFG()">
+              <option value="F">Feminino</option>
+              <option value="M">Masculino</option>
+            </select>
+          </div>
+        </div>
+        <div id="tfg-result" class="tfg-result">TFG: —</div>
+        <div id="nef-alert" class="nef-alert">⚠️ <strong>Alerta Nefrotoxicidade:</strong> TFG &lt; 30 mL/min — <span id="nef-alert-meds"></span> devem ser usados com extrema cautela ou evitados.</div>
+      </div>
+    </div>
+
+    <div class="comor-panel no-print">
+      <div class="comor-titulo">🏥 Comorbidades</div>
+      <div class="comor-tags" id="comor-tags"></div>
+    </div>
+
     <div class="template-bar no-print">
       <label>Template de relatório:</label>
       <select id="select-template">
@@ -452,6 +567,8 @@ body{padding-bottom:60px}
           <button class="score-tab ativo" onclick="mudarScore('das28',this)">DAS28</button>
           <button class="score-tab" onclick="mudarScore('basdai',this)">BASDAI</button>
           <button class="score-tab" onclick="mudarScore('sledai',this)">SLEDAI-2K</button>
+          <button class="score-tab" onclick="mudarScore('dapsa',this)">DAPSA</button>
+          <button class="score-tab" onclick="mudarScore('essdai',this)">ESSDAI</button>
         </div>
         <!-- DAS28 -->
         <div id="score-das28">
@@ -483,6 +600,26 @@ body{padding-bottom:60px}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="sledai-checks"></div>
           <div class="score-result" style="margin-top:12px" id="sledai-result">SLEDAI-2K: — <span>Marque os itens</span></div>
           <button class="btn-add" style="margin-top:6px" onclick="inserirScoreNoRelatorio('sledai')">↓ Inserir SLEDAI-2K no relatório</button>
+        </div>
+        <!-- DAPSA (Artrite Psoriásica) -->
+        <div id="score-dapsa" style="display:none">
+          <div style="font-size:11px;color:#718096;margin-bottom:8px">Índice de atividade para Artrite Psoriásica. PCR em mg/dL (não mg/L).</div>
+          <div class="score-grid">
+            <div class="score-field"><label>Art. Dolorosas (TJC66)</label><input type="number" id="dapsa-tjc" min="0" max="66" placeholder="0" oninput="calcDAPSA()"></div>
+            <div class="score-field"><label>Art. Tumefatas (SJC68)</label><input type="number" id="dapsa-sjc" min="0" max="68" placeholder="0" oninput="calcDAPSA()"></div>
+            <div class="score-field"><label>Dor Paciente VAS (0–10)</label><input type="number" id="dapsa-pain" min="0" max="10" step="0.1" placeholder="—" oninput="calcDAPSA()"></div>
+            <div class="score-field"><label>Avaliação Global (0–10)</label><input type="number" id="dapsa-pga" min="0" max="10" step="0.1" placeholder="—" oninput="calcDAPSA()"></div>
+            <div class="score-field"><label>PCR (mg/dL)</label><input type="number" id="dapsa-crp" min="0" step="0.01" placeholder="—" oninput="calcDAPSA()"></div>
+          </div>
+          <div class="score-result" id="dapsa-result">DAPSA: — <span>Preencha os campos</span></div>
+          <button class="btn-add" style="margin-top:6px" onclick="inserirScoreNoRelatorio('dapsa')">↓ Inserir DAPSA no relatório</button>
+        </div>
+        <!-- ESSDAI (Sjögren) -->
+        <div id="score-essdai" style="display:none">
+          <div style="font-size:11px;color:#718096;margin-bottom:8px">ESSDAI – 12 domínios. Avalie a atividade nas últimas 4 semanas.</div>
+          <div id="essdai-domains"></div>
+          <div class="score-result" style="margin-top:12px" id="essdai-result">ESSDAI: — <span>Avalie os domínios</span></div>
+          <button class="btn-add" style="margin-top:6px" onclick="inserirScoreNoRelatorio('essdai')">↓ Inserir ESSDAI no relatório</button>
         </div>
       </div>
     </div>
@@ -1154,6 +1291,8 @@ function expandPacote(pkgId) {
 }
 
 // ─── Renderizar pacotes de imagem ─────────────────────────────────────────────
+const _lateralidade = {};
+
 function renderPacotesImg() {
   const container = document.getElementById('pacotes-img');
   if (!container) return;
@@ -1170,9 +1309,26 @@ function renderPacotesImg() {
           <div class="exam-item" id="${pkg.id}-exam-${i}" onclick="toggleExamItem('${pkg.id}',${i})">
             <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${pkg.id}',${i})">
             <label>${e}</label>
+            <span class="lat-btns" id="${pkg.id}-lat-${i}">
+              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="D" onclick="event.stopPropagation();setLat('${pkg.id}',${i},'D',this)">D</button>
+              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="E" onclick="event.stopPropagation();setLat('${pkg.id}',${i},'E',this)">E</button>
+              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="Bil." onclick="event.stopPropagation();setLat('${pkg.id}',${i},'Bil.',this)">Bil.</button>
+            </span>
           </div>`).join('')}
       </div>
     </div>`).join('');
+}
+
+function setLat(pkgId, idx, lat, btn) {
+  const key = pkgId + '-' + idx;
+  _lateralidade[key] = _lateralidade[key] === lat ? null : lat;
+  const btns = document.querySelectorAll(`#${pkgId}-lat-${idx} .lat-btn`);
+  btns.forEach(b => b.classList.toggle('ativo', b.dataset.lat === _lateralidade[key]));
+}
+
+function getLatText(pkgId, idx, exameName) {
+  const lat = _lateralidade[pkgId + '-' + idx];
+  return lat ? exameName + ' (' + lat + ')' : exameName;
 }
 
 function selectedImgFromPacotes() {
@@ -1337,11 +1493,25 @@ function prepararImpressao(ids) {
   const imgFlat = document.getElementById('img-print-flat');
   if (imgFlat) {
     const exames = [];
-    document.querySelectorAll('#pacotes-img .exam-item.checked label').forEach(l => exames.push(l.textContent));
+    PACOTES_IMG.forEach(pkg => {
+      pkg.exames.forEach((nome, i) => {
+        const el = document.getElementById(pkg.id + '-exam-' + i);
+        if (el && el.classList.contains('checked')) exames.push(getLatText(pkg.id, i, nome));
+      });
+    });
     const adicImg = (document.getElementById('img-adicional')?.value || '').trim();
     if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
     imgFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
   }
+
+  // ── Rodapé de impressão ──
+  const medico = document.getElementById('g-medico')?.value.trim() || '';
+  const crm = document.getElementById('g-crm')?.value.trim() || '';
+  const local = localAtual();
+  const hoje = new Date();
+  const dataHoje = hoje.toLocaleDateString('pt-BR');
+  const rodapeHtml = `<strong>${medico}</strong>${crm ? ' | ' + crm : ''} | Especialidade: Reumatologia<br>${local} | ${dataHoje}`;
+  document.querySelectorAll('.print-rodape').forEach(el => { el.innerHTML = rodapeHtml; });
 
   document._tituloOriginal = document.title;
   document.title = ' ';
@@ -1686,9 +1856,14 @@ async function gerarWordLab() {
 }
 
 async function gerarWordImg() {
-  // Coletar todos os exames de imagem marcados em lista plana
+  // Coletar todos os exames de imagem marcados (com lateralidade)
   const todosExames = [];
-  document.querySelectorAll('#pacotes-img .exam-item.checked label').forEach(l => todosExames.push(l.textContent));
+  PACOTES_IMG.forEach(pkg => {
+    pkg.exames.forEach((nome, i) => {
+      const el = document.getElementById(pkg.id + '-exam-' + i);
+      if (el && el.classList.contains('checked')) todosExames.push(getLatText(pkg.id, i, nome));
+    });
+  });
   const adicImg = v('img-adicional');
   if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => todosExames.push(l.trim()));
 
@@ -1818,10 +1993,11 @@ function salvarPerfil() {
   if (!nome) { alert('Preencha o nome do paciente antes de salvar.'); return; }
   const perfis = carregarPerfis();
   const idx = perfis.findIndex(p => p.nome === nome);
-  const perfil = { nome, nasc, idade, end, diag };
+  const perfil = { nome, nasc, idade, end, diag, comorbidades: getComorbidades() };
   if (idx >= 0) perfis[idx] = perfil; else perfis.unshift(perfil);
   salvarPerfis(perfis);
   renderPerfis();
+  alert('Paciente salvo!');
 }
 
 function carregarPerfil(nome) {
@@ -1835,6 +2011,7 @@ function carregarPerfil(nome) {
   set('rx-endereco', p.end);
   set('rel-diagnostico', p.diag);
   set('lab-cid', p.diag); set('img-cid', p.diag);
+  setComorbidades(p.comorbidades || []);
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
 
@@ -1879,19 +2056,22 @@ function novoPaciente() {
     if (el) el.value = new Date().toISOString().split('T')[0];
   });
   // Zerar scores e checkboxes SLEDAI
-  delete document._das28;
-  delete document._basdai;
-  delete document._sledai;
-  SLEDAI_ITEMS.forEach((_, i) => {
-    const cb = document.getElementById('sl' + i);
-    if (cb) cb.checked = false;
+  delete document._das28; delete document._basdai; delete document._sledai;
+  delete document._dapsa; delete document._essdai; delete document._tfg;
+  SLEDAI_ITEMS.forEach((_, i) => { const cb = document.getElementById('sl' + i); if (cb) cb.checked = false; });
+  ['sledai-result','das-result','basdai-result','dapsa-result','essdai-result'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = el.id.replace('-result','').toUpperCase() + ': — <span>—</span>';
   });
-  const sledaiRes = document.getElementById('sledai-result');
-  if (sledaiRes) sledaiRes.innerHTML = 'SLEDAI-2K: — <span>—</span>';
-  const dasRes = document.getElementById('das-result');
-  if (dasRes) dasRes.innerHTML = 'DAS28: — <span>Preencha os campos acima</span>';
-  const basdaiRes = document.getElementById('basdai-result');
-  if (basdaiRes) basdaiRes.innerHTML = 'BASDAI: — <span>—</span>';
+  // Zerar campos de sinais vitais
+  ['sv-pas','sv-pad','sv-fc','sv-peso','sv-creat'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('pa-alert')?.classList.remove('visivel');
+  const tfgEl = document.getElementById('tfg-result');
+  if (tfgEl) { tfgEl.textContent = 'TFG: —'; tfgEl.classList.remove('visivel'); }
+  document.getElementById('nef-alert')?.classList.remove('visivel');
+  // Zerar comorbidades
+  setComorbidades([]);
+  // Zerar lateralidade
+  Object.keys(_lateralidade).forEach(k => delete _lateralidade[k]);
   // Redimensionar textareas
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
@@ -1950,8 +2130,12 @@ document.addEventListener('DOMContentLoaded', () => {
   sincMedico();
   // Renderizar perfis de paciente
   renderPerfis();
-  // Inicializar SLEDAI
+  // Inicializar SLEDAI, ESSDAI, comorbidades
   renderSledai();
+  renderESSDAI();
+  renderComorbidadesTags();
+  // Busca global — listener no input
+  document.getElementById('search-input')?.addEventListener('input', function() { buscarGlobal(this.value); });
   const hoje = new Date().toISOString().split('T')[0];
   ['rel-data','rx-data','lab-data','img-data'].forEach(id => {
     const el = document.getElementById(id);
@@ -2251,7 +2435,7 @@ function toggleScorePanel() {
 }
 
 function mudarScore(id, btn) {
-  ['das28','basdai','sledai'].forEach(s => {
+  ['das28','basdai','sledai','dapsa','essdai'].forEach(s => {
     document.getElementById('score-' + s).style.display = s === id ? '' : 'none';
   });
   document.querySelectorAll('.score-tab').forEach(b => b.classList.remove('ativo'));
@@ -2306,9 +2490,8 @@ function renderSledai() {
 }
 
 function inserirScoreNoRelatorio(tipo) {
-  const val = tipo === 'das28' ? document._das28
-            : tipo === 'basdai' ? document._basdai
-            : document._sledai;
+  const mapa = { das28: document._das28, basdai: document._basdai, sledai: document._sledai, dapsa: document._dapsa, essdai: document._essdai };
+  const val = mapa[tipo];
   if (!val) { alert('Calcule o score antes de inserir.'); return; }
   const ta = document.getElementById('rel-anamnese');
   if (!ta) return;
@@ -2374,9 +2557,18 @@ function verificarInteracoes() {
   const achadas = INTERACOES_MED.filter(([a, b]) =>
     texto.includes(a.toLowerCase()) && texto.includes(b.toLowerCase())
   );
+  // Alerta de nefrotoxicidade (TFG < 30)
+  const tfg = document._tfg;
+  if (tfg !== undefined && tfg !== null && tfg < 30) {
+    const medsNefro = ['Metotrexato','Naproxeno','Meloxicam','Celecoxibe','Leflunomida'];
+    const presentes = medsNefro.filter(m => texto.includes(m.toLowerCase()));
+    if (presentes.length) {
+      achadas.push(['Função renal', presentes.join(', '), `TFG ${tfg.toFixed(0)} mL/min — risco de nefrotoxicidade aumentado com ${presentes.join(', ')}`]);
+    }
+  }
   if (achadas.length) {
     listaEl.innerHTML = achadas.map(([a, b, msg]) =>
-      `<div class="interacao-item">• <strong>${a} + ${b}:</strong> ${msg}</div>`
+      `<div class="interacao-item">• <strong>${a}:</strong> ${msg}</div>`
     ).join('');
     alertEl.classList.add('visivel');
   } else {
@@ -2546,10 +2738,261 @@ function limparLog() {
   renderLog();
 }
 
+// ─── Sinais Vitais & Função Renal ────────────────────────────────────────────
+function toggleSvitais() {
+  const p = document.getElementById('svitais-panel');
+  p.classList.toggle('aberto');
+  document.getElementById('svitais-arrow').textContent = p.classList.contains('aberto') ? '▼' : '▶';
+}
+
+function verificarPA() {
+  const pas = parseFloat(document.getElementById('sv-pas')?.value);
+  const pad = parseFloat(document.getElementById('sv-pad')?.value);
+  const alEl = document.getElementById('pa-alert');
+  if (!alEl) return;
+  const elevada = (!isNaN(pas) && pas >= 140) || (!isNaN(pad) && pad >= 90);
+  alEl.classList.toggle('visivel', elevada);
+}
+
+function calcTFG() {
+  const cr = parseFloat(document.getElementById('sv-creat')?.value);
+  const sexo = document.getElementById('sv-sexo')?.value;
+  const idadeStr = document.getElementById('rel-idade')?.value || '';
+  const idade = parseInt(idadeStr);
+  const resEl = document.getElementById('tfg-result');
+  const nefEl = document.getElementById('nef-alert');
+  if (isNaN(cr) || cr <= 0 || isNaN(idade) || idade <= 0) {
+    if (resEl) { resEl.textContent = 'TFG: —'; resEl.classList.remove('visivel'); }
+    if (nefEl) nefEl.classList.remove('visivel');
+    delete document._tfg;
+    return;
+  }
+  // CKD-EPI 2021 (race-free)
+  const k = sexo === 'F' ? 0.7 : 0.9;
+  const a = sexo === 'F' ? -0.241 : -0.302;
+  const crK = cr / k;
+  const tfg = 142 * Math.pow(Math.min(crK, 1), a) * Math.pow(Math.max(crK, 1), -1.200) * Math.pow(0.9938, idade) * (sexo === 'F' ? 1.012 : 1);
+  document._tfg = tfg;
+  let estadio = '';
+  if (tfg >= 90) estadio = 'G1 – Normal/Alta';
+  else if (tfg >= 60) estadio = 'G2 – Levemente reduzida';
+  else if (tfg >= 45) estadio = 'G3a – Leve-moderada';
+  else if (tfg >= 30) estadio = 'G3b – Moderada-grave';
+  else if (tfg >= 15) estadio = 'G4 – Grave';
+  else estadio = 'G5 – Falência renal';
+  const cor = tfg >= 60 ? '#276749' : tfg >= 30 ? '#b7791f' : '#c53030';
+  if (resEl) {
+    resEl.innerHTML = `TFG: <strong>${tfg.toFixed(0)} mL/min/1,73m²</strong> <span>${estadio}</span>`;
+    resEl.style.background = cor;
+    resEl.classList.add('visivel');
+  }
+  // Alerta nefrotoxicidade
+  if (nefEl) {
+    if (tfg < 30) {
+      const texto = (document.getElementById('rx-prescricao')?.value || '').toLowerCase();
+      const medsNefro = ['Metotrexato','Naproxeno','Meloxicam','Celecoxibe','Leflunomida'];
+      const presentes = medsNefro.filter(m => texto.includes(m.toLowerCase()));
+      if (presentes.length) {
+        document.getElementById('nef-alert-meds').textContent = presentes.join(', ');
+        nefEl.classList.add('visivel');
+      } else nefEl.classList.remove('visivel');
+    } else nefEl.classList.remove('visivel');
+  }
+  verificarInteracoes();
+}
+
+// ─── Comorbidades tags ────────────────────────────────────────────────────────
+const COMOR_LISTA = ['HAS','DM1','DM2','IRC','Dislipidemia','Cardiopatia','FA','DPOC','Asma','Osteoporose','Neoplasia','Hipotireoidismo','Obesidade','Tabagismo','Etilismo'];
+let _comorbidades = [];
+
+function getComorbidades() { return [..._comorbidades]; }
+
+function setComorbidades(lista) {
+  _comorbidades = lista || [];
+  renderComorbidadesTags();
+}
+
+function toggleComorbidade(nome) {
+  const idx = _comorbidades.indexOf(nome);
+  if (idx >= 0) _comorbidades.splice(idx, 1);
+  else _comorbidades.push(nome);
+  renderComorbidadesTags();
+}
+
+function renderComorbidadesTags() {
+  const container = document.getElementById('comor-tags');
+  if (!container) return;
+  container.innerHTML = COMOR_LISTA.map(nome => {
+    const ativo = _comorbidades.includes(nome);
+    return `<span class="comor-tag${ativo ? ' ativo' : ''}" onclick="toggleComorbidade(${JSON.stringify(nome)})">${nome}</span>`;
+  }).join('');
+}
+
+// ─── DAPSA (Artrite Psoriásica) ───────────────────────────────────────────────
+function calcDAPSA() {
+  const tjc = parseFloat(document.getElementById('dapsa-tjc')?.value) || 0;
+  const sjc = parseFloat(document.getElementById('dapsa-sjc')?.value) || 0;
+  const pain = parseFloat(document.getElementById('dapsa-pain')?.value);
+  const pga = parseFloat(document.getElementById('dapsa-pga')?.value);
+  const crp = parseFloat(document.getElementById('dapsa-crp')?.value);
+  const el = document.getElementById('dapsa-result');
+  if (isNaN(pain) || isNaN(pga) || isNaN(crp)) {
+    if (el) el.innerHTML = 'DAPSA: — <span>Preencha dor, AVG e PCR</span>';
+    return;
+  }
+  const score = tjc + sjc + pain + pga + crp;
+  const s = score.toFixed(1);
+  let cat = score <= 4 ? 'Remissão' : score <= 14 ? 'Atividade baixa' : score <= 28 ? 'Atividade moderada' : 'Atividade alta';
+  if (el) el.innerHTML = `DAPSA: ${s} <span>${cat}</span>`;
+  document._dapsa = `DAPSA = ${s} (${cat})`;
+}
+
+// ─── ESSDAI (Síndrome de Sjögren) ────────────────────────────────────────────
+const ESSDAI_DOMINIOS = [
+  { nome: 'Constitucional', pesos: [0, 3, 5] },
+  { nome: 'Linfadenopatia', pesos: [0, 4, 6] },
+  { nome: 'Glandular', pesos: [0, 2, 4] },
+  { nome: 'Articular', pesos: [0, 2, 4] },
+  { nome: 'Cutânea', pesos: [0, 3, 6] },
+  { nome: 'Pulmonar', pesos: [0, 5, 10] },
+  { nome: 'Renal', pesos: [0, 5, 10] },
+  { nome: 'Muscular', pesos: [0, 4, 6] },
+  { nome: 'SNP', pesos: [0, 5, 10] },
+  { nome: 'SNC', pesos: [0, 10, 15] },
+  { nome: 'Hematológico', pesos: [0, 2, 4] },
+  { nome: 'Biológico', pesos: [0, 1, 2] },
+];
+
+function renderESSDAI() {
+  const el = document.getElementById('essdai-domains');
+  if (!el) return;
+  el.innerHTML = ESSDAI_DOMINIOS.map((d, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #f0f4f8;font-size:12px">
+      <span style="flex:1;font-weight:600;color:#2d3748">${d.nome}</span>
+      <select id="essdai-${i}" onchange="calcESSDAI()" style="border:1px solid #cbd5e0;border-radius:5px;padding:3px 6px;font-size:12px;background:#fafafa">
+        <option value="0">Inativo (0)</option>
+        <option value="1">Baixo (${d.pesos[1]})</option>
+        <option value="2">Alto (${d.pesos[2]})</option>
+      </select>
+    </div>`).join('');
+}
+
+function calcESSDAI() {
+  let score = 0;
+  ESSDAI_DOMINIOS.forEach((d, i) => {
+    const nivel = parseInt(document.getElementById('essdai-' + i)?.value) || 0;
+    score += d.pesos[nivel];
+  });
+  let cat = score < 5 ? 'Inativo' : score < 14 ? 'Atividade baixa' : score < 28 ? 'Atividade moderada' : 'Atividade alta';
+  const el = document.getElementById('essdai-result');
+  if (el) el.innerHTML = `ESSDAI: ${score} <span>${cat}</span>`;
+  document._essdai = `ESSDAI = ${score} (${cat})`;
+}
+
+// ─── Registro de Vacinas ──────────────────────────────────────────────────────
+const VACINAS_LISTA = [
+  'Influenza (anual)', 'Pneumocócica 23v (PPSV23)', 'Pneumocócica 13v (PCV13)',
+  'Hepatite B', 'Herpes Zóster (Shingrix)', 'COVID-19',
+  'dTpa (difteria, tétano, coqueluche)', 'Hepatite A',
+  'Febre Amarela', 'HPV',
+];
+
+function chaveVacinas(nome) { return 'vacinas-' + nome.trim().toLowerCase().replace(/\s+/g, '-'); }
+
+function renderVacinas() {
+  const nomePac = document.getElementById('rel-nome')?.value.trim() || '';
+  const corpo = document.getElementById('vacinas-corpo');
+  if (!corpo) return;
+  let dados = {};
+  if (nomePac) {
+    try { dados = JSON.parse(localStorage.getItem(chaveVacinas(nomePac)) || '{}'); } catch(e) {}
+  }
+  corpo.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">
+      ${nomePac ? 'Paciente: ' + nomePac : 'Preencha o nome do paciente para salvar.'}
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;margin-bottom:4px;font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.3px;padding:0 4px">
+      <span>Vacina</span><span>Última dose</span><span>Status</span>
+    </div>` +
+    VACINAS_LISTA.map((v, i) => {
+      const d = dados[i] || {};
+      return `<div class="vacina-row">
+        <span class="vacina-nome">${v}</span>
+        <input type="date" id="vac-data-${i}" value="${d.data || ''}">
+        <select id="vac-status-${i}">
+          <option value="" ${!d.status ? 'selected' : ''}>—</option>
+          <option value="Em dia" ${d.status==='Em dia'?'selected':''}>Em dia</option>
+          <option value="Pendente" ${d.status==='Pendente'?'selected':''}>Pendente</option>
+          <option value="Contraindicada" ${d.status==='Contraindicada'?'selected':''}>Contraindicada</option>
+        </select>
+      </div>`;
+    }).join('');
+}
+
+function salvarVacinas() {
+  const nomePac = document.getElementById('rel-nome')?.value.trim();
+  if (!nomePac) { alert('Preencha o nome do paciente antes de salvar as vacinas.'); return; }
+  const dados = {};
+  VACINAS_LISTA.forEach((v, i) => {
+    const data = document.getElementById('vac-data-' + i)?.value || '';
+    const status = document.getElementById('vac-status-' + i)?.value || '';
+    if (data || status) dados[i] = { data, status };
+  });
+  localStorage.setItem(chaveVacinas(nomePac), JSON.stringify(dados));
+  alert('Vacinas salvas para ' + nomePac + '!');
+  fecharModal('modal-vacinas');
+}
+
+// ─── Busca Global (Ctrl+K) ────────────────────────────────────────────────────
+function buscarGlobal(q) {
+  const resEl = document.getElementById('search-results');
+  if (!resEl) return;
+  q = q.trim().toLowerCase();
+  if (q.length < 2) { resEl.innerHTML = '<div class="search-empty">Digite ao menos 2 caracteres…</div>'; return; }
+  const results = [];
+  // CIDs
+  CID_RHEUM.filter(([code, desc]) => desc.toLowerCase().includes(q) || code.toLowerCase().includes(q))
+    .slice(0, 8).forEach(([code, desc]) => results.push({ cat: 'CID', text: code + ' — ' + desc, acao: () => selecionarCidGlobal(desc + ' – ' + code) }));
+  // Medicamentos
+  Object.keys(MED_RX).filter(nome => nome.toLowerCase().includes(q))
+    .slice(0, 6).forEach(nome => results.push({ cat: 'Medicamento', text: nome, acao: () => { addMedRx(nome); fecharModal('modal-search'); } }));
+  // Pacientes
+  carregarPerfis().filter(p => p.nome.toLowerCase().includes(q))
+    .slice(0, 5).forEach(p => results.push({ cat: 'Paciente', text: p.nome + (p.diag ? ' — ' + p.diag : ''), acao: () => { carregarPerfil(p.nome); fecharModal('modal-search'); } }));
+  if (!results.length) { resEl.innerHTML = '<div class="search-empty">Nenhum resultado encontrado.</div>'; return; }
+  resEl.innerHTML = '';
+  results.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'search-result-item';
+    div.innerHTML = `<span class="search-result-cat">${r.cat}</span>${r.text}`;
+    div.addEventListener('click', () => r.acao());
+    resEl.appendChild(div);
+  });
+}
+
+function selecionarCidGlobal(valor) {
+  ['rel-diagnostico','lab-cid','img-cid'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = valor;
+  });
+  fecharModal('modal-search');
+}
+
 // ─── Modais ───────────────────────────────────────────────────────────────────
-function abrirModal(id) { document.getElementById(id)?.classList.add('aberto'); if (id === 'modal-log') renderLog(); }
+function abrirModal(id) {
+  document.getElementById(id)?.classList.add('aberto');
+  if (id === 'modal-log') renderLog();
+  if (id === 'modal-vacinas') renderVacinas();
+  if (id === 'modal-search') {
+    const inp = document.getElementById('search-input');
+    if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 50); }
+    document.getElementById('search-results').innerHTML = '<div class="search-empty">Digite para buscar…</div>';
+  }
+}
 function fecharModal(id) { document.getElementById(id)?.classList.remove('aberto'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.aberto').forEach(m => m.classList.remove('aberto')); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.aberto').forEach(m => m.classList.remove('aberto'));
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); abrirModal('modal-search'); }
+});
 // Fechar modal ao clicar fora (inicializado no DOMContentLoaded principal)
 
 
