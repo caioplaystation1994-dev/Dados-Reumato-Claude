@@ -419,7 +419,7 @@ body{padding-bottom:60px}
       <div class="field-group">
         <label>Diagnóstico Principal</label>
         <div class="cid-wrap">
-          <input type="text" id="rel-diagnostico" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-rel')" autocomplete="off">
+          <input type="text" id="rel-diagnostico" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-rel')" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-rel');if(s)s.style.display='none'},200)" autocomplete="off">
           <div class="cid-suggestions" id="cid-sug-rel" style="display:none"></div>
         </div>
       </div>
@@ -710,7 +710,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
-        <div class="cid-wrap"><input type="text" id="lab-cid" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-lab')" autocomplete="off"><div class="cid-suggestions" id="cid-sug-lab" style="display:none"></div></div>
+        <div class="cid-wrap"><input type="text" id="lab-cid" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-lab')" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-lab');if(s)s.style.display='none'},200)" autocomplete="off"><div class="cid-suggestions" id="cid-sug-lab" style="display:none"></div></div>
       </div>
     </div>
 
@@ -852,7 +852,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
-        <div class="cid-wrap"><input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45" oninput="cidSuggest(this,'cid-sug-img')" autocomplete="off"><div class="cid-suggestions" id="cid-sug-img" style="display:none"></div></div>
+        <div class="cid-wrap"><input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45" oninput="cidSuggest(this,'cid-sug-img')" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-img');if(s)s.style.display='none'},200)" autocomplete="off"><div class="cid-suggestions" id="cid-sug-img" style="display:none"></div></div>
       </div>
     </div>
 
@@ -1973,32 +1973,151 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ─── CID-10 Reumatologia ──────────────────────────────────────────────────────
 const CID_RHEUM = [
-  ['M05','Artrite Reumatoide soropositiva'],['M05.0','AR – Síndrome de Felty'],
-  ['M05.3','AR – Comprometimento de outros órgãos'],['M05.8','AR soropositiva, outra'],
-  ['M06','Artrite Reumatoide soronegativa'],['M06.0','AR soronegativa'],
-  ['M06.9','AR, não especificada'],['M07','Artropatia psoriásica'],
-  ['M07.3','Outras artropatias psoriásicas'],['M08','Artrite Reumatoide juvenil'],
-  ['M10','Gota'],['M10.0','Gota idiopática'],['M10.9','Gota, não especificada'],
-  ['M11','Outros artropatias por cristais'],['M11.2','CPPD – condrocalcinose'],
-  ['M13','Outras artrites'],['M13.1','Artrite monoarticular'],
-  ['M15','Poliartrose'],['M16','Coxartrose'],['M17','Gonartrose'],
-  ['M32','Lúpus Eritematoso Sistêmico (LES)'],['M32.0','LES induzido por drogas'],
-  ['M32.1','LES com comprometimento de outros órgãos'],['M32.9','LES, não especificado'],
-  ['M33','Dermatomiosite / Polimiosite'],['M33.0','Dermatomiosite juvenil'],
-  ['M33.1','Outras dermatomiosites'],['M33.2','Polimiosite'],
-  ['M34','Esclerose Sistêmica (ES)'],['M34.0','ES progressiva'],
-  ['M34.1','Síndrome CREST'],['M34.9','ES, não especificada'],
+  // Artrite Reumatoide
+  ['M05','Artrite Reumatoide soropositiva'],
+  ['M05.0','AR – Síndrome de Felty'],
+  ['M05.1','AR – Doença pulmonar reumatoide'],
+  ['M05.2','AR – Vasculite reumatoide'],
+  ['M05.3','AR – Comprometimento de outros órgãos e sistemas'],
+  ['M05.8','AR soropositiva, outra'],
+  ['M05.9','AR soropositiva, não especificada'],
+  ['M06','Artrite Reumatoide soronegativa'],
+  ['M06.0','AR soronegativa'],
+  ['M06.1','Doença de Still do adulto'],
+  ['M06.2','Bursite reumatoide'],
+  ['M06.3','Nódulo reumatoide'],
+  ['M06.4','Poliartropatia inflamatória'],
+  ['M06.8','Outras AR especificadas'],
+  ['M06.9','AR, não especificada'],
+  // Artropatia psoriásica
+  ['M07','Artropatia psoriásica'],
+  ['M07.0','Artropatia psoriásica interfalangiana distal'],
+  ['M07.1','Artrite mutilante'],
+  ['M07.2','Espondilite psoriásica'],
+  ['M07.3','Outras artropatias psoriásicas'],
+  // AR juvenil
+  ['M08','Artrite Reumatoide juvenil'],
+  ['M08.0','AR juvenil soropositiva'],
+  ['M08.1','Espondilite anquilosante juvenil'],
+  ['M08.2','AR juvenil de início sistêmico'],
+  ['M08.3','Poliartrite juvenil soronegativa'],
+  ['M08.4','AR juvenil pauciarticular'],
+  ['M08.9','AR juvenil, não especificada'],
+  // Gota e cristais
+  ['M10','Gota'],
+  ['M10.0','Gota idiopática'],
+  ['M10.1','Gota induzida por chumbo'],
+  ['M10.2','Gota induzida por drogas'],
+  ['M10.3','Gota por insuficiência renal'],
+  ['M10.9','Gota, não especificada'],
+  ['M11','Outras artropatias por cristais'],
+  ['M11.0','Condrocalcinose por hidroxiapatita'],
+  ['M11.1','Condrocalcinose familiar'],
+  ['M11.2','Condrocalcinose (CPPD)'],
+  ['M11.9','Artropatia por cristais, não especificada'],
+  // Outras artrites
+  ['M13','Outras artrites'],
+  ['M13.0','Poliartrite, não especificada'],
+  ['M13.1','Artrite monoarticular'],
+  ['M13.8','Outras artrites especificadas'],
+  ['M13.9','Artrite, não especificada'],
+  // Artrose
+  ['M15','Poliartrose'],
+  ['M15.0','Artrose primária generalizada'],
+  ['M15.1','Nódulos de Heberden'],
+  ['M15.2','Nódulos de Bouchard'],
+  ['M16','Coxartrose'],
+  ['M16.0','Coxartrose primária bilateral'],
+  ['M16.1','Coxartrose primária unilateral'],
+  ['M17','Gonartrose'],
+  ['M17.0','Gonartrose primária bilateral'],
+  ['M17.1','Gonartrose primária unilateral'],
+  // LES
+  ['M32','Lúpus Eritematoso Sistêmico (LES)'],
+  ['M32.0','LES induzido por drogas'],
+  ['M32.1','LES com comprometimento de outros órgãos'],
+  ['M32.8','Outras formas de LES'],
+  ['M32.9','LES, não especificado'],
+  // Dermatomiosite / Polimiosite
+  ['M33','Dermatomiosite / Polimiosite'],
+  ['M33.0','Dermatomiosite juvenil'],
+  ['M33.1','Outras dermatomiosites'],
+  ['M33.2','Polimiosite'],
+  ['M33.9','Dermatopolimiosite, não especificada'],
+  // Esclerose Sistêmica
+  ['M34','Esclerose Sistêmica (Esclerodermia)'],
+  ['M34.0','Esclerodermia progressiva'],
+  ['M34.1','Síndrome CREST'],
+  ['M34.2','Esclerodermia induzida por drogas'],
+  ['M34.8','Outras formas de esclerose sistêmica'],
+  ['M34.9','Esclerose sistêmica, não especificada'],
+  // Outras doenças sistêmicas
   ['M35','Outras doenças sistêmicas do tecido conjuntivo'],
-  ['M35.0','Síndrome de Sjögren (SS)'],['M35.1','Outras síndromes overlap'],
-  ['M35.3','Policondrite recidivante'],['M35.5','Síndrome multicanal fibrosclerótica'],
-  ['M45','Espondilite Anquilosante'],['M45.9','EA, sem menção de doença inflamatória intestinal'],
-  ['M46','Outras espondilopatias inflamatórias'],['M46.0','Entesopatia vertebral'],
+  ['M35.0','Síndrome de Sjögren (SS)'],
+  ['M35.1','Síndromes overlap'],
+  ['M35.2','Doença de Behçet'],
+  ['M35.3','Policondrite recidivante'],
+  ['M35.4','Fasciíte difusa'],
+  ['M35.5','Fibrosclerose multifocal'],
+  ['M35.6','Síndrome de resposta inflamatória sistêmica'],
+  ['M35.7','Síndrome de hipermobilidade'],
+  ['M35.8','Outras doenças sistêmicas especificadas'],
+  ['M35.9','Doença sistêmica do tecido conjuntivo, não especificada'],
+  // Espondiloartrites
+  ['M45','Espondilite Anquilosante'],
+  ['M45.9','Espondilite anquilosante, não especificada'],
+  ['M46','Outras espondilopatias inflamatórias'],
+  ['M46.0','Entesopatia vertebral'],
+  ['M46.1','Sacroiliíte'],
+  ['M46.2','Osteomielite vertebral'],
+  ['M46.8','Outras espondilopatias inflamatórias especificadas'],
   ['M46.9','Espondiloartrite não radiográfica'],
-  ['M30','Poliarterite nodosa'],['M31.3','Granulomatose de Wegener (GPA)'],
-  ['M31.5','Arterite de células gigantes'],['M31.6','Arterite de Takayasu'],
-  ['M31.7','Micropoliarterite'],['M79.7','Fibromialgia'],
-  ['M80','Osteoporose com fratura patológica'],['M81','Osteoporose sem fratura'],
-  ['M81.0','Osteoporose pós-menopáusica'],['M81.9','Osteoporose, não especificada'],
+  // Vasculites
+  ['M30','Poliarterite nodosa e afecções relacionadas'],
+  ['M30.0','Poliarterite nodosa'],
+  ['M30.1','Poliarterite com comprometimento pulmonar (Churg-Strauss)'],
+  ['M30.3','Síndrome de linfonodo mucocutâneo (Kawasaki)'],
+  ['M31','Outras vasculopatias necrosantes'],
+  ['M31.0','Angiíte por hipersensibilidade'],
+  ['M31.1','Microangiopatia trombótica'],
+  ['M31.2','Granuloma letal da linha média'],
+  ['M31.3','Granulomatose com poliangiíte (GPA / Wegener)'],
+  ['M31.4','Síndrome de Aorta (Takayasu)'],
+  ['M31.5','Arterite de células gigantes com polimialgia reumática'],
+  ['M31.6','Arterite de células gigantes, sem polimialgia'],
+  ['M31.7','Poliangiíte microscópica'],
+  ['M31.8','Outras vasculopatias necrosantes especificadas'],
+  ['M31.9','Vasculopatia necrosante, não especificada'],
+  // Fibromialgia e outros
+  ['M79.7','Fibromialgia'],
+  ['M79.0','Reumatismo, não especificado'],
+  ['M79.1','Mialgia'],
+  ['M79.3','Paniculite'],
+  // Osteoporose
+  ['M80','Osteoporose com fratura patológica'],
+  ['M80.0','Osteoporose pós-menopáusica com fratura patológica'],
+  ['M80.1','Osteoporose pós-ooforectomia com fratura patológica'],
+  ['M80.4','Osteoporose induzida por drogas com fratura patológica'],
+  ['M80.5','Osteoporose idiopática com fratura patológica'],
+  ['M80.9','Osteoporose com fratura patológica, não especificada'],
+  ['M81','Osteoporose sem fratura patológica'],
+  ['M81.0','Osteoporose pós-menopáusica'],
+  ['M81.1','Osteoporose pós-ooforectomia'],
+  ['M81.2','Osteoporose de imobilização'],
+  ['M81.3','Osteoporose por má absorção pós-cirúrgica'],
+  ['M81.4','Osteoporose induzida por drogas'],
+  ['M81.5','Osteoporose idiopática'],
+  ['M81.8','Outras osteoporoses'],
+  ['M81.9','Osteoporose, não especificada'],
+  // Polimialgia reumática
+  ['M35.3','Polimialgia reumática'],
+  ['L40.5','Artropatia psoriásica (pele)'],
+  // Síndrome antifosfolípide
+  ['D68.6','Síndrome antifosfolípide (SAF)'],
+  // Lúpus cutâneo
+  ['L93.0','Lúpus eritematoso discoide'],
+  ['L93.1','Lúpus eritematoso cutâneo subagudo'],
+  ['L93.2','Outros lúpus eritematosos'],
 ];
 
 function cidSuggest(input, sugId) {
@@ -2028,11 +2147,6 @@ function selecionarCid(inputId, sugId, valor) {
   });
 }
 
-document.addEventListener('click', e => {
-  if (!e.target.closest('.cid-wrap')) {
-    document.querySelectorAll('.cid-suggestions').forEach(el => el.style.display = 'none');
-  }
-});
 
 // ─── Templates de relatório por doença ───────────────────────────────────────
 const TEMPLATES_DOENCA = {
