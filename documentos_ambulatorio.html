@@ -356,20 +356,20 @@ body{padding-bottom:60px}
   <span class="barra-titulo">Selecionar documentos:</span>
   <div class="opcoes">
     <div class="sel-item" id="sel-relatorio" onclick="toggleSel('relatorio')">
-      <input type="checkbox" id="chk-relatorio">
-      <label for="chk-relatorio">Relatório Médico</label>
+      <input type="checkbox" id="chk-relatorio" onclick="event.stopPropagation();toggleSel('relatorio')">
+      <label for="chk-relatorio" onclick="event.stopPropagation();toggleSel('relatorio')">Relatório Médico</label>
     </div>
     <div class="sel-item" id="sel-receita" onclick="toggleSel('receita')">
-      <input type="checkbox" id="chk-receita">
-      <label for="chk-receita">Receita Médica</label>
+      <input type="checkbox" id="chk-receita" onclick="event.stopPropagation();toggleSel('receita')">
+      <label for="chk-receita" onclick="event.stopPropagation();toggleSel('receita')">Receita Médica</label>
     </div>
     <div class="sel-item" id="sel-exames-lab" onclick="toggleSel('exames-lab')">
-      <input type="checkbox" id="chk-exames-lab">
-      <label for="chk-exames-lab">Exames Laboratoriais</label>
+      <input type="checkbox" id="chk-exames-lab" onclick="event.stopPropagation();toggleSel('exames-lab')">
+      <label for="chk-exames-lab" onclick="event.stopPropagation();toggleSel('exames-lab')">Exames Laboratoriais</label>
     </div>
     <div class="sel-item" id="sel-exames-img" onclick="toggleSel('exames-img')">
-      <input type="checkbox" id="chk-exames-img">
-      <label for="chk-exames-img">Exames de Imagem</label>
+      <input type="checkbox" id="chk-exames-img" onclick="event.stopPropagation();toggleSel('exames-img')">
+      <label for="chk-exames-img" onclick="event.stopPropagation();toggleSel('exames-img')">Exames de Imagem</label>
     </div>
   </div>
   <div class="barra-acoes">
@@ -419,7 +419,7 @@ body{padding-bottom:60px}
       <div class="field-group">
         <label>Diagnóstico Principal</label>
         <div class="cid-wrap">
-          <input type="text" id="rel-diagnostico" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-rel')" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-rel');if(s)s.style.display='none'},200)" autocomplete="off">
+          <input type="text" id="rel-diagnostico" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-rel');sincPaciente('diagnostico',this.value)" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-rel');if(s)s.style.display='none'},200)" autocomplete="off">
           <div class="cid-suggestions" id="cid-sug-rel" style="display:none"></div>
         </div>
       </div>
@@ -710,7 +710,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
-        <div class="cid-wrap"><input type="text" id="lab-cid" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-lab')" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-lab');if(s)s.style.display='none'},200)" autocomplete="off"><div class="cid-suggestions" id="cid-sug-lab" style="display:none"></div></div>
+        <div class="cid-wrap"><input type="text" id="lab-cid" placeholder="Ex: Artrite Reumatoide – M05.8" oninput="cidSuggest(this,'cid-sug-lab');sincPaciente('diagnostico',this.value)" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-lab');if(s)s.style.display='none'},200)" autocomplete="off"><div class="cid-suggestions" id="cid-sug-lab" style="display:none"></div></div>
       </div>
     </div>
 
@@ -852,7 +852,7 @@ body{padding-bottom:60px}
     <div class="field-row">
       <div class="field-group">
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
-        <div class="cid-wrap"><input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45" oninput="cidSuggest(this,'cid-sug-img')" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-img');if(s)s.style.display='none'},200)" autocomplete="off"><div class="cid-suggestions" id="cid-sug-img" style="display:none"></div></div>
+        <div class="cid-wrap"><input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45" oninput="cidSuggest(this,'cid-sug-img');sincPaciente('diagnostico',this.value)" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-img');if(s)s.style.display='none'},200)" autocomplete="off"><div class="cid-suggestions" id="cid-sug-img" style="display:none"></div></div>
       </div>
     </div>
 
@@ -1536,9 +1536,9 @@ async function gerarWordRelatorio() {
     { type: 'title', text: 'RELATÓRIO MÉDICO' },
     { type: 'subtitle', text: localAtual() },
     { type: 'label-value', label: 'Paciente', value: v('rel-nome') },
-    { type: 'label-value', label: 'Data de Nascimento', value: v('rel-nascimento') },
+    { type: 'label-value', label: 'Data de Nascimento', value: fmtDataBR(v('rel-nascimento')) },
     { type: 'label-value', label: 'Idade', value: v('rel-idade') },
-    { type: 'label-value', label: 'Data da Consulta', value: v('rel-data') },
+    { type: 'label-value', label: 'Data da Consulta', value: fmtDataBR(v('rel-data')) },
     { type: 'separator' },
     { type: 'heading', text: 'Diagnóstico / CID-10' },
     { type: 'label-value', label: 'Diagnóstico Principal', value: v('rel-diagnostico') },
@@ -1569,7 +1569,7 @@ async function gerarWordReceita() {
     { type: 'label-value', label: 'Paciente', value: v('rx-nome') },
     { type: 'label-value', label: 'Idade', value: v('rx-idade') },
     { type: 'label-value', label: 'Endereço', value: v('rx-endereco') },
-    { type: 'label-value', label: 'Data', value: v('rx-data') },
+    { type: 'label-value', label: 'Data', value: fmtDataBR(v('rx-data')) },
     { type: 'separator' },
     { type: 'heading', text: 'Prescrição' },
     { type: 'multiline', value: v('rx-prescricao') || '—' },
@@ -1697,7 +1697,7 @@ async function gerarWordImg() {
     { type: 'title', text: 'SOLICITAÇÃO DE EXAMES DE IMAGEM' },
     { type: 'subtitle', text: localAtual() },
     { type: 'label-value', label: 'Paciente', value: v('img-nome') },
-    { type: 'label-value', label: 'Data', value: v('img-data') },
+    { type: 'label-value', label: 'Data', value: fmtDataBR(v('img-data')) },
     { type: 'label-value', label: 'Diagnóstico / CID', value: v('img-cid') },
     { type: 'separator' },
   ];
@@ -2129,9 +2129,17 @@ function cidSuggest(input, sugId) {
     desc.toLowerCase().includes(q) || code.toLowerCase().includes(q)
   ).slice(0, 20);
   if (!matches.length) { sug.style.display = 'none'; return; }
-  sug.innerHTML = matches.map(([code, desc]) =>
-    `<div class="cid-item" onmousedown="event.preventDefault();event.stopPropagation();selecionarCid(${JSON.stringify(input.id)},${JSON.stringify(sugId)},${JSON.stringify(desc+' – '+code)})" ontouchstart="event.preventDefault();selecionarCid(${JSON.stringify(input.id)},${JSON.stringify(sugId)},${JSON.stringify(desc+' – '+code)})"><strong>${code}</strong> ${desc}</div>`
-  ).join('');
+  sug.innerHTML = '';
+  matches.forEach(([code, desc]) => {
+    const div = document.createElement('div');
+    div.className = 'cid-item';
+    div.innerHTML = '<strong>' + code + '</strong> ' + desc;
+    const valor = desc + ' – ' + code;
+    const selecionar = (e) => { e.preventDefault(); selecionarCid(input.id, sugId, valor); };
+    div.addEventListener('mousedown', selecionar);
+    div.addEventListener('touchstart', selecionar, { passive: false });
+    sug.appendChild(div);
+  });
   sug.style.display = 'block';
 }
 
@@ -2223,7 +2231,11 @@ function aplicarTemplate() {
   }
   const t = TEMPLATES_DOENCA[sel];
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-  if (!document.getElementById('rel-diagnostico')?.value.trim()) set('rel-diagnostico', t.diagnostico);
+  if (!document.getElementById('rel-diagnostico')?.value.trim()) {
+    set('rel-diagnostico', t.diagnostico);
+    set('lab-cid', t.diagnostico);
+    set('img-cid', t.diagnostico);
+  }
   set('rel-anamnese', t.anamnese);
   set('rel-exfisico', t.exfisico);
   if (t.exames) set('rel-exames', t.exames);
@@ -2453,7 +2465,8 @@ function carregarConsulta(chave, idx) {
   if (h.nome) {
     ['rel-nome','rx-nome','lab-nome','img-nome'].forEach(id => set(id, h.nome));
   }
-  set('rel-data', h.data); set('rel-diagnostico', h.diag);
+  set('rel-data', h.data); set('rx-data', h.data); set('lab-data', h.data); set('img-data', h.data);
+  set('rel-diagnostico', h.diag); set('lab-cid', h.diag); set('img-cid', h.diag);
   set('rel-anamnese', h.anamnese); set('rel-exfisico', h.exfisico);
   set('rel-exames', h.exames); set('rel-conduta', h.conduta); set('rel-obs', h.obs);
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
