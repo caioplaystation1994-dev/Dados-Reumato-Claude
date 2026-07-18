@@ -1339,6 +1339,10 @@ const MED_INFO = {
     pos:'Tomar 1 comprimido de 5mg por via oral de 12 em 12 horas, todos os dias, por tempo indeterminado'},
   'Upadacitinibe':{conc:'15mg',via:'Oral (VO)',
     pos:'Tomar 1 comprimido de 15mg por via oral uma vez ao dia, todos os dias, por tempo indeterminado'},
+  'Filgotinibe':{conc:'200mg',via:'Oral (VO)',
+    pos:'Tomar 1 comprimido de 200mg por via oral uma vez ao dia, todos os dias, por tempo indeterminado'},
+  'Sarilumabe':{conc:'200mg/1,14ml',via:'Subcutânea (SC)',
+    pos:'Administrar 200mg via subcutânea a cada 2 semanas'},
   'Secuquinumabe':{conc:'150mg/ml',via:'Subcutânea (SC)',
     pos:'Administrar 300mg (2 ampolas de 150mg) via subcutânea nas semanas 0, 1, 2, 3 e 4 (fase de ataque), depois a cada 4 semanas'},
   'Ixequizumabe':{conc:'80mg/ml',via:'Subcutânea (SC)',
@@ -1520,13 +1524,12 @@ function selectDisease(d) {
   document.querySelectorAll('#page2 .pill.selected').forEach(p=>p.classList.remove('selected'));
   document.querySelectorAll('.sledai-item.checked').forEach(s=>{s.classList.remove('checked');const cb=s.querySelector('input');if(cb)cb.checked=false;});
   document.getElementById('dmard-tbody').innerHTML='';
+  document.getElementById('dmard-atual-tbody').innerHTML='';
   document.getElementById('p_cid').value=D_CID[d];
   document.getElementById('ar_cid_selector').style.display=d==='ar'?'':'none';
   document.getElementById('aps_cid_selector').style.display=d==='aps'?'':'none';
   document.getElementById('les_cid_selector').style.display=d==='les'?'':'none';
   document.getElementById('p_data_laudo').value=new Date().toISOString().split('T')[0];
-  document.getElementById('dmard-tbody').innerHTML='';
-  document.getElementById('dmard-atual-tbody').innerHTML='';
   if(d==='ea') buildBASDAI();
   if(d==='dm') buildMMT8();
   if(d==='les') buildSLEDAI();
@@ -1697,13 +1700,13 @@ function fillDemoData() {
 
     // Medicações atuais
     dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
-    addDmardAtual({med:'Metotrexato',dose:'20 mg/semana SC',dataInicio: mesesAtras(36)});
+    addDmardAtual({med:'Metotrexato (MTX)',dose:'20 mg/semana SC',dataInicio: mesesAtras(36)});
     addDmardAtual({med:'Ácido fólico',dose:'5 mg/semana VO',dataInicio: mesesAtras(36)});
     addDmardAtual({med:'Prednisona',dose:'7,5 mg/dia VO',dataInicio: mesesAtras(8)});
 
     // Uso prévio
     dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Metotrexato',dose:'15 mg/semana VO',dataInicio:mesesAtras(48),dataSuspensao:mesesAtras(36),motivo:'Intolerância gastrointestinal — náuseas e vômitos refratários à troca para uso SC'});
+    addDmard({med:'Metotrexato (MTX)',dose:'15 mg/semana VO',dataInicio:mesesAtras(48),dataSuspensao:mesesAtras(36),motivo:'Intolerância gastrointestinal — náuseas e vômitos refratários à troca para uso SC'});
     addDmard({med:'Leflunomida',dose:'20 mg/dia VO',dataInicio:mesesAtras(30),dataSuspensao:mesesAtras(6),motivo:'Falha primária — DAS28 persistentemente >5,1 após 6 meses de uso'});
     addDmard({med:'Hidroxicloroquina',dose:'400 mg/dia VO',dataInicio:mesesAtras(48),dataSuspensao:mesesAtras(30),motivo:'Associada a MTX, suspensa por progressão clínica'});
 
@@ -1801,12 +1804,12 @@ function fillDemoData() {
 
     // Medicações atuais
     dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
-    addDmardAtual({med:'Metotrexato',dose:'20 mg/semana SC',dataInicio: mesesAtras(18)});
+    addDmardAtual({med:'Metotrexato (MTX)',dose:'20 mg/semana SC',dataInicio: mesesAtras(18)});
     addDmardAtual({med:'Ácido fólico',dose:'5 mg/semana VO',dataInicio: mesesAtras(18)});
 
     // Uso prévio
     dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Metotrexato',dose:'15 mg/semana VO',dataInicio:mesesAtras(30),dataSuspensao:mesesAtras(18),motivo:'Intolerância gástrica — dose escalonada para via SC'});
+    addDmard({med:'Metotrexato (MTX)',dose:'15 mg/semana VO',dataInicio:mesesAtras(30),dataSuspensao:mesesAtras(18),motivo:'Intolerância gástrica — dose escalonada para via SC'});
     addDmard({med:'Leflunomida',dose:'20 mg/dia VO',dataInicio:mesesAtras(24),dataSuspensao:mesesAtras(12),motivo:'Falha terapêutica — DAPSA >28 após 6 meses'});
 
     // Imagem
@@ -2009,7 +2012,7 @@ function fillDemoData() {
 
     // Uso prévio
     dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
-    addDmard({med:'Metotrexato',dose:'25 mg/semana IM',dataInicio:mesesAtras(18),dataSuspensao:mesesAtras(12),motivo:'Contraindicado — DPI rapidamente progressiva associada (risco de toxicidade pulmonar)'});
+    addDmard({med:'Metotrexato (MTX)',dose:'25 mg/semana IM',dataInicio:mesesAtras(18),dataSuspensao:mesesAtras(12),motivo:'Contraindicado — DPI rapidamente progressiva associada (risco de toxicidade pulmonar)'});
     addDmard({med:'Ciclosporina',dose:'3 mg/kg/dia VO',dataInicio:mesesAtras(14),dataSuspensao:mesesAtras(8),motivo:'Intolerância — hipertensão arterial sistêmica e piora da função renal'});
 
     // Imagem
@@ -2083,7 +2086,7 @@ function marcarSorologiasNegativas() {
 
 function checkPPD() {
   const v = exams['ppd'] && exams['ppd'].result ? exams['ppd'].result.toLowerCase() : '';
-  const isPos = v.includes('posit') || v.includes('+') || v.includes('reator');
+  const isPos = v.includes('posit') || v.includes('+') || (/\breator\b/.test(v) && !/não\s*reator/i.test(v));
   const el = document.getElementById('ppd-alert');
   if(el) el.style.display = isPos ? '' : 'none';
   fd.tb_igra_positivo = isPos;
@@ -2521,9 +2524,9 @@ function buildImagens() {
   document.getElementById('imagem-container').innerHTML='';
 }
 
-function addImagem() {
+function addImagem(data) {
   const idx=imagens.length;
-  imagens.push({tipo:'',laudo:'',data:''});
+  imagens.push(data||{tipo:'',laudo:'',data:''});
   const c=document.getElementById('imagem-container');
   const row=document.createElement('div');
   row.id='img'+idx;
@@ -2556,7 +2559,7 @@ function addImagem() {
 function rmImagem(idx) {
   const tmp=imagens.filter((_,i)=>i!==idx);
   imagens=[]; document.getElementById('imagem-container').innerHTML='';
-  tmp.forEach(im=>{ imagens.push(im); addImagem(); imagens[imagens.length-1]=im; });
+  tmp.forEach(im=>addImagem(im));
 }
 
 // ─── MEDICAMENTO ──────────────────────────────────────────────────────────────
@@ -2652,9 +2655,11 @@ function validate() {
     r.push({pass: fraxM>=20 || fraxQ>=3 || tc<=-2.5 || temFratura, l:`Risco elevado pelo FRAX ou critério densitométrico/clínico`, det:'FRAX fratura maior ≥20% ou quadril ≥3%, ou T-score ≤−2,5 com fator de risco, ou fratura prévia'});
     r.push({pass: dmards.some(x=>x.med&&x.motivo), l:'Falha ou contraindicação a bifosfonato oral documentada (para terapias avançadas)', det:'Exigido para denosumabe, teriparatida e romosozumabe'});
   }
-  const req=EXAMES_BASE.filter(e=>e.req);
-  const done=req.filter(e=>exams[e.id]&&exams[e.id].result).length;
-  r.push({pass:done>=req.length,l:`Triagem pré-biológico: ${done}/${req.length} exames obrigatórios preenchidos`,det:'PPD/IGRA, Rx tórax, sorologias (HIV, HBV, HCV) e laboratório basal'});
+  if(d !== 'op') {
+    const req=EXAMES_BASE.filter(e=>e.req);
+    const done=req.filter(e=>exams[e.id]&&exams[e.id].result).length;
+    r.push({pass:done>=req.length,l:`Triagem pré-biológico: ${done}/${req.length} exames obrigatórios preenchidos`,det:'PPD/IGRA, Rx tórax, sorologias (HIV, HBV, HCV) e laboratório basal'});
+  }
   r.push({pass:!!(fd.med_nome&&fd.med_nome!==''&&fd.med_nome!=='Selecione...'),l:'Medicamento solicitado'+(fd.med_nome?' ('+fd.med_nome+')':''),det:'Nome do medicamento e posologia definidos'});
   return r;
 }
@@ -3443,6 +3448,7 @@ function salvarLaudo() {
     dmards: JSON.parse(JSON.stringify(dmards)),
     dmardAtuais: JSON.parse(JSON.stringify(dmardAtuais)),
     imagens: JSON.parse(JSON.stringify(imagens)),
+    exams: JSON.parse(JSON.stringify(exams)),
   };
   laudos.unshift(snap);
   if(laudos.length>100) laudos.pop();
@@ -3468,8 +3474,11 @@ function carregarLaudo(id) {
     fd=snap.fd; mv=snap.mv; dmards=[]; dmardAtuais=[]; imagens=[];
     snap.dmards.forEach(d=>addDmard(d));
     (snap.dmardAtuais||[]).forEach(d=>addDmardAtual(d));
-    snap.imagens.forEach(im=>{imagens.push(im);addImagem();imagens[imagens.length-1]=im;});
+    (snap.imagens||[]).forEach(im=>addImagem(im));
+    if(snap.exams) exams=JSON.parse(JSON.stringify(snap.exams));
     if(snap.cid) document.getElementById('p_cid').value=snap.cid;
+    fillFormFromFd(fd);
+    if(disease==='op' && typeof updOP==='function') updOP();
     alert('Laudo carregado. Verifique os campos e atualize os escores se necessário.');
   },100);
 }
@@ -3866,7 +3875,7 @@ function importarJSON(input) {
 // ─── NOVA CONSULTA ────────────────────────────────────────────────────────────
 function novaConsulta() {
   if(!confirm('Iniciar nova consulta? Os dados atuais serão apagados.')) return;
-  disease=''; fd={}; mv={}; dmards=[]; bioAnteriores=[]; exams={}; examDateGlobal=''; imagens=[];
+  disease=''; fd={}; mv={}; dmards=[]; dmardAtuais=[]; bioAnteriores=[]; exams={}; examDateGlobal=''; imagens=[];
   const bac=document.getElementById('bioanterior-container'); if(bac) bac.innerHTML='';
   document.querySelectorAll('#page2 input:not([readonly]),#page2 select,#page2 textarea').forEach(el=>{
     if(el.type==='range') el.value=0; else el.value='';
@@ -3874,6 +3883,7 @@ function novaConsulta() {
   document.querySelectorAll('#page2 .pill.selected').forEach(p=>p.classList.remove('selected'));
   document.querySelectorAll('.sledai-item.checked').forEach(s=>{s.classList.remove('checked');const cb=s.querySelector('input');if(cb)cb.checked=false;});
   document.getElementById('dmard-tbody').innerHTML='';
+  document.getElementById('dmard-atual-tbody').innerHTML='';
   const dr=document.getElementById('das_result'); if(dr) dr.textContent='—';
   const dc=document.getElementById('das_class'); if(dc) dc.textContent='Não calculado';
   goPage(0); renderLaudos();
@@ -3895,6 +3905,7 @@ function salvarLaudoSilencioso() {
     dmards: JSON.parse(JSON.stringify(dmards)),
     dmardAtuais: JSON.parse(JSON.stringify(dmardAtuais)),
     imagens: JSON.parse(JSON.stringify(imagens)),
+    exams: JSON.parse(JSON.stringify(exams)),
   };
   laudos.unshift(snap);
   if(laudos.length>30) laudos.pop();
@@ -3936,16 +3947,19 @@ function fillFormFromFd(savedFd) {
     const mp = document.getElementById('med_posologia');
     if(mp) mp.value = savedFd.med_posologia;
   }
+  if(disease === 'op' && typeof updOP === 'function') updOP();
 }
 
 function carregarLaudoRetorno(id) {
   const laudos = JSON.parse(localStorage.getItem('reumaLaudos')||'[]');
   const snap = laudos.find(l=>l.id===id);
   if(!snap) return;
-  isRetorno = true;
-  retornoMedAnterior = snap.fd.med_nome || snap.med || '';
+  const _isRetorno = true;
+  const _retornoMedAnterior = snap.fd.med_nome || snap.med || '';
   selectDisease(snap.disease);
   setTimeout(()=>{
+    isRetorno = _isRetorno;
+    retornoMedAnterior = _retornoMedAnterior;
     // Load demographics and history
     const savedFd = snap.fd;
     fd = JSON.parse(JSON.stringify(savedFd));
