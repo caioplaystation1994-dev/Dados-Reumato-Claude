@@ -546,6 +546,10 @@ body{padding-bottom:60px}
       </div>
     </div>
 
+    <div class="perfil-bar no-print" style="margin-bottom:8px">
+      <div class="perfil-chips" id="perfil-chips-rx"><span class="perfil-empty">Nenhum perfil salvo</span></div>
+      <button class="btn-salvar-perfil" onclick="salvarPerfil()">＋ Salvar paciente</button>
+    </div>
     <div class="field-row">
       <div class="field-group">
         <label>Nome do Paciente</label>
@@ -583,10 +587,52 @@ body{padding-bottom:60px}
         </div>
       </div>
       <div class="atalho-grupo">
-        <span class="atalho-titulo">AINEs / Outros</span>
+        <span class="atalho-titulo">Corticoides</span>
+        <div class="atalho-btns">
+          <button class="btn-atalho" onclick="addMedRx('Prednisona')">Prednisona</button>
+          <button class="btn-atalho" onclick="addMedRx('Metilprednisolona')">Metilprednisolona</button>
+        </div>
+      </div>
+      <div class="atalho-grupo">
+        <span class="atalho-titulo">bDMARDs — Anti-TNF</span>
+        <div class="atalho-btns">
+          <button class="btn-atalho" onclick="addMedRx('Adalimumabe')">Adalimumabe</button>
+          <button class="btn-atalho" onclick="addMedRx('Etanercepte')">Etanercepte</button>
+          <button class="btn-atalho" onclick="addMedRx('Certolizumabe')">Certolizumabe</button>
+          <button class="btn-atalho" onclick="addMedRx('Golimumabe')">Golimumabe</button>
+          <button class="btn-atalho" onclick="addMedRx('Infliximabe')">Infliximabe</button>
+        </div>
+      </div>
+      <div class="atalho-grupo">
+        <span class="atalho-titulo">bDMARDs — Outros</span>
+        <div class="atalho-btns">
+          <button class="btn-atalho" onclick="addMedRx('Abatacepte')">Abatacepte</button>
+          <button class="btn-atalho" onclick="addMedRx('Rituximabe')">Rituximabe</button>
+          <button class="btn-atalho" onclick="addMedRx('Tocilizumabe')">Tocilizumabe</button>
+          <button class="btn-atalho" onclick="addMedRx('Secuquinumabe')">Secuquinumabe</button>
+          <button class="btn-atalho" onclick="addMedRx('Ixequizumabe')">Ixequizumabe</button>
+          <button class="btn-atalho" onclick="addMedRx('Ustequinumabe')">Ustequinumabe</button>
+          <button class="btn-atalho" onclick="addMedRx('Belimumabe')">Belimumabe</button>
+        </div>
+      </div>
+      <div class="atalho-grupo">
+        <span class="atalho-titulo">tsDMARDs — Inibidores JAK</span>
+        <div class="atalho-btns">
+          <button class="btn-atalho" onclick="addMedRx('Tofacitinibe')">Tofacitinibe</button>
+          <button class="btn-atalho" onclick="addMedRx('Baricitinibe')">Baricitinibe</button>
+          <button class="btn-atalho" onclick="addMedRx('Upadacitinibe')">Upadacitinibe</button>
+          <button class="btn-atalho" onclick="addMedRx('Filgotinibe')">Filgotinibe</button>
+        </div>
+      </div>
+      <div class="atalho-grupo">
+        <span class="atalho-titulo">AINEs / Antigotosos / Outros</span>
         <div class="atalho-btns">
           <button class="btn-atalho" onclick="addMedRx('Naproxeno')">Naproxeno</button>
           <button class="btn-atalho" onclick="addMedRx('Meloxicam')">Meloxicam</button>
+          <button class="btn-atalho" onclick="addMedRx('Celecoxibe')">Celecoxibe</button>
+          <button class="btn-atalho" onclick="addMedRx('Colchicina')">Colchicina</button>
+          <button class="btn-atalho" onclick="addMedRx('Alopurinol')">Alopurinol</button>
+          <button class="btn-atalho" onclick="addMedRx('Febuxostate')">Febuxostate</button>
           <button class="btn-atalho" onclick="addMedRx('Tandrilax')">Tandrilax</button>
         </div>
       </div>
@@ -647,6 +693,10 @@ body{padding-bottom:60px}
       </div>
     </div>
 
+    <div class="perfil-bar no-print" style="margin-bottom:8px">
+      <div class="perfil-chips" id="perfil-chips-lab"><span class="perfil-empty">Nenhum perfil salvo</span></div>
+      <button class="btn-salvar-perfil" onclick="salvarPerfil()">＋ Salvar paciente</button>
+    </div>
     <div class="field-row">
       <div class="field-group">
         <label>Nome do Paciente</label>
@@ -785,6 +835,10 @@ body{padding-bottom:60px}
       </div>
     </div>
 
+    <div class="perfil-bar no-print" style="margin-bottom:8px">
+      <div class="perfil-chips" id="perfil-chips-img"><span class="perfil-empty">Nenhum perfil salvo</span></div>
+      <button class="btn-salvar-perfil" onclick="salvarPerfil()">＋ Salvar paciente</button>
+    </div>
     <div class="field-row">
       <div class="field-group">
         <label>Nome do Paciente</label>
@@ -1015,8 +1069,10 @@ function atualizarAvisosEspeciais() {
     hlaAviso.style.display = hlaAtivo ? '' : 'none';
     if (hlaAtivo) {
       const justEl = document.getElementById('hlab27-justificativa');
-      if (justEl && !justEl.value.trim()) {
-        justEl.value = PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
+      if (justEl) {
+        if (!justEl.value.trim()) {
+          justEl.value = PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
+        }
         autoResizeTA(justEl);
       }
     }
@@ -1028,7 +1084,10 @@ function atualizarAvisosEspeciais() {
     igraAviso.style.display = igraAtivo ? '' : 'none';
     if (igraAtivo) {
       const justEl = document.getElementById('igra-justificativa');
-      if (justEl && !justEl.value.trim()) atualizarJustIgra();
+      if (justEl) {
+        if (!justEl.value.trim()) atualizarJustIgra();
+        else autoResizeTA(justEl);
+      }
     }
   }
 }
@@ -1131,6 +1190,14 @@ function showPage(id, btn) {
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
+  // Sincronizar barra de seleção com a aba ativa
+  DOCS.forEach(docId => {
+    const chk = document.getElementById('chk-' + docId);
+    const sel = document.getElementById('sel-' + docId);
+    if (!chk || !sel) return;
+    chk.checked = (docId === id);
+    sel.classList.toggle('marcado', docId === id);
+  });
 }
 
 // ─── Limpar ────────────────────────────────────────────────────────────────────
@@ -1305,25 +1372,54 @@ function printDoc(pageId) {
 
 // ─── Posologias habituais dos atalhos de receita ──────────────────────────────
 const MED_RX = {
-  'Metotrexato':        'Metotrexato 15 mg (comprimidos de 2,5 mg) – 6 comprimidos 1x/semana, via oral, em dose única semanal',
-  'Leflunomida':        'Leflunomida 20 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
-  'Hidroxicloroquina':  'Hidroxicloroquina 400 mg – 2 comprimidos de 200 mg 1x/dia, via oral, uso contínuo',
-  'Sulfassalazina':     'Sulfassalazina 500 mg – 1 comprimido 2x/dia, via oral (aumentar progressivamente até 3 g/dia conforme tolerância)',
-  'Azatioprina':        'Azatioprina 50 mg – ___ comprimidos 1x/dia, via oral (dose-alvo: 2–3 mg/kg/dia)',
-  'Mofetilmicofenolato':'Mofetilmicofenolato 500 mg – 3 comprimidos 2x/dia, via oral (3 g/dia), uso contínuo',
-  'Ciclofosfamida':     'Ciclofosfamida ___ mg/m² – 1 infusão EV mensal conforme protocolo, sob supervisão médica',
-  'Clorambucila':       'Clorambucila 2 mg – ___ comprimidos 1x/dia, via oral (0,1 mg/kg/dia)',
-  'Naproxeno':          'Naproxeno 500 mg – 1 comprimido 2x/dia, via oral, com refeições, durante crise',
-  'Meloxicam':          'Meloxicam 15 mg – 1 comprimido 1x/dia, via oral, com refeições, durante crise',
-  'Tandrilax':          'Tandrilax – 1 comprimido 3x/dia, via oral, por 10 dias',
+  // csDMARDs
+  'Metotrexato':         'Metotrexato 15 mg (comprimidos de 2,5 mg) – 6 comprimidos 1x/semana, via oral, em dose única semanal',
+  'Leflunomida':         'Leflunomida 20 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
+  'Hidroxicloroquina':   'Hidroxicloroquina 400 mg – 2 comprimidos de 200 mg 1x/dia, via oral, uso contínuo',
+  'Sulfassalazina':      'Sulfassalazina 500 mg – 1 comprimido 2x/dia, via oral (aumentar progressivamente até 3 g/dia conforme tolerância)',
+  'Azatioprina':         'Azatioprina 50 mg – ___ comprimidos 1x/dia, via oral (dose-alvo: 2–3 mg/kg/dia)',
+  'Mofetilmicofenolato': 'Mofetilmicofenolato 500 mg – 3 comprimidos 2x/dia, via oral (3 g/dia), uso contínuo',
+  'Ciclofosfamida':      'Ciclofosfamida ___ mg/m² – 1 infusão EV mensal conforme protocolo, sob supervisão médica',
+  'Clorambucila':        'Clorambucila 2 mg – ___ comprimidos 1x/dia, via oral (0,1 mg/kg/dia)',
+  // Corticoides
+  'Prednisona':          'Prednisona ___ mg – 1x/dia, via oral, pela manhã, com alimentação',
+  'Metilprednisolona':   'Metilprednisolona ___ mg – 1x/dia, via oral, pela manhã, com alimentação',
+  // bDMARDs anti-TNF
+  'Adalimumabe':         'Adalimumabe 40 mg/0,8 mL – 1 injeção subcutânea a cada 2 semanas',
+  'Etanercepte':         'Etanercepte 50 mg/mL – 1 injeção subcutânea 1x/semana',
+  'Certolizumabe':       'Certolizumabe 200 mg/mL – 2 injeções subcutâneas (400 mg) a cada 2 semanas (indução 0/2/4 sem.), depois 200 mg a cada 2 semanas',
+  'Golimumabe':          'Golimumabe 50 mg/0,5 mL – 1 injeção subcutânea 1x/mês',
+  'Infliximabe':         'Infliximabe ___ mg/kg EV (dose usual: 3–5 mg/kg) – nas semanas 0, 2, 6, depois a cada 8 semanas',
+  // bDMARDs outros mecanismos
+  'Abatacepte':          'Abatacepte ___ mg EV (< 60 kg: 500 mg; 60–100 kg: 750 mg; > 100 kg: 1 g) – nas semanas 0, 2, 4, depois mensalmente',
+  'Rituximabe':          'Rituximabe 1.000 mg EV – 2 infusões com intervalo de 15 dias; repetir ciclo a cada 6 meses conforme atividade',
+  'Tocilizumabe':        'Tocilizumabe 162 mg/0,9 mL – 1 injeção subcutânea a cada 2 semanas (ou 1x/semana em monoterapia)',
+  'Secuquinumabe':       'Secuquinumabe 300 mg/2 mL – 1 injeção subcutânea 1x/semana nas semanas 0–4, depois 1x/mês',
+  'Ixequizumabe':        'Ixequizumabe 80 mg/mL – 1 injeção subcutânea na semana 0 (160 mg), depois a cada 2 semanas (8 sem.), depois 1x/mês',
+  'Ustequinumabe':       'Ustequinumabe 45 mg – 1 injeção subcutânea na semana 0 e na semana 4, depois a cada 12 semanas',
+  'Belimumabe':          'Belimumabe 200 mg/mL – 1 injeção subcutânea 1x/semana',
+  // tsDMARDs inibidores JAK
+  'Tofacitinibe':        'Tofacitinibe 5 mg – 1 comprimido 2x/dia, via oral, uso contínuo',
+  'Baricitinibe':        'Baricitinibe 4 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
+  'Upadacitinibe':       'Upadacitinibe 15 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
+  'Filgotinibe':         'Filgotinibe 200 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
+  // AINEs / outros
+  'Naproxeno':           'Naproxeno 500 mg – 1 comprimido 2x/dia, via oral, com refeições, durante crise',
+  'Meloxicam':           'Meloxicam 15 mg – 1 comprimido 1x/dia, via oral, com refeições, durante crise',
+  'Celecoxibe':          'Celecoxibe 200 mg – 1 cápsula 1–2x/dia, via oral, com refeições',
+  'Colchicina':          'Colchicina 0,5 mg – 2 comprimidos na 1ª hora, depois 1 comprimido a cada 1 hora até melhora (máx 6 mg/dia)',
+  'Alopurinol':          'Alopurinol 300 mg – 1 comprimido 1x/dia, via oral, após refeição (ajustar conforme uricemia alvo < 6 mg/dL)',
+  'Febuxostate':         'Febuxostate 80 mg – 1 comprimido 1x/dia, via oral',
+  'Tandrilax':           'Tandrilax – 1 comprimido 3x/dia, via oral, por 10 dias',
 };
 
 // ─── Medicamentos ──────────────────────────────────────────────────────────────
 function addMedRx(nome) {
   const ta = document.getElementById('rx-prescricao');
   const texto = ta.value;
-  const linhas = texto.split('\n').filter(l => l.trim());
-  const n = linhas.length + 1;
+  // Conta apenas linhas numeradas para determinar o próximo número
+  const linhasNumeradas = texto.split('\n').filter(l => /^\d+\./.test(l.trim()));
+  const n = linhasNumeradas.length + 1;
   const linha = MED_RX[nome] ? n + '. ' + MED_RX[nome] : n + '. ' + nome + ' – ';
   ta.value = (texto.trim() ? texto.trimEnd() + '\n' : '') + linha;
   autoResizeTA(ta);
@@ -1750,23 +1846,25 @@ function deletarPerfil(nome, e) {
 }
 
 function renderPerfis() {
-  const chips = document.getElementById('perfil-chips');
-  if (!chips) return;
   const perfis = carregarPerfis();
-  if (!perfis.length) {
-    chips.innerHTML = '<span class="perfil-empty">Nenhum perfil salvo</span>';
-    return;
-  }
-  chips.innerHTML = perfis.map(p => `
-    <span class="perfil-chip" onclick="carregarPerfil(${JSON.stringify(p.nome)})">
-      ${p.nome}
-      <span class="chip-del" onclick="deletarPerfil(${JSON.stringify(p.nome)}, event)">✕</span>
-    </span>`).join('');
+  const html = perfis.length
+    ? perfis.map(p => `
+        <span class="perfil-chip" onclick="carregarPerfil(${JSON.stringify(p.nome)})">
+          ${p.nome}
+          <span class="chip-del" onclick="deletarPerfil(${JSON.stringify(p.nome)}, event)">✕</span>
+        </span>`).join('')
+    : '<span class="perfil-empty">Nenhum perfil salvo</span>';
+  ['perfil-chips','perfil-chips-rx','perfil-chips-lab','perfil-chips-img'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
 }
 
 // ─── Novo paciente (limpar tudo) ──────────────────────────────────────────────
 function novoPaciente() {
   if (!confirm('Limpar todos os campos do paciente atual?')) return;
+  // Fechar qualquer modal aberto
+  document.querySelectorAll('.modal-overlay.aberto').forEach(m => m.classList.remove('aberto'));
   ['relatorio','receita','exames-lab','exames-img'].forEach(id => clearForm(id));
   // Clear synced fields
   ['rel-nome','rx-nome','lab-nome','img-nome','rel-nascimento','rel-idade','rx-idade','rx-endereco',
@@ -1860,6 +1958,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.value = hoje;
   });
   initAutoResize();
+  // Fechar modal ao clicar fora
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('aberto'); });
+  });
+  // Pré-selecionar na barra de seleção o documento da aba ativa ao abrir a página
+  const abaAtiva = document.querySelector('.page.active');
+  if (abaAtiva) {
+    const chk = document.getElementById('chk-' + abaAtiva.id);
+    if (chk) { chk.checked = true; document.getElementById('sel-' + abaAtiva.id)?.classList.add('marcado'); }
+  }
 });
 
 
@@ -1930,56 +2038,65 @@ document.addEventListener('click', e => {
 const TEMPLATES_DOENCA = {
   AR: {
     diagnostico: 'Artrite Reumatoide – M05.8',
-    anamnese: 'Paciente com diagnóstico de Artrite Reumatoide em acompanhamento. Relata ___. Articulações mais acometidas: ___.  Rigidez matinal: ___ minutos. Uso de DMARDs: ___.',
+    anamnese: 'Paciente com diagnóstico de Artrite Reumatoide em acompanhamento. Relata ___. Articulações mais acometidas: ___. Rigidez matinal: ___ minutos. Uso de DMARDs: ___.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg\n\nArticular: ___ articulações dolorosas, ___ tumefatas.\nDeformidades: ___. Nódulos reumatoides: ___.\nExtra-articular: ___.',
+    exames: 'FR: ___ | Anti-CCP: ___ | VHS: ___ | PCR: ___ | Hb: ___ | Leuco: ___ | Plaq: ___\nTGO/TGP: ___ | Cr: ___ | HBsAg: ___ | Anti-HCV: ___',
     conduta: 'Manter DMARD convencional (___). Solicitar exames de seguimento. Retorno em ___ semanas.\nPróxima consulta: ___.'
   },
   LES: {
     diagnostico: 'Lúpus Eritematoso Sistêmico – M32.9',
     anamnese: 'Paciente com diagnóstico de LES em acompanhamento. Critérios SLICC presentes: ___. Último SLEDAI: ___. Relata ___.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg\n\nPele/mucosas: ___.\nArticular: ___.\nRins: ___. Manifestações neurológicas: ___.',
+    exames: 'Anti-DNA: ___ | Complemento C3: ___ C4: ___ | Anti-Sm: ___ | Antifosfolípide: ___\nHb: ___ | Leuco: ___ | Plaq: ___ | Cr: ___ | EAS: ___ | Proteinúria 24h: ___',
     conduta: 'Manter hidroxicloroquina. ___. Solicitar exames de atividade. Retorno em ___ semanas.'
   },
   EA: {
     diagnostico: 'Espondilite Anquilosante – M45.9',
     anamnese: 'Paciente com diagnóstico de Espondiloartrite Axial. BASDAI: ___. Dor lombar inflamatória: ___. Relata ___.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg\n\nSchober: ___ cm. Expansão torácica: ___ cm. Distância tragus-parede: ___ cm.\nArticular periférica: ___. Entesite: ___.',
+    exames: 'VHS: ___ | PCR: ___ | HLA-B27: ___ | RX coluna/sacroilíacas: ___ | RMN sacroilíacas: ___',
     conduta: 'Manter AINE (___). ___. Solicitar RMN de sacroilíacas de controle. Retorno em ___ semanas.'
   },
   APs: {
     diagnostico: 'Artrite Psoriásica – M07.3',
     anamnese: 'Paciente com diagnóstico de Artrite Psoriásica. Padrão articular: ___. Lesões de psoríase: ___ (PASI ___). Relata ___.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg\n\nPele: ___.\nArticular: ___ articulações comprometidas. Dactilite: ___. Entesite: ___.',
+    exames: 'VHS: ___ | PCR: ___ | RX mãos/pés: ___ | USG articular: ___',
     conduta: 'Manter DMARD (___). ___. Retorno em ___ semanas.'
   },
   SS: {
     diagnostico: 'Síndrome de Sjögren – M35.0',
     anamnese: 'Paciente com diagnóstico de Síndrome de Sjögren. Xeroftalmia: ___. Xerostomia: ___. ESSDAI: ___. Relata ___.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg\n\nGlândulas salivares: ___.\nOlhos: ___.\nMucosas: ___.\nExtra-glandular: ___.',
+    exames: 'Anti-SSA/Ro: ___ | Anti-SSB/La: ___ | FR: ___ | Complemento: ___ | Hb: ___ | Leuco: ___ | Plaq: ___\nIgG: ___ | Cr: ___ | EAS: ___',
     conduta: 'Manter hidroxicloroquina. ___. Oftalmo e odonto de controle. Retorno em ___ semanas.'
   },
   ES: {
     diagnostico: 'Esclerose Sistêmica – M34.9',
     anamnese: 'Paciente com diagnóstico de Esclerose Sistêmica (___). mRSS: ___. Relata ___. Fenômeno de Raynaud: ___. Dispneia: ___.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  SpO2: ___% |  Peso: ___ kg\n\nPele: mRSS ___. Telangiectasias: ___.\nPulmão: ___.\nArticulações: ___.',
+    exames: 'Anti-Scl70: ___ | Anti-centrômero: ___ | Anti-RNA polimerase III: ___\nTCAR: ___ | Ecocardiograma: ___ | PFP: CVF ___% | DLCO ___% | Cr: ___',
     conduta: 'Manter tratamento (___). Solicitar PFP e TCAR de controle. Ecocardiograma. Retorno em ___ semanas.'
   },
   PM: {
     diagnostico: 'Dermatomiosite / Polimiosite – M33',
     anamnese: 'Paciente com diagnóstico de ___. CK basal: ___. Fraqueza muscular: grau ___ (MRC). Manifestações cutâneas: ___.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg\n\nForça muscular proximal: ___ MRC.\nPele: ___.\nPulmão: ___.',
+    exames: 'CK: ___ | Aldolase: ___ | Anti-Jo1: ___ | Anti-MDA5: ___ | Anti-TIF1γ: ___\nTGO/TGP: ___ | LDH: ___ | TCAR: ___',
     conduta: 'Manter imunossupressão (___). Fisioterapia. Solicitar CK de controle. Retorno em ___ semanas.'
   },
   Gota: {
     diagnostico: 'Gota – M10.0',
     anamnese: 'Paciente com diagnóstico de Gota. Ácido úrico basal: ___. Frequência de crises: ___. Última crise: ___. Tofos: ___.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg  |  IMC: ___\n\nArticular: ___. Tofos: ___.',
+    exames: 'Ácido úrico: ___ mg/dL | Cr: ___ | Clearance creatinina: ___ | TGO/TGP: ___\nRX articulações: ___ | Glicemia: ___ | Triglicerídeos: ___',
     conduta: 'Manter alopurinol ___ mg/dia. Meta ácido úrico < 6 mg/dL. Orientar dieta. Retorno em ___ semanas.'
   },
   FM: {
     diagnostico: 'Fibromialgia – M79.7',
     anamnese: 'Paciente com diagnóstico de Fibromialgia. EVA dor: ___/10. Sono: ___. Fadiga: ___. Humor: ___. Tender points: ___/18.',
     exfisico: 'PA: ___x___ mmHg  |  FC: ___ bpm  |  Peso: ___ kg\n\nTender points: ___/18 positivos.\nExame articular: normal. Força muscular: preservada.',
+    exames: 'Hemograma: ___ | TSH: ___ | VHS: ___ | PCR: ___ | Glicemia: ___ | 25-OH Vitamina D: ___',
     conduta: 'Atividade física aeróbica regular. ___. Psicologia/psiquiatria. Retorno em ___ semanas.'
   },
 };
@@ -1995,6 +2112,7 @@ function aplicarTemplate() {
   if (!document.getElementById('rel-diagnostico')?.value.trim()) set('rel-diagnostico', t.diagnostico);
   set('rel-anamnese', t.anamnese);
   set('rel-exfisico', t.exfisico);
+  if (t.exames) set('rel-exames', t.exames);
   set('rel-conduta', t.conduta);
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
@@ -2098,10 +2216,14 @@ function addLinhaPrescricao() {
 
 function reordenarPrescricao() {
   const ta = document.getElementById('rx-prescricao');
-  const linhas = ta.value.split('\n').filter(l => l.trim());
-  const renumeradas = linhas.map((l, i) => {
-    const semNum = l.replace(/^\d+\.\s*/, '');
-    return (i + 1) + '. ' + semNum;
+  // Preserva linhas em branco; renumera apenas linhas que começam com número
+  let contador = 0;
+  const renumeradas = ta.value.split('\n').map(l => {
+    if (/^\d+\./.test(l.trim())) {
+      contador++;
+      return contador + '. ' + l.trim().replace(/^\d+\.\s*/, '');
+    }
+    return l;
   });
   ta.value = renumeradas.join('\n');
   autoResizeTA(ta);
@@ -2301,9 +2423,7 @@ function limparLog() {
 function abrirModal(id) { document.getElementById(id)?.classList.add('aberto'); if (id === 'modal-log') renderLog(); }
 function fecharModal(id) { document.getElementById(id)?.classList.remove('aberto'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.aberto').forEach(m => m.classList.remove('aberto')); });
-document.querySelectorAll && document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('aberto'); }));
-});
+// Fechar modal ao clicar fora (inicializado no DOMContentLoaded principal)
 
 
 </script>
