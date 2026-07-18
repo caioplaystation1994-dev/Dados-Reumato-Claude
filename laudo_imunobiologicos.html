@@ -907,21 +907,21 @@ header h1{font-size:15px;font-weight:700}
       <div class="field-row">
         <div class="field-group">
           <label>T-score (coluna lombar)</label>
-          <input type="number" step="0.1" placeholder="Ex: -2.8" oninput="fd.op_tscore_col=this.value;updOP()">
+          <input type="number" step="0.1" id="op_col" placeholder="Ex: -2.8" oninput="fd.op_tscore_col=this.value;updOP()">
         </div>
         <div class="field-group">
           <label>T-score (fêmur total)</label>
-          <input type="number" step="0.1" placeholder="Ex: -2.5" oninput="fd.op_tscore_fem=this.value;updOP()">
+          <input type="number" step="0.1" id="op_fem" placeholder="Ex: -2.5" oninput="fd.op_tscore_fem=this.value;updOP()">
         </div>
         <div class="field-group">
           <label>T-score (colo femoral)</label>
-          <input type="number" step="0.1" placeholder="Ex: -2.6" oninput="fd.op_tscore_colo=this.value;updOP()">
+          <input type="number" step="0.1" id="op_colo" placeholder="Ex: -2.6" oninput="fd.op_tscore_colo=this.value;updOP()">
         </div>
       </div>
       <div class="field-row">
         <div class="field-group">
           <label>Data da densitometria</label>
-          <input type="date" oninput="fd.op_dxa_data=this.value">
+          <input type="date" id="op_dxa_data" oninput="fd.op_dxa_data=this.value">
         </div>
         <div class="field-group">
           <label>FRAX — risco fratura maior (%)</label>
@@ -934,13 +934,14 @@ header h1{font-size:15px;font-weight:700}
       </div>
       <div class="field-group">
         <label>Fraturas por fragilidade (descreva, se houver)</label>
-        <input type="text" placeholder="Ex: fratura vertebral T12 em 2023, fratura de punho em 2022" oninput="fd.op_fraturas=this.value">
+        <input type="text" id="op_fraturas_inp" placeholder="Ex: fratura vertebral T12 em 2023, fratura de punho em 2022" oninput="fd.op_fraturas=this.value;updOP()">
       </div>
       <div class="field-group">
         <label>Uso de corticoide (dose e duração)</label>
         <input type="text" placeholder="Ex: prednisona 10mg/dia há 2 anos" oninput="fd.op_corticoide=this.value">
       </div>
       <div id="op-result" style="margin-top:12px;padding:12px;background:#f0f9ff;border-radius:8px;font-size:13px;display:none"></div>
+      <div id="op-analysis-panel" style="display:none;margin-top:12px;padding:14px 16px;background:#fffbeb;border:1px solid #f6d860;border-radius:10px;font-size:13px"></div>
       <div class="section-card" style="margin-top:12px" id="op_dxa2_section">
         <h4 style="margin:0 0 10px;color:#5c6bc0">📊 Densitometria Óssea — Exame Anterior (Comparação)</h4>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 160px;gap:12px">
@@ -2378,6 +2379,7 @@ function updOP() {
     el.innerHTML = `<b>Classificação DXA:</b> ${cls}<br><b>T-score mais baixo:</b> ${tc.toFixed(1)}<br>${fraxM?'<b>FRAX fratura maior:</b> '+fraxM+'%<br>':''} ${fraxQ?'<b>FRAX fratura quadril:</b> '+fraxQ+'%':''}`;
   }
   updDeltaDXA();
+  if(typeof updOPAnalysisPanel==='function') updOPAnalysisPanel();
 }
 
 // ─── TABELA DE TRATAMENTO ────────────────────────────────────────────────────
@@ -2511,6 +2513,7 @@ function rmDmard(idx) {
   const tmp=[...dmards]; dmards=[];
   tmp.forEach(d=>addDmard(d));
   updDutMsg();
+  if(typeof updOPAnalysisPanel==='function') updOPAnalysisPanel();
 }
 
 function updDutMsg() {
@@ -2653,19 +2656,19 @@ function addImagem(data) {
     <div>
       <div class="exam-label">Tipo de exame</div>
       <input type="text" placeholder="Ex: RM de mãos e punhos" value="${imagens[idx].tipo}"
-        oninput="imagens[${idx}].tipo=this.value"
+        oninput="imagens[${idx}].tipo=this.value;if(typeof updOPAnalysisPanel==='function')updOPAnalysisPanel()"
         style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fff">
     </div>
     <div>
       <div class="exam-label">Laudo / Resultado</div>
       <input type="text" placeholder="Ex: Erosões em metacarpofalangeanas bilaterais" value="${imagens[idx].laudo}"
-        oninput="imagens[${idx}].laudo=this.value"
+        oninput="imagens[${idx}].laudo=this.value;if(typeof updOPAnalysisPanel==='function')updOPAnalysisPanel()"
         style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fff">
     </div>
     <div>
       <div class="exam-label">Data</div>
       <input type="date" value="${imagens[idx].data}"
-        oninput="imagens[${idx}].data=this.value"
+        oninput="imagens[${idx}].data=this.value;if(typeof updOPAnalysisPanel==='function')updOPAnalysisPanel()"
         style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fff">
     </div>
     <div style="padding-top:20px">
@@ -2768,10 +2771,17 @@ function validate() {
     const tc = parseFloat(fd.op_tscore_min||0)||0;
     const fraxM = parseFloat(fd.op_frax_maior||0)||0;
     const fraxQ = parseFloat(fd.op_frax_quad||0)||0;
-    const temFratura = !!fd.op_fraturas;
+    const an = buildOPAnalysis();
+    const temFratura = !!(fd.op_fraturas || an.fraturasImagem.length > 0);
     r.push({pass: tc<=-2.5 || temFratura, l:`T-score ≤ −2,5 ou fratura por fragilidade (T-score mais baixo: ${tc||'—'})`, det:'Critério diagnóstico de osteoporose pela DXA ou fratura de baixo impacto'});
     r.push({pass: fraxM>=20 || fraxQ>=3 || tc<=-2.5 || temFratura, l:`Risco elevado pelo FRAX ou critério densitométrico/clínico`, det:'FRAX fratura maior ≥20% ou quadril ≥3%, ou T-score ≤−2,5 com fator de risco, ou fratura prévia'});
-    r.push({pass: dmards.some(x=>x.med&&x.motivo), l:'Falha ou contraindicação a bifosfonato oral documentada (para terapias avançadas)', det:'Exigido para denosumabe, teriparatida e romosozumabe'});
+    const bifDutOK = an.dutOK === true;
+    const bifSemData = an.bifs.length > 0 && an.dutMeses === null;
+    const hasBif = an.bifs.length > 0 || dmards.some(x=>x.med&&x.motivo);
+    const dutLabel = an.dutMeses !== null
+      ? `Bifosfonato por ${an.dutMeses} mes${an.dutMeses===1?'':'es'}${an.dutOK?' (≥6 meses ✓)':' — mínimo 6 meses para terapia avançada'}`
+      : hasBif ? 'Bifosfonato registrado (data de início não informada — verifique elegibilidade)' : 'Falha ou contraindicação a bifosfonato oral documentada';
+    r.push({pass: bifDutOK || bifSemData || (hasBif && an.dutMeses===null), l: dutLabel, det:'DUT 56: exige mínimo 6 meses de bifosfonato oral para denosumabe, teriparatida e romosozumabe, salvo contraindicação'});
   }
   if(d !== 'op') {
     const req=EXAMES_BASE.filter(e=>e.req);
@@ -2832,13 +2842,29 @@ function narrative() {
     if(f.dm_fev1||f.dm_cvf2||f.dm_dlco2) atv+=` Espirometria${f.dm_espiro_data?' ('+fmtDate(f.dm_espiro_data)+')':''}: FEV1 ${f.dm_fev1||'—'}%, CVF ${f.dm_cvf2||'—'}%, FEV1/CVF ${f.dm_fev1cvf||'—'}, DLCO ${f.dm_dlco2||'—'}%.${f.dm_espiro_laudo?' '+f.dm_espiro_laudo+'.':''}`;
   }
   if(d==='op'){
-    const tc = fd.op_tscore_min!==undefined ? fd.op_tscore_min : '—';
-    intro = `Paciente com diagnóstico de osteoporose${fd.op_fraturas?', com história de fraturas por fragilidade ('+fd.op_fraturas+')':''}.`+
-      ` Densitometria óssea evidencia T-score mais baixo de ${tc}, compatível com ${fd.op_cls||'osteoporose'}.`+
-      (fd.op_frax_maior?` FRAX: risco de fratura maior ${fd.op_frax_maior}%${fd.op_frax_quad?', risco de fratura de quadril '+fd.op_frax_quad+'%':''}.`:'')+
-      (fd.op_corticoide?` Faz uso de corticoide: ${fd.op_corticoide}.`:'');
-    atv = `T-score (menor valor): ${tc}. ${fd.op_cls||''}.`+
-      (fd.op_frax_maior?` FRAX fratura maior: ${fd.op_frax_maior}%. FRAX fratura quadril: ${fd.op_frax_quad||'não calculado'}%.`:'');
+    const an = buildOPAnalysis();
+    const anTxt = buildOPAnalysisText(an);
+    const tc = fd.op_tscore_min!==undefined && fd.op_tscore_min!==0 ? parseFloat(fd.op_tscore_min).toFixed(1) : null;
+
+    // Fraturas: campo manual OU detectadas em imagens
+    const fraturasManual = fd.op_fraturas || '';
+    const fraturasImg = an.fraturasImagem.map(f=>`${f.tipo}${f.data?' ('+fmtDate(f.data)+')':''}${f.laudo?': '+f.laudo:''}`.trim()).join('; ');
+    const todasFraturas = [fraturasManual, fraturasImg].filter(Boolean).join('; ');
+
+    let partes = [];
+    if(tc) partes.push(`Densitometria óssea: ${tc} (${fd.op_cls||'osteoporose'})`);
+    if(fd.op_frax_maior) partes.push(`FRAX fratura maior ${fd.op_frax_maior}%${fd.op_frax_quad?', quadril '+fd.op_frax_quad+'%':''}`);
+    if(todasFraturas) partes.push(`Fraturas por fragilidade: ${todasFraturas}`);
+    if(fd.op_corticoide) partes.push(`Corticoterapia em uso: ${fd.op_corticoide}`);
+
+    // Linha de evolução DXA
+    if(anTxt.deltaTxt) partes.push(anTxt.deltaTxt);
+
+    // Linha de bifosfonato e DUT
+    if(anTxt.dutTxt) partes.push(anTxt.dutTxt);
+
+    intro = partes.join('. ')+'.';
+    atv = intro;
   }
   if(fd.tb_igra_positivo) atv += ` IGRA/PPD positivo. Profilaxia para TB latente: ${fd.tb_profilaxia_med||'não registrada'} — ${fd.tb_profilaxia_status||'status não informado'}.`;
   const tratAtuais = dmardAtuais.filter(x=>x.med);
@@ -3044,19 +3070,36 @@ function buildIntroClinica() {
   txt += `, diagnóstico de ${doenca}`;
   if(dataDiag) txt += ` em ${dataDiag}`;
   if(d === 'op') {
-    const BIFS = ['alendronato','risedronato','ibandronato','zoledrônico','zoledronico','bifosfonato'];
-    const todosTrats = [...dmards, ...dmardAtuais].filter(x=>x.med);
-    const bifsUsados = todosTrats.filter(x=>BIFS.some(b=>x.med.toLowerCase().includes(b))).map(x=>x.med);
-    const bifsStr = bifsUsados.length > 0 ? bifsUsados.filter((v,i,a)=>a.indexOf(v)===i).join(' e ') : null;
-    if(fd.op_fraturas) {
-      txt += ` com fratura por fragilidade (${fd.op_fraturas})`;
-      if(bifsStr) txt += ` em vigência de / após tratamento com ${bifsStr}`;
+    const an = buildOPAnalysis();
+    const bifsStr = an.bifs.length > 0 ? an.bifs.map(b=>b.med).filter((v,i,a)=>a.indexOf(v)===i).join(' e ') : null;
+
+    // Fraturas: campo manual OU detectadas em imagens inseridos
+    const fraturasManual = fd.op_fraturas || '';
+    const fraturasImg = an.fraturasImagem.map(f=>{
+      const loc = f.tipo ? f.tipo : 'exame de imagem';
+      const resumo = f.laudo ? f.laudo.split(/[.,;]/)[0].trim() : '';
+      return resumo ? `${resumo} (${loc})` : loc;
+    }).join('; ');
+    const todasFraturas = [fraturasManual, fraturasImg].filter(Boolean).join('; ');
+
+    const tc = fd.op_tscore_min !== undefined && fd.op_tscore_min !== 0 ? parseFloat(fd.op_tscore_min).toFixed(1) : null;
+
+    if(todasFraturas) {
+      txt += ` com fratura por fragilidade (${todasFraturas})`;
+      if(bifsStr) {
+        const bifAtual = an.bifs.find(b => !b.dataSuspensao);
+        txt += bifAtual ? ` em vigência de tratamento com ${bifsStr}` : ` após tratamento prévio com ${bifsStr}`;
+      }
       txt += '.';
     } else {
-      const tc = fd.op_tscore_min !== undefined && fd.op_tscore_min !== 0 ? parseFloat(fd.op_tscore_min).toFixed(1) : null;
       if(tc) txt += `, com T-score de ${tc} (${fd.op_cls || 'osteoporose densitométrica'})`;
       if(bifsStr) txt += ` e falha ou intolerância ao tratamento com ${bifsStr}`;
       txt += '.';
+    }
+    // Perda densitométrica detectada
+    if(an.deltaDXA && an.deltaDXA.piora) {
+      const pioras = an.deltaDXA.partes.filter(p=>p.dir==='piora').map(p=>`${p.local} (T-score ${p.prev.toFixed(1)} → ${p.atual.toFixed(1)})`);
+      txt += ` Observa-se perda densitométrica em ${pioras.join(' e ')}, evidenciando progressão da doença.`;
     }
   } else {
     txt += ', mantendo atividade de doença apesar do tratamento atual.';
@@ -3091,15 +3134,14 @@ function buildConclusao() {
   }
 
   if(d === 'op') {
-    const BIFS = ['alendronato','risedronato','ibandronato','zoledrônico','zoledronico','bifosfonato'];
-    const todosTrats = [...dmards, ...dmardAtuais].filter(x=>x.med);
-    const bifsUsados = todosTrats.filter(x=>BIFS.some(b=>x.med.toLowerCase().includes(b))).map(x=>x.med).filter((v,i,a)=>a.indexOf(v)===i);
-    const bifsStr = bifsUsados.length > 0 ? bifsUsados.join(' e ') : 'bifosfonatos';
-    const temFratura = !!fd.op_fraturas;
+    const an = buildOPAnalysis();
+    const bifsStr = an.bifs.length > 0 ? an.bifs.map(b=>b.med).filter((v,i,a)=>a.indexOf(v)===i).join(' e ') : 'bifosfonatos';
+    const temFratura = !!(fd.op_fraturas || an.fraturasImagem.length > 0);
+    const dutObs = an.dutMeses !== null ? ` por ${an.dutMeses} meses` : '';
     if(temFratura) {
-      return `Dessa forma, visto quadro de ${doenca} com fratura por fragilidade e falha ou intolerância ao tratamento prévio com ${bifsStr}, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de novas fraturas.`;
+      return `Dessa forma, visto quadro de ${doenca} com fratura por fragilidade e falha ou intolerância ao tratamento prévio com ${bifsStr}${dutObs}, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de novas fraturas.`;
     }
-    return `Dessa forma, visto quadro de ${doenca} com falha ou intolerância ao tratamento prévio com ${bifsStr}, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de fraturas.`;
+    return `Dessa forma, visto quadro de ${doenca} com falha ou intolerância ao tratamento com ${bifsStr}${dutObs}, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de fraturas.`;
   }
   return `Dessa forma, visto quadro de ${doenca} refratária ao tratamento atual, solicito introdução de ${med}, conforme posologia abaixo, para controle de doença.`;
 }
@@ -3973,6 +4015,164 @@ function updDeltaDXA() {
   if(!isNaN(fem1)&&!isNaN(fem2)) parts.push(`Δ Fêmur Total: ${(fem1-fem2)>=0?'+':''}${(fem1-fem2).toFixed(1)}`);
   if(!isNaN(colo1)&&!isNaN(colo2)) parts.push(`Δ Colo Femoral: ${(colo1-colo2)>=0?'+':''}${(colo1-colo2).toFixed(1)}`);
   el.innerHTML = parts.length ? `<strong>Variação de T-score (atual vs anterior):</strong> ${parts.join(' | ')}` : '';
+  if(typeof updOPAnalysisPanel==='function') updOPAnalysisPanel();
+}
+
+// ─── ANÁLISE CLÍNICA OP ──────────────────────────────────────────────────────
+const BIFS_KEYS = ['alendronato','risedronato','ibandronato','zoledrônico','zoledronico','bifosfonato','clodronato','pamidronato'];
+const FRATURA_KEYS = ['fratura','frature','compressão vertebral','colapso vertebral','wedge','deformidade vertebral','perda de altura vertebral','acunhamento','osteoporótica','osteoporotica','fratura por fragilidade','fratura de baixo impacto'];
+
+function buildOPAnalysis() {
+  const result = { bifs:[], dutOK:null, dutMeses:null, dutBifNome:null, fraturasImagem:[], deltaDXA:null, achados:[] };
+
+  // 1 — Bifosfonatos registrados (uso atual + prévio)
+  const todos = [...dmardAtuais, ...dmards].filter(x=>x.med);
+  result.bifs = todos.filter(x => BIFS_KEYS.some(b => x.med.toLowerCase().includes(b)));
+
+  // 2 — Tempo de uso de bifosfonato e elegibilidade DUT (mín 6 meses)
+  if(result.bifs.length > 0) {
+    let melhorMeses = 0, melhorBif = null;
+    result.bifs.forEach(b => {
+      const inicio = b.dataInicio ? new Date(b.dataInicio) : null;
+      if(!inicio) return;
+      const fim = b.dataSuspensao ? new Date(b.dataSuspensao) : new Date();
+      const meses = Math.round((fim - inicio) / (1000*60*60*24*30.44));
+      if(meses > melhorMeses) { melhorMeses = meses; melhorBif = b; }
+    });
+    if(melhorBif) {
+      result.dutMeses = melhorMeses;
+      result.dutBifNome = melhorBif.med;
+      result.dutOK = melhorMeses >= 6;
+    }
+  }
+
+  // 3 — Fraturas detectadas em exames de imagem inseridos
+  imagens.filter(im => im.laudo || im.tipo).forEach(im => {
+    const texto = ((im.tipo||'') + ' ' + (im.laudo||'')).toLowerCase();
+    if(FRATURA_KEYS.some(k => texto.includes(k))) {
+      result.fraturasImagem.push({
+        tipo: im.tipo || 'Exame de imagem',
+        laudo: im.laudo || '',
+        data: im.data || ''
+      });
+    }
+  });
+
+  // 4 — Delta DXA (comparação entre duas densitometrias)
+  const col1 = parseFloat(fd.op_tscore_col||''), col2 = parseFloat(fd.op_col2||'');
+  const fem1 = parseFloat(fd.op_tscore_fem||''), fem2 = parseFloat(fd.op_fem2||'');
+  const colo1 = parseFloat(fd.op_tscore_colo||''), colo2 = parseFloat(fd.op_colo2||'');
+  const data1 = fd.op_dxa_data, data2 = fd.op_dxa2_data;
+  const hasComparacao = (!isNaN(col1)&&!isNaN(col2)) || (!isNaN(fem1)&&!isNaN(fem2)) || (!isNaN(colo1)&&!isNaN(colo2));
+  if(hasComparacao) {
+    const partes = [];
+    let piora = false, melhora = false;
+    if(!isNaN(col1)&&!isNaN(col2)) {
+      const d=col1-col2; const dir = d<-0.03?'piora':d>0.03?'melhora':'estável';
+      if(d<-0.03) piora=true; if(d>0.03) melhora=true;
+      partes.push({local:'coluna lombar', atual:col1, prev:col2, delta:d, dir});
+    }
+    if(!isNaN(fem1)&&!isNaN(fem2)) {
+      const d=fem1-fem2; const dir = d<-0.03?'piora':d>0.03?'melhora':'estável';
+      if(d<-0.03) piora=true; if(d>0.03) melhora=true;
+      partes.push({local:'fêmur total', atual:fem1, prev:fem2, delta:d, dir});
+    }
+    if(!isNaN(colo1)&&!isNaN(colo2)) {
+      const d=colo1-colo2; const dir = d<-0.03?'piora':d>0.03?'melhora':'estável';
+      if(d<-0.03) piora=true; if(d>0.03) melhora=true;
+      partes.push({local:'colo femoral', atual:colo1, prev:colo2, delta:d, dir});
+    }
+    result.deltaDXA = { partes, piora, melhora, data1, data2 };
+  }
+
+  return result;
+}
+
+function buildOPAnalysisText(an) {
+  // Retorna objeto {dutTxt, fraturaTxt, deltaTxt} para uso na narrativa
+  const out = { dutTxt:'', fraturaTxt:'', deltaTxt:'' };
+
+  if(an.dutMeses !== null) {
+    const ok = an.dutOK;
+    out.dutTxt = ok
+      ? `${an.dutBifNome} em uso por ${an.dutMeses} meses (tempo adequado, ≥6 meses — critério DUT 56 atendido)`
+      : `${an.dutBifNome} em uso por apenas ${an.dutMeses} mes${an.dutMeses===1?'':'es'} (tempo insuficiente para solicitação de terapia avançada — DUT 56 exige mínimo de 6 meses)`;
+  }
+
+  if(an.fraturasImagem.length > 0) {
+    const lista = an.fraturasImagem.map(f =>
+      `${f.tipo}${f.data?' ('+fmtDate(f.data)+')':''}${f.laudo?': '+f.laudo.slice(0,120)+(f.laudo.length>120?'…':''):''}`
+    ).join('; ');
+    out.fraturaTxt = `Fratura por fragilidade evidenciada nos exames de imagem — ${lista}`;
+  }
+
+  if(an.deltaDXA) {
+    const d = an.deltaDXA;
+    const suf = (d.data2&&d.data1) ? ` (${fmtDate(d.data2)} vs ${fmtDate(d.data1)})` : '';
+    const partesTxt = d.partes.map(p => {
+      const sinal = p.delta >= 0 ? '+' : '';
+      const dir = p.dir==='piora' ? 'piora' : p.dir==='melhora' ? 'melhora' : 'estável';
+      return `${p.local}: T-score ${p.atual.toFixed(1)} vs ${p.prev.toFixed(1)} anterior (Δ ${sinal}${p.delta.toFixed(2)}, ${dir})`;
+    }).join('; ');
+    out.deltaTxt = `Comparação densitométrica${suf}: ${partesTxt}`;
+  }
+
+  return out;
+}
+
+function updOPAnalysisPanel() {
+  const panel = document.getElementById('op-analysis-panel');
+  if(!panel || disease !== 'op') return;
+  const an = buildOPAnalysis();
+  const txt = buildOPAnalysisText(an);
+  const items = [];
+
+  // DUT elegibilidade
+  if(txt.dutTxt) {
+    const ok = an.dutOK;
+    items.push(`<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #fde68a">
+      <span style="font-size:16px;flex-shrink:0">${ok?'✅':'⚠️'}</span>
+      <span><b>Tempo de bifosfonato:</b> ${txt.dutTxt}</span></div>`);
+  } else if(an.bifs.length > 0) {
+    items.push(`<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #fde68a">
+      <span style="font-size:16px;flex-shrink:0">⚠️</span>
+      <span><b>Bifosfonato sem data de início registrada</b> — registre a data para verificar elegibilidade DUT 56</span></div>`);
+  } else if(dmards.length>0||dmardAtuais.length>0) {
+    items.push(`<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #fde68a">
+      <span style="font-size:16px;flex-shrink:0">❌</span>
+      <span><b>Nenhum bifosfonato registrado</b> — DUT 56 exige falha ou contraindicação a bifosfonato oral para terapias avançadas (denosumabe, teriparatida, romosozumabe)</span></div>`);
+  }
+
+  // Fraturas em imagens
+  if(an.fraturasImagem.length > 0) {
+    an.fraturasImagem.forEach(f => {
+      items.push(`<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #fde68a">
+        <span style="font-size:16px;flex-shrink:0">🦴</span>
+        <span><b>Fratura detectada em ${f.tipo}${f.data?' ('+fmtDate(f.data)+')':''}:</b> ${f.laudo.slice(0,160)}${f.laudo.length>160?'…':''}</span></div>`);
+    });
+  }
+
+  // Delta DXA
+  if(an.deltaDXA) {
+    const d = an.deltaDXA;
+    const icon = d.piora ? '📉' : d.melhora ? '📈' : '➡️';
+    const cor = d.piora ? '#c53030' : d.melhora ? '#276749' : '#744210';
+    const suf = (d.data2&&d.data1)?` (${fmtDate(d.data2)} → ${fmtDate(d.data1)})`:'';
+    const partesTxt = d.partes.map(p=>{
+      const sinal=p.delta>=0?'+':'';
+      return `${p.local}: <b>${p.atual.toFixed(1)}</b> vs ${p.prev.toFixed(1)} (Δ ${sinal}${p.delta.toFixed(2)})`;
+    }).join(' | ');
+    items.push(`<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #fde68a">
+      <span style="font-size:16px;flex-shrink:0">${icon}</span>
+      <span style="color:${cor}"><b>Evolução densitométrica${suf}:</b> ${partesTxt} — ${d.piora?'<b>perda densitométrica detectada</b>':d.melhora?'ganho de massa óssea':'sem variação significativa'}</span></div>`);
+  }
+
+  if(items.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+  panel.innerHTML = `<div style="font-weight:700;color:#92400e;margin-bottom:8px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">🔍 Análise Clínica — Osteoporose</div>${items.join('')}`;
 }
 
 // ─── EXPORT / IMPORT JSON ─────────────────────────────────────────────────────
@@ -4063,6 +4263,10 @@ function fillFormFromFd(savedFd) {
     'ar_pcr':'ar_pcr','ar_vhs':'ar_vhs','ar_data_diag':'data_diag',
     'ar_fev1':'ar_fev1','ar_cvf':'ar_cvf',
     'dm_ck':'dm_ck','dm_aldolase':'dm_aldolase',
+    'op_col':'op_tscore_col','op_fem':'op_tscore_fem','op_colo':'op_tscore_colo',
+    'op_dxa_data':'op_dxa_data','op_fraturas_inp':'op_fraturas',
+    'op_frax_maior':'op_frax_maior','op_frax_quad':'op_frax_quad',
+    'op_col2':'op_col2','op_fem2':'op_fem2','op_colo2':'op_colo2','op_dxa2_data':'op_dxa2_data',
     'vasc_bvas':'vasc_bvas',
     'med_nome':'med_nome','med_peso':'med_peso','med_concentracao':'med_concentracao',
     'med_posologia':'med_posologia','med_justificativa':'med_justificativa',
