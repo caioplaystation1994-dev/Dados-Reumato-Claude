@@ -223,7 +223,7 @@ body{padding-bottom:60px}
 
 /* ── CID autocomplete ── */
 #rel-diagnostico,#lab-cid,#img-cid{position:relative}
-.cid-suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e0;border-radius:0 0 8px 8px;z-index:500;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.cid-suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e0;border-radius:0 0 8px 8px;z-index:500;max-height:320px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
 .cid-item{padding:7px 12px;cursor:pointer;font-size:12px;color:#2d3748;border-bottom:1px solid #f7fafc}
 .cid-item:hover{background:#ebf4ff;color:#1a56a0}
 .cid-item strong{color:#1a56a0}
@@ -2008,10 +2008,10 @@ function cidSuggest(input, sugId) {
   if (q.length < 2) { sug.style.display = 'none'; return; }
   const matches = CID_RHEUM.filter(([code, desc]) =>
     desc.toLowerCase().includes(q) || code.toLowerCase().includes(q)
-  ).slice(0, 8);
+  ).slice(0, 20);
   if (!matches.length) { sug.style.display = 'none'; return; }
   sug.innerHTML = matches.map(([code, desc]) =>
-    `<div class="cid-item" onclick="selecionarCid(${JSON.stringify(input.id)},${JSON.stringify(sugId)},${JSON.stringify(desc+' – '+code)})"><strong>${code}</strong> ${desc}</div>`
+    `<div class="cid-item" onmousedown="event.preventDefault();selecionarCid(${JSON.stringify(input.id)},${JSON.stringify(sugId)},${JSON.stringify(desc+' – '+code)})"><strong>${code}</strong> ${desc}</div>`
   ).join('');
   sug.style.display = 'block';
 }
