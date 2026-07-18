@@ -462,6 +462,7 @@ body{padding-bottom:60px}
             <div class="score-field"><label>AVG Paciente (0–100 mm)</label><input type="number" id="das-vas" min="0" max="100" placeholder="—" oninput="calcDAS28()"></div>
           </div>
           <div class="score-result" id="das-result">DAS28: — <span>Preencha os campos</span></div>
+          <button class="btn-add" style="margin-top:6px" onclick="inserirScoreNoRelatorio('das28')">↓ Inserir DAS28 no relatório</button>
         </div>
         <!-- BASDAI -->
         <div id="score-basdai" style="display:none">
@@ -474,12 +475,14 @@ body{padding-bottom:60px}
             <div class="score-field"><label>6. Rigidez matinal – duração (0–10)</label><input type="number" id="bd6" min="0" max="10" step="0.1" oninput="calcBASDI()"></div>
           </div>
           <div class="score-result" id="basdai-result">BASDAI: — <span>Preencha os campos</span></div>
+          <button class="btn-add" style="margin-top:6px" onclick="inserirScoreNoRelatorio('basdai')">↓ Inserir BASDAI no relatório</button>
         </div>
         <!-- SLEDAI -->
         <div id="score-sledai" style="display:none">
           <div style="font-size:11px;color:#718096;margin-bottom:8px">Marque os itens presentes nas últimas 10 dias:</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="sledai-checks"></div>
           <div class="score-result" style="margin-top:12px" id="sledai-result">SLEDAI-2K: — <span>Marque os itens</span></div>
+          <button class="btn-add" style="margin-top:6px" onclick="inserirScoreNoRelatorio('sledai')">↓ Inserir SLEDAI-2K no relatório</button>
         </div>
       </div>
     </div>
@@ -775,7 +778,7 @@ body{padding-bottom:60px}
 <div id="exames-img" class="page">
   <div class="doc-wrapper">
     <div class="doc-header">
-      <div class="doc-header-logo" id="dhl-lab"><img class="doc-logo" src="" alt=""></div>
+      <div class="doc-header-logo" id="dhl-img"><img class="doc-logo" src="" alt=""></div>
       <div class="doc-header-text">
         <div class="doc-title">SOLICITAÇÃO DE EXAMES DE IMAGEM</div>
         <div class="doc-subtitle local-nome">Hospital Bartira</div>
@@ -1133,7 +1136,7 @@ function showPage(id, btn) {
 // ─── Limpar ────────────────────────────────────────────────────────────────────
 function clearForm(pageId) {
   const page = document.getElementById(pageId);
-  page.querySelectorAll('input[type=text],input[type=date],textarea,select').forEach(el => {
+  page.querySelectorAll('input[type=text],input[type=date],input[type=number],textarea,select').forEach(el => {
     if (!el.classList.contains('pacote-check')) el.value = '';
   });
   // checkboxes (lab e imagem)
@@ -1233,7 +1236,7 @@ function prepararImpressao(ids) {
         hlaPage.classList.add('print-selected');
         hlaPage.querySelectorAll('.local-nome').forEach(el => el.textContent = local);
         document.getElementById('ph-hla-nome').textContent  = nomePac;
-        document.getElementById('ph-hla-data').textContent  = dataPac;
+        document.getElementById('ph-hla-data').textContent  = fmtDataBR(dataPac);
         document.getElementById('ph-hla-medico').textContent= medico;
         document.getElementById('ph-hla-crm').textContent   = crm;
         const justHla = document.getElementById('hlab27-justificativa')?.value.trim()
@@ -1251,7 +1254,7 @@ function prepararImpressao(ids) {
         igraPage.classList.add('print-selected');
         igraPage.querySelectorAll('.local-nome').forEach(el => el.textContent = local);
         document.getElementById('ph-igra-nome').textContent  = nomePac;
-        document.getElementById('ph-igra-data').textContent  = dataPac;
+        document.getElementById('ph-igra-data').textContent  = fmtDataBR(dataPac);
         document.getElementById('ph-igra-medico').textContent= medico;
         document.getElementById('ph-igra-crm').textContent   = crm;
         const justIgra = document.getElementById('igra-justificativa')?.value.trim()
@@ -1481,7 +1484,9 @@ async function gerarWordReceita() {
     { type: 'label-value', label: 'CRM', value: v('rx-crm') },
     { type: 'signature', text: v('rx-medico') + (v('rx-crm') ? ' — ' + v('rx-crm') : '') },
   ];
-  await downloadDocx(makeDoc(paras), `receita-${(v('rx-nome')||'paciente').replace(/\s+/g,'-')}.docx`);
+  const nomeArqRx = `receita-${(v('rx-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
+  await downloadDocx(makeDoc(paras), nomeArqRx);
+  registrarLog('Receita Word', v('rx-nome'), nomeArqRx);
 }
 
 async function gerarWordLab() {
@@ -1503,7 +1508,12 @@ async function gerarWordLab() {
   const adicLab = v('lab-adicional');
   if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => todosExames.push(l.trim()));
 
-  // Documento principal (sem HLA-B27)
+  // Documento principal (sem especiais)
+  const igraCheckedEarly = document.querySelectorAll('#pkg-igra-items .exam-item.checked').length > 0;
+  if (!todosExames.length && !v('lab-indicacao') && (hlaChecked || igraCheckedEarly)) {
+    // Apenas documentos especiais — não gera doc principal, mas informa
+    console.info('gerarWordLab: apenas HLA-B27/IGRA selecionados — gerando apenas docs especiais.');
+  }
   if (todosExames.length || v('lab-indicacao')) {
     const paras = [
       ...logoDocPara(),
@@ -1526,7 +1536,9 @@ async function gerarWordLab() {
     paras.push({ type: 'label-value', label: 'Médico(a)', value: medico });
     paras.push({ type: 'label-value', label: 'CRM', value: crm });
     paras.push({ type: 'signature', text: assinatura });
-    await downloadDocx(makeDoc(paras), `exames-lab-${nomePaciente.replace(/\s+/g,'-')}.docx`);
+    const nomeArqLab = `exames-lab-${nomePaciente.replace(/\s+/g,'-')}.docx`;
+    await downloadDocx(makeDoc(paras), nomeArqLab);
+    registrarLog('Exames Lab Word', nomePaciente, nomeArqLab);
   }
 
   // Documento separado para HLA-B27
@@ -1538,7 +1550,7 @@ async function gerarWordLab() {
       { type: 'title', text: 'SOLICITAÇÃO DE EXAME LABORATORIAL' },
       { type: 'subtitle', text: localAtual() },
       { type: 'label-value', label: 'Paciente', value: nomePaciente },
-      { type: 'label-value', label: 'Data', value: v('lab-data') },
+      { type: 'label-value', label: 'Data', value: fmtDataBR(v('lab-data')) },
       { type: 'separator' },
       { type: 'heading', text: 'Exame Solicitado' },
       { type: 'bullet', text: 'HLA-B27' },
@@ -1562,7 +1574,7 @@ async function gerarWordLab() {
       { type: 'title', text: 'SOLICITAÇÃO DE EXAME LABORATORIAL' },
       { type: 'subtitle', text: localAtual() },
       { type: 'label-value', label: 'Paciente', value: nomePaciente },
-      { type: 'label-value', label: 'Data', value: v('lab-data') },
+      { type: 'label-value', label: 'Data', value: fmtDataBR(v('lab-data')) },
       { type: 'separator' },
       { type: 'heading', text: 'Exame Solicitado' },
       { type: 'bullet', text: 'IGRA (Quantiferon)' },
@@ -1605,15 +1617,18 @@ async function gerarWordImg() {
   paras.push({ type: 'label-value', label: 'Médico(a)', value: v('img-medico') });
   paras.push({ type: 'label-value', label: 'CRM', value: v('img-crm') });
   paras.push({ type: 'signature', text: v('img-medico') + (v('img-crm') ? ' — ' + v('img-crm') : '') });
-  await downloadDocx(makeDoc(paras), `exames-imagem-${(v('img-nome')||'paciente').replace(/\s+/g,'-')}.docx`);
+  const nomeArqImg = `exames-imagem-${(v('img-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
+  await downloadDocx(makeDoc(paras), nomeArqImg);
+  registrarLog('Exames Imagem Word', v('img-nome'), nomeArqImg);
 }
 
 // ─── Sincronização de dados do paciente entre abas ───────────────────────────
 const SINC_MAP = {
-  nome:       ['rel-nome','rx-nome','lab-nome','img-nome'],
-  nascimento: ['rel-nascimento'],
-  idade:      ['rel-idade','rx-idade'],
-  endereco:   ['rx-endereco'],
+  nome:        ['rel-nome','rx-nome','lab-nome','img-nome'],
+  nascimento:  ['rel-nascimento'],
+  idade:       ['rel-idade','rx-idade'],
+  endereco:    ['rx-endereco'],
+  diagnostico: ['rel-diagnostico','lab-cid','img-cid'],
 };
 
 function sincPaciente(campo, valor) {
@@ -1765,6 +1780,22 @@ function novoPaciente() {
     const el = document.getElementById(id);
     if (el) el.value = new Date().toISOString().split('T')[0];
   });
+  // Zerar scores e checkboxes SLEDAI
+  delete document._das28;
+  delete document._basdai;
+  delete document._sledai;
+  SLEDAI_ITEMS.forEach((_, i) => {
+    const cb = document.getElementById('sl' + i);
+    if (cb) cb.checked = false;
+  });
+  const sledaiRes = document.getElementById('sledai-result');
+  if (sledaiRes) sledaiRes.innerHTML = 'SLEDAI-2K: — <span>—</span>';
+  const dasRes = document.getElementById('das-result');
+  if (dasRes) dasRes.innerHTML = 'DAS28: — <span>Preencha os campos acima</span>';
+  const basdaiRes = document.getElementById('basdai-result');
+  if (basdaiRes) basdaiRes.innerHTML = 'BASDAI: — <span>—</span>';
+  // Redimensionar textareas
+  document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
 
 // ─── Local / hospital ─────────────────────────────────────────────────────────
@@ -1879,12 +1910,13 @@ function cidSuggest(input, sugId) {
 
 function selecionarCid(inputId, sugId, valor) {
   const el = document.getElementById(inputId);
-  if (el) { el.value = valor; sincPaciente('diagnostico', valor); }
+  if (el) el.value = valor;
   const sug = document.getElementById(sugId);
   if (sug) sug.style.display = 'none';
-  // Sincronizar diagnóstico entre abas
-  ['lab-cid','img-cid','rel-diagnostico'].forEach(id => {
-    if (id !== inputId) { const e = document.getElementById(id); if (e && !e.value) e.value = valor; }
+  // Sincronizar CID/diagnóstico entre todas as abas
+  ['rel-diagnostico','lab-cid','img-cid'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) e.value = valor;
   });
 }
 
@@ -1990,7 +2022,7 @@ function calcDAS28() {
   const el = document.getElementById('das-result');
   if (isNaN(esr)) { el.innerHTML = 'DAS28: — <span>Informe VHS ou PCR</span>'; return; }
   // DAS28-VHS: 0.56√TJC + 0.28√SJC + 0.70×ln(VHS) + 0.014×VAS
-  const score = (0.56 * Math.sqrt(tjc)) + (0.28 * Math.sqrt(sjc)) + (0.70 * Math.log(esr + 1)) + (0.014 * vas);
+  const score = (0.56 * Math.sqrt(tjc)) + (0.28 * Math.sqrt(sjc)) + (0.70 * Math.log(Math.max(esr, 1))) + (0.014 * vas);
   const s = score.toFixed(2);
   let cat = score < 2.6 ? 'Remissão' : score < 3.2 ? 'Atividade baixa' : score < 5.1 ? 'Atividade moderada' : 'Atividade alta';
   el.innerHTML = `DAS28: ${s} <span>${cat}</span>`;
@@ -2027,6 +2059,19 @@ function renderSledai() {
       <span><strong style="color:#1a56a0">${peso}</strong> – ${nome}</span>
     </label>`
   ).join('');
+}
+
+function inserirScoreNoRelatorio(tipo) {
+  const val = tipo === 'das28' ? document._das28
+            : tipo === 'basdai' ? document._basdai
+            : document._sledai;
+  if (!val) { alert('Calcule o score antes de inserir.'); return; }
+  const ta = document.getElementById('rel-anamnese');
+  if (!ta) return;
+  ta.value = (ta.value.trim() ? ta.value.trimEnd() + '\n' : '') + val;
+  autoResizeTA(ta);
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
 }
 
 function calcSledai() {
@@ -2091,7 +2136,14 @@ function verificarInteracoes() {
   }
 }
 
-// ─── Data por extenso ─────────────────────────────────────────────────────────
+// ─── Formatação de data ───────────────────────────────────────────────────────
+function fmtDataBR(dataStr) {
+  if (!dataStr) return '';
+  const parts = dataStr.split('-');
+  if (parts.length !== 3) return dataStr;
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
 function dataExtenso(dataStr) {
   if (!dataStr) return '';
   const meses = ['janeiro','fevereiro','março','abril','maio','junho',
@@ -2109,6 +2161,7 @@ function salvarHistorico() {
   if (!nome) return;
   const entrada = {
     ts: Date.now(),
+    nome: v('rel-nome'),
     data: v('rel-data'),
     diag: v('rel-diagnostico'),
     conduta: v('rel-conduta'),
@@ -2161,9 +2214,13 @@ function carregarConsulta(chave, idx) {
   if (!h) return;
   if (!confirm('Carregar dados desta consulta (substituirá o conteúdo atual)?')) return;
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  if (h.nome) {
+    ['rel-nome','rx-nome','lab-nome','img-nome'].forEach(id => set(id, h.nome));
+  }
   set('rel-data', h.data); set('rel-diagnostico', h.diag);
   set('rel-anamnese', h.anamnese); set('rel-exfisico', h.exfisico);
   set('rel-exames', h.exames); set('rel-conduta', h.conduta); set('rel-obs', h.obs);
+  document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
   fecharModal('modal-historico');
 }
 
@@ -2197,6 +2254,12 @@ function importarDados(event) {
         localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
       });
       renderPerfis();
+      // Restaurar médico/CRM se presentes nos dados importados
+      const medImp = localStorage.getItem('g-medico');
+      const crmImp = localStorage.getItem('g-crm');
+      if (medImp) { const el = document.getElementById('g-medico'); if (el) el.value = medImp; }
+      if (crmImp) { const el = document.getElementById('g-crm');    if (el) el.value = crmImp; }
+      sincMedico();
       alert('Dados importados com sucesso!');
       registrarLog('Importação de dados', '—', file.name);
     } catch(err) { alert('Erro ao importar: arquivo JSON inválido.'); }
