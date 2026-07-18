@@ -38,9 +38,9 @@ nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
 .field-group input:focus,
 .field-group select:focus,
 .field-group textarea:focus{outline:none;border-color:#1a56a0;background:#fff}
-.field-group textarea{resize:vertical;min-height:120px}
-.field-group textarea.tall{min-height:180px}
-.field-group textarea.short{min-height:80px}
+.field-group textarea{resize:none;min-height:80px;overflow-y:hidden}
+.field-group textarea.tall{min-height:120px}
+.field-group textarea.short{min-height:60px}
 
 .section-label{font-size:11px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0}
 
@@ -599,7 +599,7 @@ body{padding-bottom:60px}
       <div id="interacao-lista"></div>
     </div>
     <div class="field-group">
-      <textarea id="rx-prescricao" style="min-height:220px;font-size:14px;line-height:1.8" placeholder="1. Metotrexato 15 mg – 1 comprimido 1x/semana, via oral, uso contínuo&#10;2. Ácido fólico 5 mg – 1 comprimido 6 dias por semana, via oral&#10;&#10;(Clique nos botões acima para inserir rapidamente o nome do medicamento)" oninput="verificarInteracoes()"></textarea>
+      <textarea id="rx-prescricao" style="min-height:220px;font-size:14px;line-height:1.8;overflow-y:hidden;resize:none" placeholder="1. Metotrexato 15 mg – 1 comprimido 1x/semana, via oral, uso contínuo&#10;2. Ácido fólico 5 mg – 1 comprimido 6 dias por semana, via oral&#10;&#10;(Clique nos botões acima para inserir rapidamente o nome do medicamento)" oninput="verificarInteracoes()"></textarea>
     </div>
 
     <div class="section-label print-se-preenchido" data-textarea="rx-orientacoes">Orientações ao Paciente</div>
@@ -670,7 +670,7 @@ body{padding-bottom:60px}
       ⚠️ <strong>HLA-B27</strong> selecionado — será gerado um <strong>arquivo .docx separado</strong> com a solicitação e justificativa específica.
       <div style="margin-top:10px">
         <label style="display:block;font-size:11px;font-weight:700;color:#7b341e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Justificativa (editável antes de baixar)</label>
-        <textarea id="hlab27-justificativa" rows="3" style="width:100%;padding:8px;border:1px solid #e2b87f;border-radius:6px;font-size:12px;font-family:inherit;background:#fffef5;resize:vertical;color:#2d3748"></textarea>
+        <textarea id="hlab27-justificativa" rows="3" style="width:100%;padding:8px;border:1px solid #e2b87f;border-radius:6px;font-size:12px;font-family:inherit;background:#fffef5;resize:none;overflow-y:hidden;color:#2d3748"></textarea>
       </div>
     </div>
 
@@ -682,7 +682,7 @@ body{padding-bottom:60px}
       </div>
       <div style="margin-top:8px">
         <label style="display:block;font-size:11px;font-weight:700;color:#7b341e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">Justificativa (editável antes de baixar)</label>
-        <textarea id="igra-justificativa" rows="5" style="width:100%;padding:8px;border:1px solid #e2b87f;border-radius:6px;font-size:12px;font-family:inherit;background:#fffef5;resize:vertical;color:#2d3748"></textarea>
+        <textarea id="igra-justificativa" rows="5" style="width:100%;padding:8px;border:1px solid #e2b87f;border-radius:6px;font-size:12px;font-family:inherit;background:#fffef5;resize:none;overflow-y:hidden;color:#2d3748"></textarea>
       </div>
     </div>
 
@@ -1014,6 +1014,7 @@ function atualizarAvisosEspeciais() {
       const justEl = document.getElementById('hlab27-justificativa');
       if (justEl && !justEl.value.trim()) {
         justEl.value = PACOTES_LAB.find(p => p.id === 'pkg-hlab27')?.relatorio || '';
+        autoResizeTA(justEl);
       }
     }
   }
@@ -1035,6 +1036,7 @@ function atualizarJustIgra() {
   if (!justEl) return;
   const diag = diagEl?.value.trim() || '_______________';
   justEl.value = `Paciente com diagnóstico de ${diag}, em programação de iniciar terapia imunobiológica. Solicito IGRA (quantiferon) para rastreio de tuberculose latente.\n\nCÓDIGO TUSS 4.03.24.64-8\nDUT: 140`;
+  autoResizeTA(justEl);
 }
 
 // Alias para compatibilidade
@@ -1321,6 +1323,7 @@ function addMedRx(nome) {
   const n = linhas.length + 1;
   const linha = MED_RX[nome] ? n + '. ' + MED_RX[nome] : n + '. ' + nome + ' – ';
   ta.value = (texto.trim() ? texto.trimEnd() + '\n' : '') + linha;
+  autoResizeTA(ta);
   ta.focus();
   ta.setSelectionRange(ta.value.length, ta.value.length);
   verificarInteracoes();
@@ -1721,6 +1724,7 @@ function carregarPerfil(nome) {
   set('rx-endereco', p.end);
   set('rel-diagnostico', p.diag);
   set('lab-cid', p.diag); set('img-cid', p.diag);
+  document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
 
 function deletarPerfil(nome, e) {
@@ -1794,6 +1798,17 @@ function localAtual() {
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────────
+function autoResizeTA(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+function initAutoResize() {
+  document.querySelectorAll('textarea').forEach(ta => {
+    ta.addEventListener('input', () => autoResizeTA(ta));
+    autoResizeTA(ta);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   renderPacotes();
   renderPacotesImg();
@@ -1813,6 +1828,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById(id);
     if (el) el.value = hoje;
   });
+  initAutoResize();
 });
 
 
@@ -1948,6 +1964,7 @@ function aplicarTemplate() {
   set('rel-anamnese', t.anamnese);
   set('rel-exfisico', t.exfisico);
   set('rel-conduta', t.conduta);
+  document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
 
 // ─── DAS28 / BASDAI / SLEDAI ─────────────────────────────────────────────────
@@ -2029,6 +2046,7 @@ function addLinhaPrescricao() {
   const linhas = ta.value.split('\n').filter(l => l.trim());
   const n = linhas.length + 1;
   ta.value = (ta.value.trim() ? ta.value.trimEnd() + '\n' : '') + n + '. ';
+  autoResizeTA(ta);
   ta.focus();
   ta.setSelectionRange(ta.value.length, ta.value.length);
 }
@@ -2037,11 +2055,11 @@ function reordenarPrescricao() {
   const ta = document.getElementById('rx-prescricao');
   const linhas = ta.value.split('\n').filter(l => l.trim());
   const renumeradas = linhas.map((l, i) => {
-    // Remove numeração existente e renumera
     const semNum = l.replace(/^\d+\.\s*/, '');
     return (i + 1) + '. ' + semNum;
   });
   ta.value = renumeradas.join('\n');
+  autoResizeTA(ta);
 }
 
 // ─── Alertas de interação medicamentosa ───────────────────────────────────────
