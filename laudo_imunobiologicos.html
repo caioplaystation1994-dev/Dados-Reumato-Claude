@@ -1284,7 +1284,7 @@ const D_CID = {
   les:'M32.1 — Lúpus Eritematoso Sistêmico com manifestação orgânica',
   vasc:'M31.3 — Granulomatose com Poliangiite (GPA) / Vasculite ANCA-associada',
   dm:'M33.1 — Dermatomiosite / Miopatia Inflamatória Autoimune',
-  op:'M81.0'
+  op:'M81.0 — Osteoporose'
 };
 const D_DUT = {
   ar:'DUT 65.1 — Resolução Normativa ANS nº 465/2021 e atualizações (RN 642/2025, RN 667/2026)',
@@ -1410,7 +1410,7 @@ const ALL_MED_OPTS = [
   '— iJAK —',
   'Baricitinibe','Tofacitinibe','Upadacitinibe','Filgotinibe',
   '— PDE4 / Outros bDMARDs —',
-  'Apremilaste','Mepolizumabe','Imunoglobulina IV (IVIG)',
+  'Apremilaste','Mepolizumabe','Imunoglobulina Humana IV (IVIG)',
   '— Osteoporose —',
   'Alendronato','Risedronato','Ibandronato','Ácido zoledrônico','Denosumabe','Teriparatida','Romosozumabe','Cálcio + Vitamina D',
   '— Suporte —',
@@ -1424,7 +1424,7 @@ const DMARD_OPTS = {
   aps:['Metotrexato (MTX)','Leflunomida','Sulfassalazina','Ciclosporina','Outro'],
   les:['Hidroxicloroquina','Azatioprina','Micofenolato de mofetila','Metotrexato (MTX)','Ciclofosfamida','Tacrolimo','Outro'],
   vasc:['Ciclofosfamida (pulsos EV)','Ciclofosfamida (VO)','Azatioprina','Micofenolato de mofetila','Metotrexato (MTX)','Rituximabe (ciclo prévio)','Outro'],
-  dm:['Prednisona','Azatioprina','Metotrexato (MTX)','Micofenolato de mofetila','Imunoglobulina IV (IVIG)','Ciclosporina','Tacrolimo','Outro'],
+  dm:['Prednisona','Azatioprina','Metotrexato (MTX)','Micofenolato de mofetila','Imunoglobulina Humana IV (IVIG)','Ciclosporina','Tacrolimo','Outro'],
   op:['Alendronato','Risedronato','Ibandronato','Cálcio + Vitamina D','Outro']
 };
 const MOTIVOS = [
@@ -2022,6 +2022,52 @@ function fillDemoData() {
     setMed('Rituximabe', 55, 'Endovenosa (EV)',
       'Rituximabe 1.000 mg EV em 2 doses com intervalo de 15 dias (Dia 0 e Dia 15), com repetição do ciclo em 6 meses. Pré-medicação: metilprednisolona 100 mg EV, paracetamol 750 mg VO e difenidramina 50 mg EV 30 min antes de cada infusão.',
       'Paciente com dermatomiosite (anticorpo Anti-MDA5 positivo) associada à doença pulmonar intersticial rapidamente progressiva (CVF 52%, DLCO 48%, TCAR com PINE em progressão), fraqueza muscular proximal grave (MMT-8: 53/80), CK 2.840 U/L, refratária a corticosteroide em dose plena associado a azatioprina e tacrolimo. Metotrexato contraindicado por DPI. IVIG tentada com resposta parcial insuficiente. Rituximabe demonstrou eficácia comprovada em miopatias inflamatórias refratárias, especialmente em pacientes Anti-MDA5 positivos com DPI, sendo a opção terapêutica com maior suporte em evidências neste cenário clínico.');
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  } else if(d==='op'){
+  // OP — Helena Rodrigues Fonseca, 68 anos, osteoporose grave, fratura L2, falha alendronato → Denosumabe
+  // ══════════════════════════════════════════════════════════════════════════════
+    setVal('p_nome','Helena Rodrigues Fonseca'); setVal('p_dn',anosAtras(68)); calcAge();
+    clickPill('#tab-pac','Feminino');
+    setVal('p_cid','M81.0 — Osteoporose Pós-Menopáusica');
+
+    fd.duracao = '6 anos'; fd.data_diag = anosAtras(6);
+
+    // DXA
+    setVal('op_tscore_col','-3.1'); fd.op_tscore_col='-3.1';
+    setVal('op_tscore_fem','-2.8'); fd.op_tscore_fem='-2.8';
+    setVal('op_tscore_colo','-2.9'); fd.op_tscore_colo='-2.9';
+    setVal('op_frax_maior','28'); fd.op_frax_maior='28';
+    setVal('op_frax_quad','8'); fd.op_frax_quad='8';
+    setVal('op_fraturas','Fratura vertebral L2 por compressão (2022), fratura de rádio distal direito (2019)'); fd.op_fraturas='Fratura vertebral L2 por compressão (2022), fratura de rádio distal direito (2019)';
+    setVal('op_corticoide','Prednisona 5 mg/dia há 3 anos (artrite reumatoide)'); fd.op_corticoide='Prednisona 5 mg/dia há 3 anos (artrite reumatoide)';
+    if(typeof updOP==='function') updOP();
+    if(typeof updDeltaDXA==='function') updDeltaDXA();
+
+    // Exames
+    setExam('hemograma','Hb 12,8 g/dL / Ht 38% / Leucócitos 6.200/mm³ / Plaquetas 268.000/mm³', labDate);
+    setExam('tgo_tgp','TGO 22 U/L / TGP 18 U/L', labDate);
+    setExam('creatinina','0,8 mg/dL (TFG: 72 mL/min)', labDate);
+    setExam('pcr_vhs','PCR 4,2 mg/L / VHS 18 mm/h', labDate);
+    setExam('ppd','Não reator (induração 0 mm)', diasAtras(30));
+    setExam('rx_torax','Cúpulas e seios costofrênicos livres. Pulmões sem infiltrados. Mediastino centrado. Área cardíaca normal. Deformidade vertebral em L2 compatível com fratura por compressão.', diasAtras(30));
+
+    // Medicações atuais
+    dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML='';
+    addDmardAtual({med:'Cálcio + Vitamina D',dose:'500 mg Ca + 1000 UI Vit D, 2×/dia VO',dataInicio: anosAtras(6)});
+
+    // Uso prévio
+    dmards=[]; document.getElementById('dmard-tbody').innerHTML='';
+    addDmard({med:'Alendronato',dose:'70 mg/semana VO',dataInicio:anosAtras(6),dataSuspensao:mesesAtras(6),motivo:'Intolerância TGI',motivoDetalhe:'Esofagite grave e dispepsia refratária'});
+    addDmard({med:'Ibandronato',dose:'150 mg/mês VO',dataInicio:mesesAtras(18),dataSuspensao:mesesAtras(6),motivo:'Intolerância TGI',motivoDetalhe:'Náuseas e dor epigástrica persistentes'});
+
+    // Imagem
+    imagens=[]; document.getElementById('imagem-container').innerHTML=''; addImagem();
+    fillImg(0,'DXA (densitometria óssea)','T-score coluna lombar L1-L4: −3,1. T-score colo do fêmur: −2,9. T-score fêmur total: −2,8. Classificação: Osteoporose grave (≤ −2,5 com fratura de fragilidade).',diasAtras(90));
+
+    setMed('Denosumabe', 62, 'Subcutânea (SC)',
+      'Denosumabe 60 mg SC a cada 6 meses.',
+      'Paciente com osteoporose pós-menopáusica grave (T-score L2: −3,1; colo do fêmur: −2,9), com fraturas por fragilidade (L2 e rádio distal), FRAX fratura maior 28% e fratura de quadril 8%, em uso crônico de corticoide, refratária/intolerante a dois bifosfonatos orais (alendronato e ibandronato). Denosumabe é indicado para osteoporose grave com intolerância ou contraindicação a bifosfonatos orais, conforme DUT 56 e RN ANS 465/2021, com evidência de redução de fraturas vertebrais, não vertebrais e de quadril.');
   }
 
   alert('✅ Dados de paciente teste preenchidos! Navegue pelas abas (Diagnóstico → Tratamento → Exames → Medicamento) para revisar todos os campos, depois clique em "Ver Prévia do Laudo".');
@@ -2279,7 +2325,8 @@ function onMotivoSelect(sel,idx){
   const val=sel.value;
   dmards[idx].motivo=val;
   const det=document.getElementById('motivoDet'+idx);
-  if(det) det.style.display=(val==='Outro'||val==='Intolerância / efeito adverso'||val==='Toxicidade (hepatotoxicidade, mielotoxicidade etc.)'||val==='Reação infusional / reação no local de aplicação'||val==='Infecção grave / oportunista')?'block':'none';
+  const showDet = ['Outro','Intolerância TGI','Hepatotoxicidade','Leucopenia / mielotoxicidade','Aumento de transaminases','Nefrotoxicidade','Reação infusional','Reação no local de aplicação','Infecção grave / oportunista'];
+  if(det) det.style.display = showDet.includes(val) ? 'block' : 'none';
 }
 
 function rmDmardAtual(idx) {
@@ -2616,7 +2663,8 @@ function validate() {
 function narrative() {
   const d=disease; const f=fd;
   const nome=f.nome||'[Nome do paciente]';
-  const idad=f.idade?(f.idade+', '):(document.getElementById('p_idade').value?document.getElementById('p_idade').value+', ':'');
+  const _idadeVal = f.idade ? (String(f.idade).includes('ano') ? f.idade : f.idade+' anos') : (document.getElementById('p_idade').value||'');
+  const idad = _idadeVal ? _idadeVal+', ' : '';
   const sexo=f.sexo==='M'?'sexo masculino':f.sexo==='F'?'sexo feminino':'';
   const dur=f.duracao||'tempo de evolução não especificado';
   let intro=`Paciente ${nome}, ${idad}${sexo}, portador(a) de ${D_NAMES[d]||d}, com ${dur} de doença.`;
@@ -2851,7 +2899,8 @@ function buildMedListAtual() {
 function buildIntroClinica() {
   const f = fd; const d = disease;
   const nome = f.nome||'[Nome do paciente]';
-  const idade = f.idade || document.getElementById('p_idade').value || '';
+  const _idRaw = f.idade || document.getElementById('p_idade').value || '';
+  const idade = _idRaw ? (String(_idRaw).replace(/\s*anos\s*/i,'').trim()) : '';
   const dataDiag = f.data_diag ? fmtDate(f.data_diag) : '';
   let doenca = D_NAMES[d]||d;
 
@@ -2871,7 +2920,11 @@ function buildIntroClinica() {
   if(idade) txt += `, ${idade} anos`;
   txt += `, diagnóstico de ${doenca}`;
   if(dataDiag) txt += ` em ${dataDiag}`;
-  txt += ', mantendo atividade de doença apesar do tratamento atual.';
+  if(d === 'op') {
+    txt += ', com risco elevado de fraturas e falha ou intolerância ao tratamento prévio com bifosfonatos.';
+  } else {
+    txt += ', mantendo atividade de doença apesar do tratamento atual.';
+  }
   return txt;
 }
 
@@ -2901,6 +2954,9 @@ function buildConclusao() {
     return `Dessa forma, visto quadro de ${doenca} com necessidade de continuidade terapêutica, solicito renovação de ${med}, conforme posologia abaixo, para manutenção do controle de doença.`;
   }
 
+  if(d === 'op') {
+    return `Dessa forma, visto quadro de ${doenca} com falha ou intolerância ao tratamento prévio, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de fraturas.`;
+  }
   return `Dessa forma, visto quadro de ${doenca} refratária ao tratamento atual, solicito introdução de ${med}, conforme posologia abaixo, para controle de doença.`;
 }
 
@@ -3491,24 +3547,26 @@ function revisorRelatorio() {
   if(!f.crm)    warn('CRM não preenchido.');
   if(!f.med_nome) error('Nenhum medicamento selecionado.');
 
-  // ── Triagem pré-biológico ────────────────────────────────────────────────────
-  const ppdRes = exams['ppd']?.result||'';
-  if(!ppdRes) warn('IGRA/PPD não preenchido — triagem obrigatória pela DUT.');
-  else if(/positiv/i.test(ppdRes) && !fd.tb_profilaxia_status)
-    error('IGRA/PPD positivo: profilaxia de tuberculose latente deve ser documentada na seção de triagem.');
+  // ── Triagem pré-biológico (não obrigatória para osteoporose) ─────────────────
+  if(d !== 'op') {
+    const ppdRes = exams['ppd']?.result||'';
+    if(!ppdRes) warn('IGRA/PPD não preenchido — triagem obrigatória pela DUT.');
+    else if(/positiv/i.test(ppdRes) && !fd.tb_profilaxia_status)
+      error('IGRA/PPD positivo: profilaxia de tuberculose latente deve ser documentada na seção de triagem.');
 
-  const hbsag = exams['hbsag']?.result||'';
-  if(!hbsag) warn('HBsAg não preenchido.');
-  else if(/positiv/i.test(hbsag))
-    error('HBsAg reagente: uso de imunobiológicos (especialmente anti-TNF e rituximabe) pode causar reativação de Hepatite B. Documente avaliação hepatológica e profilaxia com antivirais.');
+    const hbsag = exams['hbsag']?.result||'';
+    if(!hbsag) warn('HBsAg não preenchido.');
+    else if(/positiv/i.test(hbsag))
+      error('HBsAg reagente: uso de imunobiológicos (especialmente anti-TNF e rituximabe) pode causar reativação de Hepatite B. Documente avaliação hepatológica e profilaxia com antivirais.');
 
-  const hiv = exams['hiv']?.result||'';
-  if(!hiv) warn('Anti-HIV não preenchido.');
+    const hiv = exams['hiv']?.result||'';
+    if(!hiv) warn('Anti-HIV não preenchido.');
 
-  const rxTorax = exams['rx_torax']?.result||'';
-  if(!rxTorax) warn('Radiografia de tórax não preenchida — exigida pela DUT.');
-  else if(/cavit/i.test(rxTorax) || /consolid/i.test(rxTorax))
-    error('Rx de tórax com achados suspeitos (cavitações/consolidações): reavalie presença de tuberculose ativa antes de iniciar imunobiológico.');
+    const rxTorax = exams['rx_torax']?.result||'';
+    if(!rxTorax) warn('Radiografia de tórax não preenchida — exigida pela DUT.');
+    else if(/cavit/i.test(rxTorax) || /consolid/i.test(rxTorax))
+      error('Rx de tórax com achados suspeitos (cavitações/consolidações): reavalie presença de tuberculose ativa antes de iniciar imunobiológico.');
+  }
 
   // ── Tratamento prévio (DUT) ──────────────────────────────────────────────────
   const prevMeds = [...dmards.filter(x=>x.med)];
