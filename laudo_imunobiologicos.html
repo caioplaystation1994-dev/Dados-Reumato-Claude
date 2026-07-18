@@ -311,26 +311,27 @@ header h1{font-size:15px;font-weight:700}
             <span class="pill" onclick="setPill(this,'sexo','F')">Feminino</span>
           </div>
         </div>
-        <div class="field-group">
+        <div class="field-group" style="position:relative">
           <label>CID-10</label>
-          <input type="text" id="p_cid" autocomplete="off" placeholder="Ex: M05.9" style="">
+          <input type="text" id="p_cid" autocomplete="off" placeholder="Digite código ou nome..." oninput="onCidInput(this.value)" onfocus="onCidInput(this.value)" onblur="setTimeout(()=>hideCidDrop(),180)">
+          <div id="cid-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:999;max-height:220px;overflow-y:auto;margin-top:2px"></div>
           <div id="ar_cid_selector" style="display:none;margin-top:6px">
             <div class="pill-group">
-              <span class="pill selected" onclick="setPill(this,'ar_cid','pos');document.getElementById('p_cid').value='M05.9 — Artrite Reumatoide soropositiva'">Soropositiva (M05.9)</span>
-              <span class="pill" onclick="setPill(this,'ar_cid','neg');document.getElementById('p_cid').value='M06.0 — Artrite Reumatoide soronegativa'">Soronegativa (M06.0)</span>
+              <span class="pill selected" onclick="setCid('M05.9 — Artrite Reumatoide soropositiva');setPill(this,'ar_cid','pos')">Soropositiva (M05.9)</span>
+              <span class="pill" onclick="setCid('M06.0 — Artrite Reumatoide soronegativa');setPill(this,'ar_cid','neg')">Soronegativa (M06.0)</span>
             </div>
           </div>
           <div id="aps_cid_selector" style="display:none;margin-top:6px">
             <div class="pill-group">
-              <span class="pill selected" onclick="setPill(this,'aps_cid','l405');document.getElementById('p_cid').value='L40.5 — Artropatia Psoriásica'">L40.5 (Artropatia Psoriásica)</span>
-              <span class="pill" onclick="setPill(this,'aps_cid','m073');document.getElementById('p_cid').value='M07.3 — Artrite Psoriásica'">M07.3 (Artrite Psoriásica)</span>
+              <span class="pill selected" onclick="setCid('L40.5 — Artropatia Psoriásica');setPill(this,'aps_cid','l405')">L40.5 (Artropatia Psoriásica)</span>
+              <span class="pill" onclick="setCid('M07.3 — Artrite Psoriásica');setPill(this,'aps_cid','m073')">M07.3 (Artrite Psoriásica)</span>
             </div>
           </div>
           <div id="les_cid_selector" style="display:none;margin-top:6px">
             <div class="pill-group">
-              <span class="pill selected" onclick="setPill(this,'les_cid','m321');document.getElementById('p_cid').value='M32.1 — LES com manifestação orgânica'">M32.1 (com manifestação orgânica)</span>
-              <span class="pill" onclick="setPill(this,'les_cid','m329');document.getElementById('p_cid').value='M32.9 — LES sem especificação'">M32.9 (sem especificação)</span>
-              <span class="pill" onclick="setPill(this,'les_cid','m320');document.getElementById('p_cid').value='M32.0 — LES induzido por drogas'">M32.0 (induzido por drogas)</span>
+              <span class="pill selected" onclick="setCid('M32.1 — LES com manifestação orgânica');setPill(this,'les_cid','m321')">M32.1 (com manifestação orgânica)</span>
+              <span class="pill" onclick="setCid('M32.9 — LES sem especificação');setPill(this,'les_cid','m329')">M32.9 (sem especificação)</span>
+              <span class="pill" onclick="setCid('M32.0 — LES induzido por drogas');setPill(this,'les_cid','m320')">M32.0 (induzido por drogas)</span>
             </div>
           </div>
         </div>
@@ -1286,6 +1287,123 @@ const D_CID = {
   dm:'M33.1 — Dermatomiosite / Miopatia Inflamatória Autoimune',
   op:'M81.0 — Osteoporose'
 };
+// ─── CID-10 AUTOCOMPLETE ──────────────────────────────────────────────────────
+const CID_LIST = [
+  // Artrite Reumatoide
+  {c:'M05.0',d:'Síndrome de Felty'},
+  {c:'M05.1',d:'Doença pulmonar reumatoide'},
+  {c:'M05.2',d:'Vasculite reumatoide'},
+  {c:'M05.3',d:'Artrite reumatoide com envolvimento de outros órgãos'},
+  {c:'M05.8',d:'Artrite Reumatoide soropositiva — outras formas'},
+  {c:'M05.9',d:'Artrite Reumatoide soropositiva'},
+  {c:'M06.0',d:'Artrite Reumatoide soronegativa'},
+  {c:'M06.1',d:'Doença de Still do adulto'},
+  {c:'M06.4',d:'Artropatia inflamatória'},
+  {c:'M06.8',d:'Outras artrites reumatoides especificadas'},
+  {c:'M06.9',d:'Artrite Reumatoide não especificada'},
+  // Espondiloartrites
+  {c:'M45',d:'Espondilite Anquilosante'},
+  {c:'M46.0',d:'Entesopatia vertebral'},
+  {c:'M46.1',d:'Sacroileíte não classificada em outro local'},
+  {c:'M46.8',d:'Outras espondilopatias inflamatórias'},
+  {c:'M46.9',d:'Espondilopatia inflamatória não especificada'},
+  {c:'M48.0',d:'Estenose espinhal'},
+  // Artropatia Psoriásica
+  {c:'L40.5',d:'Artropatia Psoriásica'},
+  {c:'M07.0',d:'Artrite psoriásica — artropatia interfalangiana distal'},
+  {c:'M07.1',d:'Artritis psoriásica — artrite mutilante'},
+  {c:'M07.2',d:'Artrite psoriásica — espondilite psoriásica'},
+  {c:'M07.3',d:'Artrite Psoriásica — outras'},
+  // LES e conectivopatias
+  {c:'M32.0',d:'LES induzido por drogas'},
+  {c:'M32.1',d:'LES com manifestação orgânica'},
+  {c:'M32.8',d:'LES — outras formas'},
+  {c:'M32.9',d:'LES sem especificação'},
+  {c:'M33.0',d:'Dermatomiosite juvenil'},
+  {c:'M33.1',d:'Dermatomiosite'},
+  {c:'M33.2',d:'Polimiosite'},
+  {c:'M33.9',d:'Dermatopolimiosite não especificada'},
+  {c:'M34.0',d:'Esclerose sistêmica progressiva'},
+  {c:'M34.1',d:'Síndrome CREST'},
+  {c:'M34.9',d:'Esclerose sistêmica não especificada'},
+  {c:'M35.0',d:'Síndrome de Sjögren'},
+  {c:'M35.1',d:'Síndrome de sobreposição (overlap)'},
+  {c:'M35.3',d:'Polimialgia reumática'},
+  {c:'M36.0',d:'Dermato(poli)miosite em neoplasia'},
+  // Vasculites
+  {c:'M30.0',d:'Poliarterite nodosa'},
+  {c:'M30.1',d:'Poliarterite com comprometimento pulmonar (Churg-Strauss)'},
+  {c:'M30.3',d:'Síndrome de Kawasaki'},
+  {c:'M31.0',d:'Angiite de hipersensibilidade'},
+  {c:'M31.1',d:'Microangiopatia trombótica'},
+  {c:'M31.2',d:'Granuloma letal da linha média'},
+  {c:'M31.3',d:'Granulomatose com Poliangiite (GPA) / Wegener'},
+  {c:'M31.4',d:'Síndrome do cayco da aorta (Takayasu)'},
+  {c:'M31.5',d:'Arterite de células gigantes com polimialgia reumática'},
+  {c:'M31.6',d:'Outras arterites de células gigantes'},
+  {c:'M31.7',d:'Poliangiite microscópica (PAM)'},
+  {c:'M31.8',d:'Outras vasculites necrotizantes especificadas'},
+  {c:'M31.9',d:'Vasculite necrotizante não especificada'},
+  // Osteoporose
+  {c:'M80.0',d:'Osteoporose pós-menopáusica com fratura patológica'},
+  {c:'M80.4',d:'Osteoporose induzida por drogas com fratura'},
+  {c:'M80.5',d:'Osteoporose idiopática com fratura'},
+  {c:'M80.9',d:'Osteoporose com fratura patológica não especificada'},
+  {c:'M81.0',d:'Osteoporose pós-menopáusica'},
+  {c:'M81.1',d:'Osteoporose pós-ooforectomia'},
+  {c:'M81.2',d:'Osteoporose por imobilização'},
+  {c:'M81.3',d:'Osteoporose por má absorção pós-cirúrgica'},
+  {c:'M81.4',d:'Osteoporose induzida por drogas'},
+  {c:'M81.5',d:'Osteoporose idiopática'},
+  {c:'M81.8',d:'Outras osteoporoses'},
+  {c:'M81.9',d:'Osteoporose não especificada'},
+  {c:'M82.0',d:'Osteoporose na mielomatose múltipla'},
+  // Artrite Idiopática Juvenil
+  {c:'M08.0',d:'Artrite Reumatoide Juvenil'},
+  {c:'M08.1',d:'Espondilite Anquilosante Juvenil'},
+  {c:'M08.2',d:'Artrite Juvenil com início sistêmico'},
+  {c:'M08.3',d:'Poliartrite Juvenil soronegativa'},
+  {c:'M08.4',d:'Artrite Juvenil pauciarticular'},
+  // Gota e cristais
+  {c:'M10.0',d:'Gota idiopática'},
+  {c:'M10.9',d:'Gota não especificada'},
+  {c:'M11.1',d:'Condrocalcinose familiar'},
+  {c:'M11.2',d:'Condrocalcinose'},
+  // Outros
+  {c:'M79.3',d:'Paniculite'},
+  {c:'M79.7',d:'Fibromialgia'},
+  {c:'M94.1',d:'Policondrite recidivante'},
+];
+
+function setCid(val) {
+  const el = document.getElementById('p_cid');
+  if(el) el.value = val;
+  hideCidDrop();
+}
+
+function hideCidDrop() {
+  const dd = document.getElementById('cid-dropdown');
+  if(dd) dd.style.display = 'none';
+}
+
+function onCidInput(val) {
+  const dd = document.getElementById('cid-dropdown');
+  if(!dd) return;
+  const q = val.trim().toLowerCase();
+  if(!q) { dd.style.display='none'; return; }
+  const matches = CID_LIST.filter(x =>
+    x.c.toLowerCase().includes(q) || x.d.toLowerCase().includes(q)
+  ).slice(0, 12);
+  if(matches.length === 0) { dd.style.display='none'; return; }
+  dd.innerHTML = matches.map(x =>
+    `<div onclick="setCid('${x.c} — ${x.d.replace(/'/g,"\\'")}')"
+      style="padding:7px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f4f8;display:flex;gap:8px;align-items:baseline"
+      onmouseenter="this.style.background='#ebf4ff'" onmouseleave="this.style.background=''"
+    ><span style="font-weight:700;color:#2b6cb0;min-width:52px">${x.c}</span><span style="color:#2d3748">${x.d}</span></div>`
+  ).join('');
+  dd.style.display = '';
+}
+
 const D_DUT = {
   ar:'DUT 65.1 — Resolução Normativa ANS nº 465/2021 e atualizações (RN 642/2025, RN 667/2026)',
   ea:'DUT 65.3 — Resolução Normativa ANS nº 465/2021 e atualizações (RN 642/2025)',
@@ -2926,7 +3044,20 @@ function buildIntroClinica() {
   txt += `, diagnóstico de ${doenca}`;
   if(dataDiag) txt += ` em ${dataDiag}`;
   if(d === 'op') {
-    txt += ', com risco elevado de fraturas e falha ou intolerância ao tratamento prévio com bifosfonatos.';
+    const BIFS = ['alendronato','risedronato','ibandronato','zoledrônico','zoledronico','bifosfonato'];
+    const todosTrats = [...dmards, ...dmardAtuais].filter(x=>x.med);
+    const bifsUsados = todosTrats.filter(x=>BIFS.some(b=>x.med.toLowerCase().includes(b))).map(x=>x.med);
+    const bifsStr = bifsUsados.length > 0 ? bifsUsados.filter((v,i,a)=>a.indexOf(v)===i).join(' e ') : null;
+    if(fd.op_fraturas) {
+      txt += ` com fratura por fragilidade (${fd.op_fraturas})`;
+      if(bifsStr) txt += ` em vigência de / após tratamento com ${bifsStr}`;
+      txt += '.';
+    } else {
+      const tc = fd.op_tscore_min !== undefined && fd.op_tscore_min !== 0 ? parseFloat(fd.op_tscore_min).toFixed(1) : null;
+      if(tc) txt += `, com T-score de ${tc} (${fd.op_cls || 'osteoporose densitométrica'})`;
+      if(bifsStr) txt += ` e falha ou intolerância ao tratamento com ${bifsStr}`;
+      txt += '.';
+    }
   } else {
     txt += ', mantendo atividade de doença apesar do tratamento atual.';
   }
@@ -2960,7 +3091,15 @@ function buildConclusao() {
   }
 
   if(d === 'op') {
-    return `Dessa forma, visto quadro de ${doenca} com falha ou intolerância ao tratamento prévio, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de fraturas.`;
+    const BIFS = ['alendronato','risedronato','ibandronato','zoledrônico','zoledronico','bifosfonato'];
+    const todosTrats = [...dmards, ...dmardAtuais].filter(x=>x.med);
+    const bifsUsados = todosTrats.filter(x=>BIFS.some(b=>x.med.toLowerCase().includes(b))).map(x=>x.med).filter((v,i,a)=>a.indexOf(v)===i);
+    const bifsStr = bifsUsados.length > 0 ? bifsUsados.join(' e ') : 'bifosfonatos';
+    const temFratura = !!fd.op_fraturas;
+    if(temFratura) {
+      return `Dessa forma, visto quadro de ${doenca} com fratura por fragilidade e falha ou intolerância ao tratamento prévio com ${bifsStr}, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de novas fraturas.`;
+    }
+    return `Dessa forma, visto quadro de ${doenca} com falha ou intolerância ao tratamento prévio com ${bifsStr}, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de fraturas.`;
   }
   return `Dessa forma, visto quadro de ${doenca} refratária ao tratamento atual, solicito introdução de ${med}, conforme posologia abaixo, para controle de doença.`;
 }
