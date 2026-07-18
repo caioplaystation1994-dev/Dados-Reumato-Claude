@@ -2130,7 +2130,7 @@ function cidSuggest(input, sugId) {
   ).slice(0, 20);
   if (!matches.length) { sug.style.display = 'none'; return; }
   sug.innerHTML = matches.map(([code, desc]) =>
-    `<div class="cid-item" onmousedown="event.preventDefault();selecionarCid(${JSON.stringify(input.id)},${JSON.stringify(sugId)},${JSON.stringify(desc+' – '+code)})"><strong>${code}</strong> ${desc}</div>`
+    `<div class="cid-item" onclick="selecionarCid(${JSON.stringify(input.id)},${JSON.stringify(sugId)},${JSON.stringify(desc+' – '+code)})"><strong>${code}</strong> ${desc}</div>`
   ).join('');
   sug.style.display = 'block';
 }
