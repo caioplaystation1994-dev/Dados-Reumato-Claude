@@ -2851,19 +2851,50 @@ function narrative() {
     const fraturasImg = an.fraturasImagem.map(f=>`${f.tipo}${f.data?' ('+fmtDate(f.data)+')':''}${f.laudo?': '+f.laudo:''}`.trim()).join('; ');
     const todasFraturas = [fraturasManual, fraturasImg].filter(Boolean).join('; ');
 
-    let partes = [];
-    if(tc) partes.push(`Densitometria óssea: ${tc} (${fd.op_cls||'osteoporose'})`);
-    if(fd.op_frax_maior) partes.push(`FRAX fratura maior ${fd.op_frax_maior}%${fd.op_frax_quad?', quadril '+fd.op_frax_quad+'%':''}`);
-    if(todasFraturas) partes.push(`Fraturas por fragilidade: ${todasFraturas}`);
-    if(fd.op_corticoide) partes.push(`Corticoterapia em uso: ${fd.op_corticoide}`);
+    const linhas = [];
 
-    // Linha de evolução DXA
-    if(anTxt.deltaTxt) partes.push(anTxt.deltaTxt);
+    // Linha 1 — DXA atual
+    if(tc) {
+      let dxaLinha = `Densitometria óssea (${fd.op_dxa_data?fmtDate(fd.op_dxa_data):'data não informada'}): T-score mais baixo ${tc} — ${fd.op_cls||'osteoporose'}`;
+      const sitios = [];
+      if(fd.op_tscore_col) sitios.push(`coluna L1-L4: ${parseFloat(fd.op_tscore_col).toFixed(1)}`);
+      if(fd.op_tscore_fem) sitios.push(`fêmur total: ${parseFloat(fd.op_tscore_fem).toFixed(1)}`);
+      if(fd.op_tscore_colo) sitios.push(`colo femoral: ${parseFloat(fd.op_tscore_colo).toFixed(1)}`);
+      if(sitios.length) dxaLinha += ` (${sitios.join(', ')})`;
+      linhas.push(dxaLinha);
+    }
 
-    // Linha de bifosfonato e DUT
-    if(anTxt.dutTxt) partes.push(anTxt.dutTxt);
+    // Linha 2 — Evolução DXA (comparação), se houver
+    if(anTxt.deltaTxt) linhas.push(anTxt.deltaTxt);
 
-    intro = partes.join('. ')+'.';
+    // Linha 3 — FRAX
+    if(fd.op_frax_maior) {
+      let fraxLinha = `FRAX: risco de fratura maior ${fd.op_frax_maior}%`;
+      if(fd.op_frax_quad) fraxLinha += `, fratura de quadril ${fd.op_frax_quad}%`;
+      linhas.push(fraxLinha);
+    }
+
+    // Linha 4 — Fraturas
+    if(todasFraturas) linhas.push(`Fraturas por fragilidade: ${todasFraturas}`);
+
+    // Linha 5 — Bifosfonato com data de início e meses
+    if(an.bifs.length > 0) {
+      an.bifs.filter((b,i,arr)=>arr.findIndex(x=>x.med===b.med)===i).forEach(b => {
+        let bifLinha = `${b.med}${b.dose?' — '+b.dose:''}`;
+        if(b.dataInicio) {
+          bifLinha += ` — em uso desde ${fmtDate(b.dataInicio)}`;
+          const inicio = new Date(b.dataInicio);
+          const fim = b.dataSuspensao ? new Date(b.dataSuspensao) : new Date();
+          const meses = Math.round((fim - inicio) / (1000*60*60*24*30.44));
+          bifLinha += ` (${meses} meses)`;
+          if(b.dataSuspensao) bifLinha += ` — suspenso em ${fmtDate(b.dataSuspensao)}`;
+        }
+        if(b.motivo) bifLinha += ` — motivo: ${b.motivo}`;
+        linhas.push(bifLinha);
+      });
+    }
+
+    intro = linhas.join('\n');
     atv = intro;
   }
   if(fd.tb_igra_positivo) atv += ` IGRA/PPD positivo. Profilaxia para TB latente: ${fd.tb_profilaxia_med||'não registrada'} — ${fd.tb_profilaxia_status||'status não informado'}.`;
@@ -3085,10 +3116,10 @@ function buildIntroClinica() {
     const tc = fd.op_tscore_min !== undefined && fd.op_tscore_min !== 0 ? parseFloat(fd.op_tscore_min).toFixed(1) : null;
 
     if(todasFraturas) {
-      txt += ` com fratura por fragilidade (${todasFraturas})`;
+      txt += ` com ${todasFraturas}`;
       if(bifsStr) {
         const bifAtual = an.bifs.find(b => !b.dataSuspensao);
-        txt += bifAtual ? ` em vigência de tratamento com ${bifsStr}` : ` após tratamento prévio com ${bifsStr}`;
+        txt += bifAtual ? `, em vigência de tratamento com ${bifsStr}` : `, após tratamento prévio com ${bifsStr}`;
       }
       txt += '.';
     } else {
@@ -3137,7 +3168,13 @@ function buildConclusao() {
     const an = buildOPAnalysis();
     const bifsStr = an.bifs.length > 0 ? an.bifs.map(b=>b.med).filter((v,i,a)=>a.indexOf(v)===i).join(' e ') : 'bifosfonatos';
     const temFratura = !!(fd.op_fraturas || an.fraturasImagem.length > 0);
-    const dutObs = an.dutMeses !== null ? ` por ${an.dutMeses} meses` : '';
+    let dutObs = '';
+    if(an.dutMeses !== null) {
+      if(an.dutMeses >= 24) dutObs = ' por mais de 24 meses';
+      else if(an.dutMeses >= 12) dutObs = ' por mais de 12 meses';
+      else if(an.dutMeses >= 6) dutObs = ' por mais de 6 meses';
+      else dutObs = ` por ${an.dutMeses} meses`;
+    }
     if(temFratura) {
       return `Dessa forma, visto quadro de ${doenca} com fratura por fragilidade e falha ou intolerância ao tratamento prévio com ${bifsStr}${dutObs}, solicito introdução de ${med}, conforme posologia abaixo, para redução do risco de novas fraturas.`;
     }
