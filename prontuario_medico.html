@@ -151,6 +151,8 @@ tr:hover td{background:#f7faff}
     </div>
   </div>
 
+  <div id="sem-retorno-banner" class="no-print" style="display:none;background:#fffbea;border:1px solid #f6ad55;color:#7b341e;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:14px"></div>
+
   <div class="tabs no-print">
     <button class="tab-btn active" data-tab="dados" onclick="showTab('dados')">Dados Pessoais</button>
     <button class="tab-btn" data-tab="clinico" onclick="showTab('clinico')">Antecedentes &amp; Alergias</button>
@@ -172,16 +174,20 @@ tr:hover td{background:#f7faff}
             <option value="">-</option><option>Feminino</option><option>Masculino</option><option>Outro</option>
           </select>
         </div>
-        <div class="field-group"><label>CPF</label><input type="text" id="f-cpf" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>CPF</label><input type="text" id="f-cpf" placeholder="000.000.000-00" maxlength="14" oninput="aplicarMascara(this,'cpf')" onchange="salvarDadosBasicos()"></div>
         <div class="field-group"><label>RG</label><input type="text" id="f-rg" onchange="salvarDadosBasicos()"></div>
-        <div class="field-group"><label>Telefone</label><input type="text" id="f-telefone" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Telefone</label><input type="text" id="f-telefone" placeholder="(00) 00000-0000" maxlength="15" oninput="aplicarMascara(this,'telefone')" onchange="salvarDadosBasicos()"></div>
         <div class="field-group"><label>E-mail</label><input type="email" id="f-email" onchange="salvarDadosBasicos()"></div>
         <div class="field-group"><label>Profissão</label><input type="text" id="f-profissao" onchange="salvarDadosBasicos()"></div>
-        <div class="field-group wide"><label>Endereço</label><input type="text" id="f-endereco" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>CEP</label><input type="text" id="f-cep" placeholder="00000-000" maxlength="9" oninput="aplicarMascara(this,'cep')" onblur="buscarCEP()"></div>
+        <div class="field-group wide"><label>Endereço (rua e número)</label><input type="text" id="f-endereco" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Bairro</label><input type="text" id="f-bairro" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Cidade</label><input type="text" id="f-cidade" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Estado (UF)</label><input type="text" id="f-estado" maxlength="2" style="text-transform:uppercase" onchange="salvarDadosBasicos()"></div>
         <div class="field-group"><label>Convênio/Plano</label><input type="text" id="f-convenio" onchange="salvarDadosBasicos()"></div>
         <div class="field-group"><label>Nº carteirinha</label><input type="text" id="f-carteirinha" onchange="salvarDadosBasicos()"></div>
         <div class="field-group"><label>Contato de emergência</label><input type="text" id="f-emergencia-nome" placeholder="Nome" onchange="salvarDadosBasicos()"></div>
-        <div class="field-group"><label>Telefone de emergência</label><input type="text" id="f-emergencia-tel" onchange="salvarDadosBasicos()"></div>
+        <div class="field-group"><label>Telefone de emergência</label><input type="text" id="f-emergencia-tel" placeholder="(00) 00000-0000" maxlength="15" oninput="aplicarMascara(this,'telefone')" onchange="salvarDadosBasicos()"></div>
         <div class="field-group wide"><label>Resumo diagnóstico (usado no resumo de impressão)</label><input type="text" id="f-resumo-diagnostico" placeholder="ex: Artrite reumatoide, FR e anti-CCP negativos, não erosiva, Dx em 2023" onchange="salvarDadosBasicos()"></div>
       </div>
     </div>
@@ -210,12 +216,20 @@ tr:hover td{background:#f7faff}
       <div class="section-title">Antecedentes Familiares</div>
       <textarea id="f-antecedentes-familiares" style="width:100%;min-height:90px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit" onchange="salvarDadosBasicos()"></textarea>
     </div>
+    <div class="section-card">
+      <div class="section-title">Vacinação (imunossuprimidos)</div>
+      <table class="mini-table" id="vacinas-table">
+        <thead><tr><th>Vacina</th><th>Aplicada</th><th>Data</th></tr></thead>
+        <tbody id="vacinas-tbody"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- MEDICAÇÕES -->
   <div class="tab-content" id="tab-medicacoes">
     <div class="section-card">
       <div class="section-title">Medicações em uso</div>
+      <div id="interacoes-alerta" style="display:none;background:#fff5f5;border:1px solid #fc8181;color:#822727;padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:12px"></div>
       <div class="add-row-form no-print" id="med-form">
         <div><label>Medicamento (digite nome genérico ou comercial)</label><input type="text" id="med-nome" list="medicamentos-comuns" autocomplete="off"></div>
         <datalist id="medicamentos-comuns"></datalist>
@@ -236,7 +250,10 @@ tr:hover td{background:#f7faff}
   <!-- DIAGNÓSTICOS -->
   <div class="tab-content" id="tab-diagnosticos">
     <div class="section-card">
-      <div class="section-title">Diagnósticos</div>
+      <div class="section-title">
+        Diagnósticos
+        <button class="btn-secondary btn-sm no-print" onclick="abrirModalAcrEular()">📋 Critérios ACR/EULAR (AR)</button>
+      </div>
       <div class="add-row-form no-print" id="diag-form">
         <div style="position:relative">
           <label>CID-10 (busque por código ou nome da doença)</label>
@@ -245,10 +262,17 @@ tr:hover td{background:#f7faff}
         </div>
         <div><label>Descrição</label><input type="text" id="diag-desc"></div>
         <div><label>Data</label><input type="date" id="diag-data"></div>
+        <div><label>Status</label>
+          <select id="diag-status">
+            <option value="ativo">Ativo</option>
+            <option value="investigacao">Em investigação</option>
+            <option value="resolvido">Resolvido</option>
+          </select>
+        </div>
         <button class="btn-secondary btn-sm" onclick="adicionarDiagnostico()">+ Adicionar</button>
       </div>
       <table class="mini-table" id="diag-table">
-        <thead><tr><th>CID-10</th><th>Descrição</th><th>Data</th><th class="no-print"></th></tr></thead>
+        <thead><tr><th>Principal</th><th>CID-10</th><th>Descrição</th><th>Data</th><th>Status</th><th class="no-print"></th></tr></thead>
         <tbody id="diag-tbody"></tbody>
       </table>
     </div>
@@ -257,7 +281,12 @@ tr:hover td{background:#f7faff}
   <!-- EVOLUÇÕES -->
   <div class="tab-content" id="tab-evolucoes">
     <div class="section-card no-print">
-      <div class="section-title" id="evo-form-title">Nova evolução</div>
+      <div class="section-title">
+        <span id="evo-form-title">Nova evolução</span>
+        <span>
+          <button class="btn-secondary btn-sm" onclick="duplicarUltimaEvolucao()">Duplicar última evolução</button>
+        </span>
+      </div>
       <div class="field-grid">
         <div class="field-group"><label>Data</label><input type="date" id="evo-data"></div>
         <div class="field-group"><label>Profissional</label><input type="text" id="evo-prof"></div>
@@ -267,8 +296,29 @@ tr:hover td{background:#f7faff}
             <option value="retorno">Retorno (seguimento)</option>
           </select>
         </div>
+        <div class="field-group"><label>Modelo por doença</label>
+          <select id="evo-template" onchange="aplicarTemplateEvolucao()">
+            <option value="">Nenhum</option>
+            <option value="ar">Artrite Reumatoide</option>
+            <option value="les">Lúpus Eritematoso Sistêmico</option>
+            <option value="espa">Espondiloartrite</option>
+            <option value="fibro">Fibromialgia</option>
+            <option value="gota">Gota</option>
+          </select>
+        </div>
         <div class="field-group"><label>Peso (kg)</label><input type="text" id="evo-peso" placeholder="ex: 87"></div>
-        <div class="field-group"><label>Índice de atividade</label><input type="text" id="evo-indice-atividade" placeholder="ex: DAS28-PCR 5.2"></div>
+        <div class="field-group"><label>Índice de atividade</label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="evo-indice-atividade" placeholder="ex: DAS28-PCR 5.2" style="flex:1">
+            <button type="button" class="btn-secondary btn-sm" onclick="abrirModalEscores()">🧮</button>
+          </div>
+        </div>
+        <div class="field-group"><label>Articulações acometidas</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button type="button" class="btn-secondary btn-sm" onclick="abrirMapaArticular()">🦴 Mapa articular</button>
+            <span id="evo-articulacoes-resumo" style="font-size:11px;color:#718096"></span>
+          </div>
+        </div>
         <div class="field-group wide" id="hpma-primeira-wrap">
           <label>HPMA — História da Moléstia Atual</label>
           <textarea id="evo-hpma"></textarea>
@@ -299,7 +349,10 @@ tr:hover td{background:#f7faff}
     <div class="section-card">
       <div class="section-title">
         Adicionar exame
-        <button class="btn-secondary btn-sm no-print" onclick="abrirImportarExamesModal()">📎 Importar de texto/PDF</button>
+        <span>
+          <button class="btn-secondary btn-sm no-print" onclick="abrirDensitometria()">🦴 Densitometria óssea</button>
+          <button class="btn-secondary btn-sm no-print" onclick="abrirImportarExamesModal()">📎 Importar de texto/PDF</button>
+        </span>
       </div>
       <div class="add-row-form no-print" id="exame-form">
         <div><label>Categoria</label>
@@ -341,6 +394,147 @@ tr:hover td{background:#f7faff}
 
 <div class="toast" id="toast"></div>
 
+<div class="modal-overlay" id="acr-eular-modal">
+  <div class="modal-box">
+    <h2>Critérios de Classificação ACR/EULAR 2010 — Artrite Reumatoide</h2>
+    <p style="font-size:11px;color:#718096;margin-bottom:14px">Aplicável a pacientes com pelo menos 1 articulação com sinovite clínica não explicada por outra doença. Pontuação ≥ 6/10 = AR definida.</p>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>A. Acometimento articular</label>
+      <select id="acr-a" onchange="calcularAcrEular()">
+        <option value="0">1 grande articulação (0)</option>
+        <option value="1">2-10 grandes articulações (1)</option>
+        <option value="2">1-3 pequenas articulações (2)</option>
+        <option value="3">4-10 pequenas articulações (3)</option>
+        <option value="5">&gt;10 articulações, pelo menos 1 pequena (5)</option>
+      </select>
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>B. Sorologia</label>
+      <select id="acr-b" onchange="calcularAcrEular()">
+        <option value="0">FR e anti-CCP negativos (0)</option>
+        <option value="2">FR ou anti-CCP fracamente positivo (2)</option>
+        <option value="3">FR ou anti-CCP fortemente positivo (3)</option>
+      </select>
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>C. Provas de fase aguda</label>
+      <select id="acr-c" onchange="calcularAcrEular()">
+        <option value="0">PCR e VHS normais (0)</option>
+        <option value="1">PCR ou VHS alterados (1)</option>
+      </select>
+    </div>
+    <div class="field-group" style="margin-bottom:14px">
+      <label>D. Duração dos sintomas</label>
+      <select id="acr-d" onchange="calcularAcrEular()">
+        <option value="0">&lt; 6 semanas (0)</option>
+        <option value="1">&ge; 6 semanas (1)</option>
+      </select>
+    </div>
+    <div id="acr-resultado" style="text-align:center;padding:14px;border-radius:8px;background:#f7faff;font-weight:700;font-size:14px"></div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="fecharModalAcrEular()">Fechar</button>
+      <button class="btn-primary" onclick="usarResultadoAcrEular()">Usar como diagnóstico</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="escores-modal">
+  <div class="modal-box">
+    <h2>Calculadoras de atividade de doença</h2>
+    <div class="field-group" style="margin-bottom:14px">
+      <label>Escolha o índice</label>
+      <select id="escore-tipo" onchange="mostrarFormularioEscore()">
+        <option value="das28pcr">DAS28-PCR</option>
+        <option value="das28vhs">DAS28-VHS</option>
+        <option value="cdai">CDAI</option>
+        <option value="sdai">SDAI</option>
+        <option value="basdai">BASDAI</option>
+        <option value="sledai">SLEDAI</option>
+      </select>
+    </div>
+
+    <div id="escore-form-das28">
+      <div class="field-grid">
+        <div class="field-group"><label>Articulações dolorosas (0-28)</label><input type="number" id="das28-tjc" min="0" max="28" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>Articulações edemaciadas (0-28)</label><input type="number" id="das28-sjc" min="0" max="28" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>PCR (mg/L) ou VHS (mm/h)</label><input type="number" id="das28-marcador" step="0.1" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>Avaliação global do paciente (EVA 0-100)</label><input type="number" id="das28-vas" min="0" max="100" value="0" oninput="calcularEscore()"></div>
+      </div>
+    </div>
+
+    <div id="escore-form-cdai-sdai" style="display:none">
+      <div class="field-grid">
+        <div class="field-group"><label>Articulações dolorosas (0-28)</label><input type="number" id="cdai-tjc" min="0" max="28" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>Articulações edemaciadas (0-28)</label><input type="number" id="cdai-sjc" min="0" max="28" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>Avaliação global do paciente (0-10)</label><input type="number" id="cdai-paciente" min="0" max="10" step="0.1" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>Avaliação global do médico (0-10)</label><input type="number" id="cdai-medico" min="0" max="10" step="0.1" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group" id="sdai-pcr-wrap" style="display:none"><label>PCR (mg/dL)</label><input type="number" id="sdai-pcr" min="0" step="0.1" value="0" oninput="calcularEscore()"></div>
+      </div>
+    </div>
+
+    <div id="escore-form-basdai" style="display:none">
+      <div class="field-grid">
+        <div class="field-group"><label>1. Fadiga (0-10)</label><input type="number" id="basdai-1" min="0" max="10" step="0.1" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>2. Dor na coluna/quadril (0-10)</label><input type="number" id="basdai-2" min="0" max="10" step="0.1" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>3. Dor/edema em outras articulações (0-10)</label><input type="number" id="basdai-3" min="0" max="10" step="0.1" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>4. Desconforto a pressão/toque (0-10)</label><input type="number" id="basdai-4" min="0" max="10" step="0.1" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>5. Intensidade da rigidez matinal (0-10)</label><input type="number" id="basdai-5" min="0" max="10" step="0.1" value="0" oninput="calcularEscore()"></div>
+        <div class="field-group"><label>6. Duração da rigidez matinal (0-10)</label><input type="number" id="basdai-6" min="0" max="10" step="0.1" value="0" oninput="calcularEscore()"></div>
+      </div>
+    </div>
+
+    <div id="escore-form-sledai" style="display:none">
+      <p style="font-size:11px;color:#718096;margin-bottom:8px">Marque os itens presentes nas últimas 10 dias.</p>
+      <div id="sledai-checklist" style="max-height:220px;overflow-y:auto"></div>
+    </div>
+
+    <div id="escore-resultado" style="text-align:center;padding:14px;border-radius:8px;background:#f7faff;font-weight:700;font-size:14px;margin-top:14px"></div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="fecharModalEscores()">Fechar</button>
+      <button class="btn-primary" onclick="usarResultadoEscore()">Usar como índice de atividade</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="mapa-articular-modal">
+  <div class="modal-box" style="max-width:420px">
+    <h2>Mapa articular</h2>
+    <p style="font-size:11px;color:#718096;margin-bottom:10px">Clique nas articulações acometidas (dolorosas/edemaciadas).</p>
+    <div style="display:flex;justify-content:center">
+      <svg id="mapa-articular-svg" viewBox="0 0 200 400" width="240" height="480"></svg>
+    </div>
+    <div id="mapa-articular-resumo" style="font-size:12px;color:#4a5568;margin-top:10px;min-height:20px"></div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="fecharMapaArticular()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarMapaArticular()">Salvar seleção</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="densitometria-modal">
+  <div class="modal-box">
+    <h2>Densitometria óssea</h2>
+    <div class="field-grid">
+      <div class="field-group"><label>Data</label><input type="date" id="dxa-data"></div>
+      <div class="field-group"><label>Sítio</label>
+        <select id="dxa-sitio">
+          <option>Coluna lombar (L1-L4)</option>
+          <option>Fêmur total</option>
+          <option>Colo do fêmur</option>
+          <option>Rádio 33%</option>
+        </select>
+      </div>
+      <div class="field-group"><label>T-score</label><input type="number" id="dxa-tscore" step="0.1" oninput="calcularClassificacaoDxa()"></div>
+      <div class="field-group"><label>Z-score (opcional, &lt;50 anos)</label><input type="number" id="dxa-zscore" step="0.1"></div>
+    </div>
+    <div id="dxa-classificacao" style="text-align:center;padding:10px;border-radius:8px;background:#f7faff;font-weight:700;font-size:13px;margin-top:10px"></div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="fecharDensitometria()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarDensitometria()">Adicionar aos exames</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="importar-exames-modal">
   <div class="modal-box">
     <h2>Importar exames de texto ou PDF</h2>
@@ -379,6 +573,9 @@ const EXPORT_SNOOZE_KEY = 'prontuario_export_snooze_until';
 const EXPORT_REMINDER_DAYS = 7;
 let currentPatientId = null;
 let editingEvolucaoIdx = null;
+let formDirty = false;
+let evoArticulacoesAtual = [];
+let mapaArticularSelecionadas = [];
 
 const ALERGIAS_COMUNS = [
   'Dipirona (Novalgina)','Paracetamol (Tylenol)','Ácido acetilsalicílico (AAS, Aspirina)',
@@ -640,11 +837,13 @@ function renderPatientList(){
   }
   tbody.innerHTML = filtered.map(p=>{
     const ultimaEvo = (p.evolucoes && p.evolucoes.length) ? p.evolucoes.slice().sort((a,b)=>b.data.localeCompare(a.data))[0].data : null;
+    const meses = ultimaEvo ? mesesDesde(ultimaEvo) : null;
+    const alerta = (meses !== null && meses >= 6) ? ` <span title="Sem evolução há ${meses} meses" style="color:#c05621">⚠️</span>` : '';
     return `<tr>
       <td>${escapeHtml(p.nome||'(sem nome)')}</td>
       <td>${fmtData(p.dataNascimento)}</td>
       <td>${calcIdade(p.dataNascimento)}</td>
-      <td>${ultimaEvo ? fmtData(ultimaEvo) : '-'}</td>
+      <td>${ultimaEvo ? fmtData(ultimaEvo) : '-'}${alerta}</td>
       <td>
         <button class="btn-secondary btn-sm" onclick="abrirPaciente('${p.id}')">Abrir</button>
         <button class="btn-danger btn-sm" onclick="excluirPaciente('${p.id}')">Excluir</button>
@@ -657,15 +856,63 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+/* ---------- MÁSCARAS DE INPUT ---------- */
+function aplicarMascara(el, tipo){
+  let v = el.value.replace(/\D/g,'');
+  if(tipo === 'cpf'){
+    v = v.slice(0,11);
+    v = v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  } else if(tipo === 'cep'){
+    v = v.slice(0,8);
+    v = v.replace(/(\d{5})(\d)/,'$1-$2');
+  } else if(tipo === 'telefone'){
+    v = v.slice(0,11);
+    if(v.length > 10){
+      v = v.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
+    } else if(v.length > 5){
+      v = v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3');
+    } else if(v.length > 2){
+      v = v.replace(/(\d{2})(\d{0,5})/,'($1) $2');
+    } else if(v.length > 0){
+      v = v.replace(/(\d{0,2})/,'($1');
+    }
+  }
+  el.value = v;
+}
+
+async function buscarCEP(){
+  const cepEl = document.getElementById('f-cep');
+  const cep = cepEl.value.replace(/\D/g,'');
+  salvarDadosBasicos();
+  if(cep.length !== 8) return;
+  try{
+    const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    if(!resp.ok) return;
+    const data = await resp.json();
+    if(data.erro) { showToast('CEP não encontrado'); return; }
+    document.getElementById('f-endereco').value = [data.logradouro, data.complemento].filter(Boolean).join(' - ');
+    document.getElementById('f-bairro').value = data.bairro || '';
+    document.getElementById('f-cidade').value = data.localidade || '';
+    document.getElementById('f-estado').value = data.uf || '';
+    salvarDadosBasicos();
+    showToast('Endereço preenchido pelo CEP');
+  }catch(e){
+    showToast('Não foi possível buscar o CEP (verifique a conexão)');
+  }
+}
+
 /* ---------- FICHA DO PACIENTE ---------- */
+const VACINAS_PADRAO = ['Influenza (anual)','Pneumocócica (VPC13/VPC15/VPC20)','Pneumocócica (VPP23)','Hepatite B','dTpa','Herpes zoster (recombinante)','COVID-19','Meningocócica','HPV'];
+
 function novoPaciente(){
   const db = getData();
   const p = {
     id: uid(), nome:'', dataNascimento:'', sexo:'', cpf:'', rg:'', telefone:'', email:'',
-    profissao:'', endereco:'', convenio:'', carteirinha:'', emergenciaNome:'', emergenciaTel:'',
+    profissao:'', endereco:'', bairro:'', cidade:'', estado:'', cep:'', convenio:'', carteirinha:'', emergenciaNome:'', emergenciaTel:'',
     resumoDiagnostico:'',
     alergias:[], antecedentesPessoais:'', antecedentesFamiliares:'', habitos:'', hpma:'',
     medicacoes:[], diagnosticos:[], evolucoes:[], exames:[],
+    vacinas: VACINAS_PADRAO.map(nome=>({nome, aplicada:false, data:''})),
     criadoEm: new Date().toISOString()
   };
   db.push(p);
@@ -764,8 +1011,11 @@ function preencherDadosTeste(){
 
 function abrirPaciente(id){
   currentPatientId = id;
-  const p = getPaciente(id);
+  let p = getPaciente(id);
   if(!p) return;
+  if(!p.vacinas){
+    p = atualizarPaciente(pp=>{ pp.vacinas = VACINAS_PADRAO.map(nome=>({nome, aplicada:false, data:''})); });
+  }
 
   document.getElementById('f-nome').value = p.nome || '';
   document.getElementById('f-nasc').value = p.dataNascimento || '';
@@ -775,7 +1025,11 @@ function abrirPaciente(id){
   document.getElementById('f-telefone').value = p.telefone || '';
   document.getElementById('f-email').value = p.email || '';
   document.getElementById('f-profissao').value = p.profissao || '';
+  document.getElementById('f-cep').value = p.cep || '';
   document.getElementById('f-endereco').value = p.endereco || '';
+  document.getElementById('f-bairro').value = p.bairro || '';
+  document.getElementById('f-cidade').value = p.cidade || '';
+  document.getElementById('f-estado').value = p.estado || '';
   document.getElementById('f-convenio').value = p.convenio || '';
   document.getElementById('f-carteirinha').value = p.carteirinha || '';
   document.getElementById('f-emergencia-nome').value = p.emergenciaNome || '';
@@ -793,6 +1047,9 @@ function abrirPaciente(id){
   renderDiagnosticos(p);
   renderEvolucoes(p);
   renderExames(p);
+  renderVacinas(p);
+  verificarSemRetorno(p);
+  formDirty = false;
   showPage('page-ficha');
 }
 
@@ -806,6 +1063,7 @@ function atualizarPaciente(mutFn){
   if(idx === -1) return null;
   mutFn(db[idx]);
   setData(db);
+  formDirty = false;
   return db[idx];
 }
 
@@ -814,7 +1072,30 @@ function atualizarFichaHeader(p){
   const partes = [];
   if(p.dataNascimento) partes.push(`${fmtData(p.dataNascimento)} (${calcIdade(p.dataNascimento)})`);
   if(p.cpf) partes.push('CPF: ' + p.cpf);
+  const principal = (p.diagnosticos||[]).find(d=>d.principal);
+  if(principal) partes.push('Dx principal: ' + principal.descricao);
   document.getElementById('ficha-sub-display').textContent = partes.join(' · ');
+}
+
+function mesesDesde(dataIso){
+  if(!dataIso) return null;
+  const d = new Date(dataIso);
+  const hoje = new Date();
+  return (hoje.getFullYear()-d.getFullYear())*12 + (hoje.getMonth()-d.getMonth());
+}
+
+function verificarSemRetorno(p){
+  const banner = document.getElementById('sem-retorno-banner');
+  const evolucoes = p.evolucoes || [];
+  if(evolucoes.length === 0){ banner.style.display = 'none'; return; }
+  const ultima = evolucoes.slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''))[0];
+  const meses = mesesDesde(ultima.data);
+  if(meses !== null && meses >= 6){
+    banner.textContent = `⚠️ Última evolução há ${meses} meses (${fmtData(ultima.data)}). Considere agendar retorno.`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function salvarDadosBasicos(){
@@ -827,7 +1108,11 @@ function salvarDadosBasicos(){
     p.telefone = document.getElementById('f-telefone').value.trim();
     p.email = document.getElementById('f-email').value.trim();
     p.profissao = document.getElementById('f-profissao').value.trim();
+    p.cep = document.getElementById('f-cep').value.trim();
     p.endereco = document.getElementById('f-endereco').value.trim();
+    p.bairro = document.getElementById('f-bairro').value.trim();
+    p.cidade = document.getElementById('f-cidade').value.trim();
+    p.estado = document.getElementById('f-estado').value.trim().toUpperCase();
     p.convenio = document.getElementById('f-convenio').value.trim();
     p.carteirinha = document.getElementById('f-carteirinha').value.trim();
     p.emergenciaNome = document.getElementById('f-emergencia-nome').value.trim();
@@ -890,10 +1175,55 @@ function removerAlergia(i){
 }
 
 /* ---------- MEDICAÇÕES ---------- */
+const INTERACOES_CONHECIDAS = [
+  { a:['metotrexato'], b:['sulfametoxazol','bactrim'], risco:'Risco aumentado de mielotoxicidade/pancitopenia' },
+  { a:['metotrexato'], b:['ibuprofeno','diclofenaco','nimesulida','naproxeno','cetoprofeno','meloxicam','celecoxibe','etoricoxibe','piroxicam'], risco:'AINEs podem reduzir a depuração renal do metotrexato, aumentando sua toxicidade' },
+  { a:['azatioprina'], b:['alopurinol'], risco:'Alopurinol inibe o metabolismo da azatioprina — risco de toxicidade hematológica grave' },
+  { a:['ciclofosfamida'], b:['alopurinol'], risco:'Aumento do risco de toxicidade hematológica' },
+  { a:['varfarina','marevan'], b:['ácido acetilsalicílico','aas','ibuprofeno','diclofenaco','nimesulida','naproxeno'], risco:'Aumento do risco de sangramento' },
+  { a:['prednisona','prednisolona','deflazacorte','metilprednisolona','dexametasona'], b:['ibuprofeno','diclofenaco','nimesulida','naproxeno','cetoprofeno','meloxicam','celecoxibe','etoricoxibe','piroxicam','ácido acetilsalicílico'], risco:'Aumento do risco de úlcera péptica e sangramento gastrointestinal' },
+  { a:['leflunomida'], b:['metotrexato'], risco:'Aumento do risco de hepatotoxicidade — monitorar função hepática' },
+  { a:['ciclosporina'], b:['ibuprofeno','diclofenaco','nimesulida','naproxeno','cetoprofeno','meloxicam'], risco:'Aumento do risco de nefrotoxicidade' },
+  { a:['captopril','enalapril'], b:['espironolactona'], risco:'Risco de hipercalemia' },
+  { a:['losartana','valsartana'], b:['espironolactona'], risco:'Risco de hipercalemia' },
+  { a:['colchicina'], b:['claritromicina','eritromicina'], risco:'Risco de toxicidade grave da colchicina (miopatia/rabdomiólise)' },
+  { a:['metotrexato'], b:['amoxicilina','penicilina','ampicilina'], risco:'Penicilinas podem reduzir a eliminação renal do metotrexato' }
+];
+
+function medicamentoContem(nome, keywords){
+  const n = (nome||'').toLowerCase();
+  return keywords.some(k=>n.includes(k));
+}
+
+function verificarInteracoes(p){
+  const alertaEl = document.getElementById('interacoes-alerta');
+  const ativas = (p.medicacoes||[]).filter(m=>m.ativo!==false);
+  const achados = [];
+  for(let i=0;i<ativas.length;i++){
+    for(let j=i+1;j<ativas.length;j++){
+      const m1 = ativas[i], m2 = ativas[j];
+      INTERACOES_CONHECIDAS.forEach(regra=>{
+        const match1 = medicamentoContem(m1.nome, regra.a) && medicamentoContem(m2.nome, regra.b);
+        const match2 = medicamentoContem(m2.nome, regra.a) && medicamentoContem(m1.nome, regra.b);
+        if(match1 || match2){
+          achados.push(`${m1.nome} + ${m2.nome}: ${regra.risco}`);
+        }
+      });
+    }
+  }
+  if(achados.length){
+    alertaEl.innerHTML = '⚠️ Possíveis interações medicamentosas:<br>' + achados.map(escapeHtml).join('<br>');
+    alertaEl.style.display = 'block';
+  } else {
+    alertaEl.style.display = 'none';
+  }
+}
+
 function renderMedicacoes(p){
   const tbody = document.getElementById('med-tbody');
   if(!p.medicacoes || p.medicacoes.length === 0){
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-msg">Nenhuma medicação registrada.</div></td></tr>`;
+    verificarInteracoes(p);
     return;
   }
   tbody.innerHTML = p.medicacoes.map((m,i)=>`<tr>
@@ -903,6 +1233,7 @@ function renderMedicacoes(p){
     <td><input type="text" value="${escapeHtml(m.motivoSuspensao||'')}" onchange="atualizarMedicacaoCampo(${i}, 'motivoSuspensao', this.value)"></td>
     <td class="no-print"><button class="btn-danger btn-sm" onclick="removerMedicacao(${i})">Remover</button></td>
   </tr>`).join('');
+  verificarInteracoes(p);
 }
 function adicionarMedicacao(){
   const nome = document.getElementById('med-nome').value.trim();
@@ -933,16 +1264,32 @@ function removerMedicacao(i){
 }
 
 /* ---------- DIAGNÓSTICOS ---------- */
+const DIAG_STATUS_LABEL = { ativo:'Ativo', investigacao:'Em investigação', resolvido:'Resolvido' };
+
 function renderDiagnosticos(p){
   const tbody = document.getElementById('diag-tbody');
   if(!p.diagnosticos || p.diagnosticos.length === 0){
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-msg">Nenhum diagnóstico registrado.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-msg">Nenhum diagnóstico registrado.</div></td></tr>`;
     return;
   }
   tbody.innerHTML = p.diagnosticos.map((d,i)=>`<tr>
+    <td style="text-align:center"><input type="radio" name="diag-principal-radio" ${d.principal?'checked':''} onchange="marcarDiagnosticoPrincipal(${i})"></td>
     <td>${escapeHtml(d.cid||'')}</td><td>${escapeHtml(d.descricao||'')}</td><td>${fmtData(d.data)}</td>
+    <td>
+      <select onchange="atualizarDiagnosticoStatus(${i}, this.value)">
+        ${Object.keys(DIAG_STATUS_LABEL).map(s=>`<option value="${s}" ${(d.status||'ativo')===s?'selected':''}>${DIAG_STATUS_LABEL[s]}</option>`).join('')}
+      </select>
+    </td>
     <td class="no-print"><button class="btn-danger btn-sm" onclick="removerDiagnostico(${i})">Remover</button></td>
   </tr>`).join('');
+}
+function marcarDiagnosticoPrincipal(i){
+  const p = atualizarPaciente(p=>{ p.diagnosticos.forEach((d,idx)=>{ d.principal = (idx===i); }); });
+  renderDiagnosticos(p);
+  atualizarFichaHeader(p);
+}
+function atualizarDiagnosticoStatus(i, valor){
+  const p = atualizarPaciente(p=>{ p.diagnosticos[i].status = valor; });
 }
 function buscarCID10(){
   const input = document.getElementById('diag-cid');
@@ -972,14 +1319,18 @@ function adicionarDiagnostico(){
   const cid = document.getElementById('diag-cid').value.trim();
   if(!desc && !cid){ showToast('Informe ao menos o CID ou a descrição'); return; }
   const data = document.getElementById('diag-data').value;
+  const status = document.getElementById('diag-status').value;
   const p = atualizarPaciente(p=>{
     p.diagnosticos = p.diagnosticos || [];
-    p.diagnosticos.push({cid, descricao:desc, data});
+    const principal = p.diagnosticos.length === 0;
+    p.diagnosticos.push({cid, descricao:desc, data, status, principal});
   });
   document.getElementById('diag-cid').value='';
   document.getElementById('diag-desc').value='';
   document.getElementById('diag-data').value='';
+  document.getElementById('diag-status').value='ativo';
   renderDiagnosticos(p);
+  atualizarFichaHeader(p);
 }
 function removerDiagnostico(i){
   const p = atualizarPaciente(p=>{ p.diagnosticos.splice(i,1); });
@@ -1005,6 +1356,7 @@ function renderEvolucoes(p){
     ${e.a?`<div class="evo-field"><b>Impressão</b><p>${escapeHtml(e.a)}</p></div>`:''}
     ${e.pt?`<div class="evo-field"><b>Plano terapêutico</b><p>${escapeHtml(e.pt)}</p></div>`:''}
     ${e.p?`<div class="evo-field"><b>Conduta</b><p>${escapeHtml(e.p)}</p></div>`:''}
+    ${(e.articulacoes&&e.articulacoes.length)?`<div class="evo-field"><b>Articulações acometidas</b><p>${escapeHtml(e.articulacoes.map(id=>{const j=JOINTS.find(x=>x.id===id); return j?j.label:id;}).join(', '))}</p></div>`:''}
     <div class="evo-actions no-print">
       <button class="btn-secondary btn-sm" onclick="editarEvolucao(${e._idx})">Editar</button>
       <button class="btn-danger btn-sm" onclick="removerEvolucao(${e._idx})">Excluir</button>
@@ -1042,7 +1394,8 @@ function salvarEvolucao(){
     o: document.getElementById('evo-o').value.trim(),
     a: document.getElementById('evo-a').value.trim(),
     pt: document.getElementById('evo-pt').value.trim(),
-    p: document.getElementById('evo-p').value.trim()
+    p: document.getElementById('evo-p').value.trim(),
+    articulacoes: evoArticulacoesAtual.slice()
   };
   const p = atualizarPaciente(p=>{
     p.evolucoes = p.evolucoes || [];
@@ -1071,6 +1424,8 @@ function editarEvolucao(idx){
   document.getElementById('evo-a').value = e.a || '';
   document.getElementById('evo-pt').value = e.pt || '';
   document.getElementById('evo-p').value = e.p || '';
+  evoArticulacoesAtual = (e.articulacoes || []).slice();
+  atualizarResumoArticulacoes();
   document.getElementById('evo-form-title').textContent = 'Editando evolução de ' + fmtData(e.data);
   document.getElementById('evo-cancel-btn').style.display = 'inline-block';
   showTab('evolucoes');
@@ -1079,6 +1434,8 @@ function editarEvolucao(idx){
 function cancelarEdicaoEvolucao(){
   editingEvolucaoIdx = null;
   ['evo-data','evo-prof','evo-s','evo-o','evo-a','evo-pt','evo-p','evo-hpma','evo-peso','evo-indice-atividade'].forEach(id=>document.getElementById(id).value='');
+  evoArticulacoesAtual = [];
+  atualizarResumoArticulacoes();
   const p = getPaciente(currentPatientId);
   document.getElementById('evo-tipo').value = (p && p.evolucoes && p.evolucoes.length > 0) ? 'retorno' : 'primeira';
   onTipoConsultaChange();
@@ -1549,9 +1906,331 @@ function importJSON(input){
   reader.readAsText(file);
 }
 
+/* ---------- VACINAÇÃO ---------- */
+function renderVacinas(p){
+  const tbody = document.getElementById('vacinas-tbody');
+  const vacinas = p.vacinas || [];
+  if(vacinas.length === 0){
+    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-msg">Nenhuma vacina cadastrada.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = vacinas.map((v,i)=>`<tr>
+    <td>${escapeHtml(v.nome)}</td>
+    <td><input type="checkbox" ${v.aplicada?'checked':''} onchange="toggleVacinaAplicada(${i}, this.checked)"></td>
+    <td><input type="date" value="${v.data||''}" onchange="atualizarVacinaData(${i}, this.value)"></td>
+  </tr>`).join('');
+}
+function toggleVacinaAplicada(i, val){
+  atualizarPaciente(p=>{ p.vacinas[i].aplicada = val; });
+}
+function atualizarVacinaData(i, val){
+  atualizarPaciente(p=>{ p.vacinas[i].data = val; });
+}
+
+/* ---------- CRITÉRIOS ACR/EULAR 2010 (ARTRITE REUMATOIDE) ---------- */
+function abrirModalAcrEular(){
+  document.getElementById('acr-eular-modal').classList.add('open');
+  calcularAcrEular();
+}
+function fecharModalAcrEular(){
+  document.getElementById('acr-eular-modal').classList.remove('open');
+}
+function calcularAcrEular(){
+  const a = parseInt(document.getElementById('acr-a').value, 10);
+  const b = parseInt(document.getElementById('acr-b').value, 10);
+  const c = parseInt(document.getElementById('acr-c').value, 10);
+  const d = parseInt(document.getElementById('acr-d').value, 10);
+  const total = a+b+c+d;
+  const el = document.getElementById('acr-resultado');
+  const atende = total >= 6;
+  el.textContent = `Pontuação: ${total}/10 — ${atende ? 'Atende critérios de AR definida' : 'Não atende critérios de AR definida'}`;
+  el.style.background = atende ? '#f0fff4' : '#fff5f5';
+  el.style.color = atende ? '#276749' : '#822727';
+}
+function usarResultadoAcrEular(){
+  const a = parseInt(document.getElementById('acr-a').value, 10);
+  const b = parseInt(document.getElementById('acr-b').value, 10);
+  const c = parseInt(document.getElementById('acr-c').value, 10);
+  const d = parseInt(document.getElementById('acr-d').value, 10);
+  const total = a+b+c+d;
+  if(!currentPatientId){ showToast('Abra um paciente antes'); return; }
+  document.getElementById('diag-cid').value = 'M06.9';
+  document.getElementById('diag-desc').value = `Artrite reumatoide (ACR/EULAR 2010: ${total}/10${total>=6?' — AR definida':''})`;
+  fecharModalAcrEular();
+  showToast('Preenchido no formulário de diagnóstico — clique em Adicionar');
+}
+
+/* ---------- TEMPLATES DE EVOLUÇÃO ---------- */
+const TEMPLATES_EVOLUCAO = {
+  ar: {
+    s: 'Refere dor e/ou edema articular, com rigidez matinal de duração aproximada de ___ minutos. Nega febre ou emagrecimento.',
+    o: 'Sinovite em ___ articulações. Força muscular preservada. Ausência de deformidades.'
+  },
+  les: {
+    s: 'Nega fotossensibilidade, lesões cutâneas, artralgia, febre ou serosite no momento.',
+    o: 'Ausência de lesões cutâneas ativas. Sem sinovite. Ausculta cardiopulmonar sem alterações.'
+  },
+  espa: {
+    s: 'Refere dor lombar de caráter inflamatório, com melhora ao exercício e piora ao repouso. Rigidez matinal de duração > 30 minutos.',
+    o: 'Manobra de Schober ___. Ausência de sinovite periférica. Sem entesite palpável.'
+  },
+  fibro: {
+    s: 'Refere dor difusa, fadiga e sono não reparador. Nega sinovite.',
+    o: 'Ausência de sinovite articular. Pontos dolorosos característicos ao exame de tender points.'
+  },
+  gota: {
+    s: 'Nega crise aguda no momento. Refere ___ crise(s) no último ano.',
+    o: 'Ausência de sinais inflamatórios articulares agudos. Sem tofos palpáveis.'
+  }
+};
+function aplicarTemplateEvolucao(){
+  const tipo = document.getElementById('evo-template').value;
+  if(!tipo) return;
+  const template = TEMPLATES_EVOLUCAO[tipo];
+  const sEl = document.getElementById('evo-s');
+  const oEl = document.getElementById('evo-o');
+  if(sEl.value.trim() || oEl.value.trim()){
+    if(!confirm('Isso vai substituir o conteúdo atual dos campos "Atual" e "Exame físico". Continuar?')){ document.getElementById('evo-template').value=''; return; }
+  }
+  sEl.value = template.s;
+  oEl.value = template.o;
+  document.getElementById('evo-template').value = '';
+  formDirty = true;
+}
+
+/* ---------- DUPLICAR ÚLTIMA EVOLUÇÃO ---------- */
+function duplicarUltimaEvolucao(){
+  const p = getPaciente(currentPatientId);
+  if(!p || !p.evolucoes || p.evolucoes.length === 0){ showToast('Não há evolução anterior para duplicar'); return; }
+  const ultima = p.evolucoes.slice().sort((a,b)=> (b.data||'').localeCompare(a.data||''))[0];
+  cancelarEdicaoEvolucao();
+  document.getElementById('evo-data').value = new Date().toISOString().slice(0,10);
+  document.getElementById('evo-prof').value = ultima.profissional || '';
+  document.getElementById('evo-tipo').value = 'retorno';
+  onTipoConsultaChange();
+  document.getElementById('evo-peso').value = ultima.peso || '';
+  document.getElementById('evo-indice-atividade').value = '';
+  document.getElementById('evo-s').value = ultima.s || '';
+  document.getElementById('evo-o').value = ultima.o || '';
+  document.getElementById('evo-a').value = ultima.a || '';
+  document.getElementById('evo-pt').value = ultima.pt || '';
+  document.getElementById('evo-p').value = '';
+  evoArticulacoesAtual = (ultima.articulacoes || []).slice();
+  atualizarResumoArticulacoes();
+  formDirty = true;
+  showTab('evolucoes');
+  window.scrollTo({top:0, behavior:'smooth'});
+  showToast('Última evolução duplicada — ajuste os campos e salve');
+}
+
+/* ---------- CALCULADORAS DE ESCORE ---------- */
+const SLEDAI_ITEMS = [
+  {nome:'Convulsão', peso:8}, {nome:'Psicose', peso:8}, {nome:'Síndrome cerebral orgânica', peso:8},
+  {nome:'Distúrbio visual', peso:8}, {nome:'Distúrbio de nervo craniano', peso:8}, {nome:'Cefaleia lúpica', peso:8},
+  {nome:'AVC', peso:8}, {nome:'Vasculite', peso:8}, {nome:'Artrite', peso:4}, {nome:'Miosite', peso:4},
+  {nome:'Cilindros urinários', peso:4}, {nome:'Hematúria', peso:4}, {nome:'Proteinúria (>0,5g/24h)', peso:4},
+  {nome:'Piúria', peso:4}, {nome:'Rash novo', peso:2}, {nome:'Alopecia', peso:2}, {nome:'Úlcera de mucosa', peso:2},
+  {nome:'Pleurisia', peso:2}, {nome:'Pericardite', peso:2}, {nome:'Complemento baixo', peso:2},
+  {nome:'Aumento de anti-DNA', peso:2}, {nome:'Febre', peso:1}, {nome:'Trombocitopenia', peso:1}, {nome:'Leucopenia', peso:1}
+];
+function renderSledaiChecklist(){
+  document.getElementById('sledai-checklist').innerHTML = SLEDAI_ITEMS.map((item,i)=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px">
+      <input type="checkbox" id="sledai-${i}" onchange="calcularEscore()"> ${escapeHtml(item.nome)} (${item.peso})
+    </label>
+  `).join('');
+}
+function abrirModalEscores(){
+  document.getElementById('escores-modal').classList.add('open');
+  mostrarFormularioEscore();
+}
+function fecharModalEscores(){
+  document.getElementById('escores-modal').classList.remove('open');
+}
+function mostrarFormularioEscore(){
+  const tipo = document.getElementById('escore-tipo').value;
+  document.getElementById('escore-form-das28').style.display = (tipo==='das28pcr'||tipo==='das28vhs') ? 'block' : 'none';
+  document.getElementById('escore-form-cdai-sdai').style.display = (tipo==='cdai'||tipo==='sdai') ? 'block' : 'none';
+  document.getElementById('sdai-pcr-wrap').style.display = (tipo==='sdai') ? 'block' : 'none';
+  document.getElementById('escore-form-basdai').style.display = (tipo==='basdai') ? 'block' : 'none';
+  document.getElementById('escore-form-sledai').style.display = (tipo==='sledai') ? 'block' : 'none';
+  if(tipo==='sledai' && !document.getElementById('sledai-checklist').dataset.rendered){
+    renderSledaiChecklist();
+    document.getElementById('sledai-checklist').dataset.rendered = '1';
+  }
+  calcularEscore();
+}
+function calcularEscore(){
+  const tipo = document.getElementById('escore-tipo').value;
+  const el = document.getElementById('escore-resultado');
+  let texto = '';
+  if(tipo === 'das28pcr' || tipo === 'das28vhs'){
+    const tjc = parseFloat(document.getElementById('das28-tjc').value) || 0;
+    const sjc = parseFloat(document.getElementById('das28-sjc').value) || 0;
+    const marcador = Math.max(parseFloat(document.getElementById('das28-marcador').value) || 0, tipo==='das28vhs' ? 1 : 0);
+    const vas = parseFloat(document.getElementById('das28-vas').value) || 0;
+    let valor = tipo === 'das28pcr'
+      ? 0.56*Math.sqrt(tjc) + 0.28*Math.sqrt(sjc) + 0.36*Math.log(marcador+1) + 0.014*vas + 0.96
+      : 0.56*Math.sqrt(tjc) + 0.28*Math.sqrt(sjc) + 0.70*Math.log(marcador) + 0.014*vas;
+    valor = Math.round(valor*100)/100;
+    const nivel = valor < 2.6 ? 'remissão' : valor <= 3.2 ? 'baixa atividade' : valor <= 5.1 ? 'moderada atividade' : 'alta atividade';
+    texto = `${tipo==='das28pcr'?'DAS28-PCR':'DAS28-VHS'} ${valor} (${nivel})`;
+  } else if(tipo === 'cdai' || tipo === 'sdai'){
+    const tjc = parseFloat(document.getElementById('cdai-tjc').value) || 0;
+    const sjc = parseFloat(document.getElementById('cdai-sjc').value) || 0;
+    const pac = parseFloat(document.getElementById('cdai-paciente').value) || 0;
+    const med = parseFloat(document.getElementById('cdai-medico').value) || 0;
+    if(tipo === 'cdai'){
+      let valor = Math.round((tjc+sjc+pac+med)*10)/10;
+      const nivel = valor <= 2.8 ? 'remissão' : valor <= 10 ? 'baixa atividade' : valor <= 22 ? 'moderada atividade' : 'alta atividade';
+      texto = `CDAI ${valor} (${nivel})`;
+    } else {
+      const pcr = parseFloat(document.getElementById('sdai-pcr').value) || 0;
+      let valor = Math.round((tjc+sjc+pac+med+pcr)*10)/10;
+      const nivel = valor <= 3.3 ? 'remissão' : valor <= 11 ? 'baixa atividade' : valor <= 26 ? 'moderada atividade' : 'alta atividade';
+      texto = `SDAI ${valor} (${nivel})`;
+    }
+  } else if(tipo === 'basdai'){
+    const vals = [1,2,3,4,5,6].map(n=> parseFloat(document.getElementById('basdai-'+n).value) || 0);
+    let valor = (vals[0]+vals[1]+vals[2]+vals[3] + (vals[4]+vals[5])/2) / 5;
+    valor = Math.round(valor*100)/100;
+    texto = `BASDAI ${valor} (${valor>=4?'doença ativa':'controlada'})`;
+  } else if(tipo === 'sledai'){
+    let soma = 0;
+    SLEDAI_ITEMS.forEach((item,i)=>{
+      const cb = document.getElementById('sledai-'+i);
+      if(cb && cb.checked) soma += item.peso;
+    });
+    const nivel = soma===0?'sem atividade': soma<=5?'leve': soma<=10?'moderada': soma<=19?'alta':'muito alta';
+    texto = `SLEDAI ${soma} (${nivel})`;
+  }
+  el.textContent = texto;
+}
+function usarResultadoEscore(){
+  const texto = document.getElementById('escore-resultado').textContent;
+  if(!texto){ showToast('Calcule um índice antes'); return; }
+  const match = texto.match(/^(\S+)\s+([\d.]+)/);
+  document.getElementById('evo-indice-atividade').value = match ? `${match[1]} ${match[2]}` : texto;
+  fecharModalEscores();
+  formDirty = true;
+  showToast('Índice preenchido na evolução');
+}
+
+/* ---------- MAPA ARTICULAR ---------- */
+const JOINTS = [
+  {id:'ombro_d', label:'Ombro D', x:65, y:65}, {id:'ombro_e', label:'Ombro E', x:135, y:65},
+  {id:'cotovelo_d', label:'Cotovelo D', x:50, y:120}, {id:'cotovelo_e', label:'Cotovelo E', x:150, y:120},
+  {id:'punho_d', label:'Punho D', x:40, y:170}, {id:'punho_e', label:'Punho E', x:160, y:170},
+  {id:'mao_d', label:'Mão D (MCF/IFP)', x:35, y:195}, {id:'mao_e', label:'Mão E (MCF/IFP)', x:165, y:195},
+  {id:'quadril_d', label:'Quadril D', x:80, y:205}, {id:'quadril_e', label:'Quadril E', x:120, y:205},
+  {id:'joelho_d', label:'Joelho D', x:78, y:280}, {id:'joelho_e', label:'Joelho E', x:122, y:280},
+  {id:'tornozelo_d', label:'Tornozelo D', x:76, y:355}, {id:'tornozelo_e', label:'Tornozelo E', x:124, y:355},
+  {id:'pe_d', label:'Pé D (MTF)', x:74, y:378}, {id:'pe_e', label:'Pé E (MTF)', x:126, y:378}
+];
+function renderMapaArticularSvg(){
+  const svg = document.getElementById('mapa-articular-svg');
+  const linhas = `
+    <line x1="100" y1="48" x2="100" y2="65" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="65" y1="65" x2="135" y2="65" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="65" y1="65" x2="80" y2="205" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="135" y1="65" x2="120" y2="205" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="80" y1="205" x2="120" y2="205" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="65" y1="65" x2="50" y2="120" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="50" y1="120" x2="40" y2="170" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="40" y1="170" x2="35" y2="195" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="135" y1="65" x2="150" y2="120" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="150" y1="120" x2="160" y2="170" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="160" y1="170" x2="165" y2="195" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="80" y1="205" x2="78" y2="280" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="78" y1="280" x2="76" y2="355" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="76" y1="355" x2="74" y2="378" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="120" y1="205" x2="122" y2="280" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="122" y1="280" x2="124" y2="355" stroke="#a0aec0" stroke-width="3"/>
+    <line x1="124" y1="355" x2="126" y2="378" stroke="#a0aec0" stroke-width="3"/>
+    <circle cx="100" cy="30" r="18" fill="#e2e8f0" stroke="#a0aec0" stroke-width="2"/>
+  `;
+  const pontos = JOINTS.map(j=>{
+    const selecionado = mapaArticularSelecionadas.includes(j.id);
+    return `<circle cx="${j.x}" cy="${j.y}" r="9" fill="${selecionado?'#e53e3e':'#cbd5e0'}" stroke="#4a5568" stroke-width="1.5" style="cursor:pointer" onclick="toggleJuntaMapa('${j.id}')"><title>${j.label}</title></circle>`;
+  }).join('');
+  svg.innerHTML = linhas + pontos;
+  document.getElementById('mapa-articular-resumo').textContent = mapaArticularSelecionadas.length
+    ? 'Selecionadas: ' + mapaArticularSelecionadas.map(id=>{const j=JOINTS.find(x=>x.id===id); return j?j.label:id;}).join(', ')
+    : 'Nenhuma articulação selecionada.';
+}
+function toggleJuntaMapa(id){
+  const idx = mapaArticularSelecionadas.indexOf(id);
+  if(idx === -1) mapaArticularSelecionadas.push(id); else mapaArticularSelecionadas.splice(idx,1);
+  renderMapaArticularSvg();
+}
+function abrirMapaArticular(){
+  mapaArticularSelecionadas = evoArticulacoesAtual.slice();
+  renderMapaArticularSvg();
+  document.getElementById('mapa-articular-modal').classList.add('open');
+}
+function fecharMapaArticular(){
+  document.getElementById('mapa-articular-modal').classList.remove('open');
+}
+function salvarMapaArticular(){
+  evoArticulacoesAtual = mapaArticularSelecionadas.slice();
+  atualizarResumoArticulacoes();
+  formDirty = true;
+  fecharMapaArticular();
+}
+function atualizarResumoArticulacoes(){
+  const el = document.getElementById('evo-articulacoes-resumo');
+  el.textContent = evoArticulacoesAtual.length ? `${evoArticulacoesAtual.length} selecionada(s)` : '';
+}
+
+/* ---------- DENSITOMETRIA ÓSSEA ---------- */
+function abrirDensitometria(){
+  if(!currentPatientId){ showToast('Abra um paciente antes'); return; }
+  document.getElementById('dxa-data').value = '';
+  document.getElementById('dxa-tscore').value = '';
+  document.getElementById('dxa-zscore').value = '';
+  document.getElementById('dxa-classificacao').textContent = '';
+  document.getElementById('densitometria-modal').classList.add('open');
+}
+function fecharDensitometria(){
+  document.getElementById('densitometria-modal').classList.remove('open');
+}
+function calcularClassificacaoDxa(){
+  const t = parseFloat(document.getElementById('dxa-tscore').value);
+  const el = document.getElementById('dxa-classificacao');
+  if(isNaN(t)){ el.textContent=''; return; }
+  const texto = t >= -1 ? 'Normal' : t > -2.5 ? 'Osteopenia' : 'Osteoporose';
+  el.textContent = `T-score ${t}: ${texto}`;
+}
+function salvarDensitometria(){
+  const data = document.getElementById('dxa-data').value;
+  const sitio = document.getElementById('dxa-sitio').value;
+  const t = document.getElementById('dxa-tscore').value;
+  const z = document.getElementById('dxa-zscore').value;
+  if(!t){ showToast('Informe o T-score'); return; }
+  const tNum = parseFloat(t);
+  const classificacao = tNum >= -1 ? 'Normal' : tNum > -2.5 ? 'Osteopenia' : 'Osteoporose';
+  let resultado = `T-score: ${t} (${classificacao})`;
+  if(z) resultado += `, Z-score: ${z}`;
+  const p = atualizarPaciente(p=>{
+    p.exames = p.exames || [];
+    p.exames.push({categoria:'imagem', data, tipo:`Densitometria óssea - ${sitio}`, resultado});
+  });
+  renderExames(p);
+  fecharDensitometria();
+  showToast('Densitometria adicionada aos exames');
+}
+
 popularListasComuns();
 renderPatientList();
 updateExportStatus();
+
+document.getElementById('page-ficha').addEventListener('input', ()=>{ formDirty = true; });
+window.addEventListener('beforeunload', function(e){
+  if(formDirty){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 </script>
 </body>
 </html>
