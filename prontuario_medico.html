@@ -369,9 +369,12 @@ tr:hover td{background:#f7faff}
       </div>
     </div>
     <div class="section-card">
-      <div class="section-title">Exames Laboratoriais</div>
+      <div class="section-title">
+        Exames Laboratoriais
+        <button class="btn-secondary btn-sm no-print" onclick="abrirGrupoExamesModal()">📅 Adicionar bloco por data</button>
+      </div>
       <table class="mini-table" id="exame-table-laboratorial">
-        <thead><tr><th>Data</th><th>Tipo</th><th>Resultado/Observação</th><th class="no-print"></th></tr></thead>
+        <thead><tr><th style="width:110px">Data</th><th>Exames (agrupados por data de coleta)</th><th class="no-print" style="width:130px">Ações</th></tr></thead>
         <tbody id="exame-tbody-laboratorial"></tbody>
       </table>
     </div>
@@ -512,22 +515,21 @@ tr:hover td{background:#f7faff}
 </div>
 
 <div class="modal-overlay" id="densitometria-modal">
-  <div class="modal-box">
-    <h2>Densitometria óssea</h2>
-    <div class="field-grid">
+  <div class="modal-box" style="max-width:640px">
+    <h2>Densitometria óssea (DXA)</h2>
+    <div class="field-grid" style="margin-bottom:10px">
       <div class="field-group"><label>Data</label><input type="date" id="dxa-data"></div>
-      <div class="field-group"><label>Sítio</label>
-        <select id="dxa-sitio">
-          <option>Coluna lombar (L1-L4)</option>
-          <option>Fêmur total</option>
-          <option>Colo do fêmur</option>
-          <option>Rádio 33%</option>
-        </select>
+      <div class="field-group" id="dxa-menopausa-wrap" style="display:none">
+        <label><input type="checkbox" id="dxa-posmenopausa" onchange="atualizarScoreRecomendadoDxa()"> Pós-menopausa</label>
       </div>
-      <div class="field-group"><label>T-score</label><input type="number" id="dxa-tscore" step="0.1" oninput="calcularClassificacaoDxa()"></div>
-      <div class="field-group"><label>Z-score (opcional, &lt;50 anos)</label><input type="number" id="dxa-zscore" step="0.1"></div>
     </div>
-    <div id="dxa-classificacao" style="text-align:center;padding:10px;border-radius:8px;background:#f7faff;font-weight:700;font-size:13px;margin-top:10px"></div>
+    <div id="dxa-score-info" style="font-size:12px;color:#4a5568;background:#f7faff;border-radius:6px;padding:8px 12px;margin-bottom:12px"></div>
+    <div style="overflow-x:auto">
+      <table class="mini-table" id="dxa-tabela">
+        <thead><tr><th>Sítio</th><th>BMD (g/cm²)</th><th>T-score</th><th>Z-score</th><th>Classificação</th></tr></thead>
+        <tbody id="dxa-tbody"></tbody>
+      </table>
+    </div>
     <div class="form-actions">
       <button class="btn-secondary" onclick="fecharDensitometria()">Cancelar</button>
       <button class="btn-primary" onclick="salvarDensitometria()">Adicionar aos exames</button>
@@ -538,21 +540,31 @@ tr:hover td{background:#f7faff}
 <div class="modal-overlay" id="importar-exames-modal">
   <div class="modal-box">
     <h2>Importar exames de texto ou PDF</h2>
-    <div class="field-group" style="margin-bottom:12px">
-      <label>Chave de API Anthropic</label>
-      <input type="password" id="exames-apikey" placeholder="sk-ant-...">
-    </div>
+    <p style="font-size:11px;color:#718096;margin-bottom:12px">Cole um texto corrido (ex: uma data por linha seguida dos exames separados por "/") e use "Analisar texto colado" — não precisa de chave de API. Para PDFs ou textos mais livres, use "Extrair com IA".</p>
     <div class="field-group" style="margin-bottom:12px">
       <label>Colar texto do laudo/exame</label>
-      <textarea id="exames-textarea" style="width:100%;min-height:120px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit" placeholder="Cole aqui o texto do laudo (ex: copiado de um PDF ou sistema de laboratório)"></textarea>
+      <textarea id="exames-textarea" style="width:100%;min-height:120px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit" placeholder="ex:&#10;19/07/2026&#10;Hb 14,0 / Ht 40 / VCM 90 / HCM 30 / 7800 leucocitos / 300.000 plaquetas&#10;TGO 40 / TGP 50 / FA 60 / GGT 90 / Bilirrubina total 1,0"></textarea>
     </div>
     <div class="field-group" style="margin-bottom:12px">
-      <label>Ou selecione um arquivo PDF</label>
+      <label>Categoria do texto colado (usada pela análise local)</label>
+      <select id="exames-categoria-local">
+        <option value="laboratorial">Laboratorial</option>
+        <option value="imagem">Imagem</option>
+        <option value="biopsia">Biópsia</option>
+      </select>
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Ou selecione um arquivo PDF (requer chave de API para extração por IA)</label>
       <input type="file" id="exames-pdf-input" accept="application/pdf">
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Chave de API Anthropic (apenas para "Extrair com IA")</label>
+      <input type="password" id="exames-apikey" placeholder="sk-ant-...">
     </div>
     <div class="form-actions">
       <button class="btn-secondary" onclick="fecharImportarExamesModal()">Cancelar</button>
-      <button class="btn-primary" id="exames-extract-btn" onclick="extrairExamesDeArquivo()">Extrair exames</button>
+      <button class="btn-secondary" onclick="analisarTextoLocal()">📝 Analisar texto colado (sem IA)</button>
+      <button class="btn-primary" id="exames-extract-btn" onclick="extrairExamesDeArquivo()">🤖 Extrair com IA</button>
     </div>
     <div id="exames-loading" style="display:none;text-align:center;padding:12px;color:#718096;font-size:12px">Analisando... isso pode levar alguns segundos.</div>
     <div id="exames-erro" style="display:none;color:#c53030;font-size:12px;margin-top:8px"></div>
@@ -562,6 +574,36 @@ tr:hover td{background:#f7faff}
       <div class="form-actions">
         <button class="btn-primary" onclick="adicionarExamesSelecionados()">Adicionar selecionados</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="grupo-exames-modal">
+  <div class="modal-box">
+    <h2 id="grupo-exames-titulo">Exames laboratoriais — bloco por data</h2>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Data da coleta</label>
+      <input type="date" id="grupo-exames-data">
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Exames (um por linha, ex: "Hb 13,4" — também aceita vários na mesma linha separados por "/")</label>
+      <textarea id="grupo-exames-texto" style="width:100%;min-height:220px;border:1px solid #cbd5e0;border-radius:6px;padding:8px;font-size:13px;font-family:inherit"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="fecharGrupoExamesModal()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarGrupoExames()">Salvar bloco</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="preview-impressao-modal">
+  <div class="modal-box" style="max-width:760px">
+    <h2>Pré-visualização — revise antes de gerar o PDF</h2>
+    <p style="font-size:11px;color:#718096;margin-bottom:10px">Edite livremente o texto abaixo (adicione, apague ou corrija linhas). O PDF será gerado exatamente como estiver aqui.</p>
+    <textarea id="preview-impressao-texto" style="width:100%;min-height:60vh;border:1px solid #cbd5e0;border-radius:6px;padding:10px;font-size:13px;font-family:'Courier New',monospace;line-height:1.5"></textarea>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="fecharPreviewImpressao()">Cancelar</button>
+      <button class="btn-primary" onclick="confirmarImpressao()">Gerar PDF / Imprimir</button>
     </div>
   </div>
 </div>
@@ -1456,10 +1498,32 @@ function removerEvolucao(idx){
 }
 
 /* ---------- EXAMES ---------- */
-const EXAME_CATEGORIAS = ['laboratorial','imagem','biopsia'];
 function renderExames(p){
   const exames = p.exames || [];
-  EXAME_CATEGORIAS.forEach(cat=>{
+
+  // Laboratoriais: agrupados por data de coleta, para avaliação conjunta
+  const labTbody = document.getElementById('exame-tbody-laboratorial');
+  const labItens = exames.map((e,i)=>({...e, _idx:i})).filter(e=> (e.categoria||'laboratorial')==='laboratorial');
+  if(labItens.length === 0){
+    labTbody.innerHTML = `<tr><td colspan="3"><div class="empty-msg">Nenhum exame registrado.</div></td></tr>`;
+  } else {
+    const grupos = [];
+    labItens.forEach(e=>{
+      const chave = e.data || '';
+      let g = grupos.find(x=>x.data===chave);
+      if(!g){ g = {data: chave, itens:[]}; grupos.push(g); }
+      g.itens.push(e);
+    });
+    grupos.sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+    labTbody.innerHTML = grupos.map(g=>`<tr>
+      <td style="white-space:nowrap">${g.data ? fmtData(g.data) : '(sem data)'}</td>
+      <td>${g.itens.map(e=>`<span class="tag">${escapeHtml(e.tipo||'')}${e.resultado?': '+escapeHtml(e.resultado):''}<span class="x no-print" onclick="removerExame(${e._idx})">&times;</span></span>`).join('')}</td>
+      <td class="no-print"><button class="btn-secondary btn-sm" onclick="abrirGrupoExamesModal('${g.data}')">Editar em bloco</button></td>
+    </tr>`).join('');
+  }
+
+  // Imagem e Biópsia continuam listados individualmente
+  ['imagem','biopsia'].forEach(cat=>{
     const tbody = document.getElementById('exame-tbody-'+cat);
     const doCategoria = exames
       .map((e,i)=>({...e, _idx:i}))
@@ -1495,7 +1559,148 @@ function removerExame(i){
   renderExames(p);
 }
 
-/* ---------- IMPORTAR EXAMES (texto/PDF) ---------- */
+/* ---------- EXAMES LABORATORIAIS EM BLOCO (mesma data avaliada em conjunto) ---------- */
+let grupoExamesDataOriginal = null;
+function abrirGrupoExamesModal(dataExistente){
+  if(!currentPatientId){ showToast('Abra um paciente antes'); return; }
+  const p = getPaciente(currentPatientId);
+  grupoExamesDataOriginal = dataExistente || null;
+  document.getElementById('grupo-exames-titulo').textContent = dataExistente
+    ? `Editar exames laboratoriais de ${fmtData(dataExistente)}`
+    : 'Adicionar bloco de exames laboratoriais';
+  document.getElementById('grupo-exames-data').value = dataExistente || '';
+  if(dataExistente){
+    const itens = (p.exames||[]).filter(e=> (e.categoria||'laboratorial')==='laboratorial' && e.data===dataExistente);
+    document.getElementById('grupo-exames-texto').value = itens.map(e=> e.resultado ? `${e.tipo} ${e.resultado}` : e.tipo).join('\n');
+  } else {
+    document.getElementById('grupo-exames-texto').value = '';
+  }
+  document.getElementById('grupo-exames-modal').classList.add('open');
+}
+function fecharGrupoExamesModal(){
+  document.getElementById('grupo-exames-modal').classList.remove('open');
+}
+function salvarGrupoExames(){
+  const novaData = document.getElementById('grupo-exames-data').value;
+  if(!novaData){ showToast('Informe a data da coleta'); return; }
+  const texto = document.getElementById('grupo-exames-texto').value;
+  const itensParseados = parseTextoExamesLocal(texto, 'laboratorial');
+  if(itensParseados.length === 0){ showToast('Nenhum exame identificado no texto'); return; }
+  const p = atualizarPaciente(p=>{
+    p.exames = p.exames || [];
+    if(grupoExamesDataOriginal){
+      p.exames = p.exames.filter(e=> !((e.categoria||'laboratorial')==='laboratorial' && e.data===grupoExamesDataOriginal));
+    }
+    itensParseados.forEach(it=>{ p.exames.push({categoria:'laboratorial', data: novaData, tipo: it.tipo, resultado: it.resultado}); });
+  });
+  fecharGrupoExamesModal();
+  renderExames(p);
+  showToast('Bloco de exames salvo');
+}
+
+/* ---------- ANÁLISE LOCAL DE TEXTO CORRIDO DE EXAMES (sem IA) ---------- */
+// Nomes conhecidos de exames, do mais específico para o mais genérico (ordenados por tamanho na hora do match)
+const LAB_TEST_NAMES = [
+  'Hemoglobina glicada','Bilirrubina total','Bilirrubina direta','Bilirrubina indireta',
+  'Vitamina D','Vitamina B12','Ácido fólico','Ácido úrico','Ferro sérico','Ferritina','Transferrina',
+  'Anti-HBc total','Anti-HBs','Anti-HCV','HBsAg','VDRL','HIV','IGRA',
+  'Complemento C3','Complemento C4','Anti-DNA','Anti-Ro','Anti-La','Anti-Sm','Anti-RNP',
+  'Anticardiolipina','Anti-CCP','Fator reumatoide','Cilindros urinários','Urina tipo 1','Urina 1',
+  'FAN','ANCA','FR','Creatinina','Ureia','Cilindros','Hemácias','Leucócitos totais','Leucócitos',
+  'Piócitos','Proteinúria','PTN','Nitrito','Densidade urinária',
+  'Hb','Ht','VCM','HCM','CHCM','RDW','Plaquetas','Neutrófilos','Linfócitos',
+  'Monócitos','Eosinófilos','Basófilos','Bastonetes','VHS','PCR','TGO','TGP','FA','GGT',
+  'Amilase','Lipase','CPK','CK','LDH','Cálcio iônico','Cálcio','Magnésio',
+  'Fósforo','Colesterol total','HDL','LDL','VLDL','Triglicerídeos','TGs','Glicemia','TSH','T4 livre','T3',
+  'K','Na','Cr','Ur'
+].sort((a,b)=> b.length - a.length);
+
+function normalizarTexto(s){
+  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+function escapeRegex(s){
+  return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+}
+function matchNomeExameInicio(segmento){
+  const s = normalizarTexto(segmento.trim());
+  for(const nome of LAB_TEST_NAMES){
+    const nn = normalizarTexto(nome);
+    const re = new RegExp('^' + escapeRegex(nn) + '(?=[\\s:]|$)');
+    if(re.test(s)) return nome;
+  }
+  return null;
+}
+function matchNomeExameFim(segmento){
+  const s = normalizarTexto(segmento.trim());
+  for(const nome of LAB_TEST_NAMES){
+    const nn = normalizarTexto(nome);
+    const re = new RegExp('(?:^|[\\s:])' + escapeRegex(nn) + '$');
+    if(re.test(s)){
+      const idx = s.lastIndexOf(nn);
+      return {nome, idx};
+    }
+  }
+  return null;
+}
+function parseSegmentoExame(segmento){
+  const s = segmento.trim();
+  if(!s) return null;
+  const nomeInicio = matchNomeExameInicio(s);
+  if(nomeInicio){
+    const resto = s.slice(nomeInicio.length).trim().replace(/^[:\-]\s*/,'');
+    return {tipo: nomeInicio, resultado: resto};
+  }
+  const nomeFim = matchNomeExameFim(s);
+  if(nomeFim){
+    const resto = s.slice(0, nomeFim.idx).trim().replace(/[-:]\s*$/,'');
+    return {tipo: nomeFim.nome, resultado: resto};
+  }
+  return {tipo: s, resultado: ''};
+}
+function parseTextoExamesLocal(texto, categoriaPadrao){
+  const linhas = String(texto||'').split('\n');
+  const dateRe = /^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/;
+  let dataAtual = '';
+  const resultado = [];
+  linhas.forEach(linhaRaw=>{
+    const linha = linhaRaw.trim();
+    if(!linha) return;
+    const m = linha.match(dateRe);
+    if(m){
+      let ano = m[3];
+      if(ano.length === 2) ano = '20'+ano;
+      dataAtual = `${ano}-${m[2]}-${m[1]}`;
+      return;
+    }
+    linha.split('/').forEach(seg=>{
+      const parsed = parseSegmentoExame(seg);
+      if(parsed && (parsed.tipo || parsed.resultado)){
+        resultado.push({categoria: categoriaPadrao, data: dataAtual, tipo: parsed.tipo, resultado: parsed.resultado, selecionado:true});
+      }
+    });
+  });
+  return resultado;
+}
+function analisarTextoLocal(){
+  const texto = document.getElementById('exames-textarea').value.trim();
+  const erroEl = document.getElementById('exames-erro');
+  const previewEl = document.getElementById('exames-preview');
+  erroEl.style.display = 'none';
+  if(!texto){ erroEl.textContent = 'Cole o texto do laudo na caixa acima.'; erroEl.style.display='block'; return; }
+  const categoriaPadrao = document.getElementById('exames-categoria-local').value;
+  const dados = parseTextoExamesLocal(texto, categoriaPadrao);
+  if(dados.length === 0){
+    erroEl.textContent = 'Não foi possível identificar exames nesse texto. Tente uma data (dd/mm/aaaa) por linha, seguida dos exames separados por "/".';
+    erroEl.style.display = 'block';
+    return;
+  }
+  examesExtraidosTemp = dados;
+  renderExamesPreview();
+  previewEl.style.display = 'block';
+  showToast(`${dados.length} exame(s) identificado(s) — revise antes de adicionar`);
+}
+
+/* ---------- IMPORTAR EXAMES (texto/PDF via IA) ---------- */
 let examesExtraidosTemp = [];
 
 function abrirImportarExamesModal(){
@@ -1825,7 +2030,19 @@ function imprimirFicha(){
   const p = getPaciente(currentPatientId);
   if(!p){ showToast('Abra um paciente antes de imprimir'); return; }
   const linhas = gerarLinhasResumo(p);
-  const corpo = linhas.map(l => l === ''
+  document.getElementById('preview-impressao-texto').value = linhas.join('\n');
+  document.getElementById('preview-impressao-modal').classList.add('open');
+}
+function fecharPreviewImpressao(){
+  document.getElementById('preview-impressao-modal').classList.remove('open');
+}
+function confirmarImpressao(){
+  const p = getPaciente(currentPatientId);
+  if(!p) return;
+  const texto = document.getElementById('preview-impressao-texto').value;
+  const linhas = texto.split('\n');
+  while(linhas.length && linhas[linhas.length-1].trim() === '') linhas.pop();
+  const corpo = linhas.map(l => l.trim() === ''
     ? '<div class="resumo-vazia">&nbsp;</div>'
     : `<div class="resumo-linha">${escapeHtml(l)}</div>`
   ).join('');
@@ -1847,6 +2064,7 @@ ${corpo}
   win.document.close();
   win.focus();
   setTimeout(()=>{ win.print(); }, 300);
+  fecharPreviewImpressao();
 }
 
 /* ---------- LEMBRETE DE BACKUP ---------- */
@@ -2200,39 +2418,94 @@ function atualizarResumoArticulacoes(){
 }
 
 /* ---------- DENSITOMETRIA ÓSSEA ---------- */
+// ISCD: T-score para mulheres pós-menopausa e homens ≥ 50 anos; Z-score para pré-menopausa, homens < 50 anos e crianças
+const SITIOS_DXA = ['Fêmur total','Colo do fêmur','L1','L2','L3','L4','L1-L4','L1-L3','L2-L4','Rádio 33%'];
+
+function calcIdadeAnos(dataNasc){
+  if(!dataNasc) return null;
+  const nasc = new Date(dataNasc);
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if(m < 0 || (m===0 && hoje.getDate() < nasc.getDate())) idade--;
+  return idade;
+}
+function scoreRecomendadoDxa(p){
+  const idade = calcIdadeAnos(p.dataNascimento);
+  if(p.sexo === 'Feminino') return p.posMenopausa ? 'T' : 'Z';
+  return (idade !== null && idade >= 50) ? 'T' : 'Z';
+}
+function classificarDxa(score, tipo){
+  if(score === '' || score === null || score === undefined || isNaN(score)) return '';
+  const v = parseFloat(score);
+  if(tipo === 'T') return v >= -1 ? 'Normal' : v > -2.5 ? 'Osteopenia' : 'Osteoporose';
+  return v > -2 ? 'Dentro da faixa esperada p/ idade' : 'Abaixo da faixa esperada p/ idade';
+}
 function abrirDensitometria(){
   if(!currentPatientId){ showToast('Abra um paciente antes'); return; }
+  const p = getPaciente(currentPatientId);
   document.getElementById('dxa-data').value = '';
-  document.getElementById('dxa-tscore').value = '';
-  document.getElementById('dxa-zscore').value = '';
-  document.getElementById('dxa-classificacao').textContent = '';
+  document.getElementById('dxa-menopausa-wrap').style.display = (p.sexo === 'Feminino') ? '' : 'none';
+  document.getElementById('dxa-posmenopausa').checked = !!p.posMenopausa;
+  document.getElementById('dxa-tbody').innerHTML = SITIOS_DXA.map((sitio,i)=>`<tr>
+    <td>${sitio}</td>
+    <td><input type="number" step="0.001" id="dxa-bmd-${i}"></td>
+    <td><input type="number" step="0.1" id="dxa-t-${i}" oninput="atualizarClassificacaoLinhaDxa(${i})"></td>
+    <td><input type="number" step="0.1" id="dxa-z-${i}" oninput="atualizarClassificacaoLinhaDxa(${i})"></td>
+    <td id="dxa-classe-${i}" style="font-weight:600"></td>
+  </tr>`).join('');
+  atualizarScoreRecomendadoDxa();
   document.getElementById('densitometria-modal').classList.add('open');
 }
 function fecharDensitometria(){
   document.getElementById('densitometria-modal').classList.remove('open');
 }
-function calcularClassificacaoDxa(){
-  const t = parseFloat(document.getElementById('dxa-tscore').value);
-  const el = document.getElementById('dxa-classificacao');
-  if(isNaN(t)){ el.textContent=''; return; }
-  const texto = t >= -1 ? 'Normal' : t > -2.5 ? 'Osteopenia' : 'Osteoporose';
-  el.textContent = `T-score ${t}: ${texto}`;
+function atualizarScoreRecomendadoDxa(){
+  if(!currentPatientId) return;
+  let p = getPaciente(currentPatientId);
+  if(p.sexo === 'Feminino'){
+    p = atualizarPaciente(pp=>{ pp.posMenopausa = document.getElementById('dxa-posmenopausa').checked; });
+  }
+  const scoreTipo = scoreRecomendadoDxa(p);
+  document.getElementById('dxa-score-info').textContent = scoreTipo === 'T'
+    ? 'Score recomendado para este paciente: T-score (mulher pós-menopausa ou paciente ≥ 50 anos).'
+    : 'Score recomendado para este paciente: Z-score (pré-menopausa, < 50 anos ou criança).';
+  SITIOS_DXA.forEach((_,i)=> atualizarClassificacaoLinhaDxa(i));
+}
+function atualizarClassificacaoLinhaDxa(i){
+  const p = getPaciente(currentPatientId);
+  if(!p) return;
+  const scoreTipo = scoreRecomendadoDxa(p);
+  const t = document.getElementById('dxa-t-'+i).value;
+  const z = document.getElementById('dxa-z-'+i).value;
+  const usado = scoreTipo === 'T' ? t : z;
+  const classe = classificarDxa(usado, scoreTipo);
+  document.getElementById('dxa-classe-'+i).textContent = classe ? `${classe} (${scoreTipo}-score)` : '';
 }
 function salvarDensitometria(){
+  const p = getPaciente(currentPatientId);
   const data = document.getElementById('dxa-data').value;
-  const sitio = document.getElementById('dxa-sitio').value;
-  const t = document.getElementById('dxa-tscore').value;
-  const z = document.getElementById('dxa-zscore').value;
-  if(!t){ showToast('Informe o T-score'); return; }
-  const tNum = parseFloat(t);
-  const classificacao = tNum >= -1 ? 'Normal' : tNum > -2.5 ? 'Osteopenia' : 'Osteoporose';
-  let resultado = `T-score: ${t} (${classificacao})`;
-  if(z) resultado += `, Z-score: ${z}`;
-  const p = atualizarPaciente(p=>{
-    p.exames = p.exames || [];
-    p.exames.push({categoria:'imagem', data, tipo:`Densitometria óssea - ${sitio}`, resultado});
+  const scoreTipo = scoreRecomendadoDxa(p);
+  const linhas = [];
+  SITIOS_DXA.forEach((sitio,i)=>{
+    const bmd = document.getElementById('dxa-bmd-'+i).value;
+    const t = document.getElementById('dxa-t-'+i).value;
+    const z = document.getElementById('dxa-z-'+i).value;
+    if(!bmd && !t && !z) return;
+    const partes = [];
+    if(bmd) partes.push(`BMD ${bmd} g/cm²`);
+    if(t) partes.push(`T-score ${t}`);
+    if(z) partes.push(`Z-score ${z}`);
+    const usado = scoreTipo === 'T' ? t : z;
+    const classe = classificarDxa(usado, scoreTipo);
+    linhas.push(`${sitio}: ${partes.join(', ')}${classe ? ' — '+classe : ''}`);
   });
-  renderExames(p);
+  if(linhas.length === 0){ showToast('Preencha ao menos um sítio (BMD, T-score ou Z-score)'); return; }
+  const pAtualizado = atualizarPaciente(pp=>{
+    pp.exames = pp.exames || [];
+    pp.exames.push({categoria:'imagem', data, tipo:'Densitometria óssea (DXA)', resultado: linhas.join('\n')});
+  });
+  renderExames(pAtualizado);
   fecharDensitometria();
   showToast('Densitometria adicionada aos exames');
 }
