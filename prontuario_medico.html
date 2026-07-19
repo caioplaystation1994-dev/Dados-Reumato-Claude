@@ -1099,9 +1099,15 @@ function verificarSemRetorno(p){
 }
 
 function salvarDadosBasicos(){
+  const nascInput = document.getElementById('f-nasc');
+  const hojeIso = new Date().toISOString().slice(0,10);
+  if(nascInput.value && nascInput.value > hojeIso){
+    showToast('Data de nascimento não pode ser no futuro — campo limpo');
+    nascInput.value = '';
+  }
   const p = atualizarPaciente(p=>{
     p.nome = document.getElementById('f-nome').value.trim();
-    p.dataNascimento = document.getElementById('f-nasc').value;
+    p.dataNascimento = nascInput.value;
     p.sexo = document.getElementById('f-sexo').value;
     p.cpf = document.getElementById('f-cpf').value.trim();
     p.rg = document.getElementById('f-rg').value.trim();
@@ -1637,11 +1643,15 @@ function adicionarExamesSelecionados(){
 }
 
 /* ---------- IMPRESSÃO / RESUMO ---------- */
-const AUTOANTICORPOS_KEYWORDS = ['fr','fator reumatoide','anti-ccp','anti ccp','fan','fator antinuclear','anti-dna','anti dna','anca','anti-ro','anti-la','anti-sm','anti-rnp','anticardiolipina','anti-beta2','anti-b2','beta-2-glicoproteina','c3','c4'];
+// Frases distintivas o suficiente para busca por substring sem risco de falso positivo
+const AUTOANTICORPOS_SUBSTRING = ['fator reumatoide','anti-ccp','anti ccp','fator antinuclear','anti-dna','anti dna','anti-ro','anti-la','anti-sm','anti-rnp','anticardiolipina','anti-beta2','anti-b2','beta-2-glicoproteina'];
+// Siglas curtas: exigem correspondência de palavra inteira (evita ex.: "FR" casar com "Frutosamina")
+const AUTOANTICORPOS_PALAVRA = ['fr','fan','anca','c3','c4'];
 
 function isAutoanticorpo(tipo){
   const t = (tipo||'').toLowerCase();
-  return AUTOANTICORPOS_KEYWORDS.some(k => t.includes(k));
+  if(AUTOANTICORPOS_SUBSTRING.some(k => t.includes(k))) return true;
+  return AUTOANTICORPOS_PALAVRA.some(k => new RegExp(`\\b${k}\\b`).test(t));
 }
 
 function formatMesAno(iso){
@@ -1743,10 +1753,17 @@ function gerarLinhasResumo(p){
       linhas.push(`Atual: ${ultima.s}`);
       linhas.push('');
     }
-    if(ultima.peso || ultima.o){
+    if(ultima.peso || ultima.o || (ultima.articulacoes && ultima.articulacoes.length)){
       linhas.push('Exame físico');
-      if(ultima.peso) linhas.push(`Peso: ${ultima.peso}kg`);
+      if(ultima.peso){
+        const pesoLimpo = String(ultima.peso).replace(/\s*kg\.?\s*$/i, '').trim();
+        linhas.push(`Peso: ${pesoLimpo}kg`);
+      }
       if(ultima.o) linhas.push(ultima.o);
+      if(ultima.articulacoes && ultima.articulacoes.length){
+        const nomes = ultima.articulacoes.map(id=>{ const j = JOINTS.find(x=>x.id===id); return j ? j.label : id; });
+        linhas.push('Articulações acometidas: ' + nomes.join(', '));
+      }
       linhas.push('');
     }
     if(ultima.indiceAtividade){
@@ -1814,9 +1831,9 @@ function imprimirFicha(){
   ).join('');
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Resumo — ${escapeHtml(p.nome||'')}</title>
 <style>
-body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#111;line-height:1.5;padding:28px;max-width:720px;margin:0 auto}
+body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#111;line-height:1.5;padding:28px;max-width:720px;margin:0 auto;overflow-wrap:anywhere}
 .resumo-header{font-weight:700;font-size:16px;letter-spacing:.5px;margin-bottom:4px}
-.resumo-linha{white-space:pre-wrap}
+.resumo-linha{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
 .resumo-vazia{height:10px}
 </style></head><body>
 <div class="resumo-header">REUMATOLOGIA</div>
@@ -2223,6 +2240,7 @@ function salvarDensitometria(){
 popularListasComuns();
 renderPatientList();
 updateExportStatus();
+document.getElementById('f-nasc').max = new Date().toISOString().slice(0,10);
 
 document.getElementById('page-ficha').addEventListener('input', ()=>{ formDirty = true; });
 window.addEventListener('beforeunload', function(e){
