@@ -1782,9 +1782,14 @@ const CATEGORIES = {
   tecnologia:  { label: '⚙️ Tecnologia & Cultura', key: 'tecnologia' },
 };
 
-// Persists across games within the session so questions never repeat
+// Persists across page reloads via localStorage so questions never repeat
 // until the entire pool of selected categories is exhausted
-const usedQuestionIds = new Set();
+const LS_KEY = 'nem-a-pato-used-ids';
+const usedQuestionIds = new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]'));
+
+function saveUsedIds() {
+  localStorage.setItem(LS_KEY, JSON.stringify([...usedQuestionIds]));
+}
 
 // ─── STATE ──────────────────────────────────────────────────────────────────
 
@@ -1906,6 +1911,13 @@ function renderSetup() {
   startBtn.onclick = startGame;
   frag.appendChild(startBtn);
 
+  const usedCount = usedQuestionIds.size;
+  if (usedCount > 0) {
+    const resetBtn = el('p', {style: 'text-align:center;margin-top:12px;font-size:0.78rem;color:var(--muted)'});
+    resetBtn.innerHTML = `${usedCount} pergunta(s) já usadas neste dispositivo. <button onclick="usedQuestionIds.clear();saveUsedIds();render()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.78rem;text-decoration:underline;padding:0">Resetar histórico</button>`;
+    frag.appendChild(resetBtn);
+  }
+
   return frag;
 }
 
@@ -1935,6 +1947,7 @@ function startGame() {
   state.players = names.map(name => ({ name, score: 0 }));
   const chosen = shuffle(fresh).slice(0, rounds);
   chosen.forEach(q => usedQuestionIds.add(q.id));
+  saveUsedIds();
   state.questions = chosen;
   state.totalRounds = rounds;
   state.currentQ = 0;
