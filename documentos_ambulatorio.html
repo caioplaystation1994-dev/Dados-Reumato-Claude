@@ -294,6 +294,54 @@ body{padding-bottom:64px}
   .svitais-panel,.comor-panel{display:none!important}
 }
 
+/* ── Receituário Especial ── */
+.rec-esp-wrapper{padding:0;background:transparent;box-shadow:none;border:none}
+.rec-via{background:#fff;border:1px solid #e8eef7;border-radius:12px;padding:28px 36px;margin-bottom:0;box-shadow:0 2px 12px rgba(26,86,160,.07)}
+.rec-esp-header{display:flex;align-items:center;gap:14px;padding-bottom:12px;margin-bottom:14px;position:relative}
+.rec-esp-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:#b7791f;box-shadow:0 3px 0 0 #fffbeb}
+.rec-esp-logo{flex-shrink:0;width:90px}
+.rec-esp-logo img{max-height:46px;max-width:90px;object-fit:contain}
+.rec-esp-titulo-bloco{flex:1}
+.rec-esp-titulo{font-family:Georgia,'Times New Roman',serif;font-size:16px;font-weight:700;color:#92400e;letter-spacing:.3px}
+.rec-esp-subtitulo{font-size:10px;color:#b7791f;margin-top:2px;letter-spacing:.3px}
+.rec-esp-dados-medico{font-size:11px;color:#4a5568;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;padding:6px 10px;background:#fffbeb;border-radius:6px;border:1px solid #fbd38d}
+.rec-esp-paciente{margin-bottom:14px}
+.rec-esp-campo-row{display:flex;gap:12px;margin-bottom:8px}
+.rec-esp-campo{display:flex;flex-direction:column;gap:3px}
+.rec-esp-campo label{font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.4px}
+.rec-esp-campo input{border:1px solid #fbd38d;border-radius:6px;padding:7px 10px;font-size:13px;background:#fffdf7;font-family:inherit;transition:border-color .15s}
+.rec-esp-campo input:focus{outline:none;border-color:#b7791f;background:#fff}
+.rec-esp-campo.flex1{flex:1}.rec-esp-campo.flex2{flex:2}.rec-esp-campo.flex3{flex:3}
+.rec-esp-val{font-size:13px;min-height:22px;padding:4px 0;border-bottom:1px solid #fbd38d;color:#1a202c}
+.rec-esp-rx-label{font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.6px;padding:4px 0 4px 10px;border-left:3px solid #b7791f;background:linear-gradient(90deg,rgba(183,121,31,.07),transparent);border-radius:0 4px 4px 0;margin-bottom:8px}
+.rec-esp-atalhos{margin-bottom:10px}
+.rec-esp-prescricao{width:100%;min-height:120px;border:1px solid #fbd38d;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.9;font-family:inherit;background:#fffdf7;resize:none;overflow-y:hidden;transition:border-color .15s}
+.rec-esp-prescricao:focus{outline:none;border-color:#b7791f;background:#fff}
+.rec-esp-via2-texto{font-size:14px;line-height:1.9;min-height:80px;padding:8px 0;white-space:pre-wrap;color:#1a202c;border-bottom:1px solid #fbd38d}
+.rec-esp-corte{text-align:center;color:#b7791f;font-size:12px;padding:10px 0;letter-spacing:2px;user-select:none}
+.rec-esp-via-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-align:right;margin-top:12px;padding:4px 8px;border-radius:4px;display:inline-block;float:right}
+.rec-esp-via1-label{background:#fef3c7;color:#92400e}
+.rec-esp-via2-label{background:#dbeafe;color:#1a56a0}
+.rec-esp-assinatura{margin-top:36px;clear:both}
+.rec-esp-ass-linha{border-top:1px solid #4a5568;padding-top:6px;width:260px;font-size:11px;text-align:center;color:#4a5568;margin:0 auto}
+
+@media print{
+  /* Rec. especial: layout de 2 vias em uma A4 */
+  #receita-especial .doc-wrapper,#receita-especial.page{display:block!important}
+  .rec-esp-wrapper{padding:0;box-shadow:none;border:none;background:transparent}
+  .rec-via{padding:14px 20px;border:none;border-radius:0;box-shadow:none;page-break-inside:avoid;margin:0}
+  .rec-esp-corte{display:block!important;border-top:1px dashed #aaa;padding:3px 0;font-size:10px;color:#999;letter-spacing:2px;margin:0}
+  .rec-esp-atalhos{display:none!important}
+  .rec-esp-campo input{border:none;border-bottom:1px solid #ccc;border-radius:0;background:transparent;padding:2px 0;font-size:12px}
+  .rec-esp-prescricao{border:none;background:transparent;padding:4px 0;font-size:13px;min-height:unset}
+  .rec-esp-via-label{font-size:9px}
+  .rec-esp-dados-medico{background:none;border:none;padding:2px 0;font-size:10px}
+  .rec-esp-titulo{font-size:13px}
+  .rec-esp-subtitulo{font-size:9px}
+  .rec-esp-header::after{box-shadow:none}
+  .action-bar{display:none!important}
+}
+
 /* ── Sinais Vitais & Função Renal ── */
 .svitais-panel{background:#f0f9ff;border:1.5px solid #90cdf4;border-radius:10px;padding:12px 16px;margin-bottom:12px}
 .svitais-titulo{font-size:11px;font-weight:700;color:#2b6cb0;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
@@ -362,6 +410,7 @@ body{padding-bottom:64px}
     <nav>
       <button class="active" onclick="showPage('relatorio',this)">Relatório Médico</button>
       <button onclick="showPage('receita',this)">Receita Médica</button>
+      <button onclick="showPage('receita-especial',this)">Rec. Especial</button>
       <button onclick="showPage('exames-lab',this)">Exames Laboratoriais</button>
       <button onclick="showPage('exames-img',this)">Exames de Imagem</button>
       <button onclick="novoPaciente()" style="background:rgba(231,76,60,.7);border:1px solid rgba(231,76,60,.9);margin-left:14px" title="Limpar todos os campos do paciente">↺ Novo paciente</button>
@@ -786,6 +835,22 @@ body{padding-bottom:64px}
           <button class="btn-atalho" onclick="addMedRx('Tandrilax')">Tandrilax</button>
         </div>
       </div>
+      <div class="atalho-grupo" style="border-color:#f6ad55;background:#fffbeb">
+        <span class="atalho-titulo" style="color:#b7791f">⚠ Controle Especial (2 vias) — use o Rec. Especial</span>
+        <div class="atalho-btns">
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Pregabalina')">Pregabalina</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Gabapentina')">Gabapentina</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Amitriptilina')">Amitriptilina</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Nortriptilina')">Nortriptilina</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Duloxetina')">Duloxetina</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Fluoxetina')">Fluoxetina</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Sertralina')">Sertralina</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Quetiapina')">Quetiapina</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Clonazepam')">Clonazepam</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Alprazolam')">Alprazolam</button>
+          <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Zolpidem')">Zolpidem</button>
+        </div>
+      </div>
     </div>
 
     <div class="section-label">Prescrição</div>
@@ -829,6 +894,146 @@ body{padding-bottom:64px}
     <button class="btn-clear" onclick="clearForm('receita')">Limpar</button>
     <button class="btn-print" onclick="printDoc('receita')">🖨️ Imprimir</button>
     <button class="btn-word" onclick="gerarWordReceita()">⬇️ Baixar Word (.docx)</button>
+  </div>
+</div>
+
+<!-- ======================== RECEITUÁRIO ESPECIAL ======================== -->
+<div id="receita-especial" class="page">
+  <div class="doc-wrapper rec-esp-wrapper">
+
+    <!-- VIA 1 -->
+    <div class="rec-via" id="rec-esp-via1">
+      <div class="rec-esp-header">
+        <div class="rec-esp-logo" id="dhl-recesp"><img class="doc-logo" src="" alt=""></div>
+        <div class="rec-esp-titulo-bloco">
+          <div class="rec-esp-titulo">RECEITUÁRIO DE CONTROLE ESPECIAL</div>
+          <div class="rec-esp-subtitulo">Portaria SVS/MS nº 344/98 · Duas vias obrigatórias</div>
+        </div>
+      </div>
+
+      <div class="rec-esp-dados-medico" id="rec-esp-dados-medico-1">
+        <span id="re-med-nome-1"></span>
+        <span id="re-med-crm-1"></span>
+        <span>Especialidade: Reumatologia</span>
+      </div>
+
+      <div class="rec-esp-paciente">
+        <div class="rec-esp-campo-row">
+          <div class="rec-esp-campo flex3">
+            <label>Paciente</label>
+            <input type="text" id="re-pac-nome" oninput="sincRecEsp()" placeholder="Nome completo">
+          </div>
+          <div class="rec-esp-campo flex1">
+            <label>Data</label>
+            <input type="date" id="re-data" oninput="sincRecEsp()">
+          </div>
+        </div>
+        <div class="rec-esp-campo-row">
+          <div class="rec-esp-campo flex2">
+            <label>Endereço</label>
+            <input type="text" id="re-endereco" oninput="sincRecEsp()" placeholder="Rua, número, bairro, cidade">
+          </div>
+          <div class="rec-esp-campo flex1">
+            <label>CPF / RG</label>
+            <input type="text" id="re-cpf" oninput="sincRecEsp()" placeholder="000.000.000-00">
+          </div>
+        </div>
+      </div>
+
+      <div class="rec-esp-rx-label">Prescrição</div>
+      <div class="rec-esp-atalhos no-print">
+        <div class="atalho-grupo" style="border-color:#f6ad55;background:#fffbeb">
+          <span class="atalho-titulo" style="color:#b7791f">Neuromoduladores / Dor Crônica</span>
+          <div class="atalho-btns">
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Pregabalina')">Pregabalina</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Gabapentina')">Gabapentina</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Amitriptilina')">Amitriptilina</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Nortriptilina')">Nortriptilina</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Duloxetina')">Duloxetina</button>
+          </div>
+        </div>
+        <div class="atalho-grupo" style="border-color:#f6ad55;background:#fffbeb;margin-top:6px">
+          <span class="atalho-titulo" style="color:#b7791f">Antidepressivos / Ansiolíticos / Hipnóticos</span>
+          <div class="atalho-btns">
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Fluoxetina')">Fluoxetina</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Sertralina')">Sertralina</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Quetiapina')">Quetiapina</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Clonazepam')">Clonazepam</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Alprazolam')">Alprazolam</button>
+            <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedEsp('Zolpidem')">Zolpidem</button>
+          </div>
+        </div>
+      </div>
+      <textarea id="re-prescricao" class="rec-esp-prescricao" oninput="sincRecEsp();autoResizeTA(this)" placeholder="1. Pregabalina 75mg&#10;&#10;Tomar 1 cápsula, 2x ao dia"></textarea>
+
+      <div class="rec-esp-via-label rec-esp-via1-label">1ª VIA — FARMÁCIA</div>
+      <div class="rec-esp-assinatura">
+        <div class="rec-esp-ass-linha">
+          <span id="re-ass-nome-1"></span><br>
+          <span id="re-ass-crm-1"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linha de corte -->
+    <div class="rec-esp-corte no-print-hide">✂ · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·</div>
+
+    <!-- VIA 2 (espelho — preenchida automaticamente) -->
+    <div class="rec-via" id="rec-esp-via2">
+      <div class="rec-esp-header">
+        <div class="rec-esp-logo"><img class="doc-logo rec-logo-2" src="" alt=""></div>
+        <div class="rec-esp-titulo-bloco">
+          <div class="rec-esp-titulo">RECEITUÁRIO DE CONTROLE ESPECIAL</div>
+          <div class="rec-esp-subtitulo">Portaria SVS/MS nº 344/98 · Duas vias obrigatórias</div>
+        </div>
+      </div>
+
+      <div class="rec-esp-dados-medico">
+        <span id="re-med-nome-2"></span>
+        <span id="re-med-crm-2"></span>
+        <span>Especialidade: Reumatologia</span>
+      </div>
+
+      <div class="rec-esp-paciente">
+        <div class="rec-esp-campo-row">
+          <div class="rec-esp-campo flex3">
+            <label>Paciente</label>
+            <div class="rec-esp-val" id="re-pac-nome-2"></div>
+          </div>
+          <div class="rec-esp-campo flex1">
+            <label>Data</label>
+            <div class="rec-esp-val" id="re-data-2"></div>
+          </div>
+        </div>
+        <div class="rec-esp-campo-row">
+          <div class="rec-esp-campo flex2">
+            <label>Endereço</label>
+            <div class="rec-esp-val" id="re-endereco-2"></div>
+          </div>
+          <div class="rec-esp-campo flex1">
+            <label>CPF / RG</label>
+            <div class="rec-esp-val" id="re-cpf-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rec-esp-rx-label">Prescrição</div>
+      <div class="rec-esp-via2-texto" id="re-prescricao-2"></div>
+
+      <div class="rec-esp-via-label rec-esp-via2-label">2ª VIA — PACIENTE</div>
+      <div class="rec-esp-assinatura">
+        <div class="rec-esp-ass-linha">
+          <span id="re-ass-nome-2"></span><br>
+          <span id="re-ass-crm-2"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="action-bar no-print">
+    <button class="btn-clear" onclick="limparRecEsp()">🗑 Limpar</button>
+    <button class="btn-print" onclick="imprimirRecEsp()">🖨 Imprimir (2 vias)</button>
   </div>
 </div>
 
@@ -1592,6 +1797,18 @@ const MED_RX = {
   'Ixequizumabe':        { via: 'sc', forma: '80mg/mL',      instrucao: 'Aplicar 2 injeções subcutâneas (160mg) na semana 0, depois 1 injeção a cada 2 semanas (por 8 semanas), depois 1 injeção por mês' },
   'Ustequinumabe':       { via: 'sc', forma: '45mg',         instrucao: 'Aplicar 1 injeção subcutânea nas semanas 0 e 4, depois a cada 12 semanas' },
   'Belimumabe':          { via: 'sc', forma: '200mg/mL',     instrucao: 'Aplicar 1 injeção subcutânea, 1x por semana' },
+  // Controle Especial — Neuromoduladores / Psiquiátricos (Lista C1 / B1)
+  'Pregabalina':         { via: 'oral_continuo', forma: '75mg',       instrucao: 'Tomar 1 cápsula, 2x ao dia' },
+  'Gabapentina':         { via: 'oral_continuo', forma: '300mg',      instrucao: 'Tomar 1 cápsula, 3x ao dia' },
+  'Amitriptilina':       { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia, à noite' },
+  'Nortriptilina':       { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia, à noite' },
+  'Duloxetina':          { via: 'oral_continuo', forma: '60mg',       instrucao: 'Tomar 1 cápsula, 1x ao dia, pela manhã' },
+  'Fluoxetina':          { via: 'oral_continuo', forma: '20mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia, pela manhã' },
+  'Sertralina':          { via: 'oral_continuo', forma: '50mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  'Quetiapina':          { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia, à noite' },
+  'Clonazepam':          { via: 'oral_continuo', forma: '0,5mg',      instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  'Alprazolam':          { via: 'oral_continuo', forma: '0,25mg',     instrucao: 'Tomar 1 comprimido, ___ x ao dia' },
+  'Zolpidem':            { via: 'oral_continuo', forma: '10mg',       instrucao: 'Tomar 1 comprimido, 30 minutos antes de dormir' },
   // bDMARDs endovenosos
   'Infliximabe':         { via: 'ev', forma: '___mg/kg',     instrucao: 'Aplicar 1 infusão endovenosa nas semanas 0, 2 e 6, depois a cada 8 semanas' },
   'Abatacepte':          { via: 'ev', forma: '___mg',        instrucao: 'Aplicar 1 infusão endovenosa nas semanas 0, 2 e 4, depois mensalmente' },
@@ -1641,6 +1858,77 @@ function addMedRx(nome) {
 }
 
 function addMedNome(nome) { addMedRx(nome); }
+
+// ─── Receituário Especial ──────────────────────────────────────────────────────
+function addMedEsp(nome) {
+  const ta = document.getElementById('re-prescricao');
+  const med = MED_RX[nome];
+  const textoAtual = ta.value;
+  const n = textoAtual.split('\n').filter(l => /^\d+\./.test(l.trim())).length + 1;
+  const nomeForma = nome + (med?.forma ? ' ' + med.forma : '');
+  const instrucao = med?.instrucao || 'Tomar ___';
+  const novoBloco = (textoAtual.trim() ? '\n\n' : '') + n + '. ' + nomeForma + '\n\n' + instrucao;
+  ta.value = textoAtual.trimEnd() + novoBloco;
+  autoResizeTA(ta);
+  ta.focus();
+  sincRecEsp();
+}
+
+function sincRecEsp() {
+  const medico = (document.getElementById('g-medico')?.value || '').trim();
+  const crm    = (document.getElementById('g-crm')?.value    || '').trim();
+  const crmTxt = crm ? 'CRM ' + crm : '';
+
+  // Dados médico
+  ['1','2'].forEach(v => {
+    const n = document.getElementById('re-med-nome-' + v);
+    const c = document.getElementById('re-med-crm-'  + v);
+    const an = document.getElementById('re-ass-nome-' + v);
+    const ac = document.getElementById('re-ass-crm-'  + v);
+    if (n)  n.textContent  = medico;
+    if (c)  c.textContent  = crmTxt;
+    if (an) an.textContent = medico;
+    if (ac) ac.textContent = crmTxt;
+  });
+
+  // Dados paciente → via 2
+  const nomePac   = document.getElementById('re-pac-nome')?.value  || '';
+  const data      = document.getElementById('re-data')?.value      || '';
+  const endereco  = document.getElementById('re-endereco')?.value  || '';
+  const cpf       = document.getElementById('re-cpf')?.value       || '';
+  const prescr    = document.getElementById('re-prescricao')?.value || '';
+
+  const fmtD = d => { if (!d) return ''; const [y,m,dd] = d.split('-'); return `${dd}/${m}/${y}`; };
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('re-pac-nome-2', nomePac);
+  set('re-data-2',     fmtD(data));
+  set('re-endereco-2', endereco);
+  set('re-cpf-2',      cpf);
+  set('re-prescricao-2', prescr);
+
+  // Propagar logo para via 2
+  const logo1 = document.querySelector('#dhl-recesp img');
+  const logo2 = document.querySelector('.rec-logo-2');
+  if (logo1 && logo2) logo2.src = logo1.src;
+}
+
+function limparRecEsp() {
+  ['re-pac-nome','re-data','re-endereco','re-cpf','re-prescricao'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; autoResizeTA(el); }
+  });
+  sincRecEsp();
+}
+
+function imprimirRecEsp() {
+  sincRecEsp();
+  // Marca só a aba de receituário especial para impressão
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('print-selected'));
+  document.getElementById('receita-especial').classList.add('print-selected');
+  window.print();
+  document.getElementById('receita-especial').classList.remove('print-selected');
+}
 
 // ─── Helpers Word ──────────────────────────────────────────────────────────────
 function v(id) { return (document.getElementById(id)?.value || '').trim(); }
@@ -2002,6 +2290,7 @@ function sincMedico() {
     if (mEl && mEl !== document.activeElement) mEl.value = medico;
     if (cEl && cEl !== document.activeElement) cEl.value = crm;
   });
+  sincRecEsp();
   localStorage.setItem('g-medico', medico);
   localStorage.setItem('g-crm', crm);
   // Update print-rodape in all docs
