@@ -1541,57 +1541,81 @@ function printDoc(pageId) {
 }
 
 // ─── Posologias habituais dos atalhos de receita ──────────────────────────────
+// via: 'oral_continuo' | 'oral_crise' | 'sc' | 'ev'
+// forma: dose da apresentação (ex: '2,5mg'); instrucao: texto para o paciente
 const MED_RX = {
   // csDMARDs
-  'Metotrexato':         'Metotrexato 15 mg (comprimidos de 2,5 mg) – 6 comprimidos 1x/semana, via oral, em dose única semanal',
-  'Leflunomida':         'Leflunomida 20 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
-  'Hidroxicloroquina':   'Hidroxicloroquina 400 mg – 2 comprimidos de 200 mg 1x/dia, via oral, uso contínuo',
-  'Sulfassalazina':      'Sulfassalazina 500 mg – 1 comprimido 2x/dia, via oral (aumentar progressivamente até 3 g/dia conforme tolerância)',
-  'Azatioprina':         'Azatioprina 50 mg – ___ comprimidos 1x/dia, via oral (dose-alvo: 2–3 mg/kg/dia)',
-  'Mofetilmicofenolato': 'Mofetilmicofenolato 500 mg – 3 comprimidos 2x/dia, via oral (3 g/dia), uso contínuo',
-  'Ciclofosfamida':      'Ciclofosfamida ___ mg/m² – 1 infusão EV mensal conforme protocolo, sob supervisão médica',
-  'Clorambucila':        'Clorambucila 2 mg – ___ comprimidos 1x/dia, via oral (0,1 mg/kg/dia)',
+  'Metotrexato':         { via: 'oral_continuo', forma: '2,5mg',      instrucao: 'Tomar 6 comprimidos, 1x por semana, sempre no mesmo dia' },
+  'Leflunomida':         { via: 'oral_continuo', forma: '20mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  'Hidroxicloroquina':   { via: 'oral_continuo', forma: '200mg',      instrucao: 'Tomar 2 comprimidos, 1x ao dia' },
+  'Sulfassalazina':      { via: 'oral_continuo', forma: '500mg',      instrucao: 'Tomar 1 comprimido, 2x ao dia' },
+  'Azatioprina':         { via: 'oral_continuo', forma: '50mg',       instrucao: 'Tomar ___ comprimidos, 1x ao dia' },
+  'Mofetilmicofenolato': { via: 'oral_continuo', forma: '500mg',      instrucao: 'Tomar 3 comprimidos, 2x ao dia' },
+  'Clorambucila':        { via: 'oral_continuo', forma: '2mg',        instrucao: 'Tomar ___ comprimidos, 1x ao dia' },
   // Corticoides
-  'Prednisona':          'Prednisona ___ mg – 1x/dia, via oral, pela manhã, com alimentação',
-  'Metilprednisolona':   'Metilprednisolona ___ mg – 1x/dia, via oral, pela manhã, com alimentação',
-  // bDMARDs anti-TNF
-  'Adalimumabe':         'Adalimumabe 40 mg/0,8 mL – 1 injeção subcutânea a cada 2 semanas',
-  'Etanercepte':         'Etanercepte 50 mg/mL – 1 injeção subcutânea 1x/semana',
-  'Certolizumabe':       'Certolizumabe 200 mg/mL – 2 injeções subcutâneas (400 mg) a cada 2 semanas (indução 0/2/4 sem.), depois 200 mg a cada 2 semanas',
-  'Golimumabe':          'Golimumabe 50 mg/0,5 mL – 1 injeção subcutânea 1x/mês',
-  'Infliximabe':         'Infliximabe ___ mg/kg EV (dose usual: 3–5 mg/kg) – nas semanas 0, 2, 6, depois a cada 8 semanas',
-  // bDMARDs outros mecanismos
-  'Abatacepte':          'Abatacepte ___ mg EV (< 60 kg: 500 mg; 60–100 kg: 750 mg; > 100 kg: 1 g) – nas semanas 0, 2, 4, depois mensalmente',
-  'Rituximabe':          'Rituximabe 1.000 mg EV – 2 infusões com intervalo de 15 dias; repetir ciclo a cada 6 meses conforme atividade',
-  'Tocilizumabe':        'Tocilizumabe 162 mg/0,9 mL – 1 injeção subcutânea a cada 2 semanas (ou 1x/semana em monoterapia)',
-  'Secuquinumabe':       'Secuquinumabe 300 mg/2 mL – 1 injeção subcutânea 1x/semana nas semanas 0–4, depois 1x/mês',
-  'Ixequizumabe':        'Ixequizumabe 80 mg/mL – 1 injeção subcutânea na semana 0 (160 mg), depois a cada 2 semanas (8 sem.), depois 1x/mês',
-  'Ustequinumabe':       'Ustequinumabe 45 mg – 1 injeção subcutânea na semana 0 e na semana 4, depois a cada 12 semanas',
-  'Belimumabe':          'Belimumabe 200 mg/mL – 1 injeção subcutânea 1x/semana',
+  'Prednisona':          { via: 'oral_continuo', forma: '___mg',      instrucao: 'Tomar ___ comprimido(s), 1x ao dia, pela manhã' },
+  'Metilprednisolona':   { via: 'oral_continuo', forma: '___mg',      instrucao: 'Tomar ___ comprimido(s), 1x ao dia, pela manhã' },
   // tsDMARDs inibidores JAK
-  'Tofacitinibe':        'Tofacitinibe 5 mg – 1 comprimido 2x/dia, via oral, uso contínuo',
-  'Baricitinibe':        'Baricitinibe 4 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
-  'Upadacitinibe':       'Upadacitinibe 15 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
-  'Filgotinibe':         'Filgotinibe 200 mg – 1 comprimido 1x/dia, via oral, uso contínuo',
-  // AINEs / outros
-  'Naproxeno':           'Naproxeno 500 mg – 1 comprimido 2x/dia, via oral, com refeições, durante crise',
-  'Meloxicam':           'Meloxicam 15 mg – 1 comprimido 1x/dia, via oral, com refeições, durante crise',
-  'Celecoxibe':          'Celecoxibe 200 mg – 1 cápsula 1–2x/dia, via oral, com refeições',
-  'Colchicina':          'Colchicina 0,5 mg – 2 comprimidos na 1ª hora, depois 1 comprimido a cada 1 hora até melhora (máx 6 mg/dia)',
-  'Alopurinol':          'Alopurinol 300 mg – 1 comprimido 1x/dia, via oral, após refeição (ajustar conforme uricemia alvo < 6 mg/dL)',
-  'Febuxostate':         'Febuxostate 80 mg – 1 comprimido 1x/dia, via oral',
-  'Tandrilax':           'Tandrilax – 1 comprimido 3x/dia, via oral, por 10 dias',
+  'Tofacitinibe':        { via: 'oral_continuo', forma: '5mg',        instrucao: 'Tomar 1 comprimido, 2x ao dia' },
+  'Baricitinibe':        { via: 'oral_continuo', forma: '4mg',        instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  'Upadacitinibe':       { via: 'oral_continuo', forma: '15mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  'Filgotinibe':         { via: 'oral_continuo', forma: '200mg',      instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  // Uricostáticos
+  'Alopurinol':          { via: 'oral_continuo', forma: '300mg',      instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  'Febuxostate':         { via: 'oral_continuo', forma: '80mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  // AINEs / uso em crise
+  'Naproxeno':           { via: 'oral_crise',    forma: '500mg',      instrucao: 'Tomar 1 comprimido, 2x ao dia' },
+  'Meloxicam':           { via: 'oral_crise',    forma: '15mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia' },
+  'Celecoxibe':          { via: 'oral_crise',    forma: '200mg',      instrucao: 'Tomar 1 cápsula, 1x ao dia' },
+  'Colchicina':          { via: 'oral_crise',    forma: '0,5mg',      instrucao: 'Tomar 2 comprimidos na 1ª hora, depois 1 comprimido a cada 1 hora até melhora (máx. 12 comprimidos por dia)' },
+  'Tandrilax':           { via: 'oral_crise',    forma: '',           instrucao: 'Tomar 1 comprimido, 3x ao dia, por 10 dias' },
+  // bDMARDs subcutâneos
+  'Adalimumabe':         { via: 'sc', forma: '40mg/0,8mL',   instrucao: 'Aplicar 1 injeção subcutânea, a cada 2 semanas' },
+  'Etanercepte':         { via: 'sc', forma: '50mg/mL',      instrucao: 'Aplicar 1 injeção subcutânea, 1x por semana' },
+  'Certolizumabe':       { via: 'sc', forma: '200mg/mL',     instrucao: 'Aplicar 2 injeções subcutâneas (400mg) a cada 2 semanas' },
+  'Golimumabe':          { via: 'sc', forma: '50mg/0,5mL',   instrucao: 'Aplicar 1 injeção subcutânea, 1x por mês' },
+  'Tocilizumabe':        { via: 'sc', forma: '162mg/0,9mL',  instrucao: 'Aplicar 1 injeção subcutânea, a cada 2 semanas' },
+  'Secuquinumabe':       { via: 'sc', forma: '300mg/2mL',    instrucao: 'Aplicar 1 injeção subcutânea, 1x por semana (semanas 0 a 4), depois 1x por mês' },
+  'Ixequizumabe':        { via: 'sc', forma: '80mg/mL',      instrucao: 'Aplicar 2 injeções subcutâneas (160mg) na semana 0, depois 1 injeção a cada 2 semanas (por 8 semanas), depois 1 injeção por mês' },
+  'Ustequinumabe':       { via: 'sc', forma: '45mg',         instrucao: 'Aplicar 1 injeção subcutânea nas semanas 0 e 4, depois a cada 12 semanas' },
+  'Belimumabe':          { via: 'sc', forma: '200mg/mL',     instrucao: 'Aplicar 1 injeção subcutânea, 1x por semana' },
+  // bDMARDs endovenosos
+  'Infliximabe':         { via: 'ev', forma: '___mg/kg',     instrucao: 'Aplicar 1 infusão endovenosa nas semanas 0, 2 e 6, depois a cada 8 semanas' },
+  'Abatacepte':          { via: 'ev', forma: '___mg',        instrucao: 'Aplicar 1 infusão endovenosa nas semanas 0, 2 e 4, depois mensalmente' },
+  'Rituximabe':          { via: 'ev', forma: '1.000mg',      instrucao: 'Aplicar 2 infusões endovenosas com intervalo de 15 dias; repetir ciclo a cada 6 meses' },
+  'Ciclofosfamida':      { via: 'ev', forma: '___mg/m²',    instrucao: 'Aplicar 1 infusão endovenosa mensal, conforme protocolo' },
+};
+
+const VIA_LABELS = {
+  oral_continuo: 'USO ORAL CONTÍNUO',
+  oral_crise:    'USO ORAL (CONFORME NECESSÁRIO)',
+  sc:            'USO SUBCUTÂNEO',
+  ev:            'USO ENDOVENOSO',
 };
 
 // ─── Medicamentos ──────────────────────────────────────────────────────────────
 function addMedRx(nome) {
   const ta = document.getElementById('rx-prescricao');
-  const texto = ta.value;
-  // Conta apenas linhas numeradas para determinar o próximo número
-  const linhasNumeradas = texto.split('\n').filter(l => /^\d+\./.test(l.trim()));
+  const med = MED_RX[nome];
+  const textoAtual = ta.value;
+  const linhasNumeradas = textoAtual.split('\n').filter(l => /^\d+\./.test(l.trim()));
   const n = linhasNumeradas.length + 1;
-  const linha = MED_RX[nome] ? n + '. ' + MED_RX[nome] : n + '. ' + nome + ' – ';
-  ta.value = (texto.trim() ? texto.trimEnd() + '\n' : '') + linha;
+
+  let novoBloco = '';
+
+  if (!med) {
+    // fallback sem template
+    novoBloco = (textoAtual.trim() ? '\n\n' : '') + n + '. ' + nome + ' ___\n\nTomar ___';
+  } else {
+    const header = VIA_LABELS[med.via] || '';
+    const headerJaPresente = header && textoAtual.includes(header);
+    const prefixo = textoAtual.trim() ? '\n\n' : '';
+    const cabecalho = (header && !headerJaPresente) ? header + '\n\n' : '';
+    const nomeForma = nome + (med.forma ? ' ' + med.forma : '');
+    novoBloco = prefixo + cabecalho + n + '. ' + nomeForma + '\n\n' + med.instrucao;
+  }
+
+  ta.value = textoAtual.trimEnd() + novoBloco;
   autoResizeTA(ta);
   ta.focus();
   ta.setSelectionRange(ta.value.length, ta.value.length);
