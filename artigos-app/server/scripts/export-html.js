@@ -121,6 +121,11 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
 
 .ask-box{display:flex;gap:10px}
 .ask-box input{flex:1;border:1px solid #cbd5e0;border-radius:8px;padding:10px 14px;font-size:13px}
+.ask-panel{margin-top:4px}
+.smart-result-item{cursor:pointer;transition:.15s}
+.smart-result-item:hover{opacity:.85}
+.smart-chunk-heading{font-size:11px;font-weight:700;text-transform:uppercase;color:#4a5568;margin:8px 0 4px}
+.smart-chunk-text{margin-bottom:4px}
 
 .ask-history{margin-top:20px;display:flex;flex-direction:column;gap:16px}
 .qa-item{border-radius:8px;overflow:hidden}
@@ -278,23 +283,39 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
 
   <section id="tab-ask" class="tab">
     <div class="card">
-      <h2>Pergunte sobre os artigos</h2>
-      <p class="hint">A resposta é gerada com IA (Claude, Anthropic) com base apenas nos artigos desta biblioteca. Sua chave de API fica salva só no seu navegador (localStorage) e é usada apenas para chamar a API da Anthropic diretamente do seu computador.</p>
-
-      <div id="apiKeyEntry" class="apikey-box">
-        <input type="password" id="apiKeyInput" placeholder="Cole sua chave de API da Anthropic (sk-ant-...)">
-        <button id="saveKeyBtn" class="btn-primary">Salvar chave</button>
-      </div>
-      <div id="apiKeySaved" class="apikey-saved" style="display:none">
-        <span>✓ Chave de API salva neste navegador.</span>
-        <button id="changeKeyBtn" class="btn-secondary">Trocar chave</button>
+      <div class="view-toggle">
+        <button type="button" id="modeSmartBtn" class="view-btn active">🔍 Busca Inteligente (sem IA)</button>
+        <button type="button" id="modeAiBtn" class="view-btn">🤖 Perguntar com IA (Claude)</button>
       </div>
 
-      <div class="ask-box">
-        <input type="text" id="questionInput" placeholder="Ex: Quais artigos falam sobre adesão ao tratamento na artrite reumatoide?">
-        <button id="askBtn" class="btn-primary">Perguntar</button>
+      <div id="smartSearchPanel" class="ask-panel">
+        <p class="hint">Localiza os trechos mais relevantes da sua biblioteca para a pergunta, sem usar IA nem chave de API — funciona totalmente offline, direto no seu navegador.</p>
+        <div class="ask-box">
+          <input type="text" id="smartQuestionInput" placeholder="Ex: Quais artigos falam sobre adesão ao tratamento na artrite reumatoide?">
+          <button id="smartSearchBtn" class="btn-primary">Buscar</button>
+        </div>
+        <div id="smartResults" class="ask-history"></div>
       </div>
-      <div id="askHistory" class="ask-history"></div>
+
+      <div id="aiPanel" class="ask-panel" style="display:none">
+        <h2>Pergunte sobre os artigos</h2>
+        <p class="hint">A resposta é gerada com IA (Claude, Anthropic) com base apenas nos artigos desta biblioteca. Sua chave de API fica salva só no seu navegador (localStorage) e é usada apenas para chamar a API da Anthropic diretamente do seu computador.</p>
+
+        <div id="apiKeyEntry" class="apikey-box">
+          <input type="password" id="apiKeyInput" placeholder="Cole sua chave de API da Anthropic (sk-ant-...)">
+          <button id="saveKeyBtn" class="btn-primary">Salvar chave</button>
+        </div>
+        <div id="apiKeySaved" class="apikey-saved" style="display:none">
+          <span>✓ Chave de API salva neste navegador.</span>
+          <button id="changeKeyBtn" class="btn-secondary">Trocar chave</button>
+        </div>
+
+        <div class="ask-box">
+          <input type="text" id="questionInput" placeholder="Ex: Quais artigos falam sobre adesão ao tratamento na artrite reumatoide?">
+          <button id="askBtn" class="btn-primary">Perguntar</button>
+        </div>
+        <div id="askHistory" class="ask-history"></div>
+      </div>
     </div>
   </section>
 </main>
@@ -1074,8 +1095,156 @@ document.getElementById('changeKeyBtn').addEventListener('click', () => {
 
 refreshApiKeyUi();
 
+// ---------- Modo de pergunta: alternância Busca Inteligente / IA ----------
+const modeSmartBtn = document.getElementById('modeSmartBtn');
+const modeAiBtn = document.getElementById('modeAiBtn');
+const smartSearchPanel = document.getElementById('smartSearchPanel');
+const aiPanel = document.getElementById('aiPanel');
+
+modeSmartBtn.addEventListener('click', () => {
+  modeSmartBtn.classList.add('active');
+  modeAiBtn.classList.remove('active');
+  smartSearchPanel.style.display = 'block';
+  aiPanel.style.display = 'none';
+});
+modeAiBtn.addEventListener('click', () => {
+  modeAiBtn.classList.add('active');
+  modeSmartBtn.classList.remove('active');
+  aiPanel.style.display = 'block';
+  smartSearchPanel.style.display = 'none';
+});
+
 // ---------- Ask ----------
 const STOPWORDS = new Set(['que','qual','quais','como','para','com','uma','um','dos','das','the','and','sobre','existe','existem','tem','foi','sao','ele','ela','isso','esse','essa','este','esta','nos','mais']);
+
+// ---------- Busca Inteligente (sem IA, 100% local) ----------
+function tokenizeQuery(question) {
+  const words = normalizeText(question).match(/[a-z0-9]{3,}/g) || [];
+  return [...new Set(words.filter((w) => !STOPWORDS.has(w)))];
+}
+
+function countOccurrences(haystack, term) {
+  if (!term) return 0;
+  let count = 0;
+  let idx = 0;
+  while ((idx = haystack.indexOf(term, idx)) !== -1) {
+    count++;
+    idx += term.length;
+  }
+  return count;
+}
+
+function getArticleChunks(a) {
+  const chunks = [];
+  if (a.detailed_summary) {
+    try {
+      const parsed = JSON.parse(a.detailed_summary);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((s) => {
+          if (s && s.text) chunks.push({ heading: s.heading || '', text: s.text });
+        });
+      }
+    } catch (e) {
+      // ignora resumo estruturado invalido
+    }
+  }
+  if (chunks.length === 0 && a.full_text) {
+    const paras = a.full_text.replace(/\\r\\n/g, '\\n').split(/\\n{2,}/).map((p) => p.trim()).filter((p) => p.length > 40);
+    paras.forEach((p) => chunks.push({ heading: '', text: p }));
+  }
+  if (chunks.length === 0 && a.summary) {
+    chunks.push({ heading: 'Resumo', text: a.summary });
+  }
+  return chunks;
+}
+
+function excerptAround(text, terms, maxLen) {
+  maxLen = maxLen || 400;
+  if (text.length <= maxLen) return text;
+  const normText = normalizeText(text);
+  let firstIdx = -1;
+  terms.forEach((t) => {
+    const idx = normText.indexOf(t);
+    if (idx !== -1 && (firstIdx === -1 || idx < firstIdx)) firstIdx = idx;
+  });
+  if (firstIdx === -1) return text.slice(0, maxLen) + '…';
+  const start = Math.max(0, firstIdx - 120);
+  const end = Math.min(text.length, start + maxLen);
+  return (start > 0 ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : '');
+}
+
+function highlightTerms(safeHtml, terms) {
+  if (!terms || terms.length === 0) return safeHtml;
+  try {
+    const pattern = terms.map(escapeRegex).join('|');
+    const re = new RegExp('(' + pattern + ')', 'gi');
+    return safeHtml.replace(re, '<mark>$1</mark>');
+  } catch (e) {
+    return safeHtml;
+  }
+}
+
+function smartSearchLibrary(question) {
+  const terms = tokenizeQuery(question);
+  if (terms.length === 0) return [];
+
+  const results = [];
+  ARTICLES.forEach((a) => {
+    const chunks = getArticleChunks(a);
+    if (chunks.length === 0) return;
+    const scoredChunks = chunks.map((c) => {
+      const normText = normalizeText(c.text);
+      let score = 0;
+      terms.forEach((t) => { score += countOccurrences(normText, t); });
+      return { heading: c.heading, text: c.text, score };
+    }).filter((c) => c.score > 0);
+    if (scoredChunks.length === 0) return;
+    scoredChunks.sort((x, y) => y.score - x.score);
+    const articleScore = scoredChunks.reduce((sum, c) => sum + c.score, 0);
+    results.push({ article: a, score: articleScore, topChunks: scoredChunks.slice(0, 2) });
+  });
+
+  results.sort((x, y) => y.score - x.score);
+  return results.slice(0, 8);
+}
+
+const smartQuestionInput = document.getElementById('smartQuestionInput');
+const smartSearchBtn = document.getElementById('smartSearchBtn');
+const smartResults = document.getElementById('smartResults');
+
+function renderSmartResults(question) {
+  const results = smartSearchLibrary(question);
+  const terms = tokenizeQuery(question);
+
+  if (results.length === 0) {
+    smartResults.innerHTML = '<div class="empty-state">Nenhum trecho relevante encontrado na biblioteca para essa pergunta.</div>';
+    return;
+  }
+
+  smartResults.innerHTML = results.map((r) => {
+    const a = r.article;
+    const chunksHtml = r.topChunks.map((c) => {
+      const excerpt = excerptAround(c.text, terms);
+      return (c.heading ? '<div class="smart-chunk-heading">' + escapeHtml(c.heading) + '</div>' : '') +
+        '<p class="smart-chunk-text">' + highlightTerms(escapeHtml(excerpt), terms) + '</p>';
+    }).join('');
+    return '<div class="qa-item smart-result-item" data-id="' + a.id + '">' +
+      '<div class="qa-question">' + escapeHtml(a.title || a.original_name) + '</div>' +
+      '<div class="qa-answer">' + chunksHtml + '</div>' +
+    '</div>';
+  }).join('');
+
+  smartResults.querySelectorAll('.smart-result-item').forEach((el) => {
+    el.addEventListener('click', () => openModal(Number(el.dataset.id)));
+  });
+}
+
+smartSearchBtn.addEventListener('click', () => {
+  const q = smartQuestionInput.value.trim();
+  if (!q) return;
+  renderSmartResults(q);
+});
+smartQuestionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') smartSearchBtn.click(); });
 
 function pickRelevantArticles(question) {
   const words = question
