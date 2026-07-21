@@ -1626,6 +1626,11 @@ function addMedRx(nome) {
     const cabecalho = (header && !headerJaPresente) ? header + '\n\n' : '';
     const nomeForma = nome + (med.forma ? ' ' + med.forma : '');
     novoBloco = prefixo + cabecalho + n + '. ' + nomeForma + '\n\n' + med.instrucao;
+
+    // Ácido fólico automático junto com Metotrexato
+    if (nome === 'Metotrexato' && !textoAtual.includes('Ácido fólico')) {
+      novoBloco += '\n\n' + (n + 1) + '. Ácido fólico 5mg\n\nTomar 2 comprimidos, 1x por semana, sempre no dia seguinte do metotrexato';
+    }
   }
 
   ta.value = textoAtual.trimEnd() + novoBloco;
