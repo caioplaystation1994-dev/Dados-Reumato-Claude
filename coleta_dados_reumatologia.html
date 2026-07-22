@@ -332,16 +332,9 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <div class="options-grid" id="q-doenca"></div>
 
     <div style="margin-top:16px">
-      <div class="q-label">10. Data do Diagnóstico</div>
+      <div class="q-label">10. Data do Diagnóstico (mês/ano)</div>
       <div class="field-group">
-        <div class="date-dmy">
-          <input type="number" min="1" max="31" placeholder="DD" id="f-diagnostico-d" oninput="syncDate('f-diagnostico');calcTempoDiag();updateTabBadges()">
-          <span>/</span>
-          <input type="number" min="1" max="12" placeholder="MM" id="f-diagnostico-m" oninput="syncDate('f-diagnostico');calcTempoDiag();updateTabBadges()">
-          <span>/</span>
-          <input type="number" min="1900" max="2100" placeholder="AAAA" id="f-diagnostico-y" oninput="syncDate('f-diagnostico');calcTempoDiag();updateTabBadges()">
-        </div>
-        <input type="hidden" id="f-diagnostico">
+        <input type="month" id="f-diagnostico" style="border:1px solid #cbd5e0;border-radius:6px;padding:7px 10px;font-size:13px;width:160px;background:#fafafa" oninput="onDiagnosticoInput();calcTempoDiag();updateTabBadges()">
         <div id="tempo-diag-badge" style="display:none;margin-top:6px;font-size:12px;color:#718096;font-style:italic"></div>
       </div>
     </div>
@@ -769,6 +762,7 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <button class="filter-btn" data-filter="sem-cqr" onclick="setListFilter('sem-cqr',this)">Sem CQR</button>
     <button class="filter-btn" data-filter="incompletos" onclick="setListFilter('incompletos',this)">Questionários incompletos</button>
     <button class="filter-btn" data-filter="sem-imuno" onclick="setListFilter('sem-imuno',this)">🚫 Sem imunossupressor</button>
+    <button class="filter-btn" data-filter="sem-nascimento" onclick="setListFilter('sem-nascimento',this)">📋 Sem data de nascimento</button>
   </div>
   <div id="list-container"></div>
 </div>
@@ -2508,6 +2502,20 @@ function tempoDiagBucket(years) {
   return TEMPO_DIAG[6];
 }
 
+function onDiagnosticoInput() {
+  // Marca o campo como editado pelo usuário — a partir daqui, o valor salvo
+  // passa a ser o novo (mês/ano), em vez do valor original preservado (que pode ter dia).
+  document.getElementById('f-diagnostico').dataset.touched = 'true';
+}
+
+// Se o paciente já tinha data de diagnóstico com dia (inserida antes da mudança para
+// mês/ano) e o campo não foi tocado nesta edição, preserva o valor original intacto.
+function getDiagnosticoValue() {
+  const el = document.getElementById('f-diagnostico');
+  if (el.dataset.touched !== 'true' && el.dataset.original) return el.dataset.original;
+  return el.value;
+}
+
 function calcTempoDiag() {
   const diag = document.getElementById('f-diagnostico').value;
   const badgeEl = document.getElementById('tempo-diag-badge');
@@ -2560,7 +2568,7 @@ function savePatient() {
     sexo: formData.sexo || '',
     etnia: formData.etnia || '',
     doenca: formData.doenca || '',
-    data_diagnostico: document.getElementById('f-diagnostico').value,
+    data_diagnostico: getDiagnosticoValue(),
     tempo_diag: formData.tempo_diag || '',
     atividade: formData.atividade || '',
     remissao_prednisona: formData.remissao_prednisona || '',
@@ -2685,9 +2693,10 @@ function clearForm() {
   editingRghc = null;
   document.getElementById('f-nome').value = '';
   document.getElementById('f-rghc').value = '';
-  setDateInput('f-nascimento',''); setDateInput('f-inicio-seg',''); setDateInput('f-entrevista',''); setDateInput('f-diagnostico','');
-  document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = ''; document.getElementById('f-diagnostico').value = '';
+  setDateInput('f-nascimento',''); setDateInput('f-inicio-seg',''); setDateInput('f-entrevista','');
+  document.getElementById('f-nascimento').value = ''; document.getElementById('f-inicio-seg').value = ''; document.getElementById('f-entrevista').value = '';
   document.getElementById('f-idade').value = '';
+  { const diagInput = document.getElementById('f-diagnostico'); diagInput.value = ''; delete diagInput.dataset.original; diagInput.dataset.touched = 'false'; }
   document.getElementById('tempo-diag-badge').style.display = 'none';
   ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-intervalo','f-gcs'].forEach(id => {
     document.getElementById(id).value = '';
@@ -2734,6 +2743,7 @@ function applyListFilter(db) {
   if (listFilter === 'sem-cqr')     return db.filter(p => !p.cqr_aderente);
   if (listFilter === 'incompletos')  return db.filter(p => QUESTS_DEF.some(q => p[q.key] === '' || p[q.key] === undefined || p[q.key] === null));
   if (listFilter === 'sem-imuno')    return db.filter(p => p.sem_imuno === true);
+  if (listFilter === 'sem-nascimento') return db.filter(p => !p.nascimento);
   return db;
 }
 
@@ -2862,10 +2872,11 @@ function editPatient(idx) {
   const db = getData();
   const p = db[idx];
   if (!p) return;
-  editingIdx = idx;
-  editingRghc = p.rghc;
   showPage('form');
   clearForm();
+  // Precisa ser definido DEPOIS de clearForm(), que reseta editingIdx/editingRghc para null.
+  editingIdx = idx;
+  editingRghc = p.rghc;
   setTimeout(() => {
     document.getElementById('f-nome').value = p.nome;
     document.getElementById('f-rghc').value = p.rghc;
@@ -2873,13 +2884,22 @@ function editPatient(idx) {
     setDateInput('f-inicio-seg', p.inicio_seg||''); document.getElementById('f-inicio-seg').value = p.inicio_seg||'';
     setDateInput('f-entrevista', p.entrevista||''); document.getElementById('f-entrevista').value = p.entrevista||'';
     document.getElementById('f-idade').value = p.idade || '';
+    const diagInput = document.getElementById('f-diagnostico');
     if (p.data_diagnostico) {
-      setDateInput('f-diagnostico', p.data_diagnostico);
-      document.getElementById('f-diagnostico').value = p.data_diagnostico;
+      // Preserva o valor original completo (pode conter dia, se inserido antes da mudança
+      // para mês/ano) em dataset.original — só é substituído se o usuário editar o campo.
+      diagInput.value = p.data_diagnostico.slice(0, 7);
+      diagInput.dataset.original = p.data_diagnostico;
+      diagInput.dataset.touched = 'false';
       calcTempoDiag();
-    } else if (p.tempo_diag) {
-      // Registro legado sem data de diagnóstico salva — mantém a categoria já calculada
-      formData.tempo_diag = p.tempo_diag;
+    } else {
+      diagInput.value = '';
+      delete diagInput.dataset.original;
+      diagInput.dataset.touched = 'false';
+      if (p.tempo_diag) {
+        // Registro legado sem data de diagnóstico salva — mantém a categoria já calculada
+        formData.tempo_diag = p.tempo_diag;
+      }
     }
     // Atualiza campos de laboratório conforme a doença antes de restaurar valores
     if (p.doenca) updateLabFields(p.doenca);
@@ -3890,7 +3910,7 @@ function fillTestData() {
   // ── Dados Clínicos ──
   clickOpt('q-doenca',     'Artrite reumatoide');
   updateMetrics();
-  setDateInput('f-diagnostico','2018-04-10'); document.getElementById('f-diagnostico').value='2018-04-10'; calcTempoDiag();
+  document.getElementById('f-diagnostico').value = '2018-04'; onDiagnosticoInput(); calcTempoDiag();
   clickOpt('q-atividade',  'Baixa atividade');
 
   // Labs
