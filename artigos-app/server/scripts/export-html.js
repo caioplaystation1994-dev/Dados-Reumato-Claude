@@ -218,6 +218,21 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
 .tree-article-row:hover{background:#e8f0fc}
 .tree-year{color:#a0aec0}
 
+.disease-view-picker{margin-bottom:14px}
+.disease-view-picker select{width:100%;border:1px solid #cbd5e0;border-radius:8px;padding:10px 14px;font-size:13.5px;font-weight:600;color:#2d3748;background:#fff}
+.dv-header{font-size:14px;color:#2d3748;margin-bottom:8px}
+.dv-sources{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.dv-source-chip{font-size:11px;color:#1a56a0;background:#eef4fd;border:1px solid #d6e6fb;border-radius:12px;padding:4px 10px;cursor:pointer}
+.dv-source-chip:hover{background:#e0edfc}
+.dv-section{margin-bottom:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.dv-section-title{font-size:13.5px;font-weight:700;color:#1a56a0;margin-bottom:10px}
+.dv-entry{padding:10px 0;border-top:1px solid #eef1f5}
+.dv-entry:first-child{border-top:none;padding-top:0}
+.dv-entry-source{font-size:11.5px;color:#718096;margin-bottom:4px;cursor:pointer}
+.dv-entry-source:hover{color:#1a56a0;text-decoration:underline}
+.dv-entry-text{font-size:13px;color:#2d3748;line-height:1.55}
+.dv-empty{font-size:12.5px;color:#a0aec0;font-style:italic}
+
 .list-sentinel{text-align:center;color:#a0aec0;font-size:12px;padding:14px 0}
 
 .fulltext-toggle-row{margin-top:18px;display:flex;justify-content:center}
@@ -258,6 +273,13 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
       <div class="view-toggle">
         <button type="button" id="viewListBtn" class="view-btn active">☰ Lista</button>
         <button type="button" id="viewTreeBtn" class="view-btn">🌳 Árvore (Doença › Subtema)</button>
+        <button type="button" id="viewDiseaseBtn" class="view-btn">📋 Por Doença</button>
+      </div>
+      <div id="diseaseView" class="disease-view" style="display:none">
+        <div class="disease-view-picker">
+          <select id="diseaseViewSelect"><option value="">Selecione uma doença/tema...</option></select>
+        </div>
+        <div id="diseaseViewContent"></div>
       </div>
       <div class="lib-controls">
         <input type="text" id="searchBox" placeholder="Buscar por título, doença, tema...">
@@ -417,6 +439,11 @@ const resultCount = document.getElementById('resultCount');
 const libraryList = document.getElementById('libraryList');
 const viewListBtn = document.getElementById('viewListBtn');
 const viewTreeBtn = document.getElementById('viewTreeBtn');
+const viewDiseaseBtn = document.getElementById('viewDiseaseBtn');
+const diseaseView = document.getElementById('diseaseView');
+const diseaseViewSelect = document.getElementById('diseaseViewSelect');
+const diseaseViewContent = document.getElementById('diseaseViewContent');
+const libControlsEl = document.querySelector('.lib-controls');
 
 let viewMode = 'list';
 const PAGE_SIZE = 30;
@@ -500,18 +527,16 @@ document.addEventListener('click', (e) => {
   }
 });
 
-viewListBtn.addEventListener('click', () => {
-  viewMode = 'list';
-  viewListBtn.classList.add('active');
-  viewTreeBtn.classList.remove('active');
+function setViewMode(mode) {
+  viewMode = mode;
+  viewListBtn.classList.toggle('active', mode === 'list');
+  viewTreeBtn.classList.toggle('active', mode === 'tree');
+  viewDiseaseBtn.classList.toggle('active', mode === 'disease');
   renderLibrary();
-});
-viewTreeBtn.addEventListener('click', () => {
-  viewMode = 'tree';
-  viewTreeBtn.classList.add('active');
-  viewListBtn.classList.remove('active');
-  renderLibrary();
-});
+}
+viewListBtn.addEventListener('click', () => setViewMode('list'));
+viewTreeBtn.addEventListener('click', () => setViewMode('tree'));
+viewDiseaseBtn.addEventListener('click', () => setViewMode('disease'));
 
 function populateFilters() {
   populateCollectionFilter();
@@ -704,7 +729,102 @@ function renderTree(list) {
   });
 }
 
+// ---------- Visão agregada "Por Doença" ----------
+const DV_CATEGORIES = [
+  { key: 'epidemiologia', label: '📊 Dados Epidemiológicos' },
+  { key: 'fisiopatologia', label: '🧬 Fisiopatologia' },
+  { key: 'moa', label: '💊 Mecanismo de Ação de Medicações' },
+  { key: 'diferencial', label: '🔍 Diagnóstico Diferencial e Investigação' },
+];
+
+function categorizeHeading(heading) {
+  const h = normalizeText(heading);
+  if (!h) return null;
+  if (h.includes('diferencial')) return 'diferencial';
+  if (h.includes('epidemiol') || h.includes('prevalenc') || h.includes('incidenc')) return 'epidemiologia';
+  if (h.includes('mecanismo de acao')) return 'moa';
+  if (h.includes('fisiopatolog') || h.includes('patogen') || h.includes('imunopatogen')) return 'fisiopatologia';
+  return null;
+}
+
+function getDiseaseArticles(diseaseName) {
+  return ARTICLES.filter((a) => {
+    const all = [a.disease, ...parseArr(a.secondary_diseases)];
+    return all.includes(diseaseName);
+  });
+}
+
+function populateDiseaseViewSelect() {
+  const opts = optionsForFilterKey('disease');
+  const prevValue = diseaseViewSelect.value;
+  diseaseViewSelect.innerHTML = '<option value="">Selecione uma doença/tema...</option>' +
+    opts.map((d) => '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + ' (' + getDiseaseArticles(d).length + ')</option>').join('');
+  if (prevValue && opts.includes(prevValue)) diseaseViewSelect.value = prevValue;
+}
+
+function renderDiseaseView() {
+  const diseaseName = diseaseViewSelect.value;
+  if (!diseaseName) {
+    diseaseViewContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver a síntese agregada de fisiopatologia, mecanismo de ação, epidemiologia e diagnóstico diferencial de todos os artigos da biblioteca sobre ela.</div>';
+    return;
+  }
+
+  const articles = getDiseaseArticles(diseaseName);
+  const buckets = { epidemiologia: [], fisiopatologia: [], moa: [], diferencial: [] };
+  articles.forEach((a) => {
+    getArticleChunks(a).forEach((c) => {
+      const cat = categorizeHeading(c.heading);
+      if (cat) buckets[cat].push({ articleId: a.id, title: a.title || a.original_name, year: a.year, heading: c.heading, text: c.text });
+    });
+  });
+
+  const sortedArticles = articles.slice().sort((x, y) => (Number(y.year) || 0) - (Number(x.year) || 0));
+  const sourceChips = sortedArticles.map((a) =>
+    '<span class="dv-source-chip" data-id="' + a.id + '">' + escapeHtml(a.title || a.original_name) + (a.year ? ' (' + escapeHtml(a.year) + ')' : '') + '</span>'
+  ).join('');
+
+  let html = '<div class="dv-header">Síntese agregada de <strong>' + escapeHtml(diseaseName) + '</strong> — ' + articles.length + ' artigo' + (articles.length !== 1 ? 's' : '') + ' desta biblioteca abordam este tema:</div>';
+  html += '<div class="dv-sources">' + sourceChips + '</div>';
+
+  DV_CATEGORIES.forEach((cat) => {
+    const entries = buckets[cat.key];
+    html += '<div class="dv-section"><div class="dv-section-title">' + cat.label + '</div>';
+    if (entries.length === 0) {
+      html += '<div class="dv-empty">Nenhum dos artigos desta biblioteca sobre ' + escapeHtml(diseaseName) + ' tem uma seção isolada deste tipo.</div>';
+    } else {
+      html += entries.map((e) =>
+        '<div class="dv-entry">' +
+          '<div class="dv-entry-source" data-id="' + e.articleId + '">' + escapeHtml(e.title) + (e.year ? ' · ' + escapeHtml(e.year) : '') + (e.heading ? ' — <em>' + escapeHtml(e.heading) + '</em>' : '') + '</div>' +
+          '<div class="dv-entry-text">' + escapeHtml(e.text) + '</div>' +
+        '</div>'
+      ).join('');
+    }
+    html += '</div>';
+  });
+
+  diseaseViewContent.innerHTML = html;
+  diseaseViewContent.querySelectorAll('.dv-entry-source, .dv-source-chip').forEach((el) => {
+    el.addEventListener('click', () => openModal(Number(el.dataset.id)));
+  });
+}
+
+diseaseViewSelect.addEventListener('change', renderDiseaseView);
+
 function renderLibrary() {
+  if (viewMode === 'disease') {
+    libraryList.style.display = 'none';
+    libControlsEl.style.display = 'none';
+    resultCount.style.display = 'none';
+    diseaseView.style.display = 'block';
+    populateDiseaseViewSelect();
+    renderDiseaseView();
+    return;
+  }
+  libraryList.style.display = '';
+  libControlsEl.style.display = '';
+  resultCount.style.display = '';
+  diseaseView.style.display = 'none';
+
   const rawTerm = searchBox.value.trim();
   const term = normalizeText(rawTerm);
   const collectionVal = collectionFilter.value;
