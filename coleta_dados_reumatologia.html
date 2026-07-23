@@ -822,11 +822,11 @@ const COMORBIDADES = [
   'DAC','DAOP','Depressão','Dermatite atópica','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn','Doença de Sjogren',
   'Doença inflamatória intestinal','Dor crônica','DPI','DPOC','DRC','DRGE',
   'Endometriose','Enxaqueca','Epilepsia','Esclerose sistêmica','Espondiloartrite','Esquizofrenia','Esteatose hepática','FA','Fibromialgia','Glaucoma','Gota','HAS',
-  'Hepatite B','Hepatite C','Hidroadenite supurativa','Hiperparatireoidismo','Hiperprolactinemia','Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','HIV',
-  'HPB','IAM','ICFEP','ICFER','LES',
+  'Hepatite B','Hepatite C','Hidroadenite supurativa','Hiperparatireoidismo','Hiperplasia adrenal congênita','Hiperprolactinemia','Hipertensão pulmonar','Hipertireoidismo','Hipotireoidismo','HIV',
+  'HPB','IAM','ICFEP','ICFER','Intestino curto','LES',
   'Lombalgia crônica','Marca-passo','Neoplasia hematológica','Neoplasia sólida','Neuropatia periférica',
   'Obesidade','Osteoartrite','Osteonecrose','Osteomielite','Osteoporose',
-  'Perda auditiva','Retocolite ulcerativa','SAF','SAHOS','TAB','TEP','Transplante cardíaco','Transplante hepático','Transplante renal','TVP','Varizes esofágicas','Veia cava superior'
+  'Perda auditiva','Psoríase','Retocolite ulcerativa','Rinite','SAF','SAHOS','TAB','TEP','Transplante cardíaco','Transplante hepático','Transplante renal','Trombofilia','TVP','Varizes esofágicas','Veia cava superior'
 ];
 const MED_CONTINUAS = [
   'AAS','Acetilcisteína','Aciclovir','Ácido fólico','Ácido valproico','Ácido zoledrônico','Alendronato de sódio','Alogliptina','Alopurinol','Alprazolam',
@@ -838,18 +838,18 @@ const MED_CONTINUAS = [
   'Dabigatrana','Dapaglifozina','Dapsona','Darunavir','Denosumabe','Desvenlafaxina','Dexlansoprazol','Diacereina','Difenidramina','Diltiazem','Diosmin','Dipirona',
   'Dolutegravir','Domperidona','Doxazosina','Duloxetina',
   'Empaglifozina','Enalapril','Enoxaparina','Entecavir','Eritropoetina','Escitalopram','Espironolactona','Ezetimiba',
-  'Fenobarbital','Finasterida','Fluconazol','Fluoxetina','Furosemida',
+  'Fenobarbital','Finasterida','Fluconazol','Fludrocortisona','Fluoxetina','Furosemida',
   'Gabapentina','Glibenclamida','Gliclazida','Glimepirida',
   'Haloperidol','Hidralazina','Hidroclorotiazida','Hixizine',
-  'Imipramina','Indapamida','Insulina','Ipratrópio','Isossorbida',
-  'Lacosamida','Lamivudina','Lamotrigina','Levetiracetam','Levotiroxina','Liraglutida','Loperamida','Loratadina','Losartana',
+  'Iloprost','Imipramina','Indapamida','Insulina','Ipratrópio','Isossorbida',
+  'Lacosamida','Lamivudina','Lamotrigina','Levetiracetam','Levotiroxina','Liraglutida','Lisdexanfetamina','Loperamida','Loratadina','Losartana',
   'Magnésio','Mebevarina','Melatonina','Metadona','Metformina','Metildopa','Metoclopramida','Metoprolol','Mirtazapina',
-  'Naltrexona','Nebivolol','Nifedipino','Nitrofurantoína','Nortriptilina',
-  'Omega 3','Omeprazol','Ondansetrona',
+  'Naltrexona','Nebivolol','Nifedipino','Nitrazepam','Nitrofurantoína','Nortriptilina',
+  'Omega 3','Omeprazol','Ondansetrona','Oxandrolona',
   'Pantoprazol','Paracetamol','Paroxetina','Pioglitazona','Pregabalina','Propranolol',
   'Quetiapina','Ramipril','Risedronato de sódio','Risperidona','Ritonavir','Rivaroxabana','Romosozumabe','Rosuvastatina',
   'Salbutamol','Semaglutida','Sertralina','Sevelamer','Sildenafil','Simeticona','Sinvastatina','Sulfato ferroso',
-  'Tamoxifeno','Tansulosina','Tapazol','Tenofovir','Teriparatida','Tiamina','Ticagrelor','Tiotrópio','Topiramato','Tramadol',
+  'Tadalafil','Tamoxifeno','Tansulosina','Tapazol','Tenofovir','Teriparatida','Tiamina','Ticagrelor','Tiotrópio','Tirzepatida','Topiramato','Tramadol','Trazodona',
   'Ursacol',
   'Valsartana','Varfarina','Venlafaxina','Vidagliptina','Vitamina B12','Vitamina B6',
   'Ziprasidona','Zolpidem'
@@ -864,7 +864,7 @@ const ESTADO_CIVIL = ['Casado','Divorciado','Solteiro','União estável','Viúvo
 const FILHOS = ['Sem filhos','1','2','3','4','5','6 ou mais'];
 const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto','Ensino Fundamental completo','Ensino Médio incompleto','Ensino Médio completo','Ensino Superior incompleto','Ensino Superior completo','Pós-graduação'];
 const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
-const OCUPACAO = ['Advogado','Afastado INSS','Agente de saúde','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de creche','Auxiliar de limpeza','Balconista','Bióloga','Biólogo','Cabeleireiro','Comercial corporativo','Cozinheiro','Desempregado','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Entregador','Estagiário (a)','Faxineiro','Funcionário público','Garçom','Gerente','Gerente de vendas','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Recepcionista','Representante comercial','RH','Segurança','Técnico de enfermagem','Vendedora de loja','Zelador'];
+const OCUPACAO = ['Advogado','Afastado INSS','Agente de saúde','Aposentado','Assistente administrativo','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de creche','Auxiliar de limpeza','Balconista','Bióloga','Biólogo','Cabeleireiro','Comercial corporativo','Cozinheiro','Desempregado','Educador físico','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Entregador','Estagiário (a)','Farmacêutica','Faxineiro','Funcionário público','Garçom','Gerente','Gerente de vendas','Motorista','Motoboy','Pedreiro','Porteiro','Professor','Psicóloga','Recepcionista','Representante comercial','RH','Segurança','Técnico de enfermagem','Vendedora de loja','Zelador'];
 const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
 const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
 const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
