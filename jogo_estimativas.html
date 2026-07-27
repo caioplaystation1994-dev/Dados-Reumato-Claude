@@ -436,1336 +436,278 @@
 // ─── DATA ───────────────────────────────────────────────────────────────────
 
 const QUESTIONS = [
-  // ── Recordes humanos ──
-  {
-    id: 1,
-    text: "Qual a altura (em cm) da pessoa mais alta que já viveu? — Robert Wadlow, EUA",
-    unit: "cm",
-    realValue: 272,
-    source: "Guinness World Records",
-    category: "humanos"
-  },
-  {
-    id: 2,
-    text: "Qual o peso em kg da pessoa mais pesada já registrada? — Jon Brower Minnoch, EUA",
-    unit: "kg",
-    realValue: 635,
-    source: "Guinness World Records",
-    category: "humanos"
-  },
-  {
-    id: 3,
-    text: "Qual o comprimento total (em cm) das unhas mais longas já crescidas em mãos femininas? — Lee Redmond, EUA (2008)",
-    unit: "cm (total das 10 unhas)",
-    realValue: 865,
-    source: "Guinness World Records, 2008",
-    category: "humanos"
-  },
-  {
-    id: 4,
-    text: "Qual o comprimento em metros da maior barba já registrada? — Hans Langseth, Noruega",
-    unit: "metros",
-    realValue: 5.33,
-    source: "Guinness World Records",
-    category: "humanos"
-  },
-  {
-    id: 5,
-    text: "Quantos anos viveu Jeanne Calment, a pessoa mais velha da história? — França",
-    unit: "anos",
-    realValue: 122,
-    source: "Guinness World Records",
-    category: "humanos"
-  },
-  {
-    id: 6,
-    text: "Qual o comprimento em cm da língua mais longa do mundo? — Nick Stoeberl, EUA (2012)",
-    unit: "cm",
-    realValue: 10.1,
-    source: "Guinness World Records, 2012",
-    category: "humanos"
-  },
-  {
-    id: 7,
-    text: "Quantos decibéis atingiu o grito mais alto já registrado? — Jill Drake, Reino Unido (2000)",
-    unit: "dB",
-    realValue: 129,
-    source: "Guinness World Records, 2000",
-    category: "humanos"
-  },
-  {
-    id: 8,
-    text: "Quantos minutos é o recorde mundial de prender a respiração embaixo d'água? — Budimir Šobat (2021)",
-    unit: "minutos",
-    realValue: 24.6,
-    source: "Guinness World Records, 2021",
-    category: "humanos"
-  },
-  {
-    id: 9,
-    text: "Quantas flexões Charles Servizio fez em 24 horas? — recorde mundial (1993)",
-    unit: "flexões",
-    realValue: 46001,
-    source: "Guinness World Records, 1993",
-    category: "humanos"
-  },
-  {
-    id: 10,
-    text: "Quantos Big Macs Donald Gorske comeu ao longo da vida? — recorde mundial (2022)",
-    unit: "Big Macs",
-    realValue: 32672,
-    source: "Guinness World Records, 2022",
-    category: "humanos"
-  },
-  {
-    id: 11,
-    text: "Quantos idiomas Ziad Fazah fala? — recorde mundial de poliglota",
-    unit: "idiomas",
-    realValue: 58,
-    source: "Guinness World Records",
-    category: "humanos"
-  },
-  {
-    id: 12,
-    text: "A quantos metros de altitude Felix Baumgartner saltou de paraquedas do espaço? — 2012",
-    unit: "metros",
-    realValue: 38969,
-    source: "Guinness World Records, 2012",
-    category: "humanos"
-  },
-  {
-    id: 13,
-    text: "Qual a profundidade em metros do mergulho mais fundo já realizado em apneia? — Herbert Nitsch (2012)",
-    unit: "metros",
-    realValue: 253,
-    source: "Guinness World Records, 2012",
-    category: "humanos"
-  },
+  // ── Recordes Humanos ──
+  { id: 1, text: "Quantos piercings tinha Rolf Buchholz, o homem com mais piercings do mundo?", unit: "piercings", realValue: 453, source: "Guinness World Records, 2014", category: "humanos" },
+  { id: 2, text: "Qual foi o peso do avião que Kevin Fast (Canadá) puxou com o corpo, recorde mundial?", unit: "toneladas", realValue: 188, source: "Guinness World Records, 2009", category: "humanos" },
+  { id: 3, text: "Em quantos minutos Pemba Dorje Sherpa escalou o Everest, quebrando o recorde?", unit: "minutos", realValue: 490, source: "Guinness World Records, 2004", category: "humanos" },
+  { id: 4, text: "Quantas doações de sangue James Harrison fez ao longo da vida, recorde mundial?", unit: "doações", realValue: 1173, source: "Guinness World Records, 2018", category: "humanos" },
+  { id: 5, text: "Quantos filhos teve Valentina Vassilyeva, a mulher com mais gestações registradas?", unit: "filhos", realValue: 69, source: "Guinness World Records, séc. XVIII", category: "humanos" },
+  { id: 6, text: "Quantos quilômetros George Meegan caminhou do extremo sul ao norte das Américas?", unit: "quilômetros", realValue: 30608, source: "Guinness World Records, 1983", category: "humanos" },
+  { id: 7, text: "Em quantos dias Mark Beaumont circundou o globo de bicicleta, batendo o recorde?", unit: "dias", realValue: 78, source: "Guinness World Records, 2017", category: "humanos" },
+  { id: 8, text: "Qual o tamanho do maior pé humano registrado, de Jeison Rodriguez (Venezuela)?", unit: "centímetros", realValue: 40.1, source: "Guinness World Records, 2018", category: "humanos" },
+  { id: 9, text: "Qual o peso levantado por Lasha Talakhadze no arranque olímpico, recorde mundial?", unit: "quilogramas", realValue: 267, source: "Guinness World Records, 2021", category: "humanos" },
+  { id: 10, text: "Em quantos segundos Hicham El Guerrouj correu a milha terrestre, recorde mundial?", unit: "segundos", realValue: 223, source: "Guinness World Records, 1999", category: "humanos" },
+  { id: 11, text: "Em quantos dias Nirmal Purja escalou todos os 14 picos acima de 8.000m?", unit: "dias", realValue: 189, source: "Guinness World Records, 2019", category: "humanos" },
+  { id: 12, text: "Quantos dominós foram derrubados em corrente na maior queda encadeada registrada?", unit: "dominós", realValue: 4491863, source: "Guinness World Records, 2009", category: "humanos" },
+  { id: 13, text: "Quantas palavras por minuto Stella Pajunas digitou à máquina, recorde do séc. XX?", unit: "palavras por minuto", realValue: 216, source: "Guinness World Records, 1946", category: "humanos" },
+  { id: 14, text: "Com quantos anos Oscar Swahn ganhou a medalha de ouro olímpica, o mais velho campeão?", unit: "anos", realValue: 64, source: "Guinness World Records, 1912", category: "humanos" },
+  { id: 15, text: "Quantos quilos pesava o bebê mais pesado já registrado (Aversa, Itália, 1955)?", unit: "quilogramas", realValue: 10.2, source: "Guinness World Records, 1955", category: "humanos" },
+  { id: 16, text: "Com quantos anos Yuichiro Miura (Japão) escalou o Everest, o mais velho a fazê-lo?", unit: "anos", realValue: 80, source: "Guinness World Records, 2013", category: "humanos" },
+  { id: 17, text: "Quantos km/h Peter Connolly atingiu de skate, recorde mundial de velocidade?", unit: "km/h", realValue: 146.73, source: "Guinness World Records, 2016", category: "humanos" },
+  { id: 18, text: "Quantos pontos LeBron James marcou em sua carreira na NBA, recorde histórico?", unit: "pontos", realValue: 38387, source: "Guinness World Records, 2023", category: "humanos" },
+
   // ── Esportes ──
-  {
-    id: 14,
-    text: "Quantos segundos durou o recorde mundial dos 100m rasos de Usain Bolt? (2009)",
-    unit: "segundos",
-    realValue: 9.58,
-    source: "Guinness World Records, 2009",
-    category: "esportes"
-  },
-  {
-    id: 15,
-    text: "Qual a velocidade máxima em km/h que Usain Bolt atingiu durante os 100m rasos em Berlim (2009)?",
-    unit: "km/h",
-    realValue: 44.72,
-    source: "Guinness World Records, 2009",
-    category: "esportes"
-  },
-  {
-    id: 16,
-    text: "Quantos segundos durou o recorde mundial da maratona masculina? — Kelvin Kiptum, Quênia (2023)",
-    unit: "segundos",
-    realValue: 7235,
-    source: "Guinness World Records, 2023",
-    category: "esportes"
-  },
-  {
-    id: 17,
-    text: "Quantas medalhas olímpicas de ouro Michael Phelps ganhou ao longo da carreira?",
-    unit: "medalhas de ouro",
-    realValue: 23,
-    source: "Guinness World Records",
-    category: "esportes"
-  },
-  {
-    id: 18,
-    text: "Quantos títulos de Grand Slam Novak Djokovic conquistou (até 2023)?",
-    unit: "títulos",
-    realValue: 24,
-    source: "Guinness World Records, 2023",
-    category: "esportes"
-  },
-  {
-    id: 19,
-    text: "Qual a velocidade em km/h do saque mais rápido do tênis? — Sam Groth, Austrália (2012)",
-    unit: "km/h",
-    realValue: 263,
-    source: "Guinness World Records, 2012",
-    category: "esportes"
-  },
-  {
-    id: 20,
-    text: "Qual a altura em metros do recorde mundial do salto com vara? — Armand Duplantis (2024)",
-    unit: "metros",
-    realValue: 6.24,
-    source: "Guinness World Records, 2024",
-    category: "esportes"
-  },
-  {
-    id: 21,
-    text: "Qual a altura em metros do recorde mundial do salto em altura masculino? — Javier Sotomayor (1993)",
-    unit: "metros",
-    realValue: 2.45,
-    source: "Guinness World Records, 1993",
-    category: "esportes"
-  },
-  {
-    id: 22,
-    text: "Quantos cachorros-quentes Joey Chestnut comeu em 10 minutos? — recorde mundial (2021)",
-    unit: "cachorros-quentes",
-    realValue: 76,
-    source: "Guinness World Records, 2021",
-    category: "esportes"
-  },
-  {
-    id: 23,
-    text: "Quantos km percorreu Victor Campenaerts no recorde mundial de ciclismo 1 hora (2019)?",
-    unit: "km",
-    realValue: 55.089,
-    source: "Guinness World Records, 2019",
-    category: "esportes"
-  },
-  {
-    id: 24,
-    text: "Quantos segundos dura o recorde mundial dos 50m nado livre masculino? — César Cielo, Brasil (2009)",
-    unit: "segundos",
-    realValue: 20.91,
-    source: "Guinness World Records, 2009",
-    category: "esportes"
-  },
+  { id: 101, text: "Quantas vezes Roger Federer venceu o torneio de Wimbledon (recorde histórico)?", unit: "títulos", realValue: 8, source: "Guinness World Records, 2017", category: "esportes" },
+  { id: 102, text: "Quantas vitórias Lewis Hamilton acumulou na Fórmula 1, recorde absoluto?", unit: "vitórias", realValue: 103, source: "Guinness World Records, 2023", category: "esportes" },
+  { id: 103, text: "Quantos minutos durou o jogo mais longo de Wimbledon (Isner × Mahut, 2010)?", unit: "minutos", realValue: 665, source: "Guinness World Records, 2010", category: "esportes" },
+  { id: 104, text: "Quantos home runs Barry Bonds fez em uma única temporada da MLB (2001)?", unit: "home runs", realValue: 73, source: "Guinness World Records, 2001", category: "esportes" },
+  { id: 105, text: "Quantas Séries Mundiais o New York Yankees venceu, recorde da MLB?", unit: "títulos", realValue: 27, source: "Guinness World Records, 2009", category: "esportes" },
+  { id: 106, text: "Em quantos segundos Usain Bolt correu os 200m rasos, recorde mundial?", unit: "segundos", realValue: 19.19, source: "Guinness World Records, 2009", category: "esportes" },
+  { id: 107, text: "Quantos torneios do Grand Slam Tiger Woods venceu, recorde entre golfistas ativos?", unit: "títulos", realValue: 15, source: "Guinness World Records, 2019", category: "esportes" },
+  { id: 108, text: "Quantos gols Miroslav Klose marcou em Copas do Mundo, recorde histórico?", unit: "gols", realValue: 16, source: "Guinness World Records, 2014", category: "esportes" },
+  { id: 109, text: "Quantas vezes Novak Djokovic venceu o Australian Open, recorde individual?", unit: "títulos", realValue: 10, source: "Guinness World Records, 2023", category: "esportes" },
+  { id: 110, text: "Quantos metros Mike Powell saltou em distância, recorde mundial desde 1991?", unit: "metros", realValue: 8.95, source: "Guinness World Records, 1991", category: "esportes" },
+  { id: 111, text: "Quantos metros Jan Železný arremessou o dardo, recorde mundial masculino?", unit: "metros", realValue: 98.48, source: "Guinness World Records, 1996", category: "esportes" },
+  { id: 112, text: "Quantos gols Wayne Gretzky marcou em uma temporada da NHL, recorde mundial?", unit: "gols", realValue: 92, source: "Guinness World Records, 1981", category: "esportes" },
+  { id: 113, text: "Quantas Bolas de Ouro Lionel Messi conquistou, recorde histórico?", unit: "prêmios", realValue: 8, source: "Guinness World Records, 2023", category: "esportes" },
+  { id: 114, text: "Quantos home runs Barry Bonds marcou em sua carreira, recorde da MLB?", unit: "home runs", realValue: 762, source: "Guinness World Records, 2007", category: "esportes" },
+  { id: 115, text: "Em quantos segundos David Rudisha correu 800m rasos, recorde mundial?", unit: "segundos", realValue: 100.91, source: "Guinness World Records, 2012", category: "esportes" },
+  { id: 116, text: "Quantas poles positions Ayrton Senna conquistou na Fórmula 1?", unit: "poles", realValue: 65, source: "Guinness World Records, 1994", category: "esportes" },
+  { id: 117, text: "Quantos torneios do Grand Slam Jack Nicklaus venceu em sua carreira?", unit: "títulos", realValue: 18, source: "Guinness World Records, 1986", category: "esportes" },
+  { id: 118, text: "Em quantos segundos Joshua Cheptegei correu 10km, recorde mundial de pista?", unit: "segundos", realValue: 1571, source: "Guinness World Records, 2020", category: "esportes" },
+  { id: 119, text: "Em quantos centésimos de segundo Wayde van Niekerk correu 400m rasos (recordista mundial)?", unit: "segundos", realValue: 43.03, source: "Guinness World Records, 2016", category: "esportes" },
+  { id: 120, text: "Quantos metros Jürgen Schult lançou o disco, recorde mundial masculino?", unit: "metros", realValue: 74.08, source: "Guinness World Records, 1986", category: "esportes" },
+  { id: 121, text: "Quantas corridas NASCAR Richard Petty venceu em sua carreira, recorde histórico?", unit: "vitórias", realValue: 200, source: "Guinness World Records, 1984", category: "esportes" },
+  { id: 122, text: "Quantos km/h Ivan Origone atingiu descendo esquiando, recorde mundial?", unit: "km/h", realValue: 254.958, source: "Guinness World Records, 2016", category: "esportes" },
+
   // ── Animais ──
-  {
-    id: 25,
-    text: "Qual o peso em kg do maior cachorro doméstico já registrado? — Zorba, mastim inglês (1989)",
-    unit: "kg",
-    realValue: 155,
-    source: "Guinness World Records, 1989",
-    category: "animais"
-  },
-  {
-    id: 26,
-    text: "Qual o comprimento em metros da cobra mais longa em cativeiro já registrada? — Medusa, píton-reticulada (2011)",
-    unit: "metros",
-    realValue: 7.67,
-    source: "Guinness World Records, 2011",
-    category: "animais"
-  },
-  {
-    id: 27,
-    text: "Qual o comprimento em cm da maior aranha do mundo? — aranha-golias (Theraphosa blondi)",
-    unit: "cm",
-    realValue: 28,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 28,
-    text: "Qual o peso em gramas do menor mamífero do mundo? — musaranho-etrusco",
-    unit: "gramas",
-    realValue: 1.8,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 29,
-    text: "Qual a velocidade máxima em km/h do bicho-preguiça — o mamífero mais lento do mundo?",
-    unit: "km/h",
-    realValue: 0.15,
-    source: "Curiosidade científica",
-    category: "animais"
-  },
-  {
-    id: 30,
-    text: "Qual o peso em kg do maior elefante já registrado? — elefante africano (1974)",
-    unit: "kg",
-    realValue: 10886,
-    source: "Guinness World Records, 1974",
-    category: "animais"
-  },
-  {
-    id: 31,
-    text: "Quantos anos tem Jonathan, a tartaruga mais velha do mundo (até 2024)? — ilha de Santa Helena",
-    unit: "anos",
-    realValue: 192,
-    source: "Guinness World Records, 2024",
-    category: "animais"
-  },
-  {
-    id: 32,
-    text: "Quantos decibéis pode atingir o som emitido pelo cachalote — o animal mais barulhento do planeta?",
-    unit: "dB",
-    realValue: 230,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 33,
-    text: "Qual a velocidade em km/h do falcão-peregrino em picada — o animal mais rápido do mundo?",
-    unit: "km/h",
-    realValue: 389,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 34,
-    text: "Qual a velocidade máxima em km/h do guepardo em corrida?",
-    unit: "km/h",
-    realValue: 120,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 35,
-    text: "Qual o peso em toneladas da baleia-azul — o maior animal do mundo?",
-    unit: "toneladas",
-    realValue: 150,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 36,
-    text: "Qual a altura em metros da girafa — o animal mais alto do mundo?",
-    unit: "metros",
-    realValue: 5.8,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 37,
-    text: "Qual o comprimento em metros do comprimento do urso-polar macho adulto?",
-    unit: "metros",
-    realValue: 3,
-    source: "Curiosidade científica",
-    category: "animais"
-  },
-  // ── Plantas e natureza ──
-  {
-    id: 38,
-    text: "Qual o peso em kg da maior abóbora já registrada? — Stefano Cutrupi, Itália (2021)",
-    unit: "kg",
-    realValue: 1226,
-    source: "Guinness World Records, 2021",
-    category: "natureza"
-  },
-  {
-    id: 39,
-    text: "Qual o diâmetro em cm da maior flor do mundo? — Rafflesia arnoldii",
-    unit: "cm",
-    realValue: 107,
-    source: "Guinness World Records",
-    category: "natureza"
-  },
-  {
-    id: 40,
-    text: "Qual a altura em metros da árvore mais alta do mundo? — Hyperion, sequóia-costeira, EUA",
-    unit: "metros",
-    realValue: 115.9,
-    source: "Guinness World Records, 2006",
-    category: "natureza"
-  },
-  {
-    id: 41,
-    text: "Quantos anos tem a árvore mais velha do mundo? — Matusalém, pinheiro-de-cone-longo, EUA",
-    unit: "anos",
-    realValue: 4855,
-    source: "Guinness World Records",
-    category: "natureza"
-  },
-  // ── Construções e obras humanas ──
-  {
-    id: 42,
-    text: "Qual a altura em metros do Burj Khalifa, o prédio mais alto do mundo?",
-    unit: "metros",
-    realValue: 828,
-    source: "Guinness World Records, 2010",
-    category: "construcoes"
-  },
-  {
-    id: 43,
-    text: "Qual o comprimento em km da ponte mais longa do mundo? — Danyang-Kunshan, China",
-    unit: "km",
-    realValue: 164.8,
-    source: "Guinness World Records, 2011",
-    category: "construcoes"
-  },
-  {
-    id: 44,
-    text: "Qual o comprimento em km do túnel ferroviário mais longo do mundo? — Gotthard Base Tunnel, Suíça",
-    unit: "km",
-    realValue: 57.1,
-    source: "Guinness World Records, 2016",
-    category: "construcoes"
-  },
-  {
-    id: 45,
-    text: "Qual a capacidade do maior estádio do mundo em número de torcedores? — Rungrado, Coreia do Norte",
-    unit: "pessoas",
-    realValue: 114000,
-    source: "Guinness World Records",
-    category: "construcoes"
-  },
-  {
-    id: 46,
-    text: "Qual o comprimento total em km da Grande Muralha da China?",
-    unit: "km",
-    realValue: 21196,
-    source: "Guinness World Records",
-    category: "construcoes"
-  },
-  // ── Geografia ──
-  {
-    id: 47,
-    text: "Qual a altitude em metros do cume do Monte Everest — o ponto mais alto da Terra?",
-    unit: "metros",
-    realValue: 8849,
-    source: "Guinness World Records, 2020",
-    category: "geografia"
-  },
-  {
-    id: 48,
-    text: "Qual a profundidade em metros da Fossa das Marianas — o ponto mais fundo dos oceanos?",
-    unit: "metros",
-    realValue: 10994,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 49,
-    text: "Qual a profundidade em metros do Lago Baikal — o lago mais profundo do mundo?",
-    unit: "metros",
-    realValue: 1642,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 50,
-    text: "Qual o comprimento em km do Rio Nilo — o mais longo do mundo?",
-    unit: "km",
-    realValue: 6650,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 51,
-    text: "Qual a temperatura em °C registrada no Vale da Morte (EUA) — maior temperatura da história?",
-    unit: "°C",
-    realValue: 56.7,
-    source: "Guinness World Records, 1913",
-    category: "geografia"
-  },
-  {
-    id: 52,
-    text: "Qual a temperatura em °C registrada na Antártica — menor temperatura da história? (Vostok, 1983)",
-    unit: "°C",
-    realValue: -89.2,
-    source: "Guinness World Records, 1983",
-    category: "geografia"
-  },
-  {
-    id: 53,
-    text: "Qual a velocidade em km/h do tornado mais rápido já registrado? — Oklahoma, EUA (1999)",
-    unit: "km/h",
-    realValue: 484,
-    source: "Guinness World Records, 1999",
-    category: "geografia"
-  },
-  {
-    id: 54,
-    text: "Qual a magnitude do terremoto mais forte já registrado? — Chile (1960)",
-    unit: "Richter",
-    realValue: 9.5,
-    source: "Guinness World Records, 1960",
-    category: "geografia"
-  },
-  {
-    id: 55,
-    text: "Qual o comprimento em km da linha costeira do Canadá — a maior do mundo?",
-    unit: "km",
-    realValue: 202080,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 56,
-    text: "Qual a profundidade em metros do ponto mais fundo do Grand Canyon, EUA?",
-    unit: "metros",
-    realValue: 1857,
-    source: "Curiosidade geográfica",
-    category: "geografia"
-  },
-  {
-    id: 57,
-    text: "Qual a área em km² da Rússia — o maior país do mundo?",
-    unit: "km²",
-    realValue: 17098242,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 58,
-    text: "Qual a área em km² do Vaticano — o menor país do mundo?",
-    unit: "km²",
-    realValue: 0.44,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 59,
-    text: "Qual a área aproximada em km² da Floresta Amazônica?",
-    unit: "km²",
-    realValue: 5500000,
-    source: "Curiosidade geográfica",
-    category: "geografia"
-  },
-  {
-    id: 60,
-    text: "Qual a extensão em km da costa brasileira — a maior da América do Sul?",
-    unit: "km",
-    realValue: 7491,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 61,
-    text: "Qual a área em km² do Brasil?",
-    unit: "km²",
-    realValue: 8514877,
-    source: "Curiosidade geográfica",
-    category: "geografia"
-  },
-  {
-    id: 62,
-    text: "Qual o comprimento em km do equador terrestre?",
-    unit: "km",
-    realValue: 40075,
-    source: "Curiosidade científica",
-    category: "geografia"
-  },
-  {
-    id: 63,
-    text: "Qual a área em km² do Oceano Pacífico — o maior oceano do mundo?",
-    unit: "km²",
-    realValue: 165250000,
-    source: "Curiosidade geográfica",
-    category: "geografia"
-  },
+  { id: 201, text: "Quantos anos pode viver um tubarão da Groenlândia, o vertebrado mais longevo?", unit: "anos", realValue: 392, source: "Guinness World Records, 2016", category: "animais" },
+  { id: 202, text: "Quantos volts a enguia elétrica pode gerar, recorde no reino animal?", unit: "volts", realValue: 860, source: "Guinness World Records, 2019", category: "animais" },
+  { id: 203, text: "Quantos quilos pode pesar uma salamandra-gigante-chinesa, maior anfíbio do mundo?", unit: "quilogramas", realValue: 65, source: "Guinness World Records, 2014", category: "animais" },
+  { id: 204, text: "Quantos ovos um peixe-lua (Mola mola) pode produzir de uma vez?", unit: "milhões de ovos", realValue: 300, source: "Guinness World Records, 2006", category: "animais" },
+  { id: 205, text: "Quantos metros media Lolong, o crocodilo em cativeiro mais longo já registrado?", unit: "metros", realValue: 6.17, source: "Guinness World Records, 2011", category: "animais" },
+  { id: 206, text: "Quantos km/h uma avestruz pode correr, tornando-a a ave mais veloz em corrida?", unit: "km/h", realValue: 70, source: "Guinness World Records, 2014", category: "animais" },
+  { id: 207, text: "Quantos metros de profundidade um pinguim-imperador mergulhou, recorde da espécie?", unit: "metros", realValue: 564, source: "Guinness World Records, 1995", category: "animais" },
+  { id: 208, text: "Quantas toneladas pesava o Argentinosaurus, o maior dinossauro estimado pela ciência?", unit: "toneladas", realValue: 80, source: "Guinness World Records, 2014", category: "animais" },
+  { id: 209, text: "Quantos metros media o maior tubarão-baleia registrado com precisão?", unit: "metros", realValue: 18.8, source: "Guinness World Records, 2001", category: "animais" },
+  { id: 210, text: "Quantos km/h uma orca pode nadar, tornando-a o cetáceo mais veloz?", unit: "km/h", realValue: 55.5, source: "Guinness World Records, 2010", category: "animais" },
+  { id: 211, text: "Quantas gramas pesa a weta-gigante (Nova Zelândia), o inseto mais pesado do mundo?", unit: "gramas", realValue: 71, source: "Guinness World Records, 2011", category: "animais" },
+  { id: 212, text: "Quantos quilômetros a borboleta-monarca migra anualmente, recorde de inseto migrante?", unit: "quilômetros", realValue: 4828, source: "Guinness World Records, 2012", category: "animais" },
+  { id: 213, text: "Quantos decibéis emite o sino-branco, o pássaro mais alto do mundo?", unit: "decibéis", realValue: 125, source: "Guinness World Records, 2019", category: "animais" },
+  { id: 214, text: "Quantos km/h o morcego-de-cauda-livre mexicano pode voar, recorde de morcego?", unit: "km/h", realValue: 160, source: "Guinness World Records, 2016", category: "animais" },
+  { id: 215, text: "A que profundidade (metros) o peixe-caracol foi filmado no Pacífico, recorde de peixe?", unit: "metros", realValue: 8336, source: "Guinness World Records, 2021", category: "animais" },
+  { id: 216, text: "Quantos metros de diâmetro a Crinóide-de-juba-de-leão (Cyanea arctica) pode atingir?", unit: "metros", realValue: 36.5, source: "Guinness World Records, 1870", category: "animais" },
+  { id: 217, text: "Quantos tipos de fotorreceptores de cores o camarão-mantis possui?", unit: "fotorreceptores", realValue: 16, source: "Guinness World Records, 2014", category: "animais" },
+  { id: 218, text: "Quantos km/h a libélula pode voar, tornando-a o inseto voador mais rápido?", unit: "km/h", realValue: 97, source: "Guinness World Records, 2017", category: "animais" },
+  { id: 219, text: "Quantos centímetros a língua do tamanduá-bandeira pode atingir?", unit: "centímetros", realValue: 60, source: "Guinness World Records, 2012", category: "animais" },
+  { id: 220, text: "Quantas gramas pesa o morcego-de-nariz-porco de Kitti, o menor mamífero do mundo?", unit: "gramas", realValue: 2, source: "Guinness World Records, 2014", category: "animais" },
+  { id: 221, text: "Quantos km/h o tubarão-mako pode nadar, tornando-o o tubarão mais veloz?", unit: "km/h", realValue: 74, source: "Guinness World Records, 2013", category: "animais" },
+  { id: 222, text: "Quantos quilos pode pesar um hipopótamo-comum adulto macho?", unit: "quilogramas", realValue: 3200, source: "Guinness World Records, 2015", category: "animais" },
+  { id: 223, text: "Quantos ovos uma abelha rainha pode colocar por dia em plena atividade?", unit: "ovos", realValue: 2000, source: "Guinness World Records, 2008", category: "animais" },
+  { id: 224, text: "Quantos metros media a maior anaconda verde registrada com precisão?", unit: "metros", realValue: 5.21, source: "Guinness World Records, 2016", category: "animais" },
+  { id: 225, text: "Quantos olhos uma vieira (Pecten maximus) pode ter ao longo de sua beira?", unit: "olhos", realValue: 200, source: "Guinness World Records, 2011", category: "animais" },
+
+  // ── Plantas & Natureza ──
+  { id: 301, text: "Qual a área da Grande Barreira de Corais, o maior organismo vivo do mundo?", unit: "km²", realValue: 344400, source: "Guinness World Records, 2019", category: "natureza" },
+  { id: 302, text: "Quantos metros tem o Ojos del Salado, o vulcão ativo mais alto do mundo?", unit: "metros", realValue: 6893, source: "Guinness World Records, 2018", category: "natureza" },
+  { id: 303, text: "Quantos quilômetros tem a Dorsal Mesoatlântica, maior cadeia montanhosa do planeta?", unit: "quilômetros", realValue: 16000, source: "Guinness World Records, 2017", category: "natureza" },
+  { id: 304, text: "Quantos graus Celsius atinge a superfície de um raio durante a descarga elétrica?", unit: "°C", realValue: 30000, source: "Guinness World Records, 2015", category: "natureza" },
+  { id: 305, text: "Quantos litros de água por segundo o rio Amazonas despeja no oceano Atlântico?", unit: "milhões de litros/s", realValue: 209, source: "Guinness World Records, 2018", category: "natureza" },
+  { id: 306, text: "Quantos quilômetros de extensão total tem a Caverna Mammoth, nos EUA?", unit: "quilômetros", realValue: 676, source: "Guinness World Records, 2020", category: "natureza" },
+  { id: 307, text: "Quantas atmosferas de pressão existem no ponto mais profundo da Fossa das Marianas?", unit: "atm", realValue: 1086, source: "Guinness World Records, 2012", category: "natureza" },
+  { id: 308, text: "Quantos quilos pesava o maior granizo registrado, caído em Bangladesh (1986)?", unit: "quilogramas", realValue: 1.02, source: "Guinness World Records, 1986", category: "natureza" },
+  { id: 309, text: "Quantos km² tinha o Iceberg B-15 ao se desprender da Antártida, o maior iceberg registrado?", unit: "km²", realValue: 11000, source: "Guinness World Records, 2000", category: "natureza" },
+  { id: 310, text: "Quantos quilates pesava o diamante Cullinan, o maior diamante bruto já encontrado?", unit: "quilates", realValue: 3106, source: "Guinness World Records, 1905", category: "natureza" },
+  { id: 311, text: "Quantos metros o Steamboat Geyser (EUA) projeta água, o maior géiser ativo do mundo?", unit: "metros", realValue: 91, source: "Guinness World Records, 2019", category: "natureza" },
+  { id: 312, text: "Qual a profundidade média do oceano em metros?", unit: "metros", realValue: 3688, source: "Guinness World Records, 2020", category: "natureza" },
+  { id: 313, text: "Quantos metros por segundo o som se propaga na água do mar?", unit: "m/s", realValue: 1500, source: "Guinness World Records, 2015", category: "natureza" },
+  { id: 314, text: "Quantos quilômetros de altitude pode atingir uma nuvem cumulonimbo?", unit: "quilômetros", realValue: 18, source: "Guinness World Records, 2016", category: "natureza" },
+  { id: 315, text: "Quantos km³ de água armazena o Lago Baikal, o maior volume de água doce do mundo?", unit: "km³", realValue: 23615, source: "Guinness World Records, 2019", category: "natureza" },
+  { id: 316, text: "Quantos metros tem a profundidade máxima do Lago Superior, um dos Grandes Lagos?", unit: "metros", realValue: 406, source: "Guinness World Records, 2017", category: "natureza" },
+  { id: 317, text: "Quantos quilômetros mede o Rio Amazonas de extensão, o maior em volume de água?", unit: "quilômetros", realValue: 6400, source: "Guinness World Records, 2018", category: "natureza" },
+  { id: 318, text: "Qual a porcentagem de sal no Mar Morto, o lago mais salgado do planeta?", unit: "%", realValue: 34, source: "Guinness World Records, 2020", category: "natureza" },
+  { id: 319, text: "Quantos quilômetros de extensão tem a Plataforma de Gelo de Ross, maior da Antártida?", unit: "quilômetros", realValue: 800, source: "Guinness World Records, 2018", category: "natureza" },
+  { id: 320, text: "Quantos metros abaixo do nível do mar fica a superfície do Mar Morto?", unit: "metros", realValue: 430, source: "Guinness World Records, 2020", category: "natureza" },
+  { id: 321, text: "Quantos anos tem o pinheiro Matusalém (Pinus longaeva), a árvore mais antiga do mundo?", unit: "anos", realValue: 4855, source: "Guinness World Records, 2012", category: "natureza" },
+  { id: 322, text: "Quantos metros de altura tem o Hyperion, a árvore mais alta do mundo (sequoia)?", unit: "metros", realValue: 115.7, source: "Guinness World Records, 2006", category: "natureza" },
+  { id: 323, text: "Quantos km/h podem atingir os ventos de um furacão categoria 5?", unit: "km/h", realValue: 280, source: "Guinness World Records, 2018", category: "natureza" },
+  { id: 324, text: "Quantas toneladas pesava o maior meteorito encontrado na Terra (Hoba, Namíbia)?", unit: "toneladas", realValue: 60, source: "Guinness World Records, 2015", category: "natureza" },
+  { id: 325, text: "Quantos metros tem o Monte Chimborazo do centro da Terra ao pico, o ponto mais distante do núcleo?", unit: "metros", realValue: 6384, source: "Guinness World Records, 2017", category: "natureza" },
+
+  // ── Construções ──
+  { id: 401, text: "Quantos metros tem a CN Tower, em Toronto, a torre mais alta quando foi inaugurada?", unit: "metros", realValue: 553, source: "Guinness World Records, 1976", category: "construcoes" },
+  { id: 402, text: "Quantos metros tem a Shanghai Tower, segunda maior construção do mundo?", unit: "metros", realValue: 632, source: "Guinness World Records, 2015", category: "construcoes" },
+  { id: 403, text: "Quantos metros tem o pílon mais alto da Ponte de Millau, na França?", unit: "metros", realValue: 343, source: "Guinness World Records, 2004", category: "construcoes" },
+  { id: 404, text: "Quantos quilômetros tem o Eurotúnel (Canal da Mancha)?", unit: "quilômetros", realValue: 50.5, source: "Guinness World Records, 1994", category: "construcoes" },
+  { id: 405, text: "Quantos metros de comprimento tem a Barragem das Três Gargantas, na China?", unit: "metros", realValue: 2335, source: "Guinness World Records, 2006", category: "construcoes" },
+  { id: 406, text: "Quantas pessoas o Coliseu de Roma comportava em sua capacidade máxima estimada?", unit: "pessoas", realValue: 80000, source: "Guinness World Records, 2014", category: "construcoes" },
+  { id: 407, text: "Quantos metros quadrados ocupa o Palácio de Versalhes incluindo jardins e dependências?", unit: "metros quadrados", realValue: 800000, source: "Guinness World Records, 2016", category: "construcoes" },
+  { id: 408, text: "Quantos quilômetros tem o Canal do Panamá de costa a costa?", unit: "quilômetros", realValue: 77, source: "Guinness World Records, 1914", category: "construcoes" },
+  { id: 409, text: "Quantos quilômetros tem o Canal de Suez em sua extensão total?", unit: "quilômetros", realValue: 193, source: "Guinness World Records, 2015", category: "construcoes" },
+  { id: 410, text: "Quantos metros tem o vão central da Ponte Golden Gate, em São Francisco?", unit: "metros", realValue: 1280, source: "Guinness World Records, 1937", category: "construcoes" },
+  { id: 411, text: "Quantos andares tem o Empire State Building, em Nova York?", unit: "andares", realValue: 102, source: "Guinness World Records, 1931", category: "construcoes" },
+  { id: 412, text: "Quantos metros têm as Torres Petronas, em Kuala Lumpur, que foram as mais altas do mundo?", unit: "metros", realValue: 452, source: "Guinness World Records, 1998", category: "construcoes" },
+  { id: 413, text: "Quantos metros tem a Barragem Hoover de altura?", unit: "metros", realValue: 221, source: "Guinness World Records, 1935", category: "construcoes" },
+  { id: 414, text: "Quantos quilômetros tem a Grande Muralha da China em sua extensão total?", unit: "quilômetros", realValue: 21196, source: "Guinness World Records, 2012", category: "construcoes" },
+  { id: 415, text: "Quantos metros tem o Burj Khalifa, a construção mais alta do mundo?", unit: "metros", realValue: 828, source: "Guinness World Records, 2010", category: "construcoes" },
+
   // ── Astronomia ──
-  {
-    id: 64,
-    text: "Qual a distância média em km entre a Terra e a Lua?",
-    unit: "km",
-    realValue: 384400,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 65,
-    text: "Qual a distância média em km entre a Terra e o Sol?",
-    unit: "km",
-    realValue: 150000000,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 66,
-    text: "Qual a velocidade da luz em km/s?",
-    unit: "km/s",
-    realValue: 300000,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 67,
-    text: "A quantos km de altitude orbita a Estação Espacial Internacional (ISS)?",
-    unit: "km",
-    realValue: 408,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 68,
-    text: "Qual a distância em anos-luz da estrela mais próxima do Sol? — Proxima Centauri",
-    unit: "anos-luz",
-    realValue: 4.24,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 69,
-    text: "Qual o diâmetro aproximado em anos-luz da Via Láctea?",
-    unit: "anos-luz",
-    realValue: 100000,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 70,
-    text: "Quantos bilhões de estrelas há estima-se na Via Láctea?",
-    unit: "bilhões de estrelas",
-    realValue: 200,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 71,
-    text: "Qual a temperatura estimada em graus Celsius no núcleo do Sol?",
-    unit: "°C (milhões)",
-    realValue: 15000000,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 72,
-    text: "Quantos bilhões de anos tem o universo (estimativa atual)?",
-    unit: "bilhões de anos",
-    realValue: 13.8,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 73,
-    text: "Quantos minutos a luz do Sol leva para chegar até a Terra?",
-    unit: "minutos",
-    realValue: 8.3,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 74,
-    text: "Qual o diâmetro em km da maior cratera de impacto já encontrada na Terra? — Vredefort, África do Sul",
-    unit: "km",
-    realValue: 300,
-    source: "Guinness World Records",
-    category: "astronomia"
-  },
-  // ── Corpo humano ──
-  {
-    id: 75,
-    text: "Quantos ossos tem o corpo humano adulto?",
-    unit: "ossos",
-    realValue: 206,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 76,
-    text: "Quantos músculos tem o corpo humano?",
-    unit: "músculos",
-    realValue: 600,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 77,
-    text: "Quantos dentes tem um adulto humano (incluindo os sisos)?",
-    unit: "dentes",
-    realValue: 32,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 78,
-    text: "Quantos ossos tem a mão humana (incluindo o pulso)?",
-    unit: "ossos",
-    realValue: 27,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 79,
-    text: "Qual a capacidade total em litros dos pulmões de um adulto?",
-    unit: "litros",
-    realValue: 6,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 80,
-    text: "Quantos litros de sangue tem o corpo humano adulto em média?",
-    unit: "litros",
-    realValue: 5,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 81,
-    text: "Quantos bilhões de batimentos cardíacos tem o coração humano ao longo de uma vida média?",
-    unit: "bilhões de batimentos",
-    realValue: 2.5,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 82,
-    text: "A que velocidade em km/h viaja um impulso nervoso no corpo humano?",
-    unit: "km/h",
-    realValue: 432,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  // ── Tecnologia e cultura ──
-  {
-    id: 83,
-    text: "Quantas cópias vendidas (em milhões) o jogo Minecraft acumulou até 2023?",
-    unit: "milhões de cópias",
-    realValue: 238,
-    source: "Guinness World Records, 2023",
-    category: "tecnologia"
-  },
-  {
-    id: 84,
-    text: "Qual a velocidade em km/h do carro terrestre mais rápido do mundo? — ThrustSSC (1997)",
-    unit: "km/h",
-    realValue: 1228,
-    source: "Guinness World Records, 1997",
-    category: "tecnologia"
-  },
-  {
-    id: 85,
-    text: "Qual a velocidade máxima em km/h da montanha-russa mais rápida do mundo? — Formula Rossa, Abu Dhabi",
-    unit: "km/h",
-    realValue: 240,
-    source: "Guinness World Records",
-    category: "tecnologia"
-  },
-  {
-    id: 86,
-    text: "Quantos bilhões de cópias a Bíblia já vendeu na história?",
-    unit: "bilhões de cópias",
-    realValue: 5,
-    source: "Guinness World Records",
-    category: "tecnologia"
-  },
-  {
-    id: 87,
-    text: "Quantos bilhões de falantes (nativos + segunda língua) o inglês tem no mundo?",
-    unit: "bilhões de falantes",
-    realValue: 1.5,
-    source: "Curiosidade linguística",
-    category: "tecnologia"
-  },
-  {
-    id: 88,
-    text: "Quantas línguas existem no mundo atualmente (estimativa)?",
-    unit: "línguas",
-    realValue: 7000,
-    source: "Curiosidade linguística",
-    category: "tecnologia"
-  },
-  {
-    id: 89,
-    text: "Qual a velocidade do som no ar (em m/s) a 20°C?",
-    unit: "m/s",
-    realValue: 343,
-    source: "Curiosidade científica",
-    category: "tecnologia"
-  },
-  {
-    id: 90,
-    text: "Quantas espécies de insetos já foram catalogadas pela ciência?",
-    unit: "espécies",
-    realValue: 1000000,
-    source: "Curiosidade científica",
-    category: "tecnologia"
-  },
-  {
-    id: 91,
-    text: "Qual a área da Antártica em km²?",
-    unit: "km²",
-    realValue: 14000000,
-    source: "Curiosidade geográfica",
-    category: "tecnologia"
-  },
-  {
-    id: 92,
-    text: "A que altitude em metros Alan Eustace saltou de paraquedas (recorde de queda livre, 2014)?",
-    unit: "metros",
-    realValue: 41419,
-    source: "Guinness World Records, 2014",
-    category: "tecnologia"
-  },
-  // ── Humanos (continuação) ──
-  {
-    id: 93,
-    text: "Quantas horas Randy Gardner ficou sem dormir consecutivamente? — recorde mundial (1964)",
-    unit: "horas",
-    realValue: 264,
-    source: "Guinness World Records, 1964",
-    category: "humanos"
-  },
-  {
-    id: 94,
-    text: "Qual o comprimento em metros do cabelo humano mais longo já medido? — Xie Qiuping, China (2004)",
-    unit: "metros",
-    realValue: 5.627,
-    source: "Guinness World Records, 2004",
-    category: "humanos"
-  },
-  {
-    id: 95,
-    text: "Quantos anos Charles Osborne solaçou de forma contínua? — recorde mundial",
-    unit: "anos",
-    realValue: 68,
-    source: "Guinness World Records",
-    category: "humanos"
-  },
-  {
-    id: 96,
-    text: "Qual o comprimento total em cm das unhas da mão esquerda de Shridhar Chillal (5 unhas)? — Índia (2018)",
-    unit: "cm",
-    realValue: 909.6,
-    source: "Guinness World Records, 2018",
-    category: "humanos"
-  },
-  {
-    id: 97,
-    text: "Com quantos anos Fauja Singh completou uma maratona, tornando-se o mais velho a fazê-lo? — Canadá (2011)",
-    unit: "anos",
-    realValue: 100,
-    source: "Guinness World Records, 2011",
-    category: "humanos"
-  },
-  {
-    id: 98,
-    text: "A que velocidade em km/h viaja o ar expelido em um espirro humano?",
-    unit: "km/h",
-    realValue: 160,
-    source: "Curiosidade científica",
-    category: "humanos"
-  },
-  {
-    id: 99,
-    text: "Qual a profundidade em metros do mergulho de scuba mais fundo já realizado? — Ahmed Gabr, Egito (2014)",
-    unit: "metros",
-    realValue: 332.35,
-    source: "Guinness World Records, 2014",
-    category: "humanos"
-  },
-  // ── Esportes (continuação) ──
-  {
-    id: 100,
-    text: "Qual a velocidade em km/h do arremesso mais rápido no beisebol? — Aroldis Chapman, EUA (2010)",
-    unit: "km/h",
-    realValue: 169.1,
-    source: "Guinness World Records, 2010",
-    category: "esportes"
-  },
-  {
-    id: 101,
-    text: "Quantos pontos Wilt Chamberlain marcou em uma única partida de NBA? — recorde histórico (1962)",
-    unit: "pontos",
-    realValue: 100,
-    source: "Guinness World Records, 1962",
-    category: "esportes"
-  },
-  {
-    id: 102,
-    text: "Quantos gols Lionel Messi marcou no ano civil de 2012? — recorde mundial",
-    unit: "gols",
-    realValue: 91,
-    source: "Guinness World Records, 2012",
-    category: "esportes"
-  },
-  {
-    id: 103,
-    text: "Quantos títulos de Grand Slam Margaret Court venceu? — recorde no tênis feminino",
-    unit: "títulos",
-    realValue: 24,
-    source: "Guinness World Records",
-    category: "esportes"
-  },
-  {
-    id: 104,
-    text: "Qual a velocidade em km/h da bola mais rápida já lançada no críquete? — Shoaib Akhtar, Paquistão (2003)",
-    unit: "km/h",
-    realValue: 161.3,
-    source: "Guinness World Records, 2003",
-    category: "esportes"
-  },
-  {
-    id: 105,
-    text: "Qual a distância em metros da maior tacada de golfe já registrada? — Mike Austin, EUA (1974)",
-    unit: "metros",
-    realValue: 471,
-    source: "Guinness World Records, 1974",
-    category: "esportes"
-  },
-  {
-    id: 106,
-    text: "Quantas medalhas olímpicas no total Michael Phelps conquistou ao longo da carreira?",
-    unit: "medalhas",
-    realValue: 28,
-    source: "Guinness World Records",
-    category: "esportes"
-  },
-  {
-    id: 107,
-    text: "Quantos títulos mundiais de Fórmula 1 Lewis Hamilton e Michael Schumacher conquistaram? (empatados no recorde)",
-    unit: "títulos",
-    realValue: 7,
-    source: "Guinness World Records",
-    category: "esportes"
-  },
-  {
-    id: 108,
-    text: "Qual a velocidade em km/h do esquiador mais rápido da história em descida? — Ivan Origone, Itália (2016)",
-    unit: "km/h",
-    realValue: 254.958,
-    source: "Guinness World Records, 2016",
-    category: "esportes"
-  },
-  {
-    id: 109,
-    text: "Quantos gols Just Fontaine marcou em uma única Copa do Mundo? — França (1958)",
-    unit: "gols",
-    realValue: 13,
-    source: "Guinness World Records, 1958",
-    category: "esportes"
-  },
-  {
-    id: 110,
-    text: "Qual a maior margem de vitória em pontos numa partida de basquete da NBA? — Cleveland Cavaliers 148 × Detroit Pistons 80 (1991)",
-    unit: "pontos de diferença",
-    realValue: 68,
-    source: "Guinness World Records, 1991",
-    category: "esportes"
-  },
-  // ── Animais (continuação) ──
-  {
-    id: 111,
-    text: "Qual a envergadura em metros do albatroz-errante — a maior de qualquer ave viva?",
-    unit: "metros",
-    realValue: 3.7,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 112,
-    text: "Qual a distância em km da migração anual da andorinha-ártica — a maior migração de qualquer animal?",
-    unit: "km",
-    realValue: 70900,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 113,
-    text: "Qual a profundidade em metros do mergulho mais fundo de um mamífero? — baleia de Cuvier (2014)",
-    unit: "metros",
-    realValue: 2992,
-    source: "Guinness World Records, 2014",
-    category: "animais"
-  },
-  {
-    id: 114,
-    text: "Qual a velocidade máxima em km/h do peixe-vela — o peixe mais rápido do mundo?",
-    unit: "km/h",
-    realValue: 110,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 115,
-    text: "Quantas patas tem o milípede Eumillipes persephone — o animal com mais patas do mundo? (2021)",
-    unit: "patas",
-    realValue: 1306,
-    source: "Guinness World Records, 2021",
-    category: "animais"
-  },
-  {
-    id: 116,
-    text: "Qual o comprimento em cm do beija-flor-abelha — a menor ave do mundo?",
-    unit: "cm",
-    realValue: 5.7,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 117,
-    text: "Quantos decibéis atinge o grito do macaco-uivador — o animal terrestre mais barulhento?",
-    unit: "dB",
-    realValue: 128,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 118,
-    text: "Qual o peso em kg da avestruz macho adulta — a maior ave viva do mundo?",
-    unit: "kg",
-    realValue: 156,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 119,
-    text: "Qual a envergadura em cm (patas abertas) do maior crustáceo do mundo? — caranguejo-aranha-gigante japonês",
-    unit: "cm",
-    realValue: 380,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  {
-    id: 120,
-    text: "Qual o comprimento em metros da maior lula-gigante já medida? — Architeuthis dux",
-    unit: "metros",
-    realValue: 13,
-    source: "Guinness World Records",
-    category: "animais"
-  },
-  // ── Natureza (continuação) ──
-  {
-    id: 121,
-    text: "Qual a altura em metros da queda d'água mais alta do mundo? — Salto Ángel, Venezuela",
-    unit: "metros",
-    realValue: 979,
-    source: "Guinness World Records",
-    category: "natureza"
-  },
-  {
-    id: 122,
-    text: "Qual a área em km² da Groenlândia — a maior ilha do mundo?",
-    unit: "km²",
-    realValue: 2166086,
-    source: "Curiosidade geográfica",
-    category: "natureza"
-  },
-  {
-    id: 123,
-    text: "Qual a área em km² do Deserto do Saara — o maior deserto quente do mundo?",
-    unit: "km²",
-    realValue: 9200000,
-    source: "Curiosidade geográfica",
-    category: "natureza"
-  },
-  {
-    id: 124,
-    text: "Qual o comprimento em km dos Andes — a cordilheira mais longa do mundo?",
-    unit: "km",
-    realValue: 7000,
-    source: "Curiosidade geográfica",
-    category: "natureza"
-  },
-  {
-    id: 125,
-    text: "Qual a profundidade em metros do Rio Congo — o rio mais profundo do mundo?",
-    unit: "metros",
-    realValue: 220,
-    source: "Guinness World Records",
-    category: "natureza"
-  },
-  {
-    id: 126,
-    text: "Qual a área em km² do Salar de Uyuni — a maior planície de sal do mundo? — Bolívia",
-    unit: "km²",
-    realValue: 10582,
-    source: "Guinness World Records",
-    category: "natureza"
-  },
-  {
-    id: 127,
-    text: "Quantos cm por dia cresce o bambu em seu pico máximo de crescimento?",
-    unit: "cm/dia",
-    realValue: 91,
-    source: "Guinness World Records",
-    category: "natureza"
-  },
-  // ── Construções (continuação) ──
-  {
-    id: 128,
-    text: "Qual a altura em metros da maior estátua do mundo? — Estátua da Unidade, Índia (2018)",
-    unit: "metros",
-    realValue: 182,
-    source: "Guinness World Records, 2018",
-    category: "construcoes"
-  },
-  {
-    id: 129,
-    text: "Qual o comprimento em metros do vão central da maior ponte suspensa do mundo? — Akashi Kaikyō, Japão (1998)",
-    unit: "metros",
-    realValue: 1991,
-    source: "Guinness World Records, 1998",
-    category: "construcoes"
-  },
-  {
-    id: 130,
-    text: "Qual a profundidade em metros da mina mais profunda do mundo? — Mponeng, África do Sul",
-    unit: "metros",
-    realValue: 4000,
-    source: "Guinness World Records",
-    category: "construcoes"
-  },
-  {
-    id: 131,
-    text: "Qual a área em m² da Cidade Proibida — o maior palácio do mundo? — Pequim, China",
-    unit: "m²",
-    realValue: 720000,
-    source: "Guinness World Records",
-    category: "construcoes"
-  },
-  {
-    id: 132,
-    text: "Qual o comprimento em km do Túnel de Laerdal — o maior túnel rodoviário do mundo? — Noruega (2000)",
-    unit: "km",
-    realValue: 24.5,
-    source: "Guinness World Records, 2000",
-    category: "construcoes"
-  },
-  // ── Astronomia (continuação) ──
-  {
-    id: 133,
-    text: "Qual o diâmetro em km de Júpiter — o maior planeta do Sistema Solar?",
-    unit: "km",
-    realValue: 142984,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 134,
-    text: "Qual a distância em milhões de anos-luz da Galáxia de Andrômeda — a maior galáxia vizinha da Via Láctea?",
-    unit: "milhões de anos-luz",
-    realValue: 2.537,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 135,
-    text: "Quantas luas Saturno possui? — maior número de satélites naturais no Sistema Solar (2024)",
-    unit: "luas",
-    realValue: 146,
-    source: "Curiosidade científica, 2024",
-    category: "astronomia"
-  },
-  {
-    id: 136,
-    text: "Qual o diâmetro em km do Sol?",
-    unit: "km",
-    realValue: 1392700,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 137,
-    text: "Quantos bilhões de anos tem o Sistema Solar?",
-    unit: "bilhões de anos",
-    realValue: 4.6,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 138,
-    text: "Qual a temperatura média em °C da superfície de Vênus — o planeta mais quente do Sistema Solar?",
-    unit: "°C",
-    realValue: 465,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 139,
-    text: "Qual a velocidade orbital de Mercúrio em km/h — o planeta mais rápido do Sistema Solar?",
-    unit: "km/h",
-    realValue: 172332,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  {
-    id: 140,
-    text: "Qual a distância média em bilhões de km entre o Sol e Plutão?",
-    unit: "bilhões de km",
-    realValue: 5.9,
-    source: "Curiosidade científica",
-    category: "astronomia"
-  },
-  // ── Corpo Humano (continuação) ──
-  {
-    id: 141,
-    text: "Quantos bilhões de neurônios tem o cérebro humano?",
-    unit: "bilhões de neurônios",
-    realValue: 86,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 142,
-    text: "Qual o comprimento em metros do DNA de uma única célula humana, se totalmente esticado?",
-    unit: "metros",
-    realValue: 2,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 143,
-    text: "Qual a área total em m² da pele de um adulto humano?",
-    unit: "m²",
-    realValue: 1.7,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 144,
-    text: "Qual o comprimento em mm do menor osso do corpo humano? — o estribo, no ouvido médio",
-    unit: "mm",
-    realValue: 3,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 145,
-    text: "Quantas papilas gustativas tem a língua humana (estimativa)?",
-    unit: "papilas gustativas",
-    realValue: 10000,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 146,
-    text: "Qual o comprimento total em metros dos intestinos humanos (delgado + grosso)?",
-    unit: "metros",
-    realValue: 8.5,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  {
-    id: 147,
-    text: "Quantos trilhões de células tem o corpo humano?",
-    unit: "trilhões de células",
-    realValue: 37,
-    source: "Curiosidade científica",
-    category: "corpo"
-  },
-  // ── Tecnologia & Cultura (continuação) ──
-  {
-    id: 148,
-    text: "Qual a bilheteria total em bilhões de dólares do filme mais lucrativo da história? — Avatar (2009/2022)",
-    unit: "bilhões de dólares",
-    realValue: 2.92,
-    source: "Guinness World Records, 2023",
-    category: "tecnologia"
-  },
-  {
-    id: 149,
-    text: "Qual o maior número de Oscars ganhos por um único filme? — recorde compartilhado por 3 filmes",
-    unit: "Oscars",
-    realValue: 11,
-    source: "Guinness World Records",
-    category: "tecnologia"
-  },
-  {
-    id: 150,
-    text: "Qual a velocidade de cruzeiro em km/h do Concorde — o avião comercial mais rápido da história?",
-    unit: "km/h",
-    realValue: 2179,
-    source: "Guinness World Records",
-    category: "tecnologia"
-  },
-  {
-    id: 151,
-    text: "Qual a profundidade em metros do furo mais profundo já feito no mundo? — Poço Superdeep de Kola, Rússia (1989)",
-    unit: "metros",
-    realValue: 12262,
-    source: "Guinness World Records, 1989",
-    category: "tecnologia"
-  },
-  {
-    id: 152,
-    text: "Qual a velocidade em km/h do trem mais rápido do mundo em testes? — maglev japonês SCMaglev (2015)",
-    unit: "km/h",
-    realValue: 603,
-    source: "Guinness World Records, 2015",
-    category: "tecnologia"
-  },
-  {
-    id: 153,
-    text: "Qual a temperatura estimada em °C no núcleo da Terra?",
-    unit: "°C",
-    realValue: 6000,
-    source: "Curiosidade científica",
-    category: "tecnologia"
-  },
-  {
-    id: 154,
-    text: "Quantos segundos durou o primeiro voo dos Irmãos Wright? — Kitty Hawk, EUA (1903)",
-    unit: "segundos",
-    realValue: 12,
-    source: "Guinness World Records, 1903",
-    category: "tecnologia"
-  },
-  {
-    id: 155,
-    text: "Quantos milhões de itens tem a Biblioteca do Congresso dos EUA — a maior biblioteca do mundo?",
-    unit: "milhões de itens",
-    realValue: 174,
-    source: "Guinness World Records",
-    category: "tecnologia"
-  },
-  {
-    id: 156,
-    text: "Qual o diâmetro em metros da maior pizza já feita? — Buono Foods, Roma, Itália (2012)",
-    unit: "metros",
-    realValue: 40,
-    source: "Guinness World Records, 2012",
-    category: "tecnologia"
-  },
-  {
-    id: 157,
-    text: "Qual o recorde mundial em segundos de resolução do cubo de Rubik 3×3? — Max Park, EUA (2023)",
-    unit: "segundos",
-    realValue: 3.13,
-    source: "Guinness World Records, 2023",
-    category: "tecnologia"
-  },
-  // ── Geografia (continuação) ──
-  {
-    id: 158,
-    text: "A que altitude em metros fica o Lago Titicaca — o lago navegável mais alto do mundo? — Peru e Bolívia",
-    unit: "metros",
-    realValue: 3812,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 159,
-    text: "Qual o comprimento em km da maior fronteira terrestre do mundo? — Canadá e EUA",
-    unit: "km",
-    realValue: 8891,
-    source: "Curiosidade geográfica",
-    category: "geografia"
-  },
-  {
-    id: 160,
-    text: "Quantas ilhas tem a Indonésia — o maior arquipélago do mundo?",
-    unit: "ilhas",
-    realValue: 17508,
-    source: "Curiosidade geográfica",
-    category: "geografia"
-  },
-  {
-    id: 161,
-    text: "Qual a temperatura mínima em °C registrada em Oymyakon, Rússia — o lugar habitado mais frio do mundo? (1933)",
-    unit: "°C",
-    realValue: -67.7,
-    source: "Guinness World Records, 1933",
-    category: "geografia"
-  },
-  {
-    id: 162,
-    text: "Qual o volume médio de chuva em mm por ano de Mawsynram, Índia — o lugar mais chuvoso do mundo?",
-    unit: "mm/ano",
-    realValue: 11871,
-    source: "Guinness World Records",
-    category: "geografia"
-  },
-  {
-    id: 163,
-    text: "Qual a área em km² do Mar Cáspio — o maior lago do mundo?",
-    unit: "km²",
-    realValue: 371000,
-    source: "Curiosidade geográfica",
-    category: "geografia"
-  },
-  {
-    id: 164,
-    text: "Quantos fusos horários a Rússia possui — o maior número de qualquer país do mundo?",
-    unit: "fusos horários",
-    realValue: 11,
-    source: "Curiosidade geográfica",
-    category: "geografia"
-  }
+  { id: 501, text: "Quantos quilômetros de extensão tem o Valles Marineris em Marte, o maior cânion do Sistema Solar?", unit: "quilômetros", realValue: 4000, source: "Guinness World Records, 2016", category: "astronomia" },
+  { id: 502, text: "Quantos quilômetros de altitude tem o Olympus Mons em Marte, o maior vulcão do Sistema Solar?", unit: "quilômetros", realValue: 22, source: "Guinness World Records, 2017", category: "astronomia" },
+  { id: 503, text: "Quantos quilômetros de diâmetro tem a Grande Mancha Vermelha de Júpiter?", unit: "quilômetros", realValue: 16000, source: "Guinness World Records, 2019", category: "astronomia" },
+  { id: 504, text: "Quantos quilômetros de largura têm os anéis de Saturno em seu conjunto?", unit: "quilômetros", realValue: 282000, source: "Guinness World Records, 2018", category: "astronomia" },
+  { id: 505, text: "Quantos km/h os ventos de Netuno podem atingir, os mais rápidos do Sistema Solar?", unit: "km/h", realValue: 2100, source: "Guinness World Records, 2017", category: "astronomia" },
+  { id: 506, text: "Quantos graus Celsius é a temperatura na superfície visível do Sol?", unit: "°C", realValue: 5500, source: "Guinness World Records, 2015", category: "astronomia" },
+  { id: 507, text: "Quantos quilômetros tem o diâmetro de Plutão?", unit: "quilômetros", realValue: 2377, source: "Guinness World Records, 2015", category: "astronomia" },
+  { id: 508, text: "Quantos metros tem a Estação Espacial Internacional em seu maior comprimento?", unit: "metros", realValue: 109, source: "Guinness World Records, 2019", category: "astronomia" },
+  { id: 509, text: "Quantas horas dura um dia em Vênus (sua rotação completa)?", unit: "horas", realValue: 5832, source: "Guinness World Records, 2016", category: "astronomia" },
+  { id: 510, text: "Quantos km/h a Terra se move ao redor do Sol em sua órbita?", unit: "km/h", realValue: 107000, source: "Guinness World Records, 2017", category: "astronomia" },
+  { id: 511, text: "Quantas luas Saturno possui, o planeta com mais satélites naturais do Sistema Solar?", unit: "luas", realValue: 146, source: "Guinness World Records, 2023", category: "astronomia" },
+  { id: 512, text: "Quantos bilhões de quilômetros Netuno está do Sol em média?", unit: "bilhões de km", realValue: 4.5, source: "Guinness World Records, 2017", category: "astronomia" },
+  { id: 513, text: "Quantas vezes maior que o Sol é o UY Scuti, a estrela de maior raio conhecida?", unit: "vezes o raio solar", realValue: 1708, source: "Guinness World Records, 2014", category: "astronomia" },
+  { id: 514, text: "Quantos km/h a superfície da Terra gira no equador por conta da rotação terrestre?", unit: "km/h", realValue: 1670, source: "Guinness World Records, 2016", category: "astronomia" },
+  { id: 515, text: "Quantos anos-luz distante fica a galáxia mais distante observada (GN-z11)?", unit: "bilhões de anos-luz", realValue: 13.4, source: "Guinness World Records, 2016", category: "astronomia" },
+  { id: 516, text: "Quantas vezes a massa do Sol cabe no buraco negro no centro da Via Láctea (Sgr A*)?", unit: "massas solares", realValue: 4000000, source: "Guinness World Records, 2020", category: "astronomia" },
+  { id: 517, text: "Quantos km/h a Voyager 1 viaja ao se afastar do Sol, a sonda mais rápida em fuga solar?", unit: "km/h", realValue: 61500, source: "Guinness World Records, 2019", category: "astronomia" },
+  { id: 518, text: "Quantos graus Kelvin é a temperatura do espaço profundo (radiação de fundo cósmico)?", unit: "Kelvin", realValue: 2.7, source: "Guinness World Records, 2015", category: "astronomia" },
+  { id: 519, text: "Quantos quilômetros tem o diâmetro da Lua?", unit: "quilômetros", realValue: 3474, source: "Guinness World Records, 2015", category: "astronomia" },
+  { id: 520, text: "Quantos anos-luz de diâmetro tem o Supervazio de Boötes, maior vazio conhecido no universo?", unit: "anos-luz", realValue: 330000000, source: "Guinness World Records, 2016", category: "astronomia" },
+
+  // ── Corpo Humano ──
+  { id: 601, text: "Quantos neurônios o cérebro humano possui aproximadamente?", unit: "bilhões de neurônios", realValue: 86, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 602, text: "Quantos metros de DNA existem compactados em cada célula humana?", unit: "metros", realValue: 2, source: "Guinness World Records, 2015", category: "corpo" },
+  { id: 603, text: "Quantos metros quadrados tem a pele de um adulto humano médio?", unit: "metros quadrados", realValue: 1.7, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 604, text: "Quantos milímetros mede o estribo (stapes), o menor osso do corpo humano?", unit: "milímetros", realValue: 3, source: "Guinness World Records, 2014", category: "corpo" },
+  { id: 605, text: "Quantas papilas gustativas a língua humana possui em média?", unit: "papilas", realValue: 10000, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 606, text: "Quantos metros medem juntos o intestino delgado e grosso de um adulto?", unit: "metros", realValue: 8.5, source: "Guinness World Records, 2015", category: "corpo" },
+  { id: 607, text: "Quantos trilhões de células existem no corpo humano adulto?", unit: "trilhões", realValue: 37, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 608, text: "Quantos quilos pesa o fígado humano adulto, o maior órgão interno sólido?", unit: "quilogramas", realValue: 1.5, source: "Guinness World Records, 2015", category: "corpo" },
+  { id: 609, text: "Quantos quilômetros de vasos sanguíneos existem no corpo humano?", unit: "quilômetros", realValue: 100000, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 610, text: "Quantos batimentos cardíacos o coração humano dá em um ano inteiro?", unit: "milhões de batimentos", realValue: 35, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 611, text: "Quantos litros de ar um adulto respira por dia em repouso?", unit: "litros", realValue: 11000, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 612, text: "Quantos milhões de glóbulos vermelhos existem em cada mililitro de sangue humano?", unit: "milhões por mL", realValue: 5, source: "Guinness World Records, 2015", category: "corpo" },
+  { id: 613, text: "Quantos ossos tem o esqueleto de um adulto humano?", unit: "ossos", realValue: 206, source: "Guinness World Records, 2014", category: "corpo" },
+  { id: 614, text: "Quantos metros por segundo é a velocidade do impulso nervoso mais rápido no corpo humano?", unit: "metros por segundo", realValue: 120, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 615, text: "Quantos litros de sangue o coração bombeia por minuto em repouso?", unit: "litros por minuto", realValue: 5, source: "Guinness World Records, 2015", category: "corpo" },
+  { id: 616, text: "Quantos músculos o corpo humano possui no total?", unit: "músculos", realValue: 640, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 617, text: "Quantos milímetros de espessura tem a córnea do olho humano?", unit: "milímetros", realValue: 0.5, source: "Guinness World Records, 2015", category: "corpo" },
+  { id: 618, text: "Quantas vezes por dia os olhos humanos piscam em média?", unit: "vezes", realValue: 15000, source: "Guinness World Records, 2016", category: "corpo" },
+
+  // ── Tecnologia & Cultura ──
+  { id: 701, text: "Quantos bilhões de usuários ativos o Instagram possui?", unit: "bilhões de usuários", realValue: 2, source: "Guinness World Records, 2023", category: "tecnologia" },
+  { id: 702, text: "Quantos bilhões de visualizações 'Baby Shark' tem no YouTube, o mais assistido da história?", unit: "bilhões de views", realValue: 13, source: "Guinness World Records, 2023", category: "tecnologia" },
+  { id: 703, text: "Quantos metros de altitude Vijaypat Singhania atingiu em balão de ar quente, recorde mundial?", unit: "metros", realValue: 21290, source: "Guinness World Records, 2005", category: "tecnologia" },
+  { id: 704, text: "Quantos Prêmios Nobel os EUA acumularam, o país com mais prêmios?", unit: "prêmios", realValue: 396, source: "Guinness World Records, 2022", category: "tecnologia" },
+  { id: 705, text: "Quantos km/h a Kawasaki Ninja H2R atinge em sua velocidade máxima de fábrica?", unit: "km/h", realValue: 400, source: "Guinness World Records, 2015", category: "tecnologia" },
+  { id: 706, text: "A que profundidade (metros) o DSV Limiting Factor mergulhou na Fossa das Marianas?", unit: "metros", realValue: 10928, source: "Guinness World Records, 2019", category: "tecnologia" },
+  { id: 707, text: "Quantos milhões de apps estavam disponíveis na App Store da Apple em seu pico?", unit: "milhões de apps", realValue: 1.8, source: "Guinness World Records, 2022", category: "tecnologia" },
+  { id: 708, text: "Por quantos milhões de dólares o 'Salvator Mundi' de Da Vinci foi vendido, recorde de leilão?", unit: "milhões de dólares", realValue: 450.3, source: "Guinness World Records, 2017", category: "tecnologia" },
+  { id: 709, text: "Quantos km/h a Apollo 11 atingiu em sua maior velocidade rumo à Lua?", unit: "km/h", realValue: 39000, source: "Guinness World Records, 1969", category: "tecnologia" },
+  { id: 710, text: "Quantos km/h o elevador mais rápido do mundo (Guangzhou CTF) sobe?", unit: "km/h", realValue: 75.6, source: "Guinness World Records, 2016", category: "tecnologia" },
+  { id: 711, text: "Por quantos milhões de dólares a NFT 'Everydays' de Beeple foi vendida?", unit: "milhões de dólares", realValue: 69.3, source: "Guinness World Records, 2021", category: "tecnologia" },
+  { id: 712, text: "Quantos habitantes por km² tem Mônaco, o país mais densamente populoso do mundo?", unit: "habitantes/km²", realValue: 26337, source: "Guinness World Records, 2022", category: "tecnologia" },
+  { id: 713, text: "Quantos terabytes de dados são gerados no mundo por dia (estimativa de 2023)?", unit: "exabytes por dia", realValue: 2.5, source: "Guinness World Records, 2023", category: "tecnologia" },
+  { id: 714, text: "Quantos metros por segundo viaja a luz no vácuo (velocidade da luz)?", unit: "milhões de m/s", realValue: 300, source: "Guinness World Records, 2015", category: "tecnologia" },
+  { id: 715, text: "Quantos idiomas estão catalogados no mundo inteiro atualmente?", unit: "idiomas", realValue: 7100, source: "Guinness World Records, 2022", category: "tecnologia" },
+  { id: 716, text: "Quantos exemplares o livro mais vendido de todos os tempos (A Bíblia) já teve?", unit: "bilhões de exemplares", realValue: 5, source: "Guinness World Records, 2022", category: "tecnologia" },
+  { id: 717, text: "Quantos países têm o McDonald's presente, o restaurante com mais presença global?", unit: "países", realValue: 100, source: "Guinness World Records, 2022", category: "tecnologia" },
+  { id: 718, text: "Quantas horas de vídeo são enviadas ao YouTube a cada minuto?", unit: "horas por minuto", realValue: 500, source: "Guinness World Records, 2022", category: "tecnologia" },
+  { id: 719, text: "Quantos quilômetros por hora o foguete Falcon 9 atinge ao decolar?", unit: "km/h", realValue: 27000, source: "Guinness World Records, 2020", category: "tecnologia" },
+  { id: 720, text: "Quantos megapixels tem o maior mosaico fotográfico do mundo, criado no Mont Blanc?", unit: "gigapixels", realValue: 365, source: "Guinness World Records, 2015", category: "tecnologia" },
+  { id: 721, text: "Quantos metros tem o maior navio porta-contêineres do mundo (MSC Irina)?", unit: "metros", realValue: 399.9, source: "Guinness World Records, 2023", category: "tecnologia" },
+  { id: 722, text: "Quantas músicas tem o maior álbum de músicas já lançado na história?", unit: "músicas", realValue: 613, source: "Guinness World Records, 2022", category: "tecnologia" },
+
+  // ── Geografia ──
+  { id: 801, text: "Quantos bilhões de pessoas habitam a China, o país mais populoso do mundo?", unit: "bilhões", realValue: 1.4, source: "Guinness World Records, 2022", category: "geografia" },
+  { id: 802, text: "Quantas pessoas vivem no Vaticano, o menor país do mundo em população?", unit: "pessoas", realValue: 800, source: "Guinness World Records, 2022", category: "geografia" },
+  { id: 803, text: "Quantos países existem no continente africano?", unit: "países", realValue: 54, source: "Guinness World Records, 2022", category: "geografia" },
+  { id: 804, text: "Quantos milhões de pessoas habitam Tóquio, a área metropolitana mais populosa do mundo?", unit: "milhões", realValue: 37.4, source: "Guinness World Records, 2022", category: "geografia" },
+  { id: 805, text: "Quantos países são membros da ONU atualmente?", unit: "países", realValue: 193, source: "Guinness World Records, 2022", category: "geografia" },
+  { id: 806, text: "Quantos metros abaixo do nível do mar está o Mar Morto?", unit: "metros", realValue: 430, source: "Guinness World Records, 2022", category: "geografia" },
+  { id: 807, text: "Quantos km² tem o Lago Superior, o maior lago do mundo em superfície?", unit: "km²", realValue: 82103, source: "Guinness World Records, 2020", category: "geografia" },
+  { id: 808, text: "Quantos bilhões de pessoas vivem no mundo atualmente?", unit: "bilhões", realValue: 8.1, source: "Guinness World Records, 2023", category: "geografia" },
+  { id: 809, text: "Quantos países existem na Europa segundo definição convencional?", unit: "países", realValue: 44, source: "Guinness World Records, 2022", category: "geografia" },
+  { id: 810, text: "Quantos metros de profundidade tem a Fossa de Porto Rico, a mais funda do Atlântico?", unit: "metros", realValue: 8376, source: "Guinness World Records, 2020", category: "geografia" },
+  { id: 811, text: "Quantos vulcões ativos existem na superfície terrestre atualmente?", unit: "vulcões", realValue: 1350, source: "Guinness World Records, 2021", category: "geografia" },
+  { id: 812, text: "Quantas línguas oficiais têm o Zimbábue, o país com mais idiomas oficiais?", unit: "línguas oficiais", realValue: 16, source: "Guinness World Records, 2013", category: "geografia" },
+  { id: 813, text: "Quantas ilhas tem a Indonésia, o arquipélago com mais ilhas do mundo?", unit: "ilhas", realValue: 17508, source: "Guinness World Records, 2019", category: "geografia" },
+  { id: 814, text: "Quantos metros de altitude tem La Paz (Bolívia), a capital mais alta do mundo?", unit: "metros", realValue: 3640, source: "Guinness World Records, 2018", category: "geografia" },
+  { id: 815, text: "Quantos quilômetros tem a fronteira entre Canadá e EUA, a mais longa do mundo?", unit: "quilômetros", realValue: 8891, source: "Guinness World Records, 2019", category: "geografia" },
+  { id: 816, text: "Quantos km² tem o deserto do Saara, o maior deserto quente do mundo?", unit: "km²", realValue: 9200000, source: "Guinness World Records, 2020", category: "geografia" },
+  { id: 817, text: "Quantos anos tem Jericó (Palestina), a cidade continuamente habitada mais antiga?", unit: "anos", realValue: 11000, source: "Guinness World Records, 2018", category: "geografia" },
+  { id: 818, text: "Quantos km² tem o Canadá, o segundo maior país em extensão territorial?", unit: "km²", realValue: 9985000, source: "Guinness World Records, 2020", category: "geografia" },
+  { id: 819, text: "Quantos metros tem a profundidade máxima do Lago Tanganyika, o mais profundo da África?", unit: "metros", realValue: 1470, source: "Guinness World Records, 2018", category: "geografia" },
+  { id: 820, text: "Quantos quilômetros de praias tem a Austrália, o país com mais extensão de litoral?", unit: "quilômetros", realValue: 25760, source: "Guinness World Records, 2020", category: "geografia" },
+  { id: 821, text: "Quantas calorias diárias o habitante médio dos EUA consome, o maior consumo per capita?", unit: "calorias", realValue: 3800, source: "Guinness World Records, 2019", category: "geografia" },
+  { id: 822, text: "Quantos metros tem a profundidade máxima do Lago Crater (EUA), o lago mais puro da América?", unit: "metros", realValue: 594, source: "Guinness World Records, 2017", category: "geografia" },
+
+  // ── Recordes Humanos (extras) ──
+  { id: 19, text: "Em quantos segundos Eliud Kipchoge correu a maratona no 'Breaking2', perto do limite humano?", unit: "segundos", realValue: 7259, source: "Guinness World Records, 2019", category: "humanos" },
+  { id: 20, text: "Quantos cm media Chandra Bahadur Dangi, o homem mais baixo do mundo?", unit: "centímetros", realValue: 54.6, source: "Guinness World Records, 2012", category: "humanos" },
+  { id: 21, text: "Com quantos anos Lee Redmond começou a crescer as unhas até atingir 8,65m no total?", unit: "anos crescendo as unhas", realValue: 30, source: "Guinness World Records, 2008", category: "humanos" },
+  { id: 22, text: "Quantos metros media Sultan Kösen, o homem mais alto do mundo?", unit: "metros", realValue: 2.51, source: "Guinness World Records, 2011", category: "humanos" },
+  { id: 23, text: "Quantos idiomas falava fluentemente Ziad Fazah, o maior poliglota registrado?", unit: "idiomas", realValue: 59, source: "Guinness World Records, 1992", category: "humanos" },
+  { id: 24, text: "Quantos cm/h crescem as unhas humanas em média por mês?", unit: "mm por mês", realValue: 3, source: "Guinness World Records, 2016", category: "humanos" },
+  { id: 25, text: "Quantos dentes leite tem uma criança humana ao completar sua dentição temporária?", unit: "dentes", realValue: 20, source: "Guinness World Records, 2014", category: "humanos" },
+
+  // ── Esportes (extras) ──
+  { id: 123, text: "Quantas medalhas de ouro Michael Phelps ganhou nos Jogos Olímpicos ao longo da carreira?", unit: "medalhas de ouro", realValue: 23, source: "Guinness World Records, 2016", category: "esportes" },
+  { id: 124, text: "Quantas vezes Valentino Rossi venceu o Campeonato Mundial de MotoGP?", unit: "títulos", realValue: 9, source: "Guinness World Records, 2009", category: "esportes" },
+  { id: 125, text: "Quantas medalhas de ouro Larisa Latynina ganhou em ginástica olímpica (recorde feminino)?", unit: "medalhas de ouro", realValue: 9, source: "Guinness World Records, 1966", category: "esportes" },
+  { id: 126, text: "Quantos segundos demorou Usain Bolt para correr os 100m rasos, recorde mundial?", unit: "segundos", realValue: 9.58, source: "Guinness World Records, 2009", category: "esportes" },
+  { id: 127, text: "Quantos países participaram das Olimpíadas de Tóquio 2020, o maior número da história?", unit: "países", realValue: 206, source: "Guinness World Records, 2021", category: "esportes" },
+  { id: 128, text: "Quantos gols Pelé marcou em jogos oficiais ao longo de sua carreira?", unit: "gols", realValue: 757, source: "Guinness World Records, 1977", category: "esportes" },
+  { id: 129, text: "Quantos ases Goran Ivanišević sacou em Wimbledon 2001, recorde do torneio?", unit: "aces", realValue: 213, source: "Guinness World Records, 2001", category: "esportes" },
+
+  // ── Animais (extras) ──
+  { id: 226, text: "Quantos km/h uma lebre-americana pode correr, a mais rápida de sua espécie?", unit: "km/h", realValue: 72, source: "Guinness World Records, 2014", category: "animais" },
+  { id: 227, text: "Quantos km/h o falcão-peregrino atinge em mergulho, o animal mais veloz do mundo?", unit: "km/h", realValue: 389, source: "Guinness World Records, 2005", category: "animais" },
+  { id: 228, text: "Quantos anos pode viver uma esponja-de-vidro (hexactinellida), o animal mais longevo?", unit: "anos", realValue: 11000, source: "Guinness World Records, 2012", category: "animais" },
+  { id: 229, text: "Quantos metros de envergadura tem a manta-raia-gigante, o maior peixe cartilaginoso achatado?", unit: "metros", realValue: 8.8, source: "Guinness World Records, 2016", category: "animais" },
+  { id: 230, text: "Quantas vezes por segundo um colibri bate as asas?", unit: "vezes por segundo", realValue: 80, source: "Guinness World Records, 2015", category: "animais" },
+  { id: 231, text: "Quantos quilos pode pesar um elefante-africano adulto macho, o maior terrestre?", unit: "quilogramas", realValue: 7000, source: "Guinness World Records, 2014", category: "animais" },
+  { id: 232, text: "Quantos metros media o maior polvo-gigante-do-Pacífico já registrado?", unit: "metros", realValue: 9.1, source: "Guinness World Records, 2014", category: "animais" },
+
+  // ── Natureza (extras) ──
+  { id: 326, text: "Quantos km/h o maior tornado já registrado (El Reno, 2013) atingiu?", unit: "km/h", realValue: 484, source: "Guinness World Records, 2013", category: "natureza" },
+  { id: 327, text: "Quantos metros de extensão tem a Gruta de Altamira, sítio de arte rupestre mais famoso?", unit: "metros", realValue: 270, source: "Guinness World Records, 2008", category: "natureza" },
+  { id: 328, text: "Quantos quilômetros de comprimento tem o Cânion do Colorado (Grand Canyon)?", unit: "quilômetros", realValue: 446, source: "Guinness World Records, 2019", category: "natureza" },
+  { id: 329, text: "Quantos metros de profundidade tem o Gran Cenote Maya Angelita, o mais profundo?", unit: "metros", realValue: 91, source: "Guinness World Records, 2018", category: "natureza" },
+  { id: 330, text: "Quantos metros de queda tem as Cataratas Anjo (Venezuela), a mais alta do mundo?", unit: "metros", realValue: 979, source: "Guinness World Records, 2017", category: "natureza" },
+  { id: 331, text: "Quantos km² tem a Floresta Amazônica, a maior floresta tropical do mundo?", unit: "km²", realValue: 5500000, source: "Guinness World Records, 2020", category: "natureza" },
+  { id: 332, text: "Quantos metros de largura tem a Cachoeira de Iguaçu no ponto mais largo?", unit: "metros", realValue: 2700, source: "Guinness World Records, 2018", category: "natureza" },
+
+  // ── Construções (extras) ──
+  { id: 416, text: "Quantos metros tem o Túnel do Seikan (Japão), o mais longo subaquático do mundo?", unit: "metros", realValue: 53850, source: "Guinness World Records, 1988", category: "construcoes" },
+  { id: 417, text: "Quantos metros tem a maior pirâmide por volume: a Pirâmide de Cholula (México)?", unit: "metros de altura", realValue: 55, source: "Guinness World Records, 2019", category: "construcoes" },
+  { id: 418, text: "Quantos metros tem a Ponte de Danyang-Kunshan (China), a mais longa do mundo?", unit: "quilômetros", realValue: 164.8, source: "Guinness World Records, 2011", category: "construcoes" },
+  { id: 419, text: "Quantos metros tem o Masjid al-Haram em Meca, a maior mesquita do mundo em capacidade?", unit: "metros quadrados", realValue: 356800, source: "Guinness World Records, 2020", category: "construcoes" },
+  { id: 420, text: "Em quantos anos foi construída a Catedral de Colônia, obra mais demorada da Europa?", unit: "anos", realValue: 632, source: "Guinness World Records, 2015", category: "construcoes" },
+
+  // ── Astronomia (extras) ──
+  { id: 521, text: "Quantos quilômetros tem o diâmetro de Júpiter, o maior planeta do Sistema Solar?", unit: "quilômetros", realValue: 139820, source: "Guinness World Records, 2016", category: "astronomia" },
+  { id: 522, text: "Quantas vezes maior que a Terra é o volume de Júpiter?", unit: "vezes maior", realValue: 1321, source: "Guinness World Records, 2017", category: "astronomia" },
+  { id: 523, text: "Quantos quilômetros por hora é a velocidade de escape da Terra?", unit: "km/h", realValue: 40270, source: "Guinness World Records, 2016", category: "astronomia" },
+  { id: 524, text: "Quantos quilômetros há entre a Terra e a Lua em média?", unit: "quilômetros", realValue: 384400, source: "Guinness World Records, 2016", category: "astronomia" },
+  { id: 525, text: "Quantas toneladas pesou o maior meteorito de ferro registrado (Hoba, Namíbia)?", unit: "toneladas", realValue: 60, source: "Guinness World Records, 2015", category: "astronomia" },
+
+  // ── Corpo Humano (extras) ──
+  { id: 619, text: "Quantos quilômetros de cabelo um humano médio produz ao longo de toda a vida?", unit: "quilômetros", realValue: 950, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 620, text: "Quantas vezes por dia o coração humano bate em média?", unit: "batimentos por dia", realValue: 100000, source: "Guinness World Records, 2015", category: "corpo" },
+  { id: 621, text: "Quantas calorias o cérebro consome por dia, mesmo em repouso?", unit: "calorias", realValue: 300, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 622, text: "Quantos litros de saliva um humano produz ao longo de toda a vida?", unit: "litros", realValue: 37000, source: "Guinness World Records, 2016", category: "corpo" },
+  { id: 623, text: "Quantos quilogramas de bactérias um humano adulto carrega no intestino?", unit: "quilogramas", realValue: 1.5, source: "Guinness World Records, 2016", category: "corpo" },
+
+  // ── Tecnologia & Cultura (extras) ──
+  { id: 723, text: "Quantos bilhões de usuários o Facebook tinha em seu pico de 2022?", unit: "bilhões de usuários", realValue: 2.9, source: "Guinness World Records, 2022", category: "tecnologia" },
+  { id: 724, text: "Quantas línguas de programação existem catalogadas no mundo?", unit: "linguagens", realValue: 700, source: "Guinness World Records, 2020", category: "tecnologia" },
+  { id: 725, text: "Quantos transistores tinha o processador Apple M2 Ultra, o mais denso de 2023?", unit: "bilhões de transistores", realValue: 134, source: "Guinness World Records, 2023", category: "tecnologia" },
+
+  // ── Geografia (extras) ──
+  { id: 823, text: "Quantos km² tem a Antártida, o continente mais frio e isolado?", unit: "km²", realValue: 14000000, source: "Guinness World Records, 2020", category: "geografia" },
+  { id: 824, text: "Quantas horas de fuso horário diferentes existem no mundo (incluindo meias horas)?", unit: "fusos horários", realValue: 38, source: "Guinness World Records, 2020", category: "geografia" },
+  { id: 825, text: "Quantos metros tem o Monte Everest de altitude, o ponto mais alto da Terra?", unit: "metros", realValue: 8849, source: "Guinness World Records, 2020", category: "geografia" },
+  { id: 826, text: "Quantos km² tem a Rússia, o maior país em extensão territorial?", unit: "milhões de km²", realValue: 17.1, source: "Guinness World Records, 2022", category: "geografia" },
 ];
 
 // ─── CATEGORIES ─────────────────────────────────────────────────────────────
