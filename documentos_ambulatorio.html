@@ -63,13 +63,27 @@ nav button.active{color:#fff;font-weight:700;border-bottom-color:#fff;background
 .btn-add{background:#ebf4ff;color:#1a56a0;border:1.5px dashed #90cdf4;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600;width:100%;margin-top:4px;transition:.15s}
 .btn-add:hover{background:#bee3f8}
 
+/* Busca de medicamentos */
+.med-busca-wrap{position:relative;margin-bottom:10px}
+.med-busca-input{width:100%;border:1.5px solid #bee3f8;border-radius:8px;padding:9px 34px 9px 14px;font-size:13px;background:#fff;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+.med-busca-input:focus{outline:none;border-color:#1a56a0;box-shadow:0 0 0 3px rgba(26,86,160,.1)}
+.med-busca-limpar{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#a0aec0;font-size:18px;cursor:pointer;line-height:1;padding:2px 6px}
+.med-busca-limpar:hover{color:#e53e3e}
+
 /* Atalhos de medicamentos */
 .med-atalhos{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.atalho-grupo{background:#f7faff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px}
-.atalho-titulo{font-size:10px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px}
+.atalho-grupo{background:#f7faff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;transition:.15s}
+.atalho-titulo{font-size:10px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between;margin-bottom:0;cursor:pointer;user-select:none}
+.atalho-titulo::after{content:'▾';font-size:11px;color:#90cdf4;transition:transform .15s;margin-left:8px}
+.atalho-grupo.colapsado .atalho-titulo{margin-bottom:0}
+.atalho-grupo.colapsado .atalho-titulo::after{transform:rotate(-90deg)}
+.atalho-grupo:not(.colapsado) .atalho-titulo{margin-bottom:6px}
+.atalho-grupo.colapsado .atalho-btns{display:none}
 .atalho-btns{display:flex;flex-wrap:wrap;gap:6px}
 .btn-atalho{background:#fff;border:1.5px solid #bee3f8;color:#1a56a0;border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;transition:.15s;font-weight:500}
-.btn-atalho:hover{background:#1a56a0;color:#fff;border-color:#1a56a0}
+.btn-atalho:hover{background:#1a56a0;color:#fff;border-color:#1a56a0;transform:scale(1.04)}
+.btn-atalho.destaque-busca{box-shadow:0 0 0 2px #f6ad55}
+.atalho-grupo.oculto-busca{display:none!important}
 
 /* ── Pacotes de exames ───────────────────────────────── */
 .pacotes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:8px}
@@ -771,9 +785,13 @@ body{padding-bottom:64px}
     </div>
 
     <div class="section-label">Atalhos de Medicamentos</div>
-    <div class="med-atalhos">
-      <div class="atalho-grupo">
-        <span class="atalho-titulo">csDMARDs</span>
+    <div class="med-busca-wrap no-print">
+      <input type="text" id="med-busca" class="med-busca-input" placeholder="🔍 Buscar medicamento…" oninput="filtrarMedAtalhos(this.value)">
+      <button type="button" class="med-busca-limpar" onclick="document.getElementById('med-busca').value='';filtrarMedAtalhos('')" title="Limpar busca">×</button>
+    </div>
+    <div class="med-atalhos" id="med-atalhos">
+      <div class="atalho-grupo colapsado">
+        <span class="atalho-titulo" onclick="toggleAtalhoGrupo(this)">csDMARDs</span>
         <div class="atalho-btns">
           <button class="btn-atalho" onclick="addMedRx('Metotrexato')">Metotrexato</button>
           <button class="btn-atalho" onclick="addMedRx('Leflunomida')">Leflunomida</button>
@@ -785,15 +803,15 @@ body{padding-bottom:64px}
           <button class="btn-atalho" onclick="addMedRx('Clorambucila')">Clorambucila</button>
         </div>
       </div>
-      <div class="atalho-grupo">
-        <span class="atalho-titulo">Corticoides</span>
+      <div class="atalho-grupo colapsado">
+        <span class="atalho-titulo" onclick="toggleAtalhoGrupo(this)">Corticoides</span>
         <div class="atalho-btns">
           <button class="btn-atalho" onclick="addMedRx('Prednisona')">Prednisona</button>
           <button class="btn-atalho" onclick="addMedRx('Metilprednisolona')">Metilprednisolona</button>
         </div>
       </div>
-      <div class="atalho-grupo">
-        <span class="atalho-titulo">bDMARDs — Anti-TNF</span>
+      <div class="atalho-grupo colapsado">
+        <span class="atalho-titulo" onclick="toggleAtalhoGrupo(this)">bDMARDs — Anti-TNF</span>
         <div class="atalho-btns">
           <button class="btn-atalho" onclick="addMedRx('Adalimumabe')">Adalimumabe</button>
           <button class="btn-atalho" onclick="addMedRx('Etanercepte')">Etanercepte</button>
@@ -802,8 +820,8 @@ body{padding-bottom:64px}
           <button class="btn-atalho" onclick="addMedRx('Infliximabe')">Infliximabe</button>
         </div>
       </div>
-      <div class="atalho-grupo">
-        <span class="atalho-titulo">bDMARDs — Outros</span>
+      <div class="atalho-grupo colapsado">
+        <span class="atalho-titulo" onclick="toggleAtalhoGrupo(this)">bDMARDs — Outros</span>
         <div class="atalho-btns">
           <button class="btn-atalho" onclick="addMedRx('Abatacepte')">Abatacepte</button>
           <button class="btn-atalho" onclick="addMedRx('Rituximabe')">Rituximabe</button>
@@ -814,8 +832,8 @@ body{padding-bottom:64px}
           <button class="btn-atalho" onclick="addMedRx('Belimumabe')">Belimumabe</button>
         </div>
       </div>
-      <div class="atalho-grupo">
-        <span class="atalho-titulo">tsDMARDs — Inibidores JAK</span>
+      <div class="atalho-grupo colapsado">
+        <span class="atalho-titulo" onclick="toggleAtalhoGrupo(this)">tsDMARDs — Inibidores JAK</span>
         <div class="atalho-btns">
           <button class="btn-atalho" onclick="addMedRx('Tofacitinibe')">Tofacitinibe</button>
           <button class="btn-atalho" onclick="addMedRx('Baricitinibe')">Baricitinibe</button>
@@ -823,8 +841,8 @@ body{padding-bottom:64px}
           <button class="btn-atalho" onclick="addMedRx('Filgotinibe')">Filgotinibe</button>
         </div>
       </div>
-      <div class="atalho-grupo">
-        <span class="atalho-titulo">AINEs / Antigotosos / Outros</span>
+      <div class="atalho-grupo colapsado">
+        <span class="atalho-titulo" onclick="toggleAtalhoGrupo(this)">AINEs / Antigotosos / Outros</span>
         <div class="atalho-btns">
           <button class="btn-atalho" onclick="addMedRx('Naproxeno')">Naproxeno</button>
           <button class="btn-atalho" onclick="addMedRx('Meloxicam')">Meloxicam</button>
@@ -835,8 +853,8 @@ body{padding-bottom:64px}
           <button class="btn-atalho" onclick="addMedRx('Tandrilax')">Tandrilax</button>
         </div>
       </div>
-      <div class="atalho-grupo" style="border-color:#f6ad55;background:#fffbeb">
-        <span class="atalho-titulo" style="color:#b7791f">⚠ Controle Especial (2 vias) — use o Rec. Especial</span>
+      <div class="atalho-grupo colapsado" style="border-color:#f6ad55;background:#fffbeb">
+        <span class="atalho-titulo" style="color:#b7791f" onclick="toggleAtalhoGrupo(this)">⚠ Controle Especial (2 vias) — use o Rec. Especial</span>
         <div class="atalho-btns">
           <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Pregabalina')">Pregabalina</button>
           <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Gabapentina')">Gabapentina</button>
@@ -1630,10 +1648,7 @@ function clearForm(pageId) {
 const ESPECIAIS_PRINT = ['print-hlab27','print-igra'];
 
 function prepararImpressao(ids) {
-  [...DOCS, ...ESPECIAIS_PRINT].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('print-selected');
-  });
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('print-selected'));
   ids.forEach(id => document.getElementById(id)?.classList.add('print-selected'));
 
   document.querySelectorAll('.pacote').forEach(pkg => {
@@ -1736,9 +1751,7 @@ function prepararImpressao(ids) {
 }
 
 function limparImpressao() {
-  [...DOCS, ...ESPECIAIS_PRINT].forEach(id => {
-    document.getElementById(id)?.classList.remove('print-selected');
-  });
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('print-selected'));
   document.querySelectorAll('.pacote').forEach(p => p.classList.remove('sem-selecao'));
   document.querySelectorAll('.oculto-impressao').forEach(el => el.classList.remove('oculto-impressao'));
   if (document._tituloOriginal !== undefined) {
@@ -1822,6 +1835,40 @@ const VIA_LABELS = {
   sc:            'USO SUBCUTÂNEO',
   ev:            'USO ENDOVENOSO',
 };
+
+// ─── Organização dos atalhos de medicamentos (busca + grupos colapsáveis) ─────
+function toggleAtalhoGrupo(tituloEl) {
+  tituloEl.closest('.atalho-grupo')?.classList.toggle('colapsado');
+}
+
+function filtrarMedAtalhos(q) {
+  const termo = (q || '').trim().toLowerCase();
+  const grupos = document.querySelectorAll('#med-atalhos .atalho-grupo');
+
+  grupos.forEach(grupo => {
+    const btns = grupo.querySelectorAll('.btn-atalho');
+    let algumVisivel = false;
+    btns.forEach(btn => {
+      const nome = btn.textContent.toLowerCase();
+      const bate = !termo || nome.includes(termo);
+      btn.style.display = bate ? '' : 'none';
+      btn.classList.toggle('destaque-busca', !!termo && bate);
+      if (bate) algumVisivel = true;
+    });
+    grupo.classList.toggle('oculto-busca', !algumVisivel);
+    if (termo) grupo.classList.toggle('colapsado', !algumVisivel);
+    else if (!termo) grupo.classList.remove('colapsado', 'oculto-busca');
+  });
+
+  if (!termo) {
+    // Ao limpar a busca, todos os grupos voltam a ficar fechados
+    grupos.forEach(g => g.classList.add('colapsado'));
+    document.querySelectorAll('#med-atalhos .btn-atalho').forEach(b => {
+      b.style.display = '';
+      b.classList.remove('destaque-busca');
+    });
+  }
+}
 
 // ─── Medicamentos ──────────────────────────────────────────────────────────────
 function addMedRx(nome) {
@@ -1923,11 +1970,12 @@ function limparRecEsp() {
 
 function imprimirRecEsp() {
   sincRecEsp();
-  // Marca só a aba de receituário especial para impressão
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('print-selected'));
-  document.getElementById('receita-especial').classList.add('print-selected');
-  window.print();
-  document.getElementById('receita-especial').classList.remove('print-selected');
+  prepararImpressao(['receita-especial']);
+  try {
+    window.print();
+  } finally {
+    limparImpressao();
+  }
 }
 
 // ─── Helpers Word ──────────────────────────────────────────────────────────────
