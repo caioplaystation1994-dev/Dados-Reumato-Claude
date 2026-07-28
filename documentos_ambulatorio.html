@@ -356,8 +356,8 @@ body{padding-bottom:64px}
 .rec-esp-ass-linha{border-top:1px solid #4a5568;padding-top:6px;width:260px;font-size:11px;text-align:center;color:#4a5568;margin:0 auto}
 
 @media print{
-  /* Rec. especial: layout de 2 vias em uma A4 */
-  #receita-especial .doc-wrapper,#receita-especial.page{display:block!important}
+  /* Rec. especial: layout de 2 vias em uma A4 (só quando selecionada para impressão) */
+  #receita-especial.page.print-selected .doc-wrapper{display:block!important}
   .rec-esp-wrapper{padding:0;box-shadow:none;border:none;background:transparent}
   .rec-via{padding:14px 20px;border:none;border-radius:0;box-shadow:none;page-break-inside:avoid;margin:0}
   .rec-esp-corte{display:block!important;border-top:1px dashed #aaa;padding:3px 0;font-size:10px;color:#999;letter-spacing:2px;margin:0}
