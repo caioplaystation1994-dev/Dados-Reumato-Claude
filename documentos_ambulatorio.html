@@ -17,6 +17,19 @@ header h1{font-size:17px;font-weight:600;letter-spacing:.2px}
 nav button{background:transparent;border:none;border-bottom:3px solid transparent;color:rgba(255,255,255,.75);padding:7px 16px 4px;border-radius:0;cursor:pointer;margin-left:6px;font-size:12px;font-weight:500;transition:.2s;letter-spacing:.2px}
 nav button:hover{color:#fff;border-bottom-color:rgba(255,255,255,.4)}
 nav button.active{color:#fff;font-weight:700;border-bottom-color:#fff;background:transparent}
+.badge-retorno{position:absolute;top:-2px;right:2px;background:#e53e3e;color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;line-height:1.4;min-width:14px;text-align:center;box-shadow:0 0 0 2px #1a56a0}
+
+/* Modo preenchimento rápido */
+#btn-modo-rapido.ativo{background:#f6ad55;color:#7b341e;border-bottom-color:#f6ad55;font-weight:700}
+body.modo-rapido-on .field-group input:focus,
+body.modo-rapido-on .field-group textarea:focus{box-shadow:0 0 0 3px rgba(246,173,85,.35);border-color:#f6ad55}
+body.modo-rapido-on::before{content:'⚡ Modo preenchimento rápido ativo — Tab pula direto entre os campos essenciais';position:fixed;top:52px;left:50%;transform:translateX(-50%);background:#f6ad55;color:#7b341e;font-size:11px;font-weight:700;padding:5px 16px;border-radius:0 0 8px 8px;z-index:150;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+
+/* Pré-visualização de impressão */
+.preview-box{max-width:900px;width:calc(100% - 40px);max-height:92vh}
+.preview-frame-wrap{flex:1;overflow:hidden;background:#6b7280;border-radius:8px;padding:16px;display:flex;justify-content:center}
+.preview-iframe{width:100%;max-width:21cm;height:100%;min-height:60vh;border:none;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.3);border-radius:2px}
+.preview-acoes{display:flex;justify-content:flex-end;gap:10px}
 
 .page{display:none;padding:24px;max-width:960px;margin:0 auto}
 .page.active{display:block}
@@ -281,6 +294,9 @@ body{padding-bottom:64px}
 .rx-action-bar{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
 .btn-rx-action{background:#f0f4f8;border:1px solid #cbd5e0;color:#2d3748;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
 .btn-rx-action:hover{background:#1a56a0;color:#fff;border-color:#1a56a0}
+.rx-qtd-wrap{display:flex;align-items:center;gap:6px;margin-left:auto}
+.rx-qtd-wrap label{font-size:11px;color:#4a5568;font-weight:600;white-space:nowrap}
+.rx-qtd-wrap input{border:1px solid #cbd5e0;border-radius:6px;padding:4px 8px;font-size:12px}
 
 /* ── Histórico ── */
 .hist-item{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:.15s}
@@ -427,6 +443,10 @@ body{padding-bottom:64px}
       <button onclick="showPage('receita-especial',this)">Rec. Especial</button>
       <button onclick="showPage('exames-lab',this)">Exames Laboratoriais</button>
       <button onclick="showPage('exames-img',this)">Exames de Imagem</button>
+      <button onclick="abrirModal('modal-retornos')" style="position:relative" title="Ver retornos agendados">
+        🔔 Retornos<span class="badge-retorno" id="badge-retorno" style="display:none">0</span>
+      </button>
+      <button id="btn-modo-rapido" onclick="toggleModoRapido(this)" title="Modo preenchimento rápido: Tab pula apenas entre os campos essenciais">⚡ Preench. rápido</button>
       <button onclick="novoPaciente()" style="background:rgba(231,76,60,.7);border:1px solid rgba(231,76,60,.9);margin-left:14px" title="Limpar todos os campos do paciente">↺ Novo paciente</button>
     </nav>
   </div>
@@ -493,6 +513,32 @@ body{padding-bottom:64px}
   </div>
 </div>
 
+<!-- ======================== MODAL RETORNOS AGENDADOS ======================== -->
+<div class="modal-overlay" id="modal-retornos">
+  <div class="modal-box">
+    <div class="modal-titulo">🔔 Retornos Agendados
+      <button class="modal-fechar" onclick="fecharModal('modal-retornos')">×</button>
+    </div>
+    <div class="modal-corpo" id="retornos-corpo"><div class="hist-empty">Nenhum retorno agendado.</div></div>
+  </div>
+</div>
+
+<!-- ======================== MODAL PRÉ-VISUALIZAÇÃO DE IMPRESSÃO ======================== -->
+<div class="modal-overlay" id="modal-preview-impressao">
+  <div class="modal-box preview-box">
+    <div class="modal-titulo">🖨️ Pré-visualização de Impressão
+      <button class="modal-fechar" onclick="cancelarPreviewImpressao()">×</button>
+    </div>
+    <div class="preview-frame-wrap">
+      <iframe id="preview-iframe" class="preview-iframe" title="Pré-visualização"></iframe>
+    </div>
+    <div class="preview-acoes">
+      <button class="btn-clear" onclick="cancelarPreviewImpressao()">Cancelar</button>
+      <button class="btn-word" onclick="confirmarPreviewImpressao()">🖨️ Confirmar e Imprimir</button>
+    </div>
+  </div>
+</div>
+
 <!-- ======================== BARRA DE SELEÇÃO ======================== -->
 <div class="barra-selecao">
   <span class="barra-titulo">Selecionar documentos:</span>
@@ -553,6 +599,10 @@ body{padding-bottom:64px}
       <div class="field-group w-auto" style="flex:0 0 160px">
         <label>Data da Consulta</label>
         <input type="date" id="rel-data">
+      </div>
+      <div class="field-group w-auto" style="flex:0 0 160px">
+        <label>Próximo Retorno</label>
+        <input type="date" id="rel-retorno">
       </div>
     </div>
 
@@ -875,13 +925,18 @@ body{padding-bottom:64px}
     <div class="rx-action-bar no-print">
       <button class="btn-rx-action" onclick="addLinhaPrescricao()">＋ Adicionar linha</button>
       <button class="btn-rx-action" onclick="reordenarPrescricao()">↕ Reordenar</button>
+      <div class="rx-qtd-wrap">
+        <label for="rx-duracao">Duração do tratamento</label>
+        <input type="number" id="rx-duracao" min="1" placeholder="dias" style="width:70px">
+        <button class="btn-rx-action" onclick="calcularQuantidades()">🧮 Calcular quantidades</button>
+      </div>
     </div>
     <div class="interacao-alert" id="interacao-alert">
       <strong>⚠️ Interações medicamentosas detectadas:</strong>
       <div id="interacao-lista"></div>
     </div>
     <div class="field-group">
-      <textarea id="rx-prescricao" style="min-height:220px;font-size:14px;line-height:1.8;overflow-y:hidden;resize:none" placeholder="1. Metotrexato 15 mg – 1 comprimido 1x/semana, via oral, uso contínuo&#10;2. Ácido fólico 5 mg – 1 comprimido 6 dias por semana, via oral&#10;&#10;(Clique nos botões acima para inserir rapidamente o nome do medicamento)" oninput="verificarInteracoes()"></textarea>
+      <textarea id="rx-prescricao" style="min-height:220px;font-size:14px;line-height:1.8;overflow-y:hidden;resize:none" placeholder="1. Metotrexato 15 mg – 1 comprimido 1x/semana, via oral, uso contínuo&#10;2. Ácido fólico 5 mg – 1 comprimido 6 dias por semana, via oral&#10;&#10;(Clique nos botões acima para inserir rapidamente o nome do medicamento)" oninput="verificarInteracoes()" onblur="reordenarTexto(this)"></textarea>
     </div>
 
     <div class="section-label print-se-preenchido" data-textarea="rx-orientacoes">Orientações ao Paciente</div>
@@ -910,6 +965,7 @@ body{padding-bottom:64px}
 
   <div class="action-bar">
     <button class="btn-clear" onclick="clearForm('receita')">Limpar</button>
+    <button class="btn-print" style="background:#f0fff4;color:#276749;border-color:#68d391" onclick="duplicarUltimaReceita()">📋 Duplicar última receita</button>
     <button class="btn-print" onclick="printDoc('receita')">🖨️ Imprimir</button>
     <button class="btn-word" onclick="gerarWordReceita()">⬇️ Baixar Word (.docx)</button>
   </div>
@@ -982,7 +1038,7 @@ body{padding-bottom:64px}
           </div>
         </div>
       </div>
-      <textarea id="re-prescricao" class="rec-esp-prescricao" oninput="sincRecEsp();autoResizeTA(this)" placeholder="1. Pregabalina 75mg&#10;&#10;Tomar 1 cápsula, 2x ao dia"></textarea>
+      <textarea id="re-prescricao" class="rec-esp-prescricao" oninput="sincRecEsp();autoResizeTA(this)" onblur="reordenarTexto(this);sincRecEsp()" placeholder="1. Pregabalina 75mg&#10;&#10;Tomar 1 cápsula, 2x ao dia"></textarea>
 
       <div class="rec-esp-via-label rec-esp-via1-label">1ª VIA — FARMÁCIA</div>
       <div class="rec-esp-assinatura">
@@ -1215,7 +1271,7 @@ body{padding-bottom:64px}
     <div class="field-row">
       <div class="field-group">
         <label>Nome do Paciente</label>
-        <input type="text" id="img-nome" placeholder="Nome completo" oninput="sincPaciente('nome',this.value)">
+        <input type="text" id="img-nome" placeholder="Nome completo" oninput="sincPaciente('nome',this.value);renderImgExamesAnteriores(this.value.trim())">
       </div>
       <div class="field-group w-auto" style="flex:0 0 160px">
         <label>Data</label>
@@ -1227,6 +1283,11 @@ body{padding-bottom:64px}
         <label>Diagnóstico / Hipótese Diagnóstica (CID)</label>
         <div class="cid-wrap"><input type="text" id="img-cid" placeholder="Ex: Espondiloartrite – M45" oninput="cidSuggest(this,'cid-sug-img');sincPaciente('diagnostico',this.value)" onblur="setTimeout(()=>{const s=document.getElementById('cid-sug-img');if(s)s.style.display='none'},200)" autocomplete="off"><div class="cid-suggestions" id="cid-sug-img" style="display:none"></div></div>
       </div>
+    </div>
+
+    <div class="img-hist-panel no-print" id="img-hist-panel" style="display:none">
+      <div class="img-hist-titulo">📁 Exames de imagem anteriores</div>
+      <div class="img-hist-lista" id="img-hist-lista"></div>
     </div>
 
     <div class="section-label">Exames de Imagem</div>
@@ -1266,6 +1327,14 @@ body{padding-bottom:64px}
 
 <style>
 .exam-grid-img{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:8px}
+
+/* Exames de imagem anteriores */
+.img-hist-panel{background:#f7faff;border:1px solid #bee3f8;border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.img-hist-titulo{font-size:11px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.img-hist-lista{display:flex;flex-direction:column;gap:6px}
+.img-hist-item{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:12px}
+.img-hist-item .img-hist-data{font-weight:700;color:#1a56a0;margin-bottom:2px}
+.img-hist-item .img-hist-exames{color:#4a5568;line-height:1.5}
 
 /* Perfis de paciente */
 .perfil-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
@@ -1760,15 +1829,59 @@ function limparImpressao() {
   }
 }
 
+// ─── Pré-visualização de impressão ─────────────────────────────────────────────
+document._previewOnConfirm = null;
+
+function abrirPreviewImpressao(ids, onConfirm) {
+  prepararImpressao(ids);
+  document._previewOnConfirm = onConfirm || null;
+
+  const iframe = document.getElementById('preview-iframe');
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+  // Reaproveita todo o CSS inline da página, forçando as regras de @media print
+  // a valerem também na tela (dentro do iframe isolado) para simular o resultado real.
+  const estilosOriginais = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
+  const estilosPreview = estilosOriginais.replace(/@media\s+print/g, '@media screen');
+
+  const bodyClone = document.body.cloneNode(true);
+  bodyClone.querySelectorAll('.modal-overlay, .barra-selecao, script').forEach(el => el.remove());
+
+  doc.open();
+  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pré-visualização</title><style>' + estilosPreview + '\nbody{padding:0}</style></head><body></body></html>');
+  doc.close();
+  doc.body.innerHTML = bodyClone.innerHTML;
+
+  abrirModal('modal-preview-impressao');
+}
+
+function cancelarPreviewImpressao() {
+  limparImpressao();
+  document._previewOnConfirm = null;
+  fecharModal('modal-preview-impressao');
+}
+
+function confirmarPreviewImpressao() {
+  try {
+    window.print();
+    if (typeof document._previewOnConfirm === 'function') document._previewOnConfirm();
+  } finally {
+    limparImpressao();
+    document._previewOnConfirm = null;
+    fecharModal('modal-preview-impressao');
+  }
+}
+
 // ─── Impressão individual ──────────────────────────────────────────────────────
 function printDoc(pageId) {
-  prepararImpressao([pageId]);
-  window.print();
-  limparImpressao();
   const nomes = {'relatorio':'Relatório Médico','receita':'Receita Médica','exames-lab':'Exames Laboratoriais','exames-img':'Exames de Imagem'};
-  const pac = v('rel-nome') || v('rx-nome') || v('lab-nome') || v('img-nome') || '—';
-  registrarLog('Impressão: ' + (nomes[pageId]||pageId), pac, '');
-  if (pageId === 'relatorio') salvarHistorico();
+  abrirPreviewImpressao([pageId], () => {
+    const pac = v('rel-nome') || v('rx-nome') || v('lab-nome') || v('img-nome') || '—';
+    registrarLog('Impressão: ' + (nomes[pageId]||pageId), pac, '');
+    if (pageId === 'relatorio') salvarHistorico();
+    if (pageId === 'receita') salvarReceitaHistorico();
+    if (pageId === 'exames-img') salvarImgExamesHistorico();
+  });
 }
 
 // ─── Posologias habituais dos atalhos de receita ──────────────────────────────
@@ -1970,12 +2083,7 @@ function limparRecEsp() {
 
 function imprimirRecEsp() {
   sincRecEsp();
-  prepararImpressao(['receita-especial']);
-  try {
-    window.print();
-  } finally {
-    limparImpressao();
-  }
+  abrirPreviewImpressao(['receita-especial']);
 }
 
 // ─── Helpers Word ──────────────────────────────────────────────────────────────
@@ -2131,6 +2239,45 @@ async function gerarWordReceita() {
   const nomeArqRx = `receita-${(v('rx-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
   await downloadDocx(makeDoc(paras), nomeArqRx);
   registrarLog('Receita Word', v('rx-nome'), nomeArqRx);
+  salvarReceitaHistorico();
+}
+
+// ─── Histórico de receitas por paciente (duplicar última) ────────────────────
+function chaveRxHist(nome) { return 'rxhist-' + nome.trim().toLowerCase().replace(/\s+/g,'-'); }
+
+function salvarReceitaHistorico() {
+  const nome = v('rx-nome');
+  const prescricao = v('rx-prescricao');
+  if (!nome || !prescricao) return;
+  const entrada = {
+    ts: Date.now(),
+    data: v('rx-data'),
+    prescricao,
+    orientacoes: v('rx-orientacoes'),
+    obs: v('rx-obs'),
+  };
+  const chave = chaveRxHist(nome);
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(chave) || '[]'); } catch(e) {}
+  hist.unshift(entrada);
+  hist = hist.slice(0, 20);
+  localStorage.setItem(chave, JSON.stringify(hist));
+}
+
+function duplicarUltimaReceita() {
+  const nome = v('rx-nome');
+  if (!nome) { alert('Preencha o nome do paciente para localizar a última receita.'); return; }
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(chaveRxHist(nome)) || '[]'); } catch(e) {}
+  if (!hist.length) { alert('Nenhuma receita anterior encontrada para ' + nome + '.'); return; }
+  const ultima = hist[0];
+  const taP = document.getElementById('rx-prescricao');
+  if (taP && taP.value.trim() && !confirm('Isso substituirá a prescrição atual pela última receita de ' + nome + ' (' + (ultima.data ? fmtDataBR(ultima.data) : 'data desconhecida') + '). Continuar?')) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) { el.value = val || ''; el.dispatchEvent(new Event('input', { bubbles: true })); autoResizeTA(el); } };
+  set('rx-prescricao', ultima.prescricao);
+  set('rx-orientacoes', ultima.orientacoes);
+  set('rx-obs', ultima.obs);
+  verificarInteracoes();
 }
 
 async function gerarWordLab() {
@@ -2269,6 +2416,53 @@ async function gerarWordImg() {
   const nomeArqImg = `exames-imagem-${(v('img-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
   await downloadDocx(makeDoc(paras), nomeArqImg);
   registrarLog('Exames Imagem Word', v('img-nome'), nomeArqImg);
+  salvarImgExamesHistorico();
+}
+
+// ─── Histórico de exames de imagem por paciente ───────────────────────────────
+function chaveImgHist(nome) { return 'imghist-' + nome.trim().toLowerCase().replace(/\s+/g,'-'); }
+
+function coletarExamesImgMarcados() {
+  const todosExames = [];
+  PACOTES_IMG.forEach(pkg => {
+    pkg.exames.forEach((nome, i) => {
+      const el = document.getElementById(pkg.id + '-exam-' + i);
+      if (el && el.classList.contains('checked')) todosExames.push(getLatText(pkg.id, i, nome));
+    });
+  });
+  const adicImg = v('img-adicional');
+  if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => todosExames.push(l.trim()));
+  return todosExames;
+}
+
+function salvarImgExamesHistorico() {
+  const nome = v('img-nome');
+  const exames = coletarExamesImgMarcados();
+  if (!nome || !exames.length) return;
+  const entrada = { ts: Date.now(), data: v('img-data'), exames };
+  const chave = chaveImgHist(nome);
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(chave) || '[]'); } catch(e) {}
+  hist.unshift(entrada);
+  hist = hist.slice(0, 15);
+  localStorage.setItem(chave, JSON.stringify(hist));
+  renderImgExamesAnteriores(nome);
+}
+
+function renderImgExamesAnteriores(nome) {
+  const painel = document.getElementById('img-hist-panel');
+  const lista  = document.getElementById('img-hist-lista');
+  if (!painel || !lista) return;
+  if (!nome) { painel.style.display = 'none'; return; }
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(chaveImgHist(nome)) || '[]'); } catch(e) {}
+  if (!hist.length) { painel.style.display = 'none'; return; }
+  lista.innerHTML = hist.slice(0, 5).map(h => `
+    <div class="img-hist-item">
+      <div class="img-hist-data">${h.data ? fmtDataBR(h.data) : '—'}</div>
+      <div class="img-hist-exames">${h.exames.join(' · ')}</div>
+    </div>`).join('');
+  painel.style.display = '';
 }
 
 // ─── Sincronização de dados do paciente entre abas ───────────────────────────
@@ -2304,9 +2498,11 @@ function selecionados() {
 function imprimirSelecionados() {
   const sel = selecionados();
   if (!sel.length) { alert('Selecione ao menos um documento na barra inferior.'); return; }
-  prepararImpressao(sel);
-  window.print();
-  limparImpressao();
+  abrirPreviewImpressao(sel, () => {
+    if (sel.includes('relatorio')) salvarHistorico();
+    if (sel.includes('receita')) salvarReceitaHistorico();
+    if (sel.includes('exames-img')) salvarImgExamesHistorico();
+  });
 }
 
 async function baixarWordSelecionados() {
@@ -2364,18 +2560,20 @@ function salvarPerfis(perfis) {
 }
 
 function salvarPerfil() {
-  const nome  = document.getElementById('rel-nome')?.value.trim();
-  const nasc  = document.getElementById('rel-nascimento')?.value.trim();
-  const idade = document.getElementById('rel-idade')?.value.trim();
-  const end   = document.getElementById('rx-endereco')?.value.trim();
-  const diag  = document.getElementById('rel-diagnostico')?.value.trim();
+  const nome    = document.getElementById('rel-nome')?.value.trim();
+  const nasc    = document.getElementById('rel-nascimento')?.value.trim();
+  const idade   = document.getElementById('rel-idade')?.value.trim();
+  const end     = document.getElementById('rx-endereco')?.value.trim();
+  const diag    = document.getElementById('rel-diagnostico')?.value.trim();
+  const retorno = document.getElementById('rel-retorno')?.value.trim();
   if (!nome) { alert('Preencha o nome do paciente antes de salvar.'); return; }
   const perfis = carregarPerfis();
   const idx = perfis.findIndex(p => p.nome === nome);
-  const perfil = { nome, nasc, idade, end, diag, comorbidades: getComorbidades() };
+  const perfil = { nome, nasc, idade, end, diag, retorno, comorbidades: getComorbidades() };
   if (idx >= 0) perfis[idx] = perfil; else perfis.unshift(perfil);
   salvarPerfis(perfis);
   renderPerfis();
+  atualizarBadgeRetornos();
   alert('Paciente salvo!');
 }
 
@@ -2390,8 +2588,10 @@ function carregarPerfil(nome) {
   set('rx-endereco', p.end);
   set('rel-diagnostico', p.diag);
   set('lab-cid', p.diag); set('img-cid', p.diag);
+  set('rel-retorno', p.retorno);
   setComorbidades(p.comorbidades || []);
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
+  renderImgExamesAnteriores(p.nome);
 }
 
 function deletarPerfil(nome, e) {
@@ -2494,6 +2694,56 @@ function initAutoResize() {
   document.querySelectorAll('textarea').forEach(ta => {
     ta.addEventListener('input', () => autoResizeTA(ta));
     autoResizeTA(ta);
+    attachUndoRedo(ta);
+  });
+}
+
+// ─── Desfazer/Refazer (Ctrl+Z / Ctrl+Y) nos campos de texto principais ────────
+// Necessário porque alterações feitas via JS (.value = ...) apagam o histórico
+// nativo de undo do navegador nos textareas.
+function attachUndoRedo(el) {
+  el._undoStack = [el.value];
+  el._undoIndex = 0;
+  let debounceTimer = null;
+
+  const snapshot = () => {
+    if (el.value === el._undoStack[el._undoIndex]) return;
+    el._undoStack = el._undoStack.slice(0, el._undoIndex + 1);
+    el._undoStack.push(el.value);
+    el._undoIndex = el._undoStack.length - 1;
+    if (el._undoStack.length > 50) { el._undoStack.shift(); el._undoIndex--; }
+  };
+
+  el.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(snapshot, 600);
+  });
+
+  el.addEventListener('keydown', e => {
+    const teclaZ = e.key === 'z' || e.key === 'Z';
+    const teclaY = e.key === 'y' || e.key === 'Y';
+    if (!(e.ctrlKey || e.metaKey) || (!teclaZ && !teclaY)) return;
+
+    if (teclaZ && !e.shiftKey) {
+      e.preventDefault();
+      clearTimeout(debounceTimer);
+      snapshot();
+      if (el._undoIndex > 0) {
+        el._undoIndex--;
+        el.value = el._undoStack[el._undoIndex];
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        autoResizeTA(el);
+      }
+    } else if (teclaY || (teclaZ && e.shiftKey)) {
+      e.preventDefault();
+      clearTimeout(debounceTimer);
+      if (el._undoIndex < el._undoStack.length - 1) {
+        el._undoIndex++;
+        el.value = el._undoStack[el._undoIndex];
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        autoResizeTA(el);
+      }
+    }
   });
 }
 
@@ -2509,6 +2759,7 @@ document.addEventListener('DOMContentLoaded', () => {
   sincMedico();
   // Renderizar perfis de paciente
   renderPerfis();
+  atualizarBadgeRetornos();
   // Inicializar SLEDAI, ESSDAI, comorbidades
   renderSledai();
   renderESSDAI();
@@ -2902,8 +3153,8 @@ function addLinhaPrescricao() {
   ta.setSelectionRange(ta.value.length, ta.value.length);
 }
 
-function reordenarPrescricao() {
-  const ta = document.getElementById('rx-prescricao');
+function reordenarTexto(ta) {
+  if (!ta) return;
   // Preserva linhas em branco; renumera apenas linhas que começam com número
   let contador = 0;
   const renumeradas = ta.value.split('\n').map(l => {
@@ -2913,8 +3164,78 @@ function reordenarPrescricao() {
     }
     return l;
   });
-  ta.value = renumeradas.join('\n');
+  const novoValor = renumeradas.join('\n');
+  if (novoValor !== ta.value) {
+    ta.value = novoValor;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  }
   autoResizeTA(ta);
+}
+
+function reordenarPrescricao() { reordenarTexto(document.getElementById('rx-prescricao')); }
+
+// ─── Cálculo automático de quantidade a dispensar ─────────────────────────────
+function calcularUnidadesPorDia(instrucao) {
+  const texto = (instrucao || '').toLowerCase();
+  const mUnidades = texto.match(/(\d+)\s*(comprimidos?|cápsulas?|injeç(?:ão|ões))/);
+  if (!mUnidades) return null;
+  const unidades = parseInt(mUnidades[1], 10);
+
+  // Frequência diária: "2x ao dia" / "1x/dia"
+  let mFreq = texto.match(/(\d+)\s*x\s*(?:ao dia|\/dia|por dia)/);
+  if (mFreq) return unidades * parseInt(mFreq[1], 10);
+
+  // "1x por semana" / "2x por semana"
+  mFreq = texto.match(/(\d+)\s*x\s*por\s*semana/);
+  if (mFreq) return (unidades * parseInt(mFreq[1], 10)) / 7;
+
+  // "a cada N semanas"
+  mFreq = texto.match(/a cada\s*(\d+)\s*semanas?/);
+  if (mFreq) return unidades / (parseInt(mFreq[1], 10) * 7);
+
+  // "1x por mês" / "a cada N meses"
+  if (/1x\s*por\s*mês|1x\s*ao\s*mês/.test(texto)) return unidades / 30;
+  mFreq = texto.match(/a cada\s*(\d+)\s*mês(?:es)?/);
+  if (mFreq) return unidades / (parseInt(mFreq[1], 10) * 30);
+
+  // "a cada N dias"
+  mFreq = texto.match(/a cada\s*(\d+)\s*dias?/);
+  if (mFreq) return unidades / parseInt(mFreq[1], 10);
+
+  return null; // padrão não reconhecido (ex: doses variáveis "___", "conforme necessário")
+}
+
+function calcularQuantidades() {
+  const ta = document.getElementById('rx-prescricao');
+  const duracao = parseInt(document.getElementById('rx-duracao')?.value, 10);
+  if (!ta || !duracao || duracao <= 0) {
+    alert('Informe a duração do tratamento (em dias) antes de calcular.');
+    return;
+  }
+
+  // Remove linhas de quantidade calculadas anteriormente
+  let linhas = ta.value.split('\n').filter(l => !/^\s*→ Quantidade a dispensar:/.test(l));
+
+  // Identifica linhas de instrução (não numeradas, precedidas de linha vazia após item numerado)
+  const linhasFinal = [];
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i];
+    linhasFinal.push(linha);
+    const ehInstrucao = linha.trim() !== '' && !/^\d+\./.test(linha.trim()) &&
+      i > 0 && linhas[i - 1].trim() === '' &&
+      i > 1 && /^\d+\./.test(linhas[i - 2]?.trim() || '');
+    if (ehInstrucao) {
+      const unidadesDia = calcularUnidadesPorDia(linha);
+      if (unidadesDia !== null) {
+        const total = Math.ceil(unidadesDia * duracao);
+        linhasFinal.push('→ Quantidade a dispensar: ' + total + ' unidade(s) para ' + duracao + ' dias de tratamento');
+      }
+    }
+  }
+
+  ta.value = linhasFinal.join('\n');
+  autoResizeTA(ta);
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 // ─── Alertas de interação medicamentosa ───────────────────────────────────────
@@ -3361,13 +3682,83 @@ function abrirModal(id) {
   document.getElementById(id)?.classList.add('aberto');
   if (id === 'modal-log') renderLog();
   if (id === 'modal-vacinas') renderVacinas();
+  if (id === 'modal-retornos') renderRetornos();
   if (id === 'modal-search') {
     const inp = document.getElementById('search-input');
     if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 50); }
     document.getElementById('search-results').innerHTML = '<div class="search-empty">Digite para buscar…</div>';
   }
 }
+
+// ─── Retornos agendados vencidos ───────────────────────────────────────────────
+function retornosVencidos() {
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  return carregarPerfis()
+    .filter(p => p.retorno)
+    .map(p => {
+      const d = new Date(p.retorno + 'T12:00:00');
+      const diasAtraso = Math.floor((hoje - d) / 86400000);
+      return { ...p, diasAtraso };
+    })
+    .filter(p => p.diasAtraso >= 0)
+    .sort((a, b) => b.diasAtraso - a.diasAtraso);
+}
+
+function atualizarBadgeRetornos() {
+  const badge = document.getElementById('badge-retorno');
+  if (!badge) return;
+  const n = retornosVencidos().length;
+  badge.textContent = n;
+  badge.style.display = n > 0 ? '' : 'none';
+}
+
+function renderRetornos() {
+  const corpo = document.getElementById('retornos-corpo');
+  if (!corpo) return;
+  const vencidos = retornosVencidos();
+  if (!vencidos.length) {
+    corpo.innerHTML = '<div class="hist-empty">Nenhum retorno vencido. ✅</div>';
+    return;
+  }
+  corpo.innerHTML = vencidos.map(p => `
+    <div class="hist-item" onclick="carregarPerfil(${JSON.stringify(p.nome)});fecharModal('modal-retornos');showPage('relatorio',document.querySelector('nav button'))">
+      <div class="hist-data">Retorno previsto: ${fmtDataBR(p.retorno)}</div>
+      <div class="hist-diag">${p.nome}</div>
+      <div class="hist-cond" style="color:#e53e3e;font-weight:600">${p.diasAtraso === 0 ? 'Vence hoje' : p.diasAtraso + ' dia(s) em atraso'}</div>
+    </div>`).join('');
+}
 function fecharModal(id) { document.getElementById(id)?.classList.remove('aberto'); }
+
+// ─── Modo preenchimento rápido (Tab otimizado) ────────────────────────────────
+const CAMPOS_RAPIDOS = {
+  relatorio: ['rel-nome','rel-nascimento','rel-data','rel-retorno','rel-diagnostico','rel-anamnese','rel-exfisico','rel-exames','rel-conduta','rel-obs'],
+  receita: ['rx-nome','rx-idade','rx-endereco','rx-data','rx-prescricao','rx-orientacoes','rx-obs'],
+  'receita-especial': ['re-pac-nome','re-data','re-endereco','re-cpf','re-prescricao'],
+  'exames-lab': ['lab-nome','lab-data','lab-cid','lab-adicional','lab-indicacao'],
+  'exames-img': ['img-nome','img-data','img-cid','img-adicional','img-indicacao'],
+};
+
+let modoRapidoAtivo = false;
+
+function toggleModoRapido(btn) {
+  modoRapidoAtivo = !modoRapidoAtivo;
+  btn.classList.toggle('ativo', modoRapidoAtivo);
+  document.body.classList.toggle('modo-rapido-on', modoRapidoAtivo);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Tab' || !modoRapidoAtivo) return;
+  const abaAtiva = document.querySelector('.page.active');
+  if (!abaAtiva) return;
+  const campos = CAMPOS_RAPIDOS[abaAtiva.id];
+  if (!campos || !campos.length) return;
+  const idx = campos.indexOf(document.activeElement?.id);
+  if (idx === -1) return; // foco fora da lista de campos rápidos: mantém comportamento padrão
+  e.preventDefault();
+  const prox = e.shiftKey ? (idx - 1 + campos.length) % campos.length : (idx + 1) % campos.length;
+  const el = document.getElementById(campos[prox]);
+  if (el) { el.focus(); if (typeof el.select === 'function') el.select(); }
+});
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.aberto').forEach(m => m.classList.remove('aberto'));
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); abrirModal('modal-search'); }
