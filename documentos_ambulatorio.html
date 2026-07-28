@@ -169,7 +169,7 @@ body{padding-bottom:64px}
   /* ── Estrutura: só páginas marcadas aparecem ── */
   header,nav,.action-bar,.btn-add,.btn-remove,.pacote-toggle,
   .barra-selecao,.doc-subtitle,.section-label,#hlab27-aviso,#igra-aviso,
-  #print-hide,.med-atalhos{display:none!important}
+  #print-hide,.med-atalhos,.modal-overlay{display:none!important}
 
   body{background:#fff;padding:0}
   .page{display:none!important;padding:0;max-width:100%}
@@ -1862,14 +1862,20 @@ function cancelarPreviewImpressao() {
 }
 
 function confirmarPreviewImpressao() {
-  try {
-    window.print();
-    if (typeof document._previewOnConfirm === 'function') document._previewOnConfirm();
-  } finally {
-    limparImpressao();
-    document._previewOnConfirm = null;
-    fecharModal('modal-preview-impressao');
-  }
+  // Fecha o modal ANTES de imprimir: se ele continuar aberto, o navegador
+  // captura seu conteúdo (sobreposto à página real) na impressão real.
+  fecharModal('modal-preview-impressao');
+  const onConfirm = document._previewOnConfirm;
+  document._previewOnConfirm = null;
+  // Aguarda o modal sair da árvore de renderização antes de imprimir.
+  setTimeout(() => {
+    try {
+      window.print();
+      if (typeof onConfirm === 'function') onConfirm();
+    } finally {
+      limparImpressao();
+    }
+  }, 50);
 }
 
 // ─── Impressão individual ──────────────────────────────────────────────────────
