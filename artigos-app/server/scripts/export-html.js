@@ -1792,6 +1792,7 @@ const newConversationBtn = document.getElementById('newConversationBtn');
 // ---------- Conversa com IA: histórico multi-turno, cache local e sugestões ----------
 let conversationMessages = [];
 let conversationArticles = [];
+let conversationGeneration = 0;
 const QA_CACHE_KEY = 'organizador_qa_cache';
 
 function getQaCache() {
@@ -1839,6 +1840,7 @@ function suggestRelatedQuestions(articles) {
 }
 
 function resetConversation() {
+  conversationGeneration++;
   conversationMessages = [];
   conversationArticles = [];
   askHistory.innerHTML = '';
@@ -1848,9 +1850,12 @@ newConversationBtn.addEventListener('click', resetConversation);
 askBtn.addEventListener('click', ask);
 questionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') ask(); });
 
+let isAsking = false;
+
 async function ask() {
   const question = questionInput.value.trim();
   if (!question) return;
+  if (isAsking) return; // evita envio duplicado (ex.: Enter pressionado repetidamente antes da resposta chegar)
 
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -1858,7 +1863,9 @@ async function ask() {
     return;
   }
 
+  isAsking = true;
   const isFollowUp = conversationMessages.length > 0;
+  const myGeneration = conversationGeneration;
   questionInput.value = '';
   askBtn.disabled = true;
 
@@ -1903,6 +1910,7 @@ async function ask() {
     } else {
       conversationMessages.push({ role: 'user', content: userContent });
       answer = await askClaude(conversationMessages, apiKey);
+      if (myGeneration !== conversationGeneration) return; // conversa foi reiniciada enquanto aguardava a resposta; descarta
       conversationMessages.push({ role: 'assistant', content: answer });
       if (!isFollowUp) {
         cache[cacheKey] = { answer: answer, ts: Date.now() };
@@ -1962,11 +1970,12 @@ async function ask() {
     answerDiv.classList.remove('qa-loading');
     answerDiv.classList.add('qa-error');
     answerDiv.textContent = 'Erro: ' + err.message;
-    if (conversationMessages.length > 0 && conversationMessages[conversationMessages.length - 1].role === 'user') {
+    if (myGeneration === conversationGeneration && conversationMessages.length > 0 && conversationMessages[conversationMessages.length - 1].role === 'user') {
       conversationMessages.pop();
     }
   } finally {
     askBtn.disabled = false;
+    isAsking = false;
   }
 }
 
