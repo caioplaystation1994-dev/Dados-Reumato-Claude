@@ -69,7 +69,331 @@ if (embedPdfs) {
   });
 }
 
+// ---------- Extração estruturada (medicações e achados) ----------
+// Roda uma única vez aqui no Node, sobre o texto já curado de cada artigo
+// (detailed_summary / full_text). É extração por padrão de texto sobre
+// conteúdo já existente e revisado — não infere nem inventa nada que não
+// esteja escrito no próprio artigo; serve de base para as abas "Tratamento
+// por Doença" e "Achados Documentados".
+
+function nodeNormalizeText(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function nodeParseArr(str) {
+  if (!str) return [];
+  try {
+    const p = JSON.parse(str);
+    return Array.isArray(p) ? p : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function nodeGetArticleChunks(a) {
+  const chunks = [];
+  if (a.detailed_summary) {
+    try {
+      const parsed = JSON.parse(a.detailed_summary);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((s) => {
+          if (s && s.text) chunks.push({ heading: s.heading || '', text: s.text });
+        });
+      }
+    } catch (e) {
+      // ignora resumo estruturado invalido
+    }
+  }
+  if (chunks.length === 0 && a.full_text) {
+    const paras = a.full_text.replace(/\r\n/g, '\n').split(/\n{2,}/).map((p) => p.trim()).filter((p) => p.length > 40);
+    paras.forEach((p) => chunks.push({ heading: '', text: p }));
+  }
+  if (chunks.length === 0 && a.summary) {
+    chunks.push({ heading: 'Resumo', text: a.summary });
+  }
+  return chunks;
+}
+
+function nodeCategorizeHeading(heading) {
+  const h = nodeNormalizeText(heading);
+  if (!h) return null;
+  if (h.includes('diferencial')) return 'diferencial';
+  if (h.includes('criterio') && (h.includes('diagnostic') || h.includes('classificacao'))) return 'criterios';
+  if (h.includes('epidemiol') || h.includes('prevalenc') || h.includes('incidenc')) return 'epidemiologia';
+  if (h.includes('mecanismo de acao')) return 'moa';
+  if (h.includes('fisiopatolog') || h.includes('patogen') || h.includes('imunopatogen') || h.includes('histopatolog')) return 'fisiopatologia';
+  if (h.includes('tratamento') || h.includes('terapi') || h.includes('posologia')) return 'tratamento';
+  if (h.includes('prognostico')) return 'prognostico';
+  if (h.includes('limitac') || (h.includes('critic') && !h.includes('criterio'))) return 'limitacoes';
+  if (h.includes('relevancia clinica') || h.includes('relevancia terapeutica')) return 'relevancia';
+  return null;
+}
+
+const DOSE_RE_NODE = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|a)\s*\d+(?:[.,]\d+)?)?\s*(?:mg|g|mcg|µg|UI|ui)(?:\/kg)?(?:\/(?:dia|semana|m[eê]s|dose|m2|m²|dL|dl))?/;
+
+const DRUG_DICT = {
+  'Glicocorticoide': { class: 'Glicocorticoide', aliases: ['glicocorticoide', 'glicocorticoides', 'corticoide', 'corticoides', 'corticosteroide', 'corticosteroides', 'prednisona', 'prednisolona', 'metilprednisolona', 'dexametasona', 'budesonida'] },
+  'Metotrexato': { class: 'DMARD sintético convencional', aliases: ['metotrexato'] },
+  'Leflunomida': { class: 'DMARD sintético convencional', aliases: ['leflunomida'] },
+  'Sulfassalazina': { class: 'DMARD sintético convencional', aliases: ['sulfassalazina'] },
+  'Hidroxicloroquina': { class: 'DMARD sintético convencional', aliases: ['hidroxicloroquina'] },
+  'Azatioprina': { class: 'Imunossupressor', aliases: ['azatioprina'] },
+  'Micofenolato': { class: 'Imunossupressor', aliases: ['micofenolato', 'mofetil micofenolato', 'micofenolato mofetil'] },
+  'Ciclofosfamida': { class: 'Imunossupressor', aliases: ['ciclofosfamida'] },
+  'Ciclosporina': { class: 'Imunossupressor', aliases: ['ciclosporina'] },
+  'Tacrolimo': { class: 'Imunossupressor', aliases: ['tacrolimo'] },
+  'Dapsona': { class: 'Imunossupressor', aliases: ['dapsona'] },
+  'Colchicina': { class: 'Anti-inflamatório', aliases: ['colchicina'] },
+  'Rituximabe': { class: 'Anti-CD20', aliases: ['rituximabe', 'rituximab'] },
+  'Adalimumabe': { class: 'Inibidor de TNF', aliases: ['adalimumabe'] },
+  'Infliximabe': { class: 'Inibidor de TNF', aliases: ['infliximabe'] },
+  'Etanercepte': { class: 'Inibidor de TNF', aliases: ['etanercepte'] },
+  'Golimumabe': { class: 'Inibidor de TNF', aliases: ['golimumabe'] },
+  'Certolizumabe': { class: 'Inibidor de TNF', aliases: ['certolizumabe'] },
+  'Tocilizumabe': { class: 'Inibidor de IL-6', aliases: ['tocilizumabe'] },
+  'Sarilumabe': { class: 'Inibidor de IL-6', aliases: ['sarilumabe'] },
+  'Tofacitinibe': { class: 'Inibidor de JAK', aliases: ['tofacitinibe'] },
+  'Baricitinibe': { class: 'Inibidor de JAK', aliases: ['baricitinibe'] },
+  'Upadacitinibe': { class: 'Inibidor de JAK', aliases: ['upadacitinibe'] },
+  'Abrocitinibe': { class: 'Inibidor de JAK', aliases: ['abrocitinibe'] },
+  'Ruxolitinibe': { class: 'Inibidor de JAK', aliases: ['ruxolitinibe'] },
+  'Deucravacitinibe': { class: 'Inibidor de TYK2', aliases: ['deucravacitinibe'] },
+  'Secukinumabe': { class: 'Inibidor de IL-17', aliases: ['secukinumabe'] },
+  'Ixekizumabe': { class: 'Inibidor de IL-17', aliases: ['ixekizumabe'] },
+  'Ustekinumabe': { class: 'Inibidor de IL-12/23', aliases: ['ustekinumabe'] },
+  'Guselkumabe': { class: 'Inibidor de IL-23', aliases: ['guselkumabe'] },
+  'Dupilumabe': { class: 'Inibidor de IL-4/13', aliases: ['dupilumabe'] },
+  'Mepolizumabe': { class: 'Inibidor de IL-5', aliases: ['mepolizumabe'] },
+  'Benralizumabe': { class: 'Inibidor de IL-5', aliases: ['benralizumabe'] },
+  'Belimumabe': { class: 'Inibidor de BAFF/BLyS', aliases: ['belimumabe'] },
+  'Abatacepte': { class: 'Modulador de coestimulação (CTLA4-Ig)', aliases: ['abatacepte'] },
+  'Anacinra': { class: 'Inibidor de IL-1', aliases: ['anacinra', 'anakinra'] },
+  'Canaquinumabe': { class: 'Inibidor de IL-1', aliases: ['canaquinumabe'] },
+  'Avacopan': { class: 'Inibidor do complemento (C5aR)', aliases: ['avacopan'] },
+  'Iptacopan': { class: 'Inibidor do complemento', aliases: ['iptacopan'] },
+  'Eculizumabe': { class: 'Inibidor do complemento (C5)', aliases: ['eculizumabe'] },
+  'Atrasentana': { class: 'Antagonista do receptor de endotelina', aliases: ['atrasentana'] },
+  'Sparsentana': { class: 'Antagonista dual endotelina/angiotensina', aliases: ['sparsentana'] },
+  'Denosumabe': { class: 'Terapia óssea antirreabsortiva', aliases: ['denosumabe', 'denosumab'] },
+  'Romosozumabe': { class: 'Terapia óssea anabólica', aliases: ['romosozumabe'] },
+  'Teriparatida': { class: 'Terapia óssea anabólica', aliases: ['teriparatida'] },
+  'Abaloparatida': { class: 'Terapia óssea anabólica', aliases: ['abaloparatida'] },
+  'Nintedanibe': { class: 'Antifibrótico', aliases: ['nintedanibe'] },
+  'Vedolizumabe': { class: 'Anti-integrina', aliases: ['vedolizumabe'] },
+  'Natalizumabe': { class: 'Anti-integrina', aliases: ['natalizumabe'] },
+  'Emapalumabe': { class: 'Inibidor de interferon-gama', aliases: ['emapalumabe'] },
+  'Imunoglobulina IV/SC': { class: 'Reposição/imunomodulação', aliases: ['imunoglobulina intravenosa', 'ivig', 'reposicao de imunoglobulina', 'imunoglobulina subcutanea'] },
+  'Plasmaférese': { class: 'Procedimento (depuração de anticorpos)', aliases: ['plasmaferese'] },
+};
+
+const FINDING_DICT = {
+  'Anti-PR3 (c-ANCA)': { type: 'laboratorial', aliases: ['anti-pr3', 'pr3-anca', 'c-anca'] },
+  'Anti-MPO (p-ANCA)': { type: 'laboratorial', aliases: ['anti-mpo', 'mpo-anca', 'p-anca'] },
+  'FAN (anticorpo antinuclear)': { type: 'laboratorial', aliases: ['fan positivo', 'fan reagente', 'anticorpo antinuclear', 'fator antinuclear'] },
+  'Anti-dsDNA': { type: 'laboratorial', aliases: ['anti-dsdna', 'anti-dna de dupla fita', 'anti-dna nativo'] },
+  'Anti-Sm': { type: 'laboratorial', aliases: ['anti-sm', 'anti-smith'] },
+  'Anti-Ro/SSA': { type: 'laboratorial', aliases: ['anti-ro', 'anti-ssa'] },
+  'Anti-La/SSB': { type: 'laboratorial', aliases: ['anti-la', 'anti-ssb'] },
+  'Anti-CCP': { type: 'laboratorial', aliases: ['anti-ccp', 'peptideo citrulinado ciclico'] },
+  'Fator Reumatoide': { type: 'laboratorial', aliases: ['fator reumatoide', 'fator reumatóide'] },
+  'Anticardiolipina': { type: 'laboratorial', aliases: ['anticardiolipina'] },
+  'Anti-beta2-glicoproteína I': { type: 'laboratorial', aliases: ['beta2-glicoproteina', 'beta 2 glicoproteina'] },
+  'Anti-Jo-1': { type: 'laboratorial', aliases: ['anti-jo-1', 'anti-jo1'] },
+  'Anti-Scl-70': { type: 'laboratorial', aliases: ['anti-scl-70', 'anti-scl70', 'anti-topoisomerase'] },
+  'Anticentrômero': { type: 'laboratorial', aliases: ['anticentromero', 'anti-centromero'] },
+  'Complemento C3 baixo': { type: 'laboratorial', aliases: ['c3 baixo', 'consumo de c3', 'hipocomplementemia'] },
+  'Complemento C4 baixo': { type: 'laboratorial', aliases: ['c4 baixo'] },
+  'VHS elevada': { type: 'laboratorial', aliases: ['vhs elevad', 'velocidade de hemossedimentacao elevad'] },
+  'PCR elevada': { type: 'laboratorial', aliases: ['pcr elevad', 'proteina c-reativa elevad'] },
+  'IgG4 sérica elevada': { type: 'laboratorial', aliases: ['igg4 elevad', 'niveis elevados de igg4'] },
+  'Proteinúria': { type: 'laboratorial', aliases: ['proteinuria'] },
+  'Hematúria': { type: 'laboratorial', aliases: ['hematuria'] },
+  'Aneurisma aórtico': { type: 'imagem', aliases: ['aneurisma aortico', 'aneurisma de aorta', 'aneurisma da aorta'] },
+  'Aneurisma de subclávia': { type: 'imagem', aliases: ['aneurisma de subclavia', 'aneurisma da subclavia', 'aneurisma subclavio'] },
+  'Estenose arterial': { type: 'imagem', aliases: ['estenose arterial', 'estenose da arteria', 'estenose de arteria'] },
+  'Espessamento de parede arterial': { type: 'imagem', aliases: ['espessamento da parede', 'espessamento circunferencial', 'espessamento mural'] },
+  'Crescentes (biópsia renal)': { type: 'anatomopatológico', aliases: ['crescentes', 'glomerulonefrite crescentica', 'proliferacao extracapilar'] },
+  'Realce da bainha do nervo óptico / leptomeníngeo': { type: 'imagem', aliases: ['realce da bainha', 'realce leptomeningeo', 'realce meningeo', 'realce do nervo optico'] },
+  'Rash malar': { type: 'clínico', aliases: ['rash malar', 'eritema malar'] },
+  'Livedo reticular': { type: 'clínico', aliases: ['livedo reticular', 'livedo racemoso'] },
+  'Fenômeno de Raynaud': { type: 'clínico', aliases: ['fenomeno de raynaud', 'raynaud'] },
+  'Púrpura palpável': { type: 'clínico', aliases: ['purpura palpavel'] },
+  'Eritema nodoso': { type: 'clínico', aliases: ['eritema nodoso'] },
+  'Xerostomia/xeroftalmia (sicca)': { type: 'clínico', aliases: ['xerostomia', 'xeroftalmia', 'sindrome sicca'] },
+};
+
+const LINE_PATTERNS = [
+  { key: 'primeira-linha', re: /primeira[\s-]linha|1[ªa][\s-]linha|terapia inicial|tratamento inicial/i },
+  { key: 'segunda-linha', re: /segunda[\s-]linha|2[ªa][\s-]linha/i },
+  { key: 'refrataria-resgate', re: /refrat[aá]ri[ao]|resgate|terceira[\s-]linha|falha terap[eê]utica/i },
+  { key: 'manutencao', re: /manuten[cç][aã]o/i },
+];
+
+const FREQ_PCT_RE = /\d{1,3}(?:[.,]\d+)?\s*(?:[-–a]\s*\d{1,3}(?:[.,]\d+)?)?\s*%/;
+const FREQ_WORD_RE = /\b(muito raro|extremamente raro|raro|incomum|infrequente|ocasional|pouco comum|comum|frequente|muito frequente|na maioria dos casos|na maioria dos pacientes)\b/i;
+const SPECIFICITY_RE = /\b(inespec[ií]fic[oa]|espec[ií]fic[oa]|sugestivo|sugere fortemente|sugere|patognom[oô]nic[oa]|achado incidental|at[ií]pic[oa])\b/i;
+const SAMPLE_N_RE = /\bn\s*=\s*(\d{2,6})\b/i;
+const SAMPLE_PATIENTS_RE = /(\d{2,6})\s+(?:pacientes|casos|indiv[ií]duos)/i;
+
+function windowAround(text, index, len, radius) {
+  const start = Math.max(0, index - radius);
+  const end = Math.min(text.length, index + len + radius);
+  return text.slice(start, end);
+}
+
+function scanDictionary(chunkText, dict) {
+  const normText = nodeNormalizeText(chunkText);
+  const hits = [];
+  Object.keys(dict).forEach((canonical) => {
+    const entry = dict[canonical];
+    entry.aliases.forEach((alias) => {
+      const normAlias = nodeNormalizeText(alias);
+      let idx = normText.indexOf(normAlias);
+      while (idx !== -1) {
+        hits.push({ canonical, entry, index: idx, len: normAlias.length });
+        idx = normText.indexOf(normAlias, idx + normAlias.length);
+      }
+    });
+  });
+  return hits;
+}
+
+function detectLine(text) {
+  for (const p of LINE_PATTERNS) {
+    if (p.re.test(text)) return p.key;
+  }
+  return null;
+}
+
+// Busca o casamento de `re` mais próximo da ocorrência do termo (prioriza o que vem
+// logo depois, que é o padrão predominante em português clínico: "achado em 41%",
+// "droga 15-25mg"). Evita capturar um número/percentual de uma cláusula vizinha não
+// relacionada quando o texto tem várias estatísticas próximas umas das outras.
+function nearestMatch(text, hitIndex, hitLen, re, afterRadius, beforeRadius) {
+  const afterStart = hitIndex + hitLen;
+  const afterText = text.slice(afterStart, Math.min(text.length, afterStart + afterRadius));
+  const afterMatch = afterText.match(re);
+  if (afterMatch) return afterMatch[0];
+  const beforeStart = Math.max(0, hitIndex - beforeRadius);
+  const beforeText = text.slice(beforeStart, hitIndex);
+  const flags = re.flags.includes('g') ? re.flags : re.flags + 'g';
+  const beforeMatches = [...beforeText.matchAll(new RegExp(re.source, flags))];
+  if (beforeMatches.length > 0) return beforeMatches[beforeMatches.length - 1][0];
+  return null;
+}
+
+function extractMedicationsFromArticle(a) {
+  const best = new Map();
+  nodeGetArticleChunks(a).forEach((chunk) => {
+    scanDictionary(chunk.text, DRUG_DICT).forEach((hit) => {
+      const doseMatch = nearestMatch(chunk.text, hit.index, hit.len, DOSE_RE_NODE, 70, 30);
+      const wideWin = windowAround(chunk.text, hit.index, hit.len, 160);
+      const line = detectLine(wideWin) || detectLine(chunk.heading || '');
+      const score = (doseMatch ? 2 : 0) + (line ? 1 : 0);
+      const existing = best.get(hit.canonical);
+      if (!existing || score > existing.score) {
+        best.set(hit.canonical, {
+          score,
+          drug: hit.canonical,
+          class: hit.entry.class,
+          dose: doseMatch ? doseMatch.trim() : null,
+          line,
+          heading: chunk.heading || null,
+          snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
+        });
+      }
+    });
+  });
+  return [...best.values()];
+}
+
+function extractFindingsFromArticle(a) {
+  const best = new Map();
+  nodeGetArticleChunks(a).forEach((chunk) => {
+    scanDictionary(chunk.text, FINDING_DICT).forEach((hit) => {
+      const pct = nearestMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
+      const word = pct ? null : nearestMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
+      const spec = nearestMatch(chunk.text, hit.index, hit.len, SPECIFICITY_RE, 50, 25);
+      const score = (pct ? 3 : 0) + (word ? 1 : 0) + (spec ? 1 : 0);
+      const existing = best.get(hit.canonical);
+      if (!existing || score > existing.score) {
+        best.set(hit.canonical, {
+          score,
+          finding: hit.canonical,
+          type: hit.entry.type,
+          frequencyText: pct ? pct.trim() : (word || null),
+          specificity: spec ? spec.toLowerCase() : null,
+          heading: chunk.heading || null,
+          snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
+        });
+      }
+    });
+  });
+  return [...best.values()];
+}
+
+function formatCitation(a) {
+  const authorsList = (a.authors || '').split(',').map((s) => s.trim()).filter(Boolean);
+  let authorPart = '';
+  if (authorsList.length > 0) {
+    const first = authorsList[0];
+    const surname = first.split(' ').filter(Boolean).pop() || first;
+    authorPart = surname + (authorsList.length > 1 ? ' et al.' : '');
+  }
+  const yearPart = a.year ? '(' + a.year + ')' : '';
+  const label = [authorPart, yearPart].filter(Boolean).join(' ');
+  return (label ? label + '. ' : '') + '"' + (a.title || a.original_name) + '"';
+}
+
+const MEDICATIONS_INDEX = [];
+const FINDINGS_INDEX = [];
+const AUDIT_UNCATEGORIZED = [];
+const SECTION_KEYS = ['epidemiologia', 'fisiopatologia', 'moa', 'tratamento', 'criterios', 'prognostico', 'limitacoes', 'relevancia', 'diferencial'];
+
+articles.forEach((a) => {
+  const diseases = [a.disease, ...nodeParseArr(a.secondary_diseases)].filter(Boolean);
+
+  const sampleMatch = (a.full_text || '').match(SAMPLE_N_RE) || (a.full_text || '').match(SAMPLE_PATIENTS_RE) || (a.summary || '').match(SAMPLE_PATIENTS_RE);
+  a.sample_size_hint = sampleMatch ? sampleMatch[1] : null;
+  a.citation = formatCitation(a);
+
+  const coveredKeys = new Set();
+  nodeGetArticleChunks(a).forEach((c) => {
+    const cat = nodeCategorizeHeading(c.heading);
+    if (cat) coveredKeys.add(cat);
+    else if (c.heading) AUDIT_UNCATEGORIZED.push({ articleId: a.id, title: a.title || a.original_name, heading: c.heading });
+  });
+  a.section_coverage = SECTION_KEYS.filter((k) => coveredKeys.has(k));
+
+  if (diseases.length === 0) return;
+  const meds = extractMedicationsFromArticle(a);
+  const finds = extractFindingsFromArticle(a);
+
+  diseases.forEach((disease) => {
+    meds.forEach((m) => {
+      MEDICATIONS_INDEX.push({
+        disease, articleId: a.id, title: a.title || a.original_name, year: a.year,
+        evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
+        drug: m.drug, class: m.class, dose: m.dose, line: m.line, heading: m.heading, snippet: m.snippet,
+      });
+    });
+    finds.forEach((f) => {
+      FINDINGS_INDEX.push({
+        disease, articleId: a.id, title: a.title || a.original_name, year: a.year,
+        evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
+        finding: f.finding, type: f.type, frequencyText: f.frequencyText, specificity: f.specificity,
+        heading: f.heading, snippet: f.snippet,
+      });
+    });
+  });
+});
+
+console.log(`Extração estruturada: ${MEDICATIONS_INDEX.length} menções de medicação, ${FINDINGS_INDEX.length} menções de achado, ${AUDIT_UNCATEGORIZED.length} seções não categorizadas.`);
+
 const dataJson = JSON.stringify(articles).replace(/</g, '\\u003c');
+const medsJson = JSON.stringify(MEDICATIONS_INDEX).replace(/</g, '\\u003c');
+const findsJson = JSON.stringify(FINDINGS_INDEX).replace(/</g, '\\u003c');
+const auditJson = JSON.stringify(AUDIT_UNCATEGORIZED).replace(/</g, '\\u003c');
 
 const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -310,6 +634,42 @@ body.compact-mode .card{padding:14px 16px}
 .list-viewport{position:relative}
 .list-spacer{width:100%}
 
+/* ---- Tratamento por Doença / Achados Documentados / Cobertura ---- */
+.data-table-wrap{overflow-x:auto;border:1px solid #e2e8f0;border-radius:8px;margin-top:14px}
+table.data-table{width:100%;border-collapse:collapse;font-size:12.5px}
+table.data-table th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#718096;font-weight:700;padding:8px 10px;background:#f7faff;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+table.data-table td{padding:8px 10px;border-bottom:1px solid #eef1f5;vertical-align:top}
+table.data-table tr:last-child td{border-bottom:none}
+table.data-table tr.source-row{cursor:pointer}
+table.data-table tr.source-row:hover td{background:#f7faff}
+.line-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.line-pill.primeira-linha{background:#e2efe3;color:#276749}
+.line-pill.segunda-linha{background:#dbeafe;color:#1e3a8a}
+.line-pill.refrataria-resgate{background:#fff8ed;color:#975a16}
+.line-pill.manutencao{background:#edf2f7;color:#4a5568}
+.line-pill.indefinida{background:#edf2f7;color:#a0aec0}
+.divergence-flag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fde8e8;color:#c53030;margin-left:6px}
+.finding-type-tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;background:#e6fffa;color:#065f46;border:1px solid #b2f5ea}
+.specificity-tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;background:#fff8ed;color:#975a16;margin-left:4px}
+.snippet-cell{font-size:11.5px;color:#718096;max-width:340px;line-height:1.5}
+.snippet-toggle{cursor:pointer;color:#1a56a0;font-size:11px;font-weight:600}
+.citation-text{font-size:11px;color:#a0aec0;font-style:italic}
+.auto-detected-note{font-size:11px;color:#b7791f;background:#fff8ed;border:1px solid #f6d9a8;border-radius:6px;padding:6px 10px;margin-bottom:10px;display:inline-block}
+.exec-summary{background:#eef4fd;border:1px solid #d6e6fb;border-radius:8px;padding:14px 16px;margin:8px 0 4px;font-size:13.5px;line-height:1.6;color:#1a3a5c}
+.exec-summary-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1a56a0;margin-bottom:6px}
+.stats-block{margin-top:10px;background:#f4f0ff;border:1px solid #d6c9f7;border-radius:8px;padding:10px 12px}
+.stats-block-title{font-size:11px;font-weight:700;text-transform:uppercase;color:#5a3d99;margin-bottom:6px}
+.stats-block-row{font-size:12.5px;color:#3f2d66;line-height:1.5;padding:3px 0;border-top:1px solid #e5daf9}
+.stats-block-row:first-child{border-top:none}
+.coverage-summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin:14px 0}
+.coverage-stat{background:#f7faff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;text-align:center}
+.coverage-stat-num{font-size:20px;font-weight:700;color:#1a56a0}
+.coverage-stat-label{font-size:10.5px;color:#718096;margin-top:2px}
+.coverage-article-row{padding:8px 10px;border-bottom:1px solid #eef1f5;font-size:12.5px;cursor:pointer}
+.coverage-article-row:hover{background:#f7faff}
+.coverage-missing{color:#c53030;font-size:11px}
+.related-explored-chip{background:#e6fffa;color:#065f46;border:1px solid #b2f5ea}
+
 @media (max-width:600px){
   main{padding:14px}
   header{padding:12px 16px}
@@ -321,7 +681,10 @@ body.compact-mode .card{padding:14px 16px}
   <h1>📚 Organizador de Artigos Científicos</h1>
   <nav>
     <button class="tab-btn active" data-tab="library">Biblioteca</button>
+    <button class="tab-btn" data-tab="treatment">💊 Tratamento</button>
+    <button class="tab-btn" data-tab="findings">🔬 Achados</button>
     <button class="tab-btn" data-tab="ask">Perguntas</button>
+    <button class="tab-btn" data-tab="coverage">🩺 Cobertura</button>
     <button type="button" id="compactModeBtn" title="Alterna um modo de leitura mais compacto, melhor para telas pequenas">📱 Compacto</button>
   </nav>
 </header>
@@ -359,6 +722,42 @@ body.compact-mode .card{padding:14px 16px}
       </div>
       <div id="resultCount" class="result-count"></div>
       <div id="libraryList" class="library-list"></div>
+    </div>
+  </section>
+
+  <section id="tab-treatment" class="tab">
+    <div class="card">
+      <h2>💊 Tratamento por Doença</h2>
+      <p class="hint">Consolida, para a doença selecionada, o que os artigos desta biblioteca documentam sobre tratamento — organizado por linha terapêutica. Extraído automaticamente do texto já curado de cada artigo; <b>confira sempre o trecho-fonte</b> antes de usar clinicamente.</p>
+      <div class="disease-view-picker">
+        <select id="treatmentDiseaseSelect"><option value="">Selecione uma doença/tema...</option></select>
+      </div>
+      <div id="treatmentContent"></div>
+    </div>
+  </section>
+
+  <section id="tab-findings" class="tab">
+    <div class="card">
+      <h2>🔬 Achados Documentados</h2>
+      <p class="hint">Cruza achados clínicos, laboratoriais, de imagem e anatomopatológicos com as doenças da biblioteca, com a frequência relatada quando disponível. Extraído automaticamente do texto já curado; <b>confira sempre o trecho-fonte</b> antes de usar clinicamente.</p>
+      <div class="view-toggle">
+        <button type="button" id="findingsModeDiseaseBtn" class="view-btn active">Por doença</button>
+        <button type="button" id="findingsModeSearchBtn" class="view-btn">Por achado</button>
+      </div>
+      <div id="findingsByDiseasePanel">
+        <div class="disease-view-picker">
+          <select id="findingsDiseaseSelect"><option value="">Selecione uma doença/tema...</option></select>
+        </div>
+        <div id="findingsByDiseaseContent"></div>
+      </div>
+      <div id="findingsBySearchPanel" style="display:none">
+        <div class="ask-box">
+          <input type="text" id="findingSearchInput" list="findingSuggestions" placeholder="Ex: anti-PR3, aneurisma de subclávia, proteinúria...">
+          <button type="button" id="findingSearchBtn" class="btn-primary">Buscar</button>
+        </div>
+        <datalist id="findingSuggestions"></datalist>
+        <div id="findingsBySearchContent"></div>
+      </div>
     </div>
   </section>
 
@@ -410,6 +809,20 @@ body.compact-mode .card{padding:14px 16px}
       </div>
     </div>
   </section>
+
+  <section id="tab-coverage" class="tab">
+    <div class="card">
+      <h2>🩺 Cobertura da Biblioteca</h2>
+      <p class="hint">Mostra quais artigos ainda não têm as seções-chave preenchidas (para priorizar reprocessamento) e quais títulos de seção não caem em nenhuma categoria conhecida (para revisão manual).</p>
+      <div id="coverageSummary"></div>
+      <div class="view-toggle" style="margin-top:18px">
+        <button type="button" id="coverageGapsBtn" class="view-btn active">Artigos com lacunas</button>
+        <button type="button" id="coverageAuditBtn" class="view-btn">Seções não categorizadas</button>
+      </div>
+      <div id="coverageGapsContent"></div>
+      <div id="coverageAuditContent" style="display:none"></div>
+    </div>
+  </section>
 </main>
 
 <div id="modalOverlay" class="modal-overlay">
@@ -438,6 +851,9 @@ body.compact-mode .card{padding:14px 16px}
 
 <script>
 const ARTICLES = ${dataJson};
+const MEDICATIONS_INDEX = ${medsJson};
+const FINDINGS_INDEX = ${findsJson};
+const AUDIT_UNCATEGORIZED = ${auditJson};
 const CLAUDE_MODEL = 'claude-sonnet-5';
 
 // ---------- Modo de leitura compacto ----------
@@ -460,6 +876,9 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'library') renderVirtualList(true);
+    if (btn.dataset.tab === 'treatment') { populateTreatmentDiseaseSelect(); renderTreatmentTab(); }
+    if (btn.dataset.tab === 'findings') { populateFindingsDiseaseSelect(); renderFindingsByDisease(); populateFindingSuggestions(); }
+    if (btn.dataset.tab === 'coverage') renderCoverageTab();
   });
 });
 
@@ -866,6 +1285,69 @@ function renderDoseTable(text) {
   return '<div class="dose-table"><div class="dose-table-title">💊 Doses mencionadas nesta seção</div>' + rows + '</div>';
 }
 
+// ---------- Números que importam (NNT, RRR/OR/HR, IC95%, p-valor) ----------
+const STAT_PATTERNS = [
+  /\\bNNT\\s*[:=]?\\s*\\d+(?:[.,]\\d+)?/gi,
+  /\\bNNH\\s*[:=]?\\s*\\d+(?:[.,]\\d+)?/gi,
+  /\\b(?:RRR|RR|OR|HR)\\s*[:=]?\\s*\\d+(?:[.,]\\d+)?(?:\\s*[-–]\\s*\\d+(?:[.,]\\d+)?)?/gi,
+  /\\bIC\\s?95%[^;.\\n]{0,40}?\\d+(?:[.,]\\d+)?\\s*[-–]\\s*\\d+(?:[.,]\\d+)?/gi,
+  /\\b95%\\s?CI[^;.\\n]{0,40}?\\d+(?:[.,]\\d+)?\\s*[-–]\\s*\\d+(?:[.,]\\d+)?/gi,
+  /\\bp\\s*[<=>]\\s*0[.,]\\d+/gi,
+];
+
+function extractStatsSentences(text) {
+  if (!text) return [];
+  const sentences = text.split(/(?<=[.!?])\\s+/);
+  const found = [];
+  sentences.forEach((s) => {
+    const hasStat = STAT_PATTERNS.some((re) => { re.lastIndex = 0; return re.test(s); });
+    if (hasStat) {
+      const trimmed = s.trim();
+      if (trimmed.length > 8 && trimmed.length < 320) found.push(trimmed);
+    }
+  });
+  return found.slice(0, 6);
+}
+
+// Destaca os trechos casados sem quebrar o escaping de HTML (necessário porque os
+// padrões acima usam < e > literalmente, ex.: "p < 0,05").
+function highlightRawMatches(text, patterns) {
+  const ranges = [];
+  patterns.forEach((re) => {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      ranges.push([m.index, m.index + m[0].length]);
+      if (re.lastIndex === m.index) re.lastIndex++;
+    }
+  });
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  ranges.forEach((r) => {
+    if (merged.length > 0 && r[0] <= merged[merged.length - 1][1]) {
+      merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], r[1]);
+    } else {
+      merged.push(r.slice());
+    }
+  });
+  let html = '';
+  let cursor = 0;
+  merged.forEach(([start, end]) => {
+    html += escapeHtml(text.slice(cursor, start));
+    html += '<b>' + escapeHtml(text.slice(start, end)) + '</b>';
+    cursor = end;
+  });
+  html += escapeHtml(text.slice(cursor));
+  return html;
+}
+
+function renderStatsBlock(text) {
+  const sentences = extractStatsSentences(text);
+  if (sentences.length === 0) return '';
+  const rows = sentences.map((s) => '<div class="stats-block-row">' + highlightRawMatches(s, STAT_PATTERNS) + '</div>').join('');
+  return '<div class="stats-block"><div class="stats-block-title">📐 Números que importam</div>' + rows + '</div>';
+}
+
 // ---------- Glossário de siglas clicável ----------
 const ACRONYM_GLOSSARY = {
   'AR': 'Artrite Reumatoide', 'LES': 'Lúpus Eritematoso Sistêmico', 'SAF': 'Síndrome do Anticorpo Antifosfolípide',
@@ -919,17 +1401,25 @@ const DV_CATEGORIES = [
   { key: 'fisiopatologia', label: '🧬 Fisiopatologia' },
   { key: 'moa', label: '💊 Mecanismo de Ação de Medicações' },
   { key: 'tratamento', label: '💉 Tratamento' },
+  { key: 'criterios', label: '📐 Critérios Diagnósticos/Classificação' },
+  { key: 'prognostico', label: '📈 Prognóstico' },
+  { key: 'limitacoes', label: '⚠️ Limitações dos Estudos' },
   { key: 'diferencial', label: '🔍 Diagnóstico Diferencial e Investigação' },
+  { key: 'relevancia', label: '⭐ Relevância Clínica' },
 ];
 
 function categorizeHeading(heading) {
   const h = normalizeText(heading);
   if (!h) return null;
   if (h.includes('diferencial')) return 'diferencial';
+  if (h.includes('criterio') && (h.includes('diagnostic') || h.includes('classificacao'))) return 'criterios';
   if (h.includes('epidemiol') || h.includes('prevalenc') || h.includes('incidenc')) return 'epidemiologia';
   if (h.includes('mecanismo de acao')) return 'moa';
-  if (h.includes('fisiopatolog') || h.includes('patogen') || h.includes('imunopatogen')) return 'fisiopatologia';
+  if (h.includes('fisiopatolog') || h.includes('patogen') || h.includes('imunopatogen') || h.includes('histopatolog')) return 'fisiopatologia';
   if (h.includes('tratamento') || h.includes('terapi') || h.includes('posologia')) return 'tratamento';
+  if (h.includes('prognostico')) return 'prognostico';
+  if (h.includes('limitac') || (h.includes('critic') && !h.includes('criterio'))) return 'limitacoes';
+  if (h.includes('relevancia clinica') || h.includes('relevancia terapeutica')) return 'relevancia';
   return null;
 }
 
@@ -997,6 +1487,32 @@ function renderRelatedUnexplored(diseaseName, articles) {
   return '<div class="dv-related"><div class="dv-related-title">🧭 Doenças/temas relacionados ainda sem síntese própria nesta biblioteca</div>' + chips + '</div>';
 }
 
+function computeRelatedExplored(diseaseName, articles) {
+  const primaryMap = new Map();
+  ARTICLES.forEach((a) => { if (a.disease) primaryMap.set(normalizeText(a.disease), a.disease); });
+  const diseaseNorm = normalizeText(diseaseName);
+  const freq = new Map();
+  articles.forEach((a) => {
+    const candidates = [...parseArr(a.secondary_diseases), ...((a.topics || '').split(','))].map((s) => s.trim()).filter(Boolean);
+    candidates.forEach((c) => {
+      const norm = normalizeText(c);
+      if (!norm || norm === diseaseNorm || !primaryMap.has(norm)) return;
+      const label = primaryMap.get(norm);
+      freq.set(label, (freq.get(label) || 0) + 1);
+    });
+  });
+  return [...freq.entries()].map(([label, count]) => ({ label, count })).sort((x, y) => y.count - x.count).slice(0, 6);
+}
+
+function renderRelatedExplored(diseaseName, articles) {
+  const items = computeRelatedExplored(diseaseName, articles);
+  if (items.length === 0) return '';
+  const chips = items.map((it) =>
+    '<span class="dv-related-chip related-explored-chip" data-term="' + escapeHtml(it.label) + '">' + escapeHtml(it.label) + ' (' + it.count + ')</span>'
+  ).join('');
+  return '<div class="dv-related"><div class="dv-related-title">🔗 Doenças relacionadas já com síntese própria nesta biblioteca</div>' + chips + '</div>';
+}
+
 function buildConsistencyPrompt(diseaseName, articles, finding) {
   const context = articles.slice(0, 10).map((a, i) => {
     const chunks = getArticleChunks(a).slice(0, 6);
@@ -1033,7 +1549,7 @@ function renderDiseaseView() {
   }
 
   const articles = getDiseaseArticles(diseaseName);
-  const buckets = { epidemiologia: [], fisiopatologia: [], moa: [], tratamento: [], diferencial: [] };
+  const buckets = { epidemiologia: [], fisiopatologia: [], moa: [], tratamento: [], criterios: [], prognostico: [], limitacoes: [], diferencial: [], relevancia: [] };
   articles.forEach((a) => {
     getArticleChunks(a).forEach((c) => {
       const cat = categorizeHeading(c.heading);
@@ -1049,6 +1565,7 @@ function renderDiseaseView() {
   let html = '<div class="dv-header">Síntese agregada de <strong>' + escapeHtml(diseaseName) + '</strong> — ' + articles.length + ' artigo' + (articles.length !== 1 ? 's' : '') + ' desta biblioteca abordam este tema:</div>';
   html += '<div class="dv-sources">' + sourceChips + '</div>';
   html += renderTimeline(sortedArticles);
+  html += renderRelatedExplored(diseaseName, articles);
   html += renderRelatedUnexplored(diseaseName, articles);
   html += renderConsistencyPanel();
 
@@ -1063,6 +1580,7 @@ function renderDiseaseView() {
           '<div class="dv-entry-source" data-id="' + e.articleId + '">' + escapeHtml(e.title) + (e.year ? ' · ' + escapeHtml(e.year) : '') + (e.heading ? ' — <em>' + escapeHtml(e.heading) + '</em>' : '') + '</div>' +
           '<div class="dv-entry-text">' + linkifyAcronyms(escapeHtml(e.text)) + '</div>' +
           renderDoseTable(e.text) +
+          renderStatsBlock(e.text) +
         '</div>'
       ).join('');
     }
@@ -1075,6 +1593,12 @@ function renderDiseaseView() {
   });
   diseaseViewContent.querySelectorAll('.dv-related-chip').forEach((el) => {
     el.addEventListener('click', () => {
+      if (el.classList.contains('related-explored-chip')) {
+        diseaseViewSelect.value = el.dataset.term;
+        renderDiseaseView();
+        diseaseView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
       searchBox.value = el.dataset.term;
       setViewMode('list');
     });
@@ -1256,8 +1780,13 @@ function renderSummaryBody(a) {
     }
   }
 
+  const execSummary = a.summary
+    ? '<div class="exec-summary"><div class="exec-summary-label">Resumo Executivo</div>' + linkifyAcronyms(escapeHtml(a.summary)) + '</div>'
+    : '';
+
   if (!sections) {
-    return '<div class="section-label">Resumo</div><p>' + linkifyAcronyms(escapeHtml(a.summary || 'Sem resumo disponível.')) + '</p>' + renderDoseTable(a.summary || '');
+    if (execSummary) return execSummary + renderDoseTable(a.summary || '') + renderStatsBlock(a.summary || '');
+    return '<div class="section-label">Resumo</div><p>Sem resumo disponível.</p>';
   }
 
   const isCritical = (heading) => /cr[ií]tic|limita[cç][aã]o|vi[eé]s|qualidade da evid[eê]ncia/i.test(heading || '');
@@ -1276,10 +1805,11 @@ function renderSummaryBody(a) {
       '<h4>' + escapeHtml(s.heading || '') + '</h4>' +
       '<p>' + linkifyAcronyms(escapeHtml(s.text || '')) + '</p>' +
       renderDoseTable(s.text || '') +
+      renderStatsBlock(s.text || '') +
     '</div>'
   ).join('') + '</div>';
 
-  return nav + body;
+  return execSummary + nav + body;
 }
 
 function computeRelatedArticles(a) {
@@ -1416,7 +1946,8 @@ function openModal(id) {
 
   modalBody.innerHTML =
     '<h3>' + escapeHtml(a.title || a.original_name) + '</h3>' +
-    '<div class="meta">' + escapeHtml([a.authors, a.year].filter(Boolean).join(' · ')) + '</div>' +
+    '<div class="meta">' + escapeHtml([a.authors, a.year].filter(Boolean).join(' · ')) + (a.sample_size_hint ? ' · <span class="citation-text">n≈' + escapeHtml(a.sample_size_hint) + '</span>' : '') + '</div>' +
+    (a.citation ? '<div class="citation-text" style="margin:2px 0 8px">' + escapeHtml(a.citation) + '</div>' : '') +
     '<div class="modal-actions">' +
       '<button class="btn-secondary fav-btn" data-id="' + a.id + '">' + (isFavorite(a.id) ? '★ Favorito' : '☆ Favoritar') + '</button>' +
       '<button class="btn-secondary coll-btn" data-id="' + a.id + '">📁 Coleções</button>' +
@@ -1976,6 +2507,274 @@ async function ask() {
   } finally {
     askBtn.disabled = false;
     isAsking = false;
+  }
+}
+
+// ---------- Aba Tratamento por Doença ----------
+const LINE_LABELS = {
+  'primeira-linha': '1ª linha',
+  'segunda-linha': '2ª linha',
+  'refrataria-resgate': 'Refratária/resgate',
+  'manutencao': 'Manutenção',
+};
+function lineLabel(key) { return key ? (LINE_LABELS[key] || key) : 'Linha não identificada'; }
+function linePillClass(key) { return key || 'indefinida'; }
+const LINE_ORDER = ['primeira-linha', 'segunda-linha', 'manutencao', 'refrataria-resgate', null];
+
+function detectLineDivergence(rows) {
+  const byDrug = new Map();
+  rows.forEach((r) => {
+    if (!r.line) return;
+    if (!byDrug.has(r.drug)) byDrug.set(r.drug, new Set());
+    byDrug.get(r.drug).add(r.line);
+  });
+  const divergent = new Set();
+  byDrug.forEach((lines, drug) => { if (lines.size > 1) divergent.add(drug); });
+  return divergent;
+}
+
+const treatmentDiseaseSelect = document.getElementById('treatmentDiseaseSelect');
+const treatmentContent = document.getElementById('treatmentContent');
+
+function populateTreatmentDiseaseSelect() {
+  const opts = optionsForFilterKey('disease');
+  const prev = treatmentDiseaseSelect.value;
+  treatmentDiseaseSelect.innerHTML = '<option value="">Selecione uma doença/tema...</option>' +
+    opts.map((d) => {
+      const count = MEDICATIONS_INDEX.filter((m) => m.disease === d).length;
+      return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + ' (' + count + ' menç' + (count !== 1 ? 'ões' : 'ão') + ')</option>';
+    }).join('');
+  if (prev && opts.includes(prev)) treatmentDiseaseSelect.value = prev;
+}
+
+function renderTreatmentTab() {
+  const disease = treatmentDiseaseSelect.value;
+  if (!disease) {
+    treatmentContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver o tratamento consolidado, organizado por linha terapêutica, a partir de todos os artigos desta biblioteca sobre ela.</div>';
+    return;
+  }
+  const rows = MEDICATIONS_INDEX.filter((m) => m.disease === disease);
+  if (rows.length === 0) {
+    treatmentContent.innerHTML = '<div class="empty-state">Nenhuma menção de medicação foi detectada automaticamente nos artigos desta biblioteca sobre ' + escapeHtml(disease) + '.</div>';
+    return;
+  }
+  const divergent = detectLineDivergence(rows);
+  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte de cada linha antes de usar clinicamente.</div>';
+  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Linha</th><th>Fármaco / classe</th><th>Dose detectada</th><th>Evidência</th><th>Fonte</th></tr></thead><tbody>';
+
+  const sorted = rows.slice().sort((x, y) => LINE_ORDER.indexOf(x.line) - LINE_ORDER.indexOf(y.line));
+  sorted.forEach((r) => {
+    const isDivergent = divergent.has(r.drug);
+    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
+      '<td><span class="line-pill ' + linePillClass(r.line) + '">' + escapeHtml(lineLabel(r.line)) + '</span>' + (isDivergent ? '<span class="divergence-flag" title="Outro artigo desta biblioteca cita este fármaco em linha diferente">⚠ divergente</span>' : '') + '</td>' +
+      '<td><b>' + escapeHtml(r.drug) + '</b><br><span class="citation-text">' + escapeHtml(r.class || '') + '</span></td>' +
+      '<td>' + (r.dose ? escapeHtml(r.dose) : '<span class="citation-text">não detectada</span>') + '</td>' +
+      '<td>' + (r.evidenceLevel ? escapeHtml(r.evidenceLevel) : '—') + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
+      '<td class="snippet-cell">' + escapeHtml(r.citation) + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  treatmentContent.innerHTML = html;
+  treatmentContent.querySelectorAll('.source-row').forEach((row) => {
+    row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+  });
+}
+treatmentDiseaseSelect.addEventListener('change', renderTreatmentTab);
+
+// ---------- Aba Achados Documentados ----------
+const findingsModeDiseaseBtn = document.getElementById('findingsModeDiseaseBtn');
+const findingsModeSearchBtn = document.getElementById('findingsModeSearchBtn');
+const findingsByDiseasePanel = document.getElementById('findingsByDiseasePanel');
+const findingsBySearchPanel = document.getElementById('findingsBySearchPanel');
+
+findingsModeDiseaseBtn.addEventListener('click', () => {
+  findingsModeDiseaseBtn.classList.add('active');
+  findingsModeSearchBtn.classList.remove('active');
+  findingsByDiseasePanel.style.display = 'block';
+  findingsBySearchPanel.style.display = 'none';
+});
+findingsModeSearchBtn.addEventListener('click', () => {
+  findingsModeSearchBtn.classList.add('active');
+  findingsModeDiseaseBtn.classList.remove('active');
+  findingsBySearchPanel.style.display = 'block';
+  findingsByDiseasePanel.style.display = 'none';
+});
+
+const findingsDiseaseSelect = document.getElementById('findingsDiseaseSelect');
+const findingsByDiseaseContent = document.getElementById('findingsByDiseaseContent');
+const RARE_WORD_RE = /raro|incomum|infrequente|ocasional/i;
+
+function populateFindingsDiseaseSelect() {
+  const opts = optionsForFilterKey('disease');
+  const prev = findingsDiseaseSelect.value;
+  findingsDiseaseSelect.innerHTML = '<option value="">Selecione uma doença/tema...</option>' +
+    opts.map((d) => {
+      const count = FINDINGS_INDEX.filter((f) => f.disease === d).length;
+      return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + ' (' + count + ' achado' + (count !== 1 ? 's' : '') + ')</option>';
+    }).join('');
+  if (prev && opts.includes(prev)) findingsDiseaseSelect.value = prev;
+}
+
+function detectFrequencyDivergence(rows) {
+  const byFinding = new Map();
+  rows.forEach((r) => {
+    if (!r.frequencyText) return;
+    const isRare = RARE_WORD_RE.test(r.frequencyText);
+    const isCommon = /comum|frequente|maioria/i.test(r.frequencyText);
+    if (!isRare && !isCommon) return;
+    if (!byFinding.has(r.finding)) byFinding.set(r.finding, new Set());
+    byFinding.get(r.finding).add(isRare ? 'raro' : 'comum');
+  });
+  const divergent = new Set();
+  byFinding.forEach((buckets, finding) => { if (buckets.has('raro') && buckets.has('comum')) divergent.add(finding); });
+  return divergent;
+}
+
+function findingFrequencyCell(r) {
+  if (!r.frequencyText) return '<span class="citation-text">não detectada</span>';
+  const isRare = RARE_WORD_RE.test(r.frequencyText);
+  return (isRare ? '<span class="specificity-tag">⚠ ' + escapeHtml(r.frequencyText) + '</span>' : escapeHtml(r.frequencyText)) +
+    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '');
+}
+
+function renderFindingsByDisease() {
+  const disease = findingsDiseaseSelect.value;
+  if (!disease) {
+    findingsByDiseaseContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver todo achado clínico, laboratorial, de imagem ou anatomopatológico já documentado nos artigos desta biblioteca sobre ela.</div>';
+    return;
+  }
+  const rows = FINDINGS_INDEX.filter((f) => f.disease === disease);
+  if (rows.length === 0) {
+    findingsByDiseaseContent.innerHTML = '<div class="empty-state">Nenhum achado foi detectado automaticamente nos artigos desta biblioteca sobre ' + escapeHtml(disease) + '.</div>';
+    return;
+  }
+  const divergent = detectFrequencyDivergence(rows);
+  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
+  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Tipo</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+  rows.slice().sort((x, y) => x.finding.localeCompare(y.finding, 'pt')).forEach((r) => {
+    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
+      '<td><b>' + escapeHtml(r.finding) + '</b>' + (divergent.has(r.finding) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + '</td>' +
+      '<td><span class="finding-type-tag">' + escapeHtml(r.type) + '</span></td>' +
+      '<td>' + findingFrequencyCell(r) + '</td>' +
+      '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table></div>';
+  findingsByDiseaseContent.innerHTML = html;
+  findingsByDiseaseContent.querySelectorAll('.source-row').forEach((row) => {
+    row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+  });
+}
+findingsDiseaseSelect.addEventListener('change', renderFindingsByDisease);
+
+function populateFindingSuggestions() {
+  const names = [...new Set(FINDINGS_INDEX.map((f) => f.finding))].sort((a, b) => a.localeCompare(b, 'pt'));
+  document.getElementById('findingSuggestions').innerHTML = names.map((n) => '<option value="' + escapeHtml(n) + '"></option>').join('');
+}
+
+const findingSearchInput = document.getElementById('findingSearchInput');
+const findingSearchBtn = document.getElementById('findingSearchBtn');
+const findingsBySearchContent = document.getElementById('findingsBySearchContent');
+
+function renderFindingsBySearch() {
+  const rawTerm = findingSearchInput.value.trim();
+  const term = normalizeText(rawTerm);
+  if (!term) {
+    findingsBySearchContent.innerHTML = '<div class="empty-state">Digite um achado acima (ex.: "anti-PR3", "aneurisma de subclávia") para ver em quais doenças desta biblioteca ele é documentado, e com que frequência em cada uma.</div>';
+    return;
+  }
+  const rows = FINDINGS_INDEX.filter((f) => normalizeText(f.finding).includes(term));
+  if (rows.length === 0) {
+    findingsBySearchContent.innerHTML = '<div class="empty-state">Nenhum achado desta biblioteca corresponde a "' + escapeHtml(rawTerm) + '". Tente um termo mais genérico ou veja as sugestões ao digitar.</div>';
+    return;
+  }
+  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
+  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Doença</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+  rows.slice().sort((x, y) => x.disease.localeCompare(y.disease, 'pt')).forEach((r) => {
+    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
+      '<td>' + escapeHtml(r.finding) + '</td>' +
+      '<td><b>' + escapeHtml(r.disease) + '</b></td>' +
+      '<td>' + findingFrequencyCell(r) + '</td>' +
+      '<td class="snippet-cell">' + escapeHtml(r.citation) + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table></div>';
+  findingsBySearchContent.innerHTML = html;
+  findingsBySearchContent.querySelectorAll('.source-row').forEach((row) => {
+    row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+  });
+}
+findingSearchBtn.addEventListener('click', renderFindingsBySearch);
+findingSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') renderFindingsBySearch(); });
+
+// ---------- Aba Cobertura da Biblioteca ----------
+const coverageGapsBtn = document.getElementById('coverageGapsBtn');
+const coverageAuditBtn = document.getElementById('coverageAuditBtn');
+const coverageGapsContent = document.getElementById('coverageGapsContent');
+const coverageAuditContent = document.getElementById('coverageAuditContent');
+const coverageSummary = document.getElementById('coverageSummary');
+
+coverageGapsBtn.addEventListener('click', () => {
+  coverageGapsBtn.classList.add('active');
+  coverageAuditBtn.classList.remove('active');
+  coverageGapsContent.style.display = 'block';
+  coverageAuditContent.style.display = 'none';
+});
+coverageAuditBtn.addEventListener('click', () => {
+  coverageAuditBtn.classList.add('active');
+  coverageGapsBtn.classList.remove('active');
+  coverageAuditContent.style.display = 'block';
+  coverageGapsContent.style.display = 'none';
+});
+
+const KEY_SECTIONS = ['epidemiologia', 'fisiopatologia', 'moa', 'tratamento', 'diferencial'];
+const SECTION_LABELS = {
+  epidemiologia: 'Epidemiologia', fisiopatologia: 'Fisiopatologia', moa: 'Mecanismo de Ação',
+  tratamento: 'Tratamento', diferencial: 'Diferencial', criterios: 'Critérios', prognostico: 'Prognóstico', limitacoes: 'Limitações', relevancia: 'Relevância Clínica',
+};
+
+function renderCoverageTab() {
+  const total = ARTICLES.length;
+  const withAllKey = ARTICLES.filter((a) => KEY_SECTIONS.every((k) => (a.section_coverage || []).includes(k))).length;
+  const avgCoverage = ARTICLES.reduce((sum, a) => sum + (a.section_coverage || []).length, 0) / (total || 1);
+
+  coverageSummary.innerHTML = '<div class="coverage-summary-grid">' +
+    '<div class="coverage-stat"><div class="coverage-stat-num">' + total + '</div><div class="coverage-stat-label">Artigos</div></div>' +
+    '<div class="coverage-stat"><div class="coverage-stat-num">' + withAllKey + '</div><div class="coverage-stat-label">Com as 5 seções-chave</div></div>' +
+    '<div class="coverage-stat"><div class="coverage-stat-num">' + (total - withAllKey) + '</div><div class="coverage-stat-label">Com alguma lacuna</div></div>' +
+    '<div class="coverage-stat"><div class="coverage-stat-num">' + avgCoverage.toFixed(1) + '/8</div><div class="coverage-stat-label">Seções médias por artigo</div></div>' +
+    '<div class="coverage-stat"><div class="coverage-stat-num">' + AUDIT_UNCATEGORIZED.length + '</div><div class="coverage-stat-label">Seções não categorizadas</div></div>' +
+  '</div>';
+
+  const gapArticles = ARTICLES.filter((a) => !KEY_SECTIONS.every((k) => (a.section_coverage || []).includes(k)))
+    .slice()
+    .sort((x, y) => (x.section_coverage || []).length - (y.section_coverage || []).length);
+
+  if (gapArticles.length === 0) {
+    coverageGapsContent.innerHTML = '<div class="empty-state">Todos os artigos têm as 5 seções-chave preenchidas.</div>';
+  } else {
+    coverageGapsContent.innerHTML = gapArticles.map((a) => {
+      const missing = KEY_SECTIONS.filter((k) => !(a.section_coverage || []).includes(k));
+      return '<div class="coverage-article-row" data-id="' + a.id + '">' +
+        '<b>' + escapeHtml(a.title || a.original_name) + '</b>' + (a.year ? ' · ' + escapeHtml(a.year) : '') + '<br>' +
+        '<span class="coverage-missing">Faltando: ' + missing.map((k) => SECTION_LABELS[k]).join(', ') + '</span>' +
+      '</div>';
+    }).join('');
+    coverageGapsContent.querySelectorAll('.coverage-article-row').forEach((row) => {
+      row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+    });
+  }
+
+  if (AUDIT_UNCATEGORIZED.length === 0) {
+    coverageAuditContent.innerHTML = '<div class="empty-state">Todos os títulos de seção foram reconhecidos por alguma categoria.</div>';
+  } else {
+    coverageAuditContent.innerHTML = '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Seção</th><th>Artigo</th></tr></thead><tbody>' +
+      AUDIT_UNCATEGORIZED.map((u) => '<tr class="source-row" data-id="' + u.articleId + '"><td>' + escapeHtml(u.heading) + '</td><td>' + escapeHtml(u.title) + '</td></tr>').join('') +
+      '</tbody></table></div>';
+    coverageAuditContent.querySelectorAll('.source-row').forEach((row) => {
+      row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+    });
   }
 }
 
