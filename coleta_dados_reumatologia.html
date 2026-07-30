@@ -868,7 +868,12 @@ const MED_CONTINUAS = [
   'Ziprasidona','Zolpidem'
 ];
 // Sinônimos: busca pelo termo à esquerda encontra/seleciona a medicação canônica à direita
-const MED_CONTINUAS_ALIASES = { 'vitamina d': 'Colecalciferol' };
+const MED_CONTINUAS_ALIASES = {
+  'vitamina d': 'Colecalciferol', 'vit d': 'Colecalciferol',
+  'af': 'Ácido fólico',
+  'hctz': 'Hidroclorotiazida',
+  'caco3': 'Carbonato de cálcio', 'calcio': 'Carbonato de cálcio',
+};
 
 // Medicações não-DMARD com posologia periódica/intermitente (mensal, trimestral,
 // semestral, anual etc.) — mantidas fora de MED_CONTINUAS por não serem de uso diário.
@@ -1561,6 +1566,11 @@ const BRAND_GENERIC = {
   'proscar':'Finasterida','propecia':'Finasterida',
   'clexane':'Enoxaparina',
   'bactrim':'Bactrim','sulfametoxazol':'Bactrim',
+  // Abreviações comuns em listas de medicações (reconhecidas quando a linha colada é só a sigla)
+  'af':'Ácido fólico',
+  'vit d':'Colecalciferol','vitamina d':'Colecalciferol',
+  'hctz':'Hidroclorotiazida',
+  'caco3':'Carbonato de cálcio',
 };
 
 // Prefixos de sal/forma farmacêutica a remover antes de comparar
