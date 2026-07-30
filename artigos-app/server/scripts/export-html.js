@@ -252,6 +252,64 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
 .pdf-viewer iframe{width:100%;height:65vh;border:1px solid #e2e8f0;border-radius:8px}
 .pdf-hint{font-size:11px;color:#a0aec0}
 
+.dose-table{margin-top:10px;background:#fff8ed;border:1px solid #f6d9a8;border-radius:8px;padding:10px 12px}
+.dose-table-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#b7791f;margin-bottom:6px}
+.dose-table-row{font-size:12.5px;color:#4a3210;line-height:1.5;padding:3px 0;border-top:1px solid #f6e6c8}
+.dose-table-row:first-child{border-top:none}
+.dose-table-row b{color:#975a16}
+
+.acronym{border-bottom:1px dashed #1a56a0;cursor:pointer;color:inherit}
+.acronym:hover{background:#eef4fd}
+.acronym-tooltip{display:none;position:absolute;background:#1a202c;color:#fff;font-size:12px;line-height:1.4;padding:8px 12px;border-radius:6px;max-width:280px;z-index:400;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.acronym-tooltip.active{display:block}
+.acronym-tooltip b{color:#90cdf4}
+
+.dv-timeline{margin-bottom:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.dv-timeline-title{font-size:13.5px;font-weight:700;color:#1a56a0;margin-bottom:10px}
+.dv-timeline-track{display:flex;gap:20px;overflow-x:auto;padding:12px 4px 4px;border-top:2px solid #e2e8f0}
+.dv-timeline-year{min-width:150px;flex-shrink:0;position:relative}
+.dv-timeline-year::before{content:'';position:absolute;top:-18px;left:0;width:10px;height:10px;border-radius:50%;background:#1a56a0}
+.dv-timeline-year-label{font-weight:700;font-size:13px;color:#1a56a0;margin-bottom:6px}
+.dv-timeline-item{font-size:11.5px;color:#2d3748;background:#f7faff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;margin-bottom:5px;cursor:pointer}
+.dv-timeline-item:hover{border-color:#1a56a0}
+
+.dv-related{margin-bottom:20px;background:#f7faff;border:1px solid #d6e6fb;border-radius:10px;padding:12px 16px}
+.dv-related-title{font-size:12.5px;font-weight:700;color:#1a56a0;margin-bottom:8px}
+.dv-related-chip{display:inline-block;background:#fff;border:1px solid #cbd5e0;color:#2d3748;font-size:11.5px;padding:4px 10px;border-radius:14px;margin:0 6px 6px 0;cursor:pointer}
+.dv-related-chip:hover{border-color:#1a56a0;color:#1a56a0}
+
+.dv-consistency{margin-bottom:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.dv-consistency-title{font-size:13.5px;font-weight:700;color:#1a56a0;margin-bottom:8px}
+.dv-consistency-box{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.dv-consistency-box input{flex:1;min-width:200px;border:1px solid #cbd5e0;border-radius:8px;padding:8px 12px;font-size:12.5px}
+.dv-consistency-result{font-size:13px;line-height:1.6;color:#2d3748;white-space:pre-wrap;background:#f7faff;border-radius:8px;padding:12px 14px;margin-top:8px}
+.dv-consistency-hint{font-size:11.5px;color:#718096}
+
+.symptom-result-group{margin-bottom:16px}
+.symptom-result-disease{font-size:12.5px;font-weight:700;color:#1a56a0;margin-bottom:6px}
+
+.cite-link{color:#1a56a0;font-weight:600;cursor:pointer;text-decoration:underline dotted}
+.cite-link:hover{color:#154180}
+.qa-sources-item{display:inline-block;margin-right:8px;padding:2px 8px;border-radius:10px;font-size:11px;background:#edf2f7;color:#718096}
+.qa-sources-item.cited{background:#dbeafe;color:#1a56a0;font-weight:600}
+.qa-cache-badge{display:inline-block;font-size:10.5px;color:#975a16;background:#fff8ed;border:1px solid #f6d9a8;border-radius:10px;padding:1px 8px;margin-left:8px}
+.qa-related{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.qa-related-chip{background:#eef4fd;color:#1a56a0;border:1px solid #d6e6fb;border-radius:14px;font-size:11.5px;padding:4px 10px;cursor:pointer}
+.qa-related-chip:hover{background:#e0edfc}
+
+body.compact-mode .modal{padding:16px 18px;max-width:680px}
+body.compact-mode .modal h3{font-size:15px}
+body.compact-mode .summary-sections{gap:10px}
+body.compact-mode .summary-section h4{font-size:11px;margin-bottom:5px;padding-bottom:4px}
+body.compact-mode .summary-section p{font-size:12.5px;line-height:1.5}
+body.compact-mode .article-card{padding:10px 12px}
+body.compact-mode .article-card .title{font-size:12.5px}
+body.compact-mode main{padding:12px}
+body.compact-mode .card{padding:14px 16px}
+
+.list-viewport{position:relative}
+.list-spacer{width:100%}
+
 @media (max-width:600px){
   main{padding:14px}
   header{padding:12px 16px}
@@ -264,6 +322,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
   <nav>
     <button class="tab-btn active" data-tab="library">Biblioteca</button>
     <button class="tab-btn" data-tab="ask">Perguntas</button>
+    <button type="button" id="compactModeBtn" title="Alterna um modo de leitura mais compacto, melhor para telas pequenas">📱 Compacto</button>
   </nav>
 </header>
 
@@ -308,6 +367,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
       <div class="view-toggle">
         <button type="button" id="modeSmartBtn" class="view-btn active">🔍 Busca Inteligente (sem IA)</button>
         <button type="button" id="modeAiBtn" class="view-btn">🤖 Perguntar com IA (Claude)</button>
+        <button type="button" id="modeSymptomBtn" class="view-btn">🩺 Diferencial por Sintoma</button>
       </div>
 
       <div id="smartSearchPanel" class="ask-panel">
@@ -319,9 +379,18 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
         <div id="smartResults" class="ask-history"></div>
       </div>
 
+      <div id="symptomPanel" class="ask-panel" style="display:none">
+        <p class="hint">Digite um sintoma ou achado (ex.: "proteinúria", "rash malar", "dor articular") para ver em quais artigos da biblioteca ele aparece documentado nas seções de Diagnóstico Diferencial e Investigação, agrupado por doença/tema.</p>
+        <div class="ask-box">
+          <input type="text" id="symptomInput" placeholder="Ex: proteinúria, rash malar, dor articular...">
+          <button id="symptomSearchBtn" class="btn-primary">Buscar diferenciais</button>
+        </div>
+        <div id="symptomResults" class="ask-history"></div>
+      </div>
+
       <div id="aiPanel" class="ask-panel" style="display:none">
         <h2>Pergunte sobre os artigos</h2>
-        <p class="hint">A resposta é gerada com IA (Claude, Anthropic) com base apenas nos artigos desta biblioteca. Sua chave de API fica salva só no seu navegador (localStorage) e é usada apenas para chamar a API da Anthropic diretamente do seu computador.</p>
+        <p class="hint">A resposta é gerada com IA (Claude, Anthropic) com base apenas nos artigos desta biblioteca. Sua chave de API fica salva só no seu navegador (localStorage) e é usada apenas para chamar a API da Anthropic diretamente do seu computador. Perguntas de seguimento continuam a mesma conversa — clique em "Nova conversa" para recomeçar do zero.</p>
 
         <div id="apiKeyEntry" class="apikey-box">
           <input type="password" id="apiKeyInput" placeholder="Cole sua chave de API da Anthropic (sk-ant-...)">
@@ -335,6 +404,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
         <div class="ask-box">
           <input type="text" id="questionInput" placeholder="Ex: Quais artigos falam sobre adesão ao tratamento na artrite reumatoide?">
           <button id="askBtn" class="btn-primary">Perguntar</button>
+          <button id="newConversationBtn" class="btn-secondary" title="Começar uma nova conversa do zero">🆕 Nova conversa</button>
         </div>
         <div id="askHistory" class="ask-history"></div>
       </div>
@@ -364,9 +434,24 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px}
   </div>
 </div>
 
+<div id="acronymTooltip" class="acronym-tooltip"></div>
+
 <script>
 const ARTICLES = ${dataJson};
 const CLAUDE_MODEL = 'claude-sonnet-5';
+
+// ---------- Modo de leitura compacto ----------
+const compactModeBtn = document.getElementById('compactModeBtn');
+function applyCompactMode(on) {
+  document.body.classList.toggle('compact-mode', on);
+  compactModeBtn.classList.toggle('active', on);
+}
+applyCompactMode(localStorage.getItem('organizador_compact_mode') === '1');
+compactModeBtn.addEventListener('click', () => {
+  const on = !document.body.classList.contains('compact-mode');
+  applyCompactMode(on);
+  localStorage.setItem('organizador_compact_mode', on ? '1' : '0');
+});
 
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -374,6 +459,7 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
     document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'library') renderVirtualList(true);
   });
 });
 
@@ -446,10 +532,7 @@ const diseaseViewContent = document.getElementById('diseaseViewContent');
 const libControlsEl = document.querySelector('.lib-controls');
 
 let viewMode = 'list';
-const PAGE_SIZE = 30;
-let renderedCount = PAGE_SIZE;
 let currentSorted = [];
-let listObserver = null;
 
 // ---------- Filtros multi-seleção (doença, evidência, aplicabilidade) ----------
 const filterState = { disease: new Set(), evidence: new Set(), applicability: new Set() };
@@ -673,26 +756,53 @@ function attachCardHandlers() {
   });
 }
 
-function renderListBatch() {
+// ---------- Virtualização da lista (renderiza só os cards visíveis, para escalar a bibliotecas muito grandes) ----------
+const ITEM_HEIGHT_ESTIMATE = 140;
+const OVERSCAN_PX = 700;
+let vListStart = -1;
+let vListEnd = -1;
+let vListScrollScheduled = false;
+const tabLibraryEl = document.getElementById('tab-library');
+
+function renderVirtualList(force) {
+  if (viewMode !== 'list' || currentSorted.length === 0) return;
+  if (!tabLibraryEl.classList.contains('active')) return;
+
+  const containerRect = libraryList.getBoundingClientRect();
+  const scrolledPast = Math.max(0, -containerRect.top);
+  const viewportHeight = window.innerHeight;
+  const visibleStart = Math.max(0, scrolledPast - OVERSCAN_PX);
+  const visibleEnd = scrolledPast + viewportHeight + OVERSCAN_PX;
+  const startIndex = Math.max(0, Math.floor(visibleStart / ITEM_HEIGHT_ESTIMATE));
+  const endIndex = Math.min(currentSorted.length, Math.ceil(visibleEnd / ITEM_HEIGHT_ESTIMATE));
+
+  if (!force && startIndex === vListStart && endIndex === vListEnd) return;
+  vListStart = startIndex;
+  vListEnd = endIndex;
+
   const rawTerm = searchBox.value.trim();
-  const slice = currentSorted.slice(0, renderedCount);
-  libraryList.innerHTML = slice.map((a) => cardHtml(a, rawTerm)).join('') +
-    (renderedCount < currentSorted.length ? '<div id="listSentinel" class="list-sentinel">Carregando mais artigos…</div>' : '');
+  const topSpacer = startIndex * ITEM_HEIGHT_ESTIMATE;
+  const bottomSpacer = (currentSorted.length - endIndex) * ITEM_HEIGHT_ESTIMATE;
+  const slice = currentSorted.slice(startIndex, endIndex);
+
+  libraryList.innerHTML =
+    '<div class="list-spacer" style="height:' + topSpacer + 'px"></div>' +
+    slice.map((a) => cardHtml(a, rawTerm)).join('') +
+    '<div class="list-spacer" style="height:' + bottomSpacer + 'px"></div>';
 
   attachCardHandlers();
-
-  if (listObserver) listObserver.disconnect();
-  const sentinel = document.getElementById('listSentinel');
-  if (sentinel) {
-    listObserver = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        renderedCount = Math.min(renderedCount + PAGE_SIZE, currentSorted.length);
-        renderListBatch();
-      }
-    });
-    listObserver.observe(sentinel);
-  }
 }
+
+function onVirtualScroll() {
+  if (vListScrollScheduled) return;
+  vListScrollScheduled = true;
+  requestAnimationFrame(() => {
+    vListScrollScheduled = false;
+    renderVirtualList(false);
+  });
+}
+window.addEventListener('scroll', onVirtualScroll, { passive: true });
+window.addEventListener('resize', onVirtualScroll);
 
 function renderTree(list) {
   const byDisease = new Map();
@@ -729,11 +839,86 @@ function renderTree(list) {
   });
 }
 
+// ---------- Extração de doses (blocos visuais destacados) ----------
+const DOSE_RE = /(\\d+(?:[.,]\\d+)?(?:\\s*(?:-|–|a)\\s*\\d+(?:[.,]\\d+)?)?\\s*(?:mg|g|mcg|µg|UI|ui)(?:\\/kg)?(?:\\/(?:dia|semana|m[eê]s|dose|m2|m²|dL|dl))?)/g;
+
+function extractDoseSentences(text) {
+  if (!text) return [];
+  const sentences = text.split(/(?<=[.!?])\\s+/);
+  const found = [];
+  sentences.forEach((s) => {
+    DOSE_RE.lastIndex = 0;
+    if (DOSE_RE.test(s)) {
+      const trimmed = s.trim();
+      if (trimmed.length > 8 && trimmed.length < 320) found.push(trimmed);
+    }
+  });
+  return found.slice(0, 8);
+}
+
+function renderDoseTable(text) {
+  const sentences = extractDoseSentences(text);
+  if (sentences.length === 0) return '';
+  const rows = sentences.map((s) => {
+    DOSE_RE.lastIndex = 0;
+    return '<div class="dose-table-row">' + escapeHtml(s).replace(DOSE_RE, '<b>$1</b>') + '</div>';
+  }).join('');
+  return '<div class="dose-table"><div class="dose-table-title">💊 Doses mencionadas nesta seção</div>' + rows + '</div>';
+}
+
+// ---------- Glossário de siglas clicável ----------
+const ACRONYM_GLOSSARY = {
+  'AR': 'Artrite Reumatoide', 'LES': 'Lúpus Eritematoso Sistêmico', 'SAF': 'Síndrome do Anticorpo Antifosfolípide',
+  'DM': 'Dermatomiosite', 'PM': 'Polimiosite', 'EGPA': 'Granulomatose Eosinofílica com Poliangiite',
+  'GPA': 'Granulomatose com Poliangiite', 'MPA': 'Poliangiite Microscópica', 'PAN': 'Poliarterite Nodosa',
+  'AAV': 'Vasculite Associada a ANCA', 'ANCA': 'Anticorpo Anticitoplasma de Neutrófilo', 'FR': 'Fator Reumatoide',
+  'ANA': 'Anticorpo Antinuclear', 'VHS': 'Velocidade de Hemossedimentação', 'PCR': 'Proteína C-Reativa',
+  'DMARD': 'Fármaco Antirreumático Modificador de Doença', 'csDMARD': 'DMARD Sintético Convencional',
+  'bDMARD': 'DMARD Biológico', 'tsDMARD': 'DMARD Sintético Direcionado', 'MTX': 'Metotrexato',
+  'HCQ': 'Hidroxicloroquina', 'AZA': 'Azatioprina', 'MMF': 'Micofenolato de Mofetila', 'CYC': 'Ciclofosfamida',
+  'RTX': 'Rituximabe', 'TCZ': 'Tocilizumabe', 'ABT': 'Abatacepte', 'ADA': 'Adalimumabe', 'ETN': 'Etanercepte',
+  'IFX': 'Infliximabe', 'GC': 'Glicocorticoide', 'JAK': 'Janus Quinase', 'TNF': 'Fator de Necrose Tumoral',
+  'IL-6': 'Interleucina 6', 'IL-17': 'Interleucina 17', 'IL-23': 'Interleucina 23',
+  'SLEDAI': 'Systemic Lupus Erythematosus Disease Activity Index', 'BVAS': 'Birmingham Vasculitis Activity Score',
+  'EULAR': 'European Alliance of Associations for Rheumatology', 'ACR': 'American College of Rheumatology',
+  'IgAN': 'Nefropatia por IgA', 'IgG4-RD': 'Doença Relacionada a IgG4', 'PTI': 'Púrpura Trombocitopênica Imune',
+  'AHAI': 'Anemia Hemolítica Autoimune', 'GLILD': 'Doença Pulmonar Intersticial Linfoide Granulomatosa',
+  'DRC': 'Doença Renal Crônica', 'RM': 'Ressonância Magnética', 'TC': 'Tomografia Computadorizada',
+  'IVIG': 'Imunoglobulina Intravenosa', 'ACG': 'Arterite de Células Gigantes', 'DILE': 'Lúpus Induzido por Droga',
+  'dsDNA': 'DNA de Dupla Fita', 'ILD': 'Doença Pulmonar Intersticial', 'HAS': 'Hipertensão Arterial Sistêmica',
+};
+
+function linkifyAcronyms(safeHtml) {
+  let result = safeHtml;
+  Object.keys(ACRONYM_GLOSSARY).forEach((acr) => {
+    const re = new RegExp('\\\\b(' + escapeRegex(acr) + ')\\\\b', 'g');
+    result = result.replace(re, '<span class="acronym" data-acr="' + acr + '">$1</span>');
+  });
+  return result;
+}
+
+const acronymTooltip = document.getElementById('acronymTooltip');
+document.addEventListener('click', (e) => {
+  if (e.target.classList && e.target.classList.contains('acronym')) {
+    const acr = e.target.dataset.acr;
+    const expansion = ACRONYM_GLOSSARY[acr] || '';
+    acronymTooltip.innerHTML = '<b>' + escapeHtml(acr) + '</b> — ' + escapeHtml(expansion);
+    const rect = e.target.getBoundingClientRect();
+    acronymTooltip.style.top = (window.scrollY + rect.bottom + 6) + 'px';
+    acronymTooltip.style.left = Math.max(8, window.scrollX + rect.left) + 'px';
+    acronymTooltip.classList.add('active');
+    e.stopPropagation();
+  } else if (!acronymTooltip.contains(e.target)) {
+    acronymTooltip.classList.remove('active');
+  }
+});
+
 // ---------- Visão agregada "Por Doença" ----------
 const DV_CATEGORIES = [
   { key: 'epidemiologia', label: '📊 Dados Epidemiológicos' },
   { key: 'fisiopatologia', label: '🧬 Fisiopatologia' },
   { key: 'moa', label: '💊 Mecanismo de Ação de Medicações' },
+  { key: 'tratamento', label: '💉 Tratamento' },
   { key: 'diferencial', label: '🔍 Diagnóstico Diferencial e Investigação' },
 ];
 
@@ -744,6 +929,7 @@ function categorizeHeading(heading) {
   if (h.includes('epidemiol') || h.includes('prevalenc') || h.includes('incidenc')) return 'epidemiologia';
   if (h.includes('mecanismo de acao')) return 'moa';
   if (h.includes('fisiopatolog') || h.includes('patogen') || h.includes('imunopatogen')) return 'fisiopatologia';
+  if (h.includes('tratamento') || h.includes('terapi') || h.includes('posologia')) return 'tratamento';
   return null;
 }
 
@@ -762,15 +948,92 @@ function populateDiseaseViewSelect() {
   if (prevValue && opts.includes(prevValue)) diseaseViewSelect.value = prevValue;
 }
 
+function renderTimeline(articles) {
+  if (articles.length === 0) return '';
+  const byYear = new Map();
+  const noYear = [];
+  articles.forEach((a) => {
+    const y = parseInt(a.year, 10);
+    if (!y) { noYear.push(a); return; }
+    if (!byYear.has(y)) byYear.set(y, []);
+    byYear.get(y).push(a);
+  });
+  const years = [...byYear.keys()].sort((x, y) => x - y);
+  let track = years.map((y) =>
+    '<div class="dv-timeline-year"><div class="dv-timeline-year-label">' + y + '</div>' +
+      byYear.get(y).map((a) => '<div class="dv-timeline-item" data-id="' + a.id + '">' + escapeHtml(a.title || a.original_name) + '</div>').join('') +
+    '</div>'
+  ).join('');
+  if (noYear.length > 0) {
+    track += '<div class="dv-timeline-year"><div class="dv-timeline-year-label">Ano não informado</div>' +
+      noYear.map((a) => '<div class="dv-timeline-item" data-id="' + a.id + '">' + escapeHtml(a.title || a.original_name) + '</div>').join('') +
+    '</div>';
+  }
+  return '<div class="dv-timeline"><div class="dv-timeline-title">📅 Linha do tempo de publicações</div><div class="dv-timeline-track">' + track + '</div></div>';
+}
+
+function computeRelatedUnexplored(diseaseName, articles) {
+  const primary = new Set(ARTICLES.map((a) => normalizeText(a.disease || '')).filter(Boolean));
+  const diseaseNorm = normalizeText(diseaseName);
+  const freq = new Map();
+  articles.forEach((a) => {
+    const candidates = [...parseArr(a.secondary_diseases), ...((a.topics || '').split(','))].map((s) => s.trim()).filter(Boolean);
+    candidates.forEach((c) => {
+      const norm = normalizeText(c);
+      if (!norm || norm === diseaseNorm || primary.has(norm)) return;
+      if (!freq.has(norm)) freq.set(norm, { label: c, count: 0 });
+      freq.get(norm).count++;
+    });
+  });
+  return [...freq.values()].sort((x, y) => y.count - x.count).slice(0, 6);
+}
+
+function renderRelatedUnexplored(diseaseName, articles) {
+  const items = computeRelatedUnexplored(diseaseName, articles);
+  if (items.length === 0) return '';
+  const chips = items.map((it) =>
+    '<span class="dv-related-chip" data-term="' + escapeHtml(it.label) + '">' + escapeHtml(it.label) + ' (' + it.count + ')</span>'
+  ).join('');
+  return '<div class="dv-related"><div class="dv-related-title">🧭 Doenças/temas relacionados ainda sem síntese própria nesta biblioteca</div>' + chips + '</div>';
+}
+
+function buildConsistencyPrompt(diseaseName, articles, finding) {
+  const context = articles.slice(0, 10).map((a, i) => {
+    const chunks = getArticleChunks(a).slice(0, 6);
+    const text = chunks.map((c) => (c.heading ? c.heading + ': ' : '') + c.text).join('\\n').slice(0, 1800);
+    return '[Artigo ' + (i + 1) + '] ' + (a.title || a.original_name) + (a.year ? ' (' + a.year + ')' : '') + '\\n' + text;
+  }).join('\\n\\n');
+
+  let instruction = 'Voce e um assistente que analisa a consistencia entre artigos cientificos de reumatologia sobre "' + diseaseName + '". ' +
+    'Com base APENAS nos trechos abaixo, identifique pontos em que dois ou mais artigos concordam e pontos em que divergem entre si sobre algum achado, citando os artigos pelo titulo entre colchetes.';
+  if (finding && finding.trim()) {
+    instruction += ' Alem disso, para o achado especifico "' + finding.trim() + '", diga quantos artigos corroboram, quantos contradizem e quantos nao mencionam, listando os titulos em cada grupo.';
+  }
+  instruction += '\\n\\nArtigos:\\n\\n' + context + '\\n\\nResponda em portugues, de forma organizada com topicos.';
+  return instruction;
+}
+
+function renderConsistencyPanel() {
+  return '<div class="dv-consistency">' +
+    '<div class="dv-consistency-title">🤖 Concordâncias e divergências entre os artigos (IA)</div>' +
+    '<p class="dv-consistency-hint">Opcional: descreva um achado específico para contar quantos artigos corroboram vs. contradizem. Usa a mesma chave de API configurada na aba Perguntas.</p>' +
+    '<div class="dv-consistency-box">' +
+      '<input type="text" id="dvFindingInput" placeholder="Ex: risco de recidiva após suspensão do imunossupressor">' +
+      '<button type="button" id="dvConsistencyBtn" class="btn-primary">Analisar com IA</button>' +
+    '</div>' +
+    '<div id="dvConsistencyResult"></div>' +
+  '</div>';
+}
+
 function renderDiseaseView() {
   const diseaseName = diseaseViewSelect.value;
   if (!diseaseName) {
-    diseaseViewContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver a síntese agregada de fisiopatologia, mecanismo de ação, epidemiologia e diagnóstico diferencial de todos os artigos da biblioteca sobre ela.</div>';
+    diseaseViewContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver a síntese agregada de fisiopatologia, mecanismo de ação, tratamento, epidemiologia e diagnóstico diferencial de todos os artigos da biblioteca sobre ela.</div>';
     return;
   }
 
   const articles = getDiseaseArticles(diseaseName);
-  const buckets = { epidemiologia: [], fisiopatologia: [], moa: [], diferencial: [] };
+  const buckets = { epidemiologia: [], fisiopatologia: [], moa: [], tratamento: [], diferencial: [] };
   articles.forEach((a) => {
     getArticleChunks(a).forEach((c) => {
       const cat = categorizeHeading(c.heading);
@@ -785,6 +1048,9 @@ function renderDiseaseView() {
 
   let html = '<div class="dv-header">Síntese agregada de <strong>' + escapeHtml(diseaseName) + '</strong> — ' + articles.length + ' artigo' + (articles.length !== 1 ? 's' : '') + ' desta biblioteca abordam este tema:</div>';
   html += '<div class="dv-sources">' + sourceChips + '</div>';
+  html += renderTimeline(sortedArticles);
+  html += renderRelatedUnexplored(diseaseName, articles);
+  html += renderConsistencyPanel();
 
   DV_CATEGORIES.forEach((cat) => {
     const entries = buckets[cat.key];
@@ -795,7 +1061,8 @@ function renderDiseaseView() {
       html += entries.map((e) =>
         '<div class="dv-entry">' +
           '<div class="dv-entry-source" data-id="' + e.articleId + '">' + escapeHtml(e.title) + (e.year ? ' · ' + escapeHtml(e.year) : '') + (e.heading ? ' — <em>' + escapeHtml(e.heading) + '</em>' : '') + '</div>' +
-          '<div class="dv-entry-text">' + escapeHtml(e.text) + '</div>' +
+          '<div class="dv-entry-text">' + linkifyAcronyms(escapeHtml(e.text)) + '</div>' +
+          renderDoseTable(e.text) +
         '</div>'
       ).join('');
     }
@@ -803,9 +1070,39 @@ function renderDiseaseView() {
   });
 
   diseaseViewContent.innerHTML = html;
-  diseaseViewContent.querySelectorAll('.dv-entry-source, .dv-source-chip').forEach((el) => {
+  diseaseViewContent.querySelectorAll('.dv-entry-source, .dv-source-chip, .dv-timeline-item').forEach((el) => {
     el.addEventListener('click', () => openModal(Number(el.dataset.id)));
   });
+  diseaseViewContent.querySelectorAll('.dv-related-chip').forEach((el) => {
+    el.addEventListener('click', () => {
+      searchBox.value = el.dataset.term;
+      setViewMode('list');
+    });
+  });
+
+  const consistencyBtn = document.getElementById('dvConsistencyBtn');
+  if (consistencyBtn) {
+    consistencyBtn.addEventListener('click', async () => {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        alert('Configure sua chave de API da Anthropic na aba Perguntas > Perguntar com IA antes de usar esta análise.');
+        return;
+      }
+      const finding = document.getElementById('dvFindingInput').value;
+      const resultEl = document.getElementById('dvConsistencyResult');
+      resultEl.innerHTML = '<div class="dv-consistency-result qa-loading">Analisando artigos...</div>';
+      consistencyBtn.disabled = true;
+      try {
+        const prompt = buildConsistencyPrompt(diseaseName, articles, finding);
+        const answer = await askClaude([{ role: 'user', content: prompt }], apiKey);
+        resultEl.innerHTML = '<div class="dv-consistency-result">' + escapeHtml(answer) + '</div>';
+      } catch (err) {
+        resultEl.innerHTML = '<div class="dv-consistency-result qa-error">Erro: ' + escapeHtml(err.message) + '</div>';
+      } finally {
+        consistencyBtn.disabled = false;
+      }
+    });
+  }
 }
 
 diseaseViewSelect.addEventListener('change', renderDiseaseView);
@@ -853,9 +1150,8 @@ function renderLibrary() {
     ? filtered.length + ' artigo' + (filtered.length !== 1 ? 's' : '')
     : filtered.length + ' de ' + ARTICLES.length + ' artigos';
 
-  if (listObserver) { listObserver.disconnect(); listObserver = null; }
-
   if (filtered.length === 0) {
+    currentSorted = [];
     libraryList.innerHTML = '<div class="empty-state">Nenhum artigo encontrado.</div>';
     return;
   }
@@ -863,13 +1159,15 @@ function renderLibrary() {
   const sorted = sortArticles(filtered, sortSelect.value);
 
   if (viewMode === 'tree') {
+    currentSorted = [];
     renderTree(sorted);
     return;
   }
 
   currentSorted = sorted;
-  renderedCount = Math.min(PAGE_SIZE, sorted.length);
-  renderListBatch();
+  vListStart = -1;
+  vListEnd = -1;
+  renderVirtualList(true);
 }
 
 searchBox.addEventListener('input', renderLibrary);
@@ -959,7 +1257,7 @@ function renderSummaryBody(a) {
   }
 
   if (!sections) {
-    return '<div class="section-label">Resumo</div><p>' + escapeHtml(a.summary || 'Sem resumo disponível.') + '</p>';
+    return '<div class="section-label">Resumo</div><p>' + linkifyAcronyms(escapeHtml(a.summary || 'Sem resumo disponível.')) + '</p>' + renderDoseTable(a.summary || '');
   }
 
   const isCritical = (heading) => /cr[ií]tic|limita[cç][aã]o|vi[eé]s|qualidade da evid[eê]ncia/i.test(heading || '');
@@ -976,7 +1274,8 @@ function renderSummaryBody(a) {
   const body = '<div class="summary-sections">' + sections.map((s, i) =>
     '<div class="summary-section' + (isCritical(s.heading) ? ' critical' : '') + (isRelevance(s.heading) ? ' relevance' : '') + '" id="' + ids[i] + '">' +
       '<h4>' + escapeHtml(s.heading || '') + '</h4>' +
-      '<p>' + escapeHtml(s.text || '') + '</p>' +
+      '<p>' + linkifyAcronyms(escapeHtml(s.text || '')) + '</p>' +
+      renderDoseTable(s.text || '') +
     '</div>'
   ).join('') + '</div>';
 
@@ -1044,7 +1343,7 @@ function buildFullTextHtml(a) {
     return '<div class="fulltext-empty">Texto completo não disponível para este artigo.</div>';
   }
   const cleaned = a.full_text.replace(/\\r\\n/g, '\\n').replace(/\\n{3,}/g, '\\n\\n').trim();
-  const words = cleaned.split(/\s+/).filter(Boolean).length;
+  const words = cleaned.split(/\\s+/).filter(Boolean).length;
   const minutes = Math.max(1, Math.round(words / 200));
   return '<div class="fulltext-meta">~' + words + ' palavras · ~' + minutes + ' min de leitura</div>' +
     '<div class="fulltext-search">' +
@@ -1215,24 +1514,25 @@ document.getElementById('changeKeyBtn').addEventListener('click', () => {
 
 refreshApiKeyUi();
 
-// ---------- Modo de pergunta: alternância Busca Inteligente / IA ----------
+// ---------- Modo de pergunta: alternância Busca Inteligente / IA / Diferencial por Sintoma ----------
 const modeSmartBtn = document.getElementById('modeSmartBtn');
 const modeAiBtn = document.getElementById('modeAiBtn');
+const modeSymptomBtn = document.getElementById('modeSymptomBtn');
 const smartSearchPanel = document.getElementById('smartSearchPanel');
 const aiPanel = document.getElementById('aiPanel');
+const symptomPanel = document.getElementById('symptomPanel');
 
-modeSmartBtn.addEventListener('click', () => {
-  modeSmartBtn.classList.add('active');
-  modeAiBtn.classList.remove('active');
-  smartSearchPanel.style.display = 'block';
-  aiPanel.style.display = 'none';
-});
-modeAiBtn.addEventListener('click', () => {
-  modeAiBtn.classList.add('active');
-  modeSmartBtn.classList.remove('active');
-  aiPanel.style.display = 'block';
-  smartSearchPanel.style.display = 'none';
-});
+function setAskMode(mode) {
+  modeSmartBtn.classList.toggle('active', mode === 'smart');
+  modeAiBtn.classList.toggle('active', mode === 'ai');
+  modeSymptomBtn.classList.toggle('active', mode === 'symptom');
+  smartSearchPanel.style.display = mode === 'smart' ? 'block' : 'none';
+  aiPanel.style.display = mode === 'ai' ? 'block' : 'none';
+  symptomPanel.style.display = mode === 'symptom' ? 'block' : 'none';
+}
+modeSmartBtn.addEventListener('click', () => setAskMode('smart'));
+modeAiBtn.addEventListener('click', () => setAskMode('ai'));
+modeSymptomBtn.addEventListener('click', () => setAskMode('symptom'));
 
 // ---------- Ask ----------
 const STOPWORDS = new Set(['que','qual','quais','como','para','com','uma','um','dos','das','the','and','sobre','existe','existem','tem','foi','sao','ele','ela','isso','esse','essa','este','esta','nos','mais']);
@@ -1366,6 +1666,59 @@ smartSearchBtn.addEventListener('click', () => {
 });
 smartQuestionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') smartSearchBtn.click(); });
 
+// ---------- Busca por sintoma → diagnóstico diferencial já documentado ----------
+const symptomInput = document.getElementById('symptomInput');
+const symptomSearchBtn = document.getElementById('symptomSearchBtn');
+const symptomResults = document.getElementById('symptomResults');
+
+function searchSymptomDifferentials(term) {
+  const normTerm = normalizeText(term);
+  const byDisease = new Map();
+  ARTICLES.forEach((a) => {
+    getArticleChunks(a).forEach((c) => {
+      if (categorizeHeading(c.heading) !== 'diferencial') return;
+      if (!normalizeText(c.text).includes(normTerm)) return;
+      const disease = a.disease || 'Sem categoria';
+      if (!byDisease.has(disease)) byDisease.set(disease, []);
+      byDisease.get(disease).push({ article: a, heading: c.heading, text: c.text });
+    });
+  });
+  return byDisease;
+}
+
+function renderSymptomResults(term) {
+  const byDisease = searchSymptomDifferentials(term);
+  const terms = [normalizeText(term)];
+  if (byDisease.size === 0) {
+    symptomResults.innerHTML = '<div class="empty-state">Nenhuma seção de Diagnóstico Diferencial desta biblioteca menciona esse termo.</div>';
+    return;
+  }
+  const diseases = [...byDisease.keys()].sort();
+  symptomResults.innerHTML = diseases.map((disease) => {
+    const entries = byDisease.get(disease);
+    const items = entries.map((e) => {
+      const excerpt = excerptAround(e.text, terms);
+      return '<div class="qa-item smart-result-item" data-id="' + e.article.id + '">' +
+        '<div class="qa-question">' + escapeHtml(e.article.title || e.article.original_name) + (e.article.year ? ' · ' + escapeHtml(e.article.year) : '') + '</div>' +
+        '<div class="qa-answer">' + (e.heading ? '<div class="smart-chunk-heading">' + escapeHtml(e.heading) + '</div>' : '') +
+          '<p class="smart-chunk-text">' + highlightTerms(escapeHtml(excerpt), terms) + '</p>' +
+        '</div></div>';
+    }).join('');
+    return '<div class="symptom-result-group"><div class="symptom-result-disease">' + escapeHtml(disease) + ' (' + entries.length + ')</div>' + items + '</div>';
+  }).join('');
+
+  symptomResults.querySelectorAll('.smart-result-item').forEach((el) => {
+    el.addEventListener('click', () => openModal(Number(el.dataset.id)));
+  });
+}
+
+symptomSearchBtn.addEventListener('click', () => {
+  const q = symptomInput.value.trim();
+  if (!q) return;
+  renderSymptomResults(q);
+});
+symptomInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') symptomSearchBtn.click(); });
+
 function pickRelevantArticles(question) {
   const words = question
     .toLowerCase()
@@ -1390,8 +1743,8 @@ function pickRelevantArticles(question) {
   return top.length > 0 ? top : usable.slice(0, 6);
 }
 
-function buildPrompt(question, articles) {
-  const context = articles.map((a, i) => {
+function buildContextBlock(articles) {
+  return articles.map((a, i) => {
     const excerpt = (a.full_text || '').slice(0, 6000);
     return '[Artigo ' + (i + 1) + ']\\nTitulo: ' + (a.title || a.original_name) +
       '\\nDoenca/Tema: ' + (a.disease || 'ainda nao classificado') +
@@ -1399,13 +1752,16 @@ function buildPrompt(question, articles) {
       '\\nResumo: ' + (a.summary || 'ainda nao classificado') +
       '\\nTrecho do texto:\\n"""\\n' + excerpt + '\\n"""';
   }).join('\\n\\n');
+}
 
+function buildPrompt(question, articles) {
+  const context = buildContextBlock(articles);
   return 'Voce e um assistente que responde perguntas com base APENAS nos artigos cientificos fornecidos abaixo. Nao use conhecimento externo alem do que estiver nos trechos. Se a informacao nao estiver nos artigos, diga claramente que nao encontrou a resposta nos artigos cadastrados.\\n\\n' +
     'Sempre que usar informacao de um artigo, cite-o pelo titulo entre colchetes, ex: [Titulo do artigo].\\n\\n' +
     'Artigos disponiveis:\\n\\n' + context + '\\n\\nPergunta do usuario: ' + question + '\\n\\nResponda em portugues, de forma clara e objetiva.';
 }
 
-async function askClaude(prompt, apiKey) {
+async function askClaude(messages, apiKey) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -1417,7 +1773,7 @@ async function askClaude(prompt, apiKey) {
     body: JSON.stringify({
       model: CLAUDE_MODEL,
       max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }],
+      messages: messages,
     }),
   });
 
@@ -1431,6 +1787,63 @@ async function askClaude(prompt, apiKey) {
 const questionInput = document.getElementById('questionInput');
 const askBtn = document.getElementById('askBtn');
 const askHistory = document.getElementById('askHistory');
+const newConversationBtn = document.getElementById('newConversationBtn');
+
+// ---------- Conversa com IA: histórico multi-turno, cache local e sugestões ----------
+let conversationMessages = [];
+let conversationArticles = [];
+const QA_CACHE_KEY = 'organizador_qa_cache';
+
+function getQaCache() {
+  try { return JSON.parse(localStorage.getItem(QA_CACHE_KEY) || '{}'); } catch (e) { return {}; }
+}
+function saveQaCache(cache) { localStorage.setItem(QA_CACHE_KEY, JSON.stringify(cache)); }
+function cacheKeyFor(question) { return normalizeText(question).trim(); }
+
+function renderCitedAnswer(answer, articles) {
+  return escapeHtml(answer).replace(/\\[([^\\]]+)\\]/g, (whole, inner) => {
+    const normInner = normalizeText(inner);
+    const match = articles.find((a) => {
+      const t = normalizeText(a.title || a.original_name || '');
+      return t && (t.includes(normInner) || normInner.includes(t));
+    });
+    if (!match) return whole;
+    return '<span class="cite-link" data-id="' + match.id + '">[' + inner + ']</span>';
+  });
+}
+
+function computeCitedIds(answer, articles) {
+  const cited = new Set();
+  const normAnswer = normalizeText(answer);
+  articles.forEach((a) => {
+    const t = normalizeText(a.title || a.original_name || '');
+    if (t && normAnswer.includes(t.slice(0, 30))) cited.add(a.id);
+  });
+  return cited;
+}
+
+function suggestRelatedQuestions(articles) {
+  const topicCount = new Map();
+  articles.forEach((a) => {
+    (a.topics || '').split(',').map((s) => s.trim()).filter(Boolean).forEach((t) => {
+      topicCount.set(t, (topicCount.get(t) || 0) + 1);
+    });
+  });
+  const topTopics = [...topicCount.entries()].sort((x, y) => y[1] - x[1]).slice(0, 3).map((e) => e[0]);
+  const templates = [
+    (t) => 'O que a biblioteca diz sobre ' + t + '?',
+    (t) => 'Qual a relevância clínica de ' + t + '?',
+    (t) => 'Existe divergência entre os artigos sobre ' + t + '?',
+  ];
+  return topTopics.map((t, i) => templates[i % templates.length](t));
+}
+
+function resetConversation() {
+  conversationMessages = [];
+  conversationArticles = [];
+  askHistory.innerHTML = '';
+}
+newConversationBtn.addEventListener('click', resetConversation);
 
 askBtn.addEventListener('click', ask);
 questionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') ask(); });
@@ -1445,36 +1858,113 @@ async function ask() {
     return;
   }
 
+  const isFollowUp = conversationMessages.length > 0;
   questionInput.value = '';
   askBtn.disabled = true;
 
   const item = document.createElement('div');
   item.className = 'qa-item';
   item.innerHTML = '<div class="qa-question">' + escapeHtml(question) + '</div><div class="qa-answer qa-loading">Pensando...</div>';
-  askHistory.prepend(item);
+  askHistory.appendChild(item);
+  item.scrollIntoView({ behavior: 'smooth', block: 'end' });
   const answerDiv = item.querySelector('.qa-answer');
 
   try {
-    const relevant = pickRelevantArticles(question);
+    let relevant;
+    let userContent;
+    if (isFollowUp) {
+      const extra = pickRelevantArticles(question).filter((a) => !conversationArticles.some((c) => c.id === a.id)).slice(0, 3);
+      relevant = conversationArticles.concat(extra);
+      userContent = extra.length > 0
+        ? 'Contexto adicional (novos artigos relevantes):\\n\\n' + buildContextBlock(extra) + '\\n\\nPergunta de seguimento: ' + question
+        : question;
+    } else {
+      relevant = pickRelevantArticles(question);
+      userContent = buildPrompt(question, relevant);
+    }
+
     if (relevant.length === 0) {
       answerDiv.classList.remove('qa-loading');
       answerDiv.textContent = 'Ainda nao ha artigos com texto disponivel na biblioteca para responder perguntas.';
       return;
     }
-    const prompt = buildPrompt(question, relevant);
-    const answer = await askClaude(prompt, apiKey);
+    conversationArticles = relevant;
+
+    const cacheKey = cacheKeyFor(question);
+    const cache = getQaCache();
+    let answer;
+    let fromCache = false;
+
+    if (!isFollowUp && cache[cacheKey]) {
+      answer = cache[cacheKey].answer;
+      fromCache = true;
+      conversationMessages.push({ role: 'user', content: userContent });
+      conversationMessages.push({ role: 'assistant', content: answer });
+    } else {
+      conversationMessages.push({ role: 'user', content: userContent });
+      answer = await askClaude(conversationMessages, apiKey);
+      conversationMessages.push({ role: 'assistant', content: answer });
+      if (!isFollowUp) {
+        cache[cacheKey] = { answer: answer, ts: Date.now() };
+        saveQaCache(cache);
+      }
+    }
 
     answerDiv.classList.remove('qa-loading');
-    answerDiv.textContent = answer;
+    answerDiv.innerHTML = renderCitedAnswer(answer, relevant) + (fromCache ? '<span class="qa-cache-badge">⚡ resposta em cache</span>' : '');
+    answerDiv.querySelectorAll('.cite-link').forEach((el) => {
+      el.addEventListener('click', () => openModal(Number(el.dataset.id)));
+    });
 
+    const citedIds = computeCitedIds(answer, relevant);
     const sourcesDiv = document.createElement('div');
     sourcesDiv.className = 'qa-sources';
-    sourcesDiv.innerHTML = '<b>Artigos consultados:</b> ' + relevant.map((a) => escapeHtml(a.title || a.original_name)).join('; ');
+    sourcesDiv.innerHTML = '<b>Artigos consultados:</b> ' + relevant.map((a) =>
+      '<span class="qa-sources-item' + (citedIds.has(a.id) ? ' cited' : '') + ' cite-link" data-id="' + a.id + '">' + escapeHtml(a.title || a.original_name) + '</span>'
+    ).join('');
     item.appendChild(sourcesDiv);
+    sourcesDiv.querySelectorAll('.cite-link').forEach((el) => {
+      el.addEventListener('click', () => openModal(Number(el.dataset.id)));
+    });
+
+    if (fromCache) {
+      const retryBtn = document.createElement('button');
+      retryBtn.type = 'button';
+      retryBtn.className = 'btn-secondary';
+      retryBtn.style.marginTop = '8px';
+      retryBtn.textContent = '🔄 Reprocessar (ignorar cache)';
+      retryBtn.addEventListener('click', () => {
+        const freshCache = getQaCache();
+        delete freshCache[cacheKey];
+        saveQaCache(freshCache);
+        conversationMessages = conversationMessages.slice(0, -2);
+        item.remove();
+        questionInput.value = question;
+        ask();
+      });
+      item.appendChild(retryBtn);
+    }
+
+    const suggestions = suggestRelatedQuestions(relevant);
+    if (suggestions.length > 0) {
+      const relatedDiv = document.createElement('div');
+      relatedDiv.className = 'qa-related';
+      relatedDiv.innerHTML = suggestions.map((s) => '<span class="qa-related-chip">' + escapeHtml(s) + '</span>').join('');
+      relatedDiv.querySelectorAll('.qa-related-chip').forEach((el) => {
+        el.addEventListener('click', () => {
+          questionInput.value = el.textContent;
+          ask();
+        });
+      });
+      item.appendChild(relatedDiv);
+    }
   } catch (err) {
     answerDiv.classList.remove('qa-loading');
     answerDiv.classList.add('qa-error');
     answerDiv.textContent = 'Erro: ' + err.message;
+    if (conversationMessages.length > 0 && conversationMessages[conversationMessages.length - 1].role === 'user') {
+      conversationMessages.pop();
+    }
   } finally {
     askBtn.disabled = false;
   }
