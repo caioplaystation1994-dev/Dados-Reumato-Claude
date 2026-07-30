@@ -525,7 +525,6 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
       <div id="med-periodicas-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #bee3f8;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:200;max-height:220px;overflow-y:auto"></div>
     </div>
     <div class="options-grid" id="q-med-periodicas"></div>
-    <div id="periodica-info-table" class="hidden" style="margin-top:12px"></div>
   </div>
 
   <!-- S9: Reações adversas -->
@@ -874,7 +873,6 @@ const MED_CONTINUAS_ALIASES = { 'vitamina d': 'Colecalciferol' };
 // Medicações não-DMARD com posologia periódica/intermitente (mensal, trimestral,
 // semestral, anual etc.) — mantidas fora de MED_CONTINUAS por não serem de uso diário.
 const MED_PERIODICAS = ['Ácido zoledrônico', 'Anticoncepcional injetável', 'Vitamina B12'];
-const PERIODICIDADE_OPTS = ['Mensal', 'Trimestral', 'Semestral', 'Anual', 'Outra'];
 const REACAO_DMARD = [...CS_DMARD,...B_DMARD,...TS_DMARD].filter((v,i,a)=>a.indexOf(v)===i).sort();
 
 // ── Dados sociodemográficos ──
@@ -1985,40 +1983,6 @@ function renderPosologia(field, containerId) {
 // ============================================================
 // MEDICAÇÕES PERIÓDICAS/INTERMITENTES (não-DMARD)
 // ============================================================
-function setPeriodicaInfo(med, prop, value) {
-  if (!formData.periodica_info) formData.periodica_info = {};
-  if (!formData.periodica_info[med]) formData.periodica_info[med] = {};
-  formData.periodica_info[med][prop] = value;
-}
-
-function renderPeriodicaInfo() {
-  const selected = formData.med_periodicas || [];
-  const c = document.getElementById('periodica-info-table');
-  if (!selected.length) { c.innerHTML = ''; c.classList.add('hidden'); return; }
-  c.classList.remove('hidden');
-  if (!formData.periodica_info) formData.periodica_info = {};
-
-  const rows = selected.map(med => {
-    if (!formData.periodica_info[med]) formData.periodica_info[med] = { periodicidade: '', ultima_data: '' };
-    const p = formData.periodica_info[med];
-    const esc = s => (s||'').replace(/'/g,"&#39;");
-    const optsHtml = PERIODICIDADE_OPTS.map(o =>
-      `<option value="${o}"${p.periodicidade===o?' selected':''}>${o}</option>`).join('');
-    return `<tr>
-      <td style="font-weight:600;white-space:nowrap">${med}</td>
-      <td><select onchange="setPeriodicaInfo('${esc(med)}','periodicidade',this.value)"><option value="">Selecione</option>${optsHtml}</select></td>
-      <td><input type="month" value="${esc(p.ultima_data)}" onchange="setPeriodicaInfo('${esc(med)}','ultima_data',this.value)"></td>
-    </tr>`;
-  }).join('');
-
-  c.innerHTML = `
-    <div class="posologia-title">Periodicidade e última aplicação das medicações selecionadas</div>
-    <table class="posologia-table">
-      <thead><tr><th>Medicação</th><th>Periodicidade</th><th>Última aplicação</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
 // ── Autocomplete medicações periódicas ──
 function medPeriodicasSearch(q) {
   const dd = document.getElementById('med-periodicas-dropdown');
@@ -2068,7 +2032,6 @@ function medPeriodicasSelect(val) {
     const btn = [...document.querySelectorAll('#q-med-periodicas .opt-btn')].find(b => b.textContent === val);
     if (btn) btn.classList.remove('selected');
   }
-  renderPeriodicaInfo();
   medPeriodicasSearch(document.getElementById('med-periodicas-search').value);
   updateTabBadges();
 }
@@ -2087,12 +2050,10 @@ function medPeriodicasAdd() {
   b.onclick = () => {
     const i = arr.indexOf(val);
     if (i !== -1) { arr.splice(i, 1); b.remove(); }
-    renderPeriodicaInfo();
     updateTabBadges();
   };
   c.appendChild(b);
   medPeriodicasClose();
-  renderPeriodicaInfo();
   updateTabBadges();
 }
 
@@ -2351,7 +2312,7 @@ function initForm() {
     csdmard:[], bdmard:[], tsdmard:[],
     csdmard_prev:[], bdmard_prev:[], tsdmard_prev:[],
     comorbidades:[], med_continuas:[], med_periodicas:[], reacao_quais:[],
-    dmard_posologia:{}, periodica_info:{}, locomocao:[], sem_imuno:false,
+    dmard_posologia:{}, locomocao:[], sem_imuno:false,
     te_ivig:false, te_ivig_data:'', te_pulso:false, te_pulso_data:'', te_ciclo:false, te_ciclo_data:'',
     cqr_respostas:{}, haq_respostas:{}, hads_respostas:{}, seams_respostas:{}, bmq_respostas:{}
   };
@@ -2386,7 +2347,7 @@ function initForm() {
   renderCheck('q-tsdmard-prev', TS_DMARD, 'tsdmard_prev');
   renderCheck('q-comorbidades', COMORBIDADES, 'comorbidades');
   renderCheck('q-med-continuas', MED_CONTINUAS, 'med_continuas');
-  renderCheck('q-med-periodicas', MED_PERIODICAS, 'med_periodicas', renderPeriodicaInfo);
+  renderCheck('q-med-periodicas', MED_PERIODICAS, 'med_periodicas');
   renderRadio('q-reacao', ['Sim','Não'], 'reacao');
   renderCheck('q-reacao-quais', REACAO_DMARD, 'reacao_quais');
   // Sociodemográfico
@@ -2787,7 +2748,6 @@ function savePatient() {
     comorbidades: [...(formData.comorbidades||[])],
     med_continuas: [...(formData.med_continuas||[])],
     med_periodicas: [...(formData.med_periodicas||[])],
-    periodica_info: {...(formData.periodica_info||{})},
     sem_imuno: formData.sem_imuno || false,
     te_ivig: formData.te_ivig || false, te_ivig_data: formData.te_ivig_data || '',
     te_pulso: formData.te_pulso || false, te_pulso_data: formData.te_pulso_data || '',
@@ -2909,7 +2869,6 @@ function clearForm() {
   document.getElementById('hads-dep-box').style.display = 'none';
   document.getElementById('haq-score-box').style.display = 'none';
   document.getElementById('cqr-score-box').style.display = 'none';
-  { const pit = document.getElementById('periodica-info-table'); pit.innerHTML = ''; pit.classList.add('hidden'); }
   document.getElementById('med-periodicas-search').value = '';
   resetEvas();
   initForm();
@@ -3198,8 +3157,6 @@ function editPatient(idx) {
     restoreCheckWithOutros('q-comorbidades','comorbidades',p.comorbidades,'comorbidades-outro-input');
     restoreCheckWithOutros('q-med-continuas','med_continuas',p.med_continuas,'med-continuas-outro-input');
     restoreCheckWithOutros('q-med-periodicas','med_periodicas',p.med_periodicas,'');
-    formData.periodica_info = {...(p.periodica_info||{})};
-    renderPeriodicaInfo();
     // Sem imunossupressor
     if (p.sem_imuno) toggleSemImuno(true);
     // Terapias especiais
@@ -3274,7 +3231,7 @@ function exportCSV() {
   const headers = ['rghc','nome','nascimento','inicio_seg','entrevista','idade','sexo','etnia','doenca',
     'data_diagnostico','tempo_diag','atividade','tempo_remissao','vhs','pcr','c3','c4','dsdna','cpk','dhl','das28','asdas','sledai','sledai_clinico','myoact','mmt8','bvas','itas',
     'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
-    'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas','med_periodicas','periodica_info',
+    'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas','med_periodicas',
     'reacao','reacao_quais','intervalo','dmard_posologia',
     'religiao','estado_civil','filhos','escolaridade','renda','ocupacao','carga_horaria',
     'locomocao','local_residencia','num_pessoas','situacao_moradia','tabagismo','etilismo',
@@ -3299,11 +3256,6 @@ function exportCSV() {
       if (h === 'dmard_posologia' && p[h] && typeof p[h] === 'object') {
         const txt = Object.entries(p[h]).map(([drug,d]) =>
           `${drug}:via=${d.via||''},dose=${d.dose||''},freq=${d.freq||''}`).join('|');
-        return '"' + txt + '"';
-      }
-      if (h === 'periodica_info' && p[h] && typeof p[h] === 'object') {
-        const txt = Object.entries(p[h]).map(([med,d]) =>
-          `${med}:periodicidade=${d.periodicidade||''},ultima_data=${d.ultima_data||''}`).join('|');
         return '"' + txt + '"';
       }
       if (/^bmqn_\d+$/.test(h)) {
@@ -3390,7 +3342,6 @@ const SHEET_COLS = [
   ['reacao_quais',    'Reação Adversa – Quais Medicações'],
   ['intervalo',       'Nº Consultas Últimos 12 Meses'],
   ['dmard_posologia', 'Posologia dos DMARDs'],
-  ['periodica_info',  'Periodicidade e Última Aplicação (Medicações Periódicas)'],
   // Sociodemográfico
   ['religiao',        'Religião'],
   ['estado_civil',    'Estado Civil'],
@@ -3529,8 +3480,6 @@ function buildSheetValues() {
   const rows = db.map(p => keys.map(h => {
     if (h === 'dmard_posologia' && p[h] && typeof p[h] === 'object')
       return Object.entries(p[h]).map(([drug,d]) => `${drug}: via=${d.via||'?'}, dose=${d.dose||'?'}, freq=${d.freq||'?'}`).join(' | ');
-    if (h === 'periodica_info' && p[h] && typeof p[h] === 'object')
-      return Object.entries(p[h]).map(([med,d]) => `${med}: periodicidade=${d.periodicidade||'?'}, última=${d.ultima_data||'?'}`).join(' | ');
     if (/^bmqn_\d+$/.test(h)) return (p.bmq_respostas||{})[`bmqn-${h.split('_')[1]}`] ?? '';
     if (/^bmqc_\d+$/.test(h)) return (p.bmq_respostas||{})[`bmqc-${h.split('_')[1]}`] ?? '';
     if (/^seams_\d+$/.test(h)) return (p.seams_respostas||{})[parseInt(h.split('_')[1])] ?? '';
@@ -4162,9 +4111,6 @@ function fillTestData() {
 
       // Medicações periódicas/intermitentes
       clickOpt('q-med-periodicas', 'Vitamina B12');
-      setPeriodicaInfo('Vitamina B12', 'periodicidade', 'Mensal');
-      setPeriodicaInfo('Vitamina B12', 'ultima_data', '2026-05');
-      renderPeriodicaInfo();
 
       // ── Sociodemográfico ──
       clickOpt('q-religiao',          'Catolicismo');
