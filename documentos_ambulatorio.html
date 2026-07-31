@@ -25,12 +25,6 @@ body.modo-rapido-on .field-group input:focus,
 body.modo-rapido-on .field-group textarea:focus{box-shadow:0 0 0 3px rgba(246,173,85,.35);border-color:#f6ad55}
 body.modo-rapido-on::before{content:'⚡ Modo preenchimento rápido ativo — Tab pula direto entre os campos essenciais';position:fixed;top:52px;left:50%;transform:translateX(-50%);background:#f6ad55;color:#7b341e;font-size:11px;font-weight:700;padding:5px 16px;border-radius:0 0 8px 8px;z-index:150;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 
-/* Pré-visualização de impressão */
-.preview-box{max-width:900px;width:calc(100% - 40px);max-height:92vh}
-.preview-frame-wrap{flex:1;overflow:hidden;background:#6b7280;border-radius:8px;padding:16px;display:flex;justify-content:center}
-.preview-iframe{width:100%;max-width:21cm;height:100%;min-height:60vh;border:none;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.3);border-radius:2px}
-.preview-acoes{display:flex;justify-content:flex-end;gap:10px}
-
 .page{display:none;padding:24px;max-width:960px;margin:0 auto}
 .page.active{display:block}
 
@@ -415,6 +409,42 @@ body{padding-bottom:64px}
 .search-empty{font-size:13px;color:#a0aec0;text-align:center;padding:20px}
 
 </style>
+<!-- Estilos exclusivos do modo de pré-visualização ao vivo. Este bloco NÃO é
+     duplicado/convertido pela função ativarSimulacaoImpressao() — por isso as
+     regras aqui usam a classe body.preview-live-mode (screen) em vez de
+     @media print, exceto onde precisamos garantir que algo NUNCA apareça na
+     impressão real (botões de exclusão, barra de ferramentas). -->
+<style id="preview-interativo-style">
+.field-group,.print-flat-item{position:relative}
+.btn-excluir-item{display:none;position:absolute;top:-8px;right:-8px;background:#e53e3e;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:13px;line-height:1;cursor:pointer;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.35);align-items:center;justify-content:center}
+body.preview-live-mode .btn-excluir-item{display:flex}
+.excluido-impressao{display:none!important}
+
+.preview-editor{display:none}
+body.preview-live-mode .preview-editor{display:block;white-space:pre-wrap;outline:none;min-height:1.4em;border-radius:4px;padding:2px 4px;margin:-2px -4px}
+body.preview-live-mode .preview-editor:focus{box-shadow:0 0 0 2px rgba(246,173,85,.45)}
+body.preview-live-mode .preview-editor:hover{background:rgba(246,173,85,.08)}
+body.preview-live-mode textarea.tem-preview-editor{display:none!important}
+
+.preview-toolbar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(26,54,100,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;padding:10px 20px;align-items:center;gap:16px;z-index:400;box-shadow:0 -1px 0 rgba(255,255,255,.08),0 -4px 20px rgba(0,0,0,.25);flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.1)}
+body.preview-live-mode .preview-toolbar{display:flex}
+.preview-toolbar-info{flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px}
+.preview-toolbar-info strong{font-size:13px}
+.preview-toolbar-dica{font-size:11px;color:#93c5fd}
+.preview-toolbar-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.btn-preview-negrito{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.btn-preview-negrito:hover{background:rgba(255,255,255,.25)}
+.btn-preview-cancelar{background:transparent;color:#fecaca;border:1.5px solid rgba(254,202,202,.5);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.btn-preview-cancelar:hover{background:rgba(254,202,202,.12)}
+.btn-preview-confirmar{background:#2563eb;color:#fff;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(37,99,235,.4)}
+.btn-preview-confirmar:hover{background:#1d4ed8}
+
+body.preview-live-mode{padding-bottom:64px}
+
+@media print{
+  .btn-excluir-item,.preview-toolbar{display:none!important}
+}
+</style>
 </head>
 <body>
 
@@ -523,19 +553,16 @@ body{padding-bottom:64px}
   </div>
 </div>
 
-<!-- ======================== MODAL PRÉ-VISUALIZAÇÃO DE IMPRESSÃO ======================== -->
-<div class="modal-overlay" id="modal-preview-impressao">
-  <div class="modal-box preview-box">
-    <div class="modal-titulo">🖨️ Pré-visualização de Impressão
-      <button class="modal-fechar" onclick="cancelarPreviewImpressao()">×</button>
-    </div>
-    <div class="preview-frame-wrap">
-      <iframe id="preview-iframe" class="preview-iframe" title="Pré-visualização"></iframe>
-    </div>
-    <div class="preview-acoes">
-      <button class="btn-clear" onclick="cancelarPreviewImpressao()">Cancelar</button>
-      <button class="btn-word" onclick="confirmarPreviewImpressao()">🖨️ Confirmar e Imprimir</button>
-    </div>
+<!-- ======================== BARRA DE PRÉ-VISUALIZAÇÃO DE IMPRESSÃO ======================== -->
+<div class="preview-toolbar" id="preview-toolbar">
+  <div class="preview-toolbar-info">
+    <strong>🖨️ Pré-visualização de Impressão</strong>
+    <span class="preview-toolbar-dica">Edite o texto livremente · passe o mouse sobre um campo e clique no × para removê-lo desta impressão · selecione um trecho e clique em Negrito para destacar</span>
+  </div>
+  <div class="preview-toolbar-acoes">
+    <button class="btn-preview-negrito" onclick="aplicarNegritoSelecao()">🖊 Negrito na seleção</button>
+    <button class="btn-preview-cancelar" onclick="cancelarPreviewImpressao()">Cancelar</button>
+    <button class="btn-preview-confirmar" onclick="confirmarPreviewImpressao()">🖨️ Confirmar e Imprimir</button>
   </div>
 </div>
 
@@ -1829,53 +1856,164 @@ function limparImpressao() {
   }
 }
 
-// ─── Pré-visualização de impressão ─────────────────────────────────────────────
+// ─── Pré-visualização de impressão (ao vivo, editável) ─────────────────────────
+// Em vez de clonar a página para um iframe somente-leitura, a pré-visualização
+// agora reaproveita os elementos REAIS do documento: injeta uma cópia das
+// regras de @media print convertidas para @media screen (fazendo apenas as
+// páginas selecionadas aparecerem, exatamente como sairiam impressas), e
+// acrescenta controles interativos (botões de exclusão, editor com negrito)
+// que nunca aparecem na impressão real de fato.
 document._previewOnConfirm = null;
+document._previewIds = [];
+document._previewEditors = [];
+document._previewExclusoes = [];
+
+function ativarSimulacaoImpressao() {
+  if (document.getElementById('preview-simulacao-style')) return;
+  const estilosOriginais = [...document.querySelectorAll('style')]
+    .filter(s => s.id !== 'preview-interativo-style')
+    .map(s => s.textContent).join('\n');
+  const estilosSimulados = estilosOriginais.replace(/@media\s+print/g, '@media screen');
+  const styleEl = document.createElement('style');
+  styleEl.id = 'preview-simulacao-style';
+  styleEl.textContent = estilosSimulados;
+  document.head.appendChild(styleEl);
+}
+
+function desativarSimulacaoImpressao() {
+  document.getElementById('preview-simulacao-style')?.remove();
+}
+
+function escaparHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function converterTextoParaHtmlPreview(texto) {
+  return escaparHtml(texto)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+function converterHtmlParaTextoPreview(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  div.querySelectorAll('div, p').forEach(el => el.insertAdjacentHTML('beforebegin', '<br>'));
+  div.querySelectorAll('strong, b').forEach(el => { el.replaceWith('**' + el.textContent + '**'); });
+  const bruto = div.innerHTML
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?(div|p)[^>]*>/gi, '');
+  const tmp = document.createElement('textarea');
+  tmp.innerHTML = bruto;
+  return tmp.value.replace(/^\n+/, '');
+}
+
+function construirEditoresPreview(ids) {
+  ids.forEach(pid => {
+    document.getElementById(pid)?.querySelectorAll('textarea').forEach(ta => {
+      if (!ta.value.trim()) return;
+      const div = document.createElement('div');
+      div.className = 'preview-editor';
+      div.contentEditable = 'true';
+      div.innerHTML = converterTextoParaHtmlPreview(ta.value);
+      div.addEventListener('input', () => {
+        ta.value = converterHtmlParaTextoPreview(div.innerHTML);
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      ta.classList.add('tem-preview-editor');
+      ta.insertAdjacentElement('afterend', div);
+      document._previewEditors.push({ ta, div });
+    });
+  });
+}
+
+function removerEditoresPreview() {
+  document._previewEditors.forEach(({ ta, div }) => {
+    ta.classList.remove('tem-preview-editor');
+    div.remove();
+  });
+  document._previewEditors = [];
+}
+
+function campoTemConteudo(fieldGroup) {
+  const campo = fieldGroup.querySelector('input, textarea, select');
+  return !!campo && (campo.value || '').trim() !== '';
+}
+
+function construirBotoesExclusao(ids) {
+  ids.forEach(pid => {
+    const pageEl = document.getElementById(pid);
+    if (!pageEl) return;
+    const alvos = [...pageEl.querySelectorAll('.field-group')].filter(campoTemConteudo)
+      .concat([...pageEl.querySelectorAll('.print-flat-item')]);
+    alvos.forEach(el => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-excluir-item';
+      btn.title = 'Remover desta impressão';
+      btn.textContent = '×';
+      btn.onclick = () => el.classList.add('excluido-impressao');
+      el.appendChild(btn);
+      document._previewExclusoes.push(el);
+    });
+  });
+}
+
+function removerBotoesExclusao() {
+  document._previewExclusoes.forEach(el => {
+    el.querySelectorAll('.btn-excluir-item').forEach(b => b.remove());
+    el.classList.remove('excluido-impressao');
+  });
+  document._previewExclusoes = [];
+}
+
+function aplicarNegritoSelecao() {
+  const sel = window.getSelection();
+  const noAncora = sel && sel.anchorNode;
+  const dentroDoEditor = noAncora && (noAncora.nodeType === 1 ? noAncora : noAncora.parentElement)?.closest('.preview-editor');
+  if (!sel || sel.isCollapsed || !dentroDoEditor) {
+    alert('Selecione um trecho de texto dentro da pré-visualização (dê um clique no campo, selecione o trecho) e clique novamente em "Negrito na seleção".');
+    return;
+  }
+  document.execCommand('bold');
+  dentroDoEditor.dispatchEvent(new Event('input', { bubbles: true }));
+}
 
 function abrirPreviewImpressao(ids, onConfirm) {
   prepararImpressao(ids);
   document._previewOnConfirm = onConfirm || null;
+  document._previewIds = ids;
 
-  const iframe = document.getElementById('preview-iframe');
-  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  ativarSimulacaoImpressao();
+  document.body.classList.add('preview-live-mode');
+  construirEditoresPreview(ids);
+  construirBotoesExclusao(ids);
 
-  // Reaproveita todo o CSS inline da página, forçando as regras de @media print
-  // a valerem também na tela (dentro do iframe isolado) para simular o resultado real.
-  const estilosOriginais = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
-  const estilosPreview = estilosOriginais.replace(/@media\s+print/g, '@media screen');
+  const primeiraPagina = document.getElementById(ids[0]);
+  primeiraPagina?.scrollIntoView({ behavior: 'instant', block: 'start' });
+}
 
-  const bodyClone = document.body.cloneNode(true);
-  bodyClone.querySelectorAll('.modal-overlay, .barra-selecao, script').forEach(el => el.remove());
-
-  doc.open();
-  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pré-visualização</title><style>' + estilosPreview + '\nbody{padding:0}</style></head><body></body></html>');
-  doc.close();
-  doc.body.innerHTML = bodyClone.innerHTML;
-
-  abrirModal('modal-preview-impressao');
+function finalizarPreviewImpressao() {
+  removerEditoresPreview();
+  removerBotoesExclusao();
+  document.body.classList.remove('preview-live-mode');
+  desativarSimulacaoImpressao();
+  limparImpressao();
+  document._previewOnConfirm = null;
+  document._previewIds = [];
 }
 
 function cancelarPreviewImpressao() {
-  limparImpressao();
-  document._previewOnConfirm = null;
-  fecharModal('modal-preview-impressao');
+  finalizarPreviewImpressao();
 }
 
 function confirmarPreviewImpressao() {
-  // Fecha o modal ANTES de imprimir: se ele continuar aberto, o navegador
-  // captura seu conteúdo (sobreposto à página real) na impressão real.
-  fecharModal('modal-preview-impressao');
   const onConfirm = document._previewOnConfirm;
-  document._previewOnConfirm = null;
-  // Aguarda o modal sair da árvore de renderização antes de imprimir.
-  setTimeout(() => {
-    try {
-      window.print();
-      if (typeof onConfirm === 'function') onConfirm();
-    } finally {
-      limparImpressao();
-    }
-  }, 50);
+  try {
+    window.print();
+    if (typeof onConfirm === 'function') onConfirm();
+  } finally {
+    finalizarPreviewImpressao();
+  }
 }
 
 // ─── Impressão individual ──────────────────────────────────────────────────────
