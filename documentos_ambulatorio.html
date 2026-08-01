@@ -458,6 +458,18 @@ body.preview-live-mode .preview-editor:focus{box-shadow:0 0 0 2px rgba(246,173,8
 body.preview-live-mode .preview-editor:hover{background:rgba(246,173,85,.08)}
 body.preview-live-mode textarea.tem-preview-editor{display:none!important}
 
+/* Contorno tracejado sutil em todo campo durante a pré-visualização, para que
+   nenhum campo (mesmo vazio, sem borda no visual de impressão) pareça "sumir"
+   da tela. Nunca aparece na impressão real (ver @media print abaixo). */
+body.preview-live-mode .field-group input,
+body.preview-live-mode .field-group select,
+body.preview-live-mode .field-group > .cid-wrap > input{
+  border:1px dashed #cbd5e0!important;
+  min-height:1.7em;
+  border-radius:4px;
+}
+body.preview-live-mode .field-group{min-height:1.4em}
+
 .preview-toolbar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(26,54,100,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;padding:10px 20px;align-items:center;gap:16px;z-index:400;box-shadow:0 -1px 0 rgba(255,255,255,.08),0 -4px 20px rgba(0,0,0,.25);flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.1)}
 body.preview-live-mode .preview-toolbar{display:flex}
 .preview-toolbar-info{flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px}
@@ -475,6 +487,10 @@ body.preview-live-mode{padding-bottom:64px}
 
 @media print{
   .btn-excluir-item,.preview-toolbar{display:none!important}
+  body.preview-live-mode .field-group input,
+  body.preview-live-mode .field-group select,
+  body.preview-live-mode .field-group > .cid-wrap > input{border:none!important;min-height:unset!important}
+  body.preview-live-mode .field-group{min-height:unset!important}
 }
 </style>
 </head>
@@ -2075,9 +2091,14 @@ function removerEditoresPreview() {
 }
 
 function campoEhExcluivel(fieldGroup) {
-  // Qualquer field-group com campo de formulário pode ser excluído da impressão,
-  // esteja preenchido ou vazio (ex: Endereço/Idade em branco, mas ocupando espaço).
-  return !!fieldGroup.querySelector('input, textarea, select');
+  // Inputs/selects podem ser excluídos mesmo vazios (ex: Endereço/Idade em
+  // branco, mas que ainda ocupam espaço visual na impressão). Já uma textarea
+  // vazia já some sozinha da impressão (:placeholder-shown), então não faz
+  // sentido dar um botão de exclusão "flutuando" sobre um campo que nem
+  // aparece — isso é o que causava os × soltos sem caixa nenhuma por perto.
+  if (fieldGroup.querySelector('input, select')) return true;
+  const ta = fieldGroup.querySelector('textarea');
+  return !!ta && ta.value.trim() !== '';
 }
 
 function construirBotoesExclusao(ids) {
