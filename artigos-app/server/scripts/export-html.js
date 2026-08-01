@@ -353,7 +353,14 @@ const SECTION_KEYS = ['epidemiologia', 'fisiopatologia', 'moa', 'tratamento', 'c
 articles.forEach((a) => {
   const diseases = [a.disease, ...nodeParseArr(a.secondary_diseases)].filter(Boolean);
 
-  const sampleMatch = (a.full_text || '').match(SAMPLE_N_RE) || (a.full_text || '').match(SAMPLE_PATIENTS_RE) || (a.summary || '').match(SAMPLE_PATIENTS_RE);
+  // So faz sentido mostrar "tamanho de amostra" para estudos primarios com
+  // uma unica coorte propria — em revisoes/metanalises/protocolos, o
+  // primeiro "n=" encontrado no texto quase sempre pertence a um estudo
+  // citado dentro da revisao, nao a populacao do proprio artigo.
+  const isPrimaryStudy = a.evidence_level === 'Ensaio Clínico Randomizado' || a.evidence_level === 'Estudo de Coorte/Observacional';
+  const sampleMatch = isPrimaryStudy
+    ? ((a.full_text || '').match(SAMPLE_N_RE) || (a.full_text || '').match(SAMPLE_PATIENTS_RE) || (a.summary || '').match(SAMPLE_PATIENTS_RE))
+    : null;
   a.sample_size_hint = sampleMatch ? sampleMatch[1] : null;
   a.citation = formatCitation(a);
 
@@ -369,21 +376,25 @@ articles.forEach((a) => {
   const meds = extractMedicationsFromArticle(a);
   const finds = extractFindingsFromArticle(a);
 
-  diseases.forEach((disease) => {
-    meds.forEach((m) => {
-      MEDICATIONS_INDEX.push({
-        disease, articleId: a.id, title: a.title || a.original_name, year: a.year,
-        evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
-        drug: m.drug, class: m.class, dose: m.dose, line: m.line, heading: m.heading, snippet: m.snippet,
-      });
+  // Uma linha por (artigo, medicação/achado) — nao uma por tag de doenca do
+  // artigo. O campo diseases guarda todas as tags (para filtrar na visao
+  // "por doenca"), mas a exibicao usa o heading da propria secao onde o
+  // termo foi encontrado como contexto, que e muito mais confiavel que as
+  // tags gerais do artigo (uma tag secundaria generica nao significa que
+  // aquela mencao especifica seja sobre aquela doenca).
+  meds.forEach((m) => {
+    MEDICATIONS_INDEX.push({
+      diseases, primaryDisease: a.disease || diseases[0], articleId: a.id, title: a.title || a.original_name, year: a.year,
+      evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
+      drug: m.drug, class: m.class, dose: m.dose, line: m.line, heading: m.heading, snippet: m.snippet,
     });
-    finds.forEach((f) => {
-      FINDINGS_INDEX.push({
-        disease, articleId: a.id, title: a.title || a.original_name, year: a.year,
-        evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
-        finding: f.finding, type: f.type, frequencyText: f.frequencyText, specificity: f.specificity,
-        heading: f.heading, snippet: f.snippet,
-      });
+  });
+  finds.forEach((f) => {
+    FINDINGS_INDEX.push({
+      diseases, primaryDisease: a.disease || diseases[0], articleId: a.id, title: a.title || a.original_name, year: a.year,
+      evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
+      finding: f.finding, type: f.type, frequencyText: f.frequencyText, specificity: f.specificity,
+      heading: f.heading, snippet: f.snippet,
     });
   });
 });
@@ -2541,7 +2552,7 @@ function populateTreatmentDiseaseSelect() {
   const prev = treatmentDiseaseSelect.value;
   treatmentDiseaseSelect.innerHTML = '<option value="">Selecione uma doença/tema...</option>' +
     opts.map((d) => {
-      const count = MEDICATIONS_INDEX.filter((m) => m.disease === d).length;
+      const count = MEDICATIONS_INDEX.filter((m) => m.diseases.includes(d)).length;
       return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + ' (' + count + ' menç' + (count !== 1 ? 'ões' : 'ão') + ')</option>';
     }).join('');
   if (prev && opts.includes(prev)) treatmentDiseaseSelect.value = prev;
@@ -2553,7 +2564,7 @@ function renderTreatmentTab() {
     treatmentContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver o tratamento consolidado, organizado por linha terapêutica, a partir de todos os artigos desta biblioteca sobre ela.</div>';
     return;
   }
-  const rows = MEDICATIONS_INDEX.filter((m) => m.disease === disease);
+  const rows = MEDICATIONS_INDEX.filter((m) => m.diseases.includes(disease));
   if (rows.length === 0) {
     treatmentContent.innerHTML = '<div class="empty-state">Nenhuma menção de medicação foi detectada automaticamente nos artigos desta biblioteca sobre ' + escapeHtml(disease) + '.</div>';
     return;
@@ -2570,7 +2581,7 @@ function renderTreatmentTab() {
       '<td><b>' + escapeHtml(r.drug) + '</b><br><span class="citation-text">' + escapeHtml(r.class || '') + '</span></td>' +
       '<td>' + (r.dose ? escapeHtml(r.dose) : '<span class="citation-text">não detectada</span>') + '</td>' +
       '<td>' + (r.evidenceLevel ? escapeHtml(r.evidenceLevel) : '—') + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
-      '<td class="snippet-cell">' + escapeHtml(r.citation) + '</td>' +
+      '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.primaryDisease && r.primaryDisease !== disease ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '') + '</td>' +
     '</tr>';
   });
   html += '</tbody></table></div>';
@@ -2610,7 +2621,7 @@ function populateFindingsDiseaseSelect() {
   const prev = findingsDiseaseSelect.value;
   findingsDiseaseSelect.innerHTML = '<option value="">Selecione uma doença/tema...</option>' +
     opts.map((d) => {
-      const count = FINDINGS_INDEX.filter((f) => f.disease === d).length;
+      const count = FINDINGS_INDEX.filter((f) => f.diseases.includes(d) && f.frequencyText).length;
       return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + ' (' + count + ' achado' + (count !== 1 ? 's' : '') + ')</option>';
     }).join('');
   if (prev && opts.includes(prev)) findingsDiseaseSelect.value = prev;
@@ -2638,24 +2649,35 @@ function findingFrequencyCell(r) {
     (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '');
 }
 
+// O contexto real de uma menção é a seção onde ela foi encontrada (heading),
+// não as tags de doença do artigo como um todo — um artigo sobre X pode ter
+// uma seção específica sobre Y (ex.: lúpus induzido por droga dentro de um
+// artigo sobre complicações de anti-TNF), e a % relatada é sobre essa
+// população específica, não sobre o tema geral do artigo.
+function findingContextCell(r, currentDisease) {
+  const heading = r.heading ? escapeHtml(r.heading) : '<span class="citation-text">(trecho geral do artigo)</span>';
+  const showPrimary = r.primaryDisease && r.primaryDisease !== currentDisease;
+  return heading + (showPrimary ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '');
+}
+
 function renderFindingsByDisease() {
   const disease = findingsDiseaseSelect.value;
   if (!disease) {
     findingsByDiseaseContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver todo achado clínico, laboratorial, de imagem ou anatomopatológico já documentado nos artigos desta biblioteca sobre ela.</div>';
     return;
   }
-  const rows = FINDINGS_INDEX.filter((f) => f.disease === disease);
+  const rows = FINDINGS_INDEX.filter((f) => f.diseases.includes(disease) && f.frequencyText);
   if (rows.length === 0) {
-    findingsByDiseaseContent.innerHTML = '<div class="empty-state">Nenhum achado foi detectado automaticamente nos artigos desta biblioteca sobre ' + escapeHtml(disease) + '.</div>';
+    findingsByDiseaseContent.innerHTML = '<div class="empty-state">Nenhum achado com frequência detectável foi encontrado automaticamente nos artigos desta biblioteca sobre ' + escapeHtml(disease) + '.</div>';
     return;
   }
   const divergent = detectFrequencyDivergence(rows);
   let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
-  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Tipo</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
   rows.slice().sort((x, y) => x.finding.localeCompare(y.finding, 'pt')).forEach((r) => {
     html += '<tr class="source-row" data-id="' + r.articleId + '">' +
-      '<td><b>' + escapeHtml(r.finding) + '</b>' + (divergent.has(r.finding) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + '</td>' +
-      '<td><span class="finding-type-tag">' + escapeHtml(r.type) + '</span></td>' +
+      '<td><b>' + escapeHtml(r.finding) + '</b> <span class="finding-type-tag">' + escapeHtml(r.type) + '</span>' + (divergent.has(r.finding) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + '</td>' +
+      '<td>' + findingContextCell(r, disease) + '</td>' +
       '<td>' + findingFrequencyCell(r) + '</td>' +
       '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
     '</tr>';
@@ -2669,7 +2691,7 @@ function renderFindingsByDisease() {
 findingsDiseaseSelect.addEventListener('change', renderFindingsByDisease);
 
 function populateFindingSuggestions() {
-  const names = [...new Set(FINDINGS_INDEX.map((f) => f.finding))].sort((a, b) => a.localeCompare(b, 'pt'));
+  const names = [...new Set(FINDINGS_INDEX.filter((f) => f.frequencyText).map((f) => f.finding))].sort((a, b) => a.localeCompare(b, 'pt'));
   document.getElementById('findingSuggestions').innerHTML = names.map((n) => '<option value="' + escapeHtml(n) + '"></option>').join('');
 }
 
@@ -2681,22 +2703,22 @@ function renderFindingsBySearch() {
   const rawTerm = findingSearchInput.value.trim();
   const term = normalizeText(rawTerm);
   if (!term) {
-    findingsBySearchContent.innerHTML = '<div class="empty-state">Digite um achado acima (ex.: "anti-PR3", "aneurisma de subclávia") para ver em quais doenças desta biblioteca ele é documentado, e com que frequência em cada uma.</div>';
+    findingsBySearchContent.innerHTML = '<div class="empty-state">Digite um achado acima (ex.: "anti-PR3", "aneurisma de subclávia") para ver em quais artigos desta biblioteca ele é documentado, com que frequência e em qual contexto/população.</div>';
     return;
   }
-  const rows = FINDINGS_INDEX.filter((f) => normalizeText(f.finding).includes(term));
+  const rows = FINDINGS_INDEX.filter((f) => normalizeText(f.finding).includes(term) && f.frequencyText);
   if (rows.length === 0) {
-    findingsBySearchContent.innerHTML = '<div class="empty-state">Nenhum achado desta biblioteca corresponde a "' + escapeHtml(rawTerm) + '". Tente um termo mais genérico ou veja as sugestões ao digitar.</div>';
+    findingsBySearchContent.innerHTML = '<div class="empty-state">Nenhum achado com frequência detectável corresponde a "' + escapeHtml(rawTerm) + '". Tente um termo mais genérico ou veja as sugestões ao digitar.</div>';
     return;
   }
   let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
-  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Doença</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
-  rows.slice().sort((x, y) => x.disease.localeCompare(y.disease, 'pt')).forEach((r) => {
+  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+  rows.slice().sort((x, y) => (x.primaryDisease || '').localeCompare(y.primaryDisease || '', 'pt')).forEach((r) => {
     html += '<tr class="source-row" data-id="' + r.articleId + '">' +
-      '<td>' + escapeHtml(r.finding) + '</td>' +
-      '<td><b>' + escapeHtml(r.disease) + '</b></td>' +
+      '<td>' + escapeHtml(r.finding) + ' <span class="finding-type-tag">' + escapeHtml(r.type) + '</span></td>' +
+      '<td>' + findingContextCell(r, null) + '</td>' +
       '<td>' + findingFrequencyCell(r) + '</td>' +
-      '<td class="snippet-cell">' + escapeHtml(r.citation) + '</td>' +
+      '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
     '</tr>';
   });
   html += '</tbody></table></div>';
