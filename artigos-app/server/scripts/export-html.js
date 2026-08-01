@@ -357,6 +357,20 @@ const DISEASE_MENTION_ALIASES = {
   'Vasculites Sistêmicas': ['vasculites sistemicas'],
 };
 
+// Nem toda causa citada num paragrafo de distribuicao etiologica e uma
+// doenca isolada rastreada nesta biblioteca — muitas vezes o autor agrupa
+// varias condicoes sob um rotulo (ex.: "outras doencas imunomediadas
+// (IMIDs) somaram 9,2%") ou cita uma categoria etiologica ampla (infecciosa,
+// neoplasica, induzida por farmaco, idiopatica). Sem isso, essas fatias
+// ficavam de fora da tabela mesmo aparecendo claramente no texto.
+const ETIOLOGY_CATEGORY_LABELS = {
+  'Outras causas imunomediadas (grupo)': ['doencas imunomediadas', 'imids', 'condicoes imunomediadas'],
+  'Causa infecciosa': ['infecciosa', 'infeccioso'],
+  'Neoplasia': ['neoplasia', 'neoplasico', 'maligni'],
+  'Induzida por fármaco': ['induzida por farmaco', 'induzido por farmaco', 'reacao a farmaco'],
+  'Idiopática/isolada verdadeira': ['idiopatic', 'isolada verdadeira'],
+};
+
 function diseaseMentionedNearby(normWindowText, disease) {
   const aliases = DISEASE_MENTION_ALIASES[disease];
   if (!aliases) return false;
@@ -408,13 +422,17 @@ function localizeDiseases(allDiseases, primaryDisease, windowText) {
 // reconhecida e so aceita o percentual que aparece BEM colado a ela (mesma
 // clausula, sem cruzar ';' ou '.'), nunca reaproveitando um numero que na
 // verdade pertence a doenca vizinha.
+function escapeAliasRe(alias) {
+  return alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function findDiseaseAliasHits(normText) {
   const hits = [];
   Object.keys(DISEASE_MENTION_ALIASES).forEach((disease) => {
     DISEASE_MENTION_ALIASES[disease].forEach((alias) => {
       const re = alias.length <= 5
-        ? new RegExp('\\b' + alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g')
-        : new RegExp(alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        ? new RegExp('\\b' + escapeAliasRe(alias) + '\\b', 'g')
+        : new RegExp(escapeAliasRe(alias), 'g');
       let m;
       while ((m = re.exec(normText))) hits.push({ disease, index: m.index, len: m[0].length });
     });
@@ -422,25 +440,73 @@ function findDiseaseAliasHits(normText) {
   return hits;
 }
 
-// So aceita o percentual se o texto entre o nome da doenca e o numero for
-// curto (padrao "Doenca apenas/isoladamente 4,6%") ou contiver um verbo de
+// "Causas nao infecciosas (52-79%) predominam" contem "infecciosas" como
+// substring, mas o sentido e o OPOSTO da categoria "Causa infecciosa" — sem
+// essa checagem de negacao, o percentual das causas NAO-infecciosas seria
+// atribuido erradamente a "Causa infecciosa".
+function isNegatedAt(normText, hitIndex) {
+  const before = normText.slice(Math.max(0, hitIndex - 20), hitIndex);
+  return /\bna[oõ][\s-]+$/.test(before);
+}
+
+// Nem toda causa citada e uma doenca isolada rastreada nesta biblioteca —
+// autores tambem agrupam condicoes sob um rotulo (IMIDs) ou citam uma
+// categoria etiologica ampla (infecciosa, neoplasica, farmaco, idiopatica).
+function findEtiologyLabelHits(normText) {
+  const hits = findDiseaseAliasHits(normText).map((h) => ({ label: h.disease, isCategory: false, index: h.index, len: h.len }));
+  Object.keys(ETIOLOGY_CATEGORY_LABELS).forEach((label) => {
+    ETIOLOGY_CATEGORY_LABELS[label].forEach((alias) => {
+      const re = new RegExp(escapeAliasRe(alias), 'g');
+      let m;
+      while ((m = re.exec(normText))) {
+        if (isNegatedAt(normText, m.index)) continue;
+        hits.push({ label, isCategory: true, index: m.index, len: m[0].length });
+      }
+    });
+  });
+  return hits;
+}
+
+// So aceita o percentual se o texto entre o rotulo e o numero for curto
+// (padrao "Doenca apenas/isoladamente 4,6%") ou contiver um verbo de
 // atribuicao causal ("representou", "responsavel por" etc.) — sem esse
 // filtro, uma % de RESPOSTA A TRATAMENTO ou outro dado qualquer que apareca
-// por acaso logo apos o nome da doenca (ex.: taxa de remissao de um ensaio
-// clinico) seria confundida com fatia etiologica.
+// por acaso logo apos o rotulo (ex.: taxa de remissao de um ensaio clinico)
+// seria confundida com fatia etiologica. Tambem captura o "(n=X)" que
+// costuma vir colado ao percentual, quando presente — e mais preciso que o
+// tamanho amostral generico do artigo, que pode ser de um subgrupo, nao do
+// total (ex.: "ACG (n=102)" nao e o N do estudo inteiro, que e 134).
 const ETIOLOGY_VERB_RE = /represent|respons[aá]vel por|correspond|somaram|contribu|constitu/i;
-function adjacentEtiologyPercent(text, hitIndex, hitLen) {
-  const after = text.slice(hitIndex + hitLen, hitIndex + hitLen + 45);
+const N_NEAR_RE = /\(?n\s*=\s*(\d+)/i;
+function adjacentEtiologyStat(text, hitIndex, hitLen) {
+  const after = text.slice(hitIndex + hitLen, hitIndex + hitLen + 90);
   const cut = after.search(/[.;]/);
   const scoped = cut === -1 ? after : after.slice(0, cut);
   const m = scoped.match(FREQ_PCT_RE);
   if (!m) return null;
   const gap = scoped.slice(0, m.index);
   if (gap.length > 20 && !ETIOLOGY_VERB_RE.test(gap)) return null;
-  return m[0].trim();
+  const afterPct = scoped.slice(m.index + m[0].length, m.index + m[0].length + 25);
+  const nMatch = afterPct.match(N_NEAR_RE);
+  return { pct: m[0].trim(), n: nMatch ? nMatch[1] : null };
 }
 
-// Mesmo com o filtro de verbo/gap, "Doenca perto de um numero" aparece em
+// Para rotulos de GRUPO (ex.: "outras doencas imunomediadas (IMIDs)"), o
+// autor as vezes lista os constituintes ("incluindo Sjogren, sarcoidose...")
+// — util para o leitor entender o que compoe aquela fatia sem abrir o
+// artigo original.
+function extractConstituents(text, hitIndex, hitLen) {
+  const after = text.slice(hitIndex + hitLen, hitIndex + hitLen + 300);
+  // Limita a busca a propria clausula (ate o primeiro '.' ou ';'), senao um
+  // "incluindo ..." de uma categoria VIZINHA poderia ser erroneamente
+  // atribuido a este rotulo.
+  const cut = after.search(/[.;]/);
+  const scoped = cut === -1 ? after : after.slice(0, cut);
+  const m = scoped.match(/inclu(?:indo|i)\s+([^);.]+)/i);
+  return m ? m[1].trim() : null;
+}
+
+// Mesmo com o filtro de verbo/gap, "rotulo perto de um numero" aparece em
 // muitos contextos que NAO sao fatia etiologica — taxa de mortalidade
 // especifica por doenca, prevalencia de um achado dentro da coorte daquela
 // doenca, estatistica comparativa (X% vs Y%, p=...). So confiamos nessa
@@ -458,16 +524,19 @@ function extractEtiologyFromArticle(a) {
   nodeGetArticleChunks(a).forEach((chunk) => {
     if (!isEtiologyHeading(chunk.heading)) return;
     const normText = nodeNormalizeText(chunk.text);
-    findDiseaseAliasHits(normText).forEach((hit) => {
-      if (hit.disease === a.disease) return;
-      const pct = adjacentEtiologyPercent(chunk.text, hit.index, hit.len);
-      if (!pct) return;
-      const key = hit.disease + '|' + chunk.heading;
+    findEtiologyLabelHits(normText).forEach((hit) => {
+      if (hit.label === a.disease) return;
+      const stat = adjacentEtiologyStat(chunk.text, hit.index, hit.len);
+      if (!stat) return;
+      const key = hit.label + '|' + chunk.heading;
       if (seen.has(key)) return;
       seen.add(key);
       out.push({
-        disease: hit.disease,
-        frequencyText: pct,
+        disease: hit.label,
+        isCategory: hit.isCategory,
+        frequencyText: stat.pct,
+        sampleN: stat.n,
+        constituents: hit.isCategory ? extractConstituents(chunk.text, hit.index, hit.len) : null,
         heading: chunk.heading || null,
         snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
       });
@@ -642,10 +711,16 @@ articles.forEach((a) => {
   // So faz sentido mostrar "tamanho de amostra" para estudos primarios com
   // uma unica coorte propria — em revisoes/metanalises/protocolos, o
   // primeiro "n=" encontrado no texto quase sempre pertence a um estudo
-  // citado dentro da revisao, nao a populacao do proprio artigo.
+  // citado dentro da revisao, nao a populacao do proprio artigo. O resumo
+  // (summary) e um texto curado que normalmente descreve o N do estudo como
+  // um todo ("134 pacientes"); o full_text bruto tem "n=X" espalhados que
+  // frequentemente sao de SUBGRUPOS citados antes do N total (ex.: "ACG
+  // (n=102)" aparecendo no abstract antes do "134 pacientes" do corpo) — por
+  // isso o padrao "X pacientes/casos" no resumo tem prioridade sobre o
+  // primeiro "n=" bruto do texto completo.
   const isPrimaryStudy = a.evidence_level === 'Ensaio Clínico Randomizado' || a.evidence_level === 'Estudo de Coorte/Observacional';
   const sampleMatch = isPrimaryStudy
-    ? ((a.full_text || '').match(SAMPLE_N_RE) || (a.full_text || '').match(SAMPLE_PATIENTS_RE) || (a.summary || '').match(SAMPLE_PATIENTS_RE))
+    ? ((a.summary || '').match(SAMPLE_PATIENTS_RE) || (a.full_text || '').match(SAMPLE_PATIENTS_RE) || (a.full_text || '').match(SAMPLE_N_RE))
     : null;
   a.sample_size_hint = sampleMatch ? sampleMatch[1] : null;
   a.citation = formatCitation(a);
@@ -694,8 +769,15 @@ articles.forEach((a) => {
   etiology.forEach((e) => {
     FINDINGS_INDEX.push({
       diseases: [e.disease], primaryDisease, articleId: a.id, title: a.title || a.original_name, year: a.year,
-      evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
+      evidenceLevel: a.evidence_level, citation: a.citation,
+      // O N do artigo inteiro (sampleSizeHint) as vezes e, na verdade, o N de
+      // um SUBGRUPO citado logo no resumo (ex.: "ACG (n=102)" virando o
+      // sample_size_hint do artigo 39 inteiro) — para uma fatia etiologica,
+      // o N especifico do proprio trecho (sampleN, extraido do "(n=X)" colado
+      // aquele percentual) e sempre mais confiavel quando disponivel.
+      sampleSizeHint: e.sampleN || a.sample_size_hint,
       finding: 'Causa de ' + primaryDisease, type: 'etiológico', frequencyText: e.frequencyText, specificity: null,
+      isCategory: e.isCategory, constituents: e.constituents,
       heading: e.heading, snippet: e.snippet,
     });
   });
@@ -3018,7 +3100,8 @@ function findingFrequencyCell(r) {
 function sourceContextCell(r, currentDisease) {
   const heading = r.heading ? escapeHtml(r.heading) : '<span class="citation-text">(trecho geral do artigo)</span>';
   const showPrimary = r.primaryDisease && r.primaryDisease !== currentDisease;
-  return heading + (showPrimary ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '');
+  const constituents = r.constituents ? '<div class="citation-text">inclui: ' + escapeHtml(r.constituents) + '</div>' : '';
+  return heading + (showPrimary ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '') + constituents;
 }
 
 const FINDING_TYPE_ORDER = ['etiológico', 'acometimento orgânico', 'clínico', 'laboratorial', 'imagem', 'anatomopatológico'];
@@ -3031,14 +3114,26 @@ const FINDING_TYPE_LABELS = {
   'anatomopatológico': 'Achados anatomopatológicos',
 };
 
+// Mesma logica de "separado + conjunto" usada na busca por achado: quando
+// varios artigos desta doenca relatam o mesmo achado, viram sub-itens de
+// UMA linha (o "conjunto"), cada um continuando individualmente visivel e
+// clicavel (o "separado") — em vez de N linhas soltas com o mesmo nome de
+// achado repetido.
 function findingsTableRows(rows, divergent, currentDisease) {
+  const byFindingName = new Map();
+  rows.forEach((r) => {
+    if (!byFindingName.has(r.finding)) byFindingName.set(r.finding, []);
+    byFindingName.get(r.finding).push(r);
+  });
   let html = '';
-  rows.slice().sort((x, y) => x.finding.localeCompare(y.finding, 'pt')).forEach((r) => {
-    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
-      '<td><b>' + escapeHtml(r.finding) + '</b>' + (divergent.has(r.finding) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + '</td>' +
-      '<td>' + sourceContextCell(r, currentDisease) + '</td>' +
-      '<td>' + findingFrequencyCell(r) + '</td>' +
-      '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
+  [...byFindingName.keys()].sort((a, b) => a.localeCompare(b, 'pt')).forEach((findingName) => {
+    const sources = byFindingName.get(findingName).slice().sort((x, y) => frequencyRank(y.frequencyText) - frequencyRank(x.frequencyText));
+    const sep = '<hr class="source-sep">';
+    html += '<tr>' +
+      '<td><b>' + escapeHtml(findingName) + '</b>' + (divergent.has(findingName) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + combinedSummaryNote(sources) + '</td>' +
+      '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, currentDisease) + '</div>').join(sep) + '</td>' +
+      '<td>' + sources.map((s) => '<div>' + findingFrequencyCell(s) + '</div>').join(sep) + '</td>' +
+      '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
     '</tr>';
   });
   return html;
@@ -3075,8 +3170,8 @@ function renderFindingsByDisease() {
     html += '</tbody></table></div>';
   });
   findingsByDiseaseContent.innerHTML = html;
-  findingsByDiseaseContent.querySelectorAll('.source-row').forEach((row) => {
-    row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+  findingsByDiseaseContent.querySelectorAll('.source-link').forEach((el) => {
+    el.addEventListener('click', () => openModal(Number(el.dataset.id)));
   });
 }
 findingsDiseaseSelect.addEventListener('change', renderFindingsByDisease);
@@ -3089,6 +3184,19 @@ function populateFindingSuggestions() {
 const findingSearchInput = document.getElementById('findingSearchInput');
 const findingSearchBtn = document.getElementById('findingSearchBtn');
 const findingsBySearchContent = document.getElementById('findingsBySearchContent');
+
+// Quando varios artigos relatam o mesmo achado para a mesma doenca, mostrar
+// so a soma/media esconderia divergencias reais entre estudos; mostrar cada
+// um isolado sem nunca agrupar dificulta ver o panorama. Por isso: uma linha
+// por doenca (o "conjunto"), com cada estudo listado separadamente dentro
+// dela (o "separado") — mesmo padrao ja usado para consolidar farmacos
+// repetidos na aba Tratamento.
+function combinedSummaryNote(sources) {
+  if (sources.length <= 1) return '';
+  const ns = sources.map((s) => parseInt(s.sampleSizeHint, 10)).filter((n) => !isNaN(n));
+  const totalN = ns.length === sources.length ? ns.reduce((a, b) => a + b, 0) : null;
+  return '<div class="citation-text">' + sources.length + ' estudos' + (totalN ? ' · N total ≈ ' + totalN : '') + '</div>';
+}
 
 function renderFindingsBySearch() {
   const rawTerm = findingSearchInput.value.trim();
@@ -3125,19 +3233,32 @@ function renderFindingsBySearch() {
     const group = byFinding.get(finding);
     html += '<h4 class="findings-group-heading">' + escapeHtml(finding) + ' <span class="finding-type-tag">' + escapeHtml(group[0].type) + '</span> <span class="citation-text">(' + group.length + ')</span></h4>';
     html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Doença</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
-    group.slice().sort((x, y) => frequencyRank(y.frequencyText) - frequencyRank(x.frequencyText)).forEach((r) => {
-      html += '<tr class="source-row" data-id="' + r.articleId + '">' +
-        '<td><b>' + escapeHtml(r.diseases.join(', ')) + '</b></td>' +
-        '<td>' + sourceContextCell(r, null) + '</td>' +
-        '<td>' + findingFrequencyCell(r) + '</td>' +
-        '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
+    // Dentro de cada achado, agrupa por doenca: se so um artigo relata
+    // aquela combinacao doenca+achado, a linha e simples; se varios artigos
+    // relatam, viram sub-itens dentro da MESMA linha (separados por doenca
+    // continuam visiveis individualmente, mas reunidos "de forma conjunta").
+    const byDisease = new Map();
+    group.forEach((r) => {
+      const key = r.diseases.join(', ');
+      if (!byDisease.has(key)) byDisease.set(key, []);
+      byDisease.get(key).push(r);
+    });
+    const maxRank = (sources) => Math.max(...sources.map((s) => frequencyRank(s.frequencyText)));
+    [...byDisease.keys()].sort((a, b) => maxRank(byDisease.get(b)) - maxRank(byDisease.get(a))).forEach((diseaseKey) => {
+      const sources = byDisease.get(diseaseKey).slice().sort((x, y) => frequencyRank(y.frequencyText) - frequencyRank(x.frequencyText));
+      const sep = '<hr class="source-sep">';
+      html += '<tr>' +
+        '<td><b>' + escapeHtml(diseaseKey) + '</b>' + combinedSummaryNote(sources) + '</td>' +
+        '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, null) + '</div>').join(sep) + '</td>' +
+        '<td>' + sources.map((s) => '<div>' + findingFrequencyCell(s) + '</div>').join(sep) + '</td>' +
+        '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
       '</tr>';
     });
     html += '</tbody></table></div>';
   });
   findingsBySearchContent.innerHTML = html;
-  findingsBySearchContent.querySelectorAll('.source-row').forEach((row) => {
-    row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+  findingsBySearchContent.querySelectorAll('.source-link').forEach((el) => {
+    el.addEventListener('click', () => openModal(Number(el.dataset.id)));
   });
 }
 findingSearchBtn.addEventListener('click', renderFindingsBySearch);
