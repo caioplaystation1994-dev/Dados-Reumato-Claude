@@ -586,6 +586,14 @@ function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
 function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
+    // Secoes de distribuicao etiologica ja sao tratadas por
+    // extractEtiologyFromArticle, que atribui o percentual ESPECIFICO de
+    // cada doenca citada. Deixar o FINDING_DICT genérico rodar aqui tambem
+    // geraria um numero duplicado e ambiguo (ex.: "Aortite/periaortite:
+    // 83,1%" sob a propria pagina de Aortite, que soma ACG+Takayasu e nao
+    // esclarece o que representa) convivendo com o dado ja correto e
+    // granular.
+    if (isEtiologyHeading(chunk.heading)) return;
     scanDictionary(chunk.text, FINDING_DICT).forEach((hit) => {
       let pct = nearestMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
       if (isDiagnosticPerformanceNumber(chunk.text, hit.index, hit.len, pct)) pct = null;
@@ -2972,8 +2980,17 @@ function detectFrequencyDivergence(rows) {
 function findingFrequencyCell(r) {
   if (!r.frequencyText) return '<span class="citation-text">não detectada</span>';
   const isRare = RARE_WORD_RE.test(r.frequencyText);
+  // Uma linha etiológica ("Causa de Aortite: 78,5%") é ambígua sem
+  // qualificador: lida na página de ACG, "78,5%" sozinho pode ser mal
+  // interpretado como "78,5% dos pacientes de ACG têm Aortite", quando na
+  // verdade significa "78,5% da coorte de Aortite tinha ACG como causa" — os
+  // dois sentidos são diferentes. Escrever por extenso remove a ambiguidade
+  // nos dois sentidos de leitura (pela doença causadora OU pelo achado).
+  const qualifier = r.type === 'etiológico' && r.primaryDisease
+    ? ' <span class="citation-text">dos casos de ' + escapeHtml(r.primaryDisease) + '</span>'
+    : '';
   return (isRare ? '<span class="specificity-tag">⚠ ' + escapeHtml(r.frequencyText) + '</span>' : escapeHtml(r.frequencyText)) +
-    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '');
+    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '') + qualifier;
 }
 
 // O contexto real de uma menção é a seção onde ela foi encontrada (heading),
@@ -3068,10 +3085,19 @@ function renderFindingsBySearch() {
     findingsBySearchContent.innerHTML = '<div class="empty-state">Nenhum achado com frequência detectável corresponde a "' + escapeHtml(rawTerm) + '". Tente um termo mais genérico ou veja as sugestões ao digitar.</div>';
     return;
   }
+  // Ao buscar por achado (em vez de por doença), o dado que falta para
+  // responder "quais doenças causam isso?" é justamente a doença — por isso,
+  // diferente da visão "por doença" (onde já se sabe a doença ao selecioná-
+  // la), aqui mostramos a coluna Doença. Isso só é seguro agora porque
+  // r.diseases já vem restrito por localizeDiseases/extractEtiologyFromArticle
+  // à doença de fato relevante para aquela linha específica — não é mais a
+  // lista completa de tags do artigo (era essa mistura que causava o antigo
+  // bug de o anti-dsDNA aparecer "de todas as doenças reumáticas").
   let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
-  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
-  rows.slice().sort((x, y) => (x.primaryDisease || '').localeCompare(y.primaryDisease || '', 'pt')).forEach((r) => {
+  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Doença</th><th>Achado</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+  rows.slice().sort((x, y) => (x.diseases[0] || '').localeCompare(y.diseases[0] || '', 'pt')).forEach((r) => {
     html += '<tr class="source-row" data-id="' + r.articleId + '">' +
+      '<td>' + escapeHtml(r.diseases.join(', ')) + '</td>' +
       '<td>' + escapeHtml(r.finding) + ' <span class="finding-type-tag">' + escapeHtml(r.type) + '</span></td>' +
       '<td>' + sourceContextCell(r, null) + '</td>' +
       '<td>' + findingFrequencyCell(r) + '</td>' +
