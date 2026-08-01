@@ -2697,6 +2697,21 @@ function populateTreatmentDiseaseSelect() {
   if (prev && opts.includes(prev)) treatmentDiseaseSelect.value = prev;
 }
 
+function treatmentTableRows(rows, divergent, currentDisease) {
+  let html = '';
+  rows.slice().sort((x, y) => x.drug.localeCompare(y.drug, 'pt')).forEach((r) => {
+    const isDivergent = divergent.has(r.drug);
+    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
+      '<td><b>' + escapeHtml(r.drug) + '</b>' + (isDivergent ? '<span class="divergence-flag" title="Outro artigo desta biblioteca cita este fármaco em linha diferente">⚠ divergente</span>' : '') + '<br><span class="citation-text">' + escapeHtml(r.class || '') + '</span></td>' +
+      '<td>' + sourceContextCell(r, currentDisease) + '</td>' +
+      '<td>' + (r.dose ? escapeHtml(r.dose) : '<span class="citation-text">não detectada</span>') + '</td>' +
+      '<td>' + (r.evidenceLevel ? escapeHtml(r.evidenceLevel) : '—') + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
+      '<td class="snippet-cell">' + escapeHtml(r.citation) + '</td>' +
+    '</tr>';
+  });
+  return html;
+}
+
 function renderTreatmentTab() {
   const disease = treatmentDiseaseSelect.value;
   if (!disease) {
@@ -2709,21 +2724,21 @@ function renderTreatmentTab() {
     return;
   }
   const divergent = detectLineDivergence(rows);
-  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte de cada linha antes de usar clinicamente.</div>';
-  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Linha</th><th>Fármaco / classe</th><th>Dose detectada</th><th>Evidência</th><th>Fonte</th></tr></thead><tbody>';
-
-  const sorted = rows.slice().sort((x, y) => LINE_ORDER.indexOf(x.line) - LINE_ORDER.indexOf(y.line));
-  sorted.forEach((r) => {
-    const isDivergent = divergent.has(r.drug);
-    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
-      '<td><span class="line-pill ' + linePillClass(r.line) + '">' + escapeHtml(lineLabel(r.line)) + '</span>' + (isDivergent ? '<span class="divergence-flag" title="Outro artigo desta biblioteca cita este fármaco em linha diferente">⚠ divergente</span>' : '') + '</td>' +
-      '<td><b>' + escapeHtml(r.drug) + '</b><br><span class="citation-text">' + escapeHtml(r.class || '') + '</span></td>' +
-      '<td>' + (r.dose ? escapeHtml(r.dose) : '<span class="citation-text">não detectada</span>') + '</td>' +
-      '<td>' + (r.evidenceLevel ? escapeHtml(r.evidenceLevel) : '—') + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
-      '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.primaryDisease && r.primaryDisease !== disease ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '') + '</td>' +
-    '</tr>';
+  const byLine = new Map();
+  rows.forEach((r) => {
+    if (!byLine.has(r.line)) byLine.set(r.line, []);
+    byLine.get(r.line).push(r);
   });
-  html += '</tbody></table></div>';
+  const lineKeys = [...byLine.keys()].sort((a, b) => LINE_ORDER.indexOf(a) - LINE_ORDER.indexOf(b));
+
+  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte de cada linha antes de usar clinicamente.</div>';
+  lineKeys.forEach((line) => {
+    const lineRows = byLine.get(line);
+    html += '<h4 class="findings-group-heading"><span class="line-pill ' + linePillClass(line) + '">' + escapeHtml(lineLabel(line)) + '</span> <span class="citation-text">(' + lineRows.length + ')</span></h4>';
+    html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fármaco / classe</th><th>Contexto (seção do artigo)</th><th>Dose detectada</th><th>Evidência</th><th>Fonte</th></tr></thead><tbody>';
+    html += treatmentTableRows(lineRows, divergent, disease);
+    html += '</tbody></table></div>';
+  });
 
   treatmentContent.innerHTML = html;
   treatmentContent.querySelectorAll('.source-row').forEach((row) => {
@@ -2793,7 +2808,7 @@ function findingFrequencyCell(r) {
 // uma seção específica sobre Y (ex.: lúpus induzido por droga dentro de um
 // artigo sobre complicações de anti-TNF), e a % relatada é sobre essa
 // população específica, não sobre o tema geral do artigo.
-function findingContextCell(r, currentDisease) {
+function sourceContextCell(r, currentDisease) {
   const heading = r.heading ? escapeHtml(r.heading) : '<span class="citation-text">(trecho geral do artigo)</span>';
   const showPrimary = r.primaryDisease && r.primaryDisease !== currentDisease;
   return heading + (showPrimary ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '');
@@ -2813,7 +2828,7 @@ function findingsTableRows(rows, divergent, currentDisease) {
   rows.slice().sort((x, y) => x.finding.localeCompare(y.finding, 'pt')).forEach((r) => {
     html += '<tr class="source-row" data-id="' + r.articleId + '">' +
       '<td><b>' + escapeHtml(r.finding) + '</b>' + (divergent.has(r.finding) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + '</td>' +
-      '<td>' + findingContextCell(r, currentDisease) + '</td>' +
+      '<td>' + sourceContextCell(r, currentDisease) + '</td>' +
       '<td>' + findingFrequencyCell(r) + '</td>' +
       '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
     '</tr>';
@@ -2884,7 +2899,7 @@ function renderFindingsBySearch() {
   rows.slice().sort((x, y) => (x.primaryDisease || '').localeCompare(y.primaryDisease || '', 'pt')).forEach((r) => {
     html += '<tr class="source-row" data-id="' + r.articleId + '">' +
       '<td>' + escapeHtml(r.finding) + ' <span class="finding-type-tag">' + escapeHtml(r.type) + '</span></td>' +
-      '<td>' + findingContextCell(r, null) + '</td>' +
+      '<td>' + sourceContextCell(r, null) + '</td>' +
       '<td>' + findingFrequencyCell(r) + '</td>' +
       '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
     '</tr>';
