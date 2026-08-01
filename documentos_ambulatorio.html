@@ -375,10 +375,7 @@ body{padding-bottom:64px}
 .rec-esp-prescricao:focus{outline:none;border-color:#b7791f;background:#fff}
 .rec-esp-via2-texto{font-size:14px;line-height:1.9;min-height:80px;padding:8px 0;white-space:pre-wrap;color:#1a202c;border-bottom:1px solid #fbd38d}
 .rec-esp-corte{text-align:center;color:#b7791f;font-size:12px;padding:10px 0;letter-spacing:2px;user-select:none}
-.rec-esp-via-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-align:right;margin-top:12px;padding:4px 8px;border-radius:4px;display:inline-block;float:right}
-.rec-esp-via1-label{background:#fef3c7;color:#92400e}
-.rec-esp-via2-label{background:#dbeafe;color:#1a56a0}
-.rec-esp-assinatura{margin-top:36px;clear:both}
+.rec-esp-assinatura{margin-top:36px}
 .rec-esp-ass-linha{border-top:1px solid #4a5568;padding-top:6px;width:260px;font-size:11px;text-align:center;color:#4a5568;margin:0 auto}
 
 @media print{
@@ -390,7 +387,6 @@ body{padding-bottom:64px}
   .rec-esp-atalhos{display:none!important}
   .rec-esp-campo input{border:none;border-bottom:1px solid #ccc;border-radius:0;background:transparent;padding:2px 0;font-size:12px}
   .rec-esp-prescricao{border:none;background:transparent;padding:4px 0;font-size:13px;min-height:unset}
-  .rec-esp-via-label{font-size:9px}
   .rec-esp-dados-medico{background:none;border:none;padding:2px 0;font-size:10px}
   .rec-esp-titulo{font-size:13px}
   .rec-esp-subtitulo{font-size:9px}
@@ -1092,7 +1088,6 @@ body{padding-bottom:64px}
       </div>
       <textarea id="re-prescricao" class="rec-esp-prescricao" oninput="sincRecEsp();autoResizeTA(this)" onblur="reordenarTexto(this);sincRecEsp()" placeholder="1. Pregabalina 75mg&#10;&#10;Tomar 1 cápsula, 2x ao dia"></textarea>
 
-      <div class="rec-esp-via-label rec-esp-via1-label">1ª VIA — FARMÁCIA</div>
       <div class="rec-esp-assinatura">
         <div class="rec-esp-ass-linha">
           <span id="re-ass-nome-1"></span><br>
@@ -1146,7 +1141,6 @@ body{padding-bottom:64px}
       <div class="rec-esp-rx-label">Prescrição</div>
       <div class="rec-esp-via2-texto" id="re-prescricao-2"></div>
 
-      <div class="rec-esp-via-label rec-esp-via2-label">2ª VIA — PACIENTE</div>
       <div class="rec-esp-assinatura">
         <div class="rec-esp-ass-linha">
           <span id="re-ass-nome-2"></span><br>
@@ -2052,7 +2046,7 @@ const MED_RX = {
   'Meloxicam':           { via: 'oral_crise',    forma: '15mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia' },
   'Celecoxibe':          { via: 'oral_crise',    forma: '200mg',      instrucao: 'Tomar 1 cápsula, 1x ao dia' },
   'Colchicina':          { via: 'oral_crise',    forma: '0,5mg',      instrucao: 'Tomar 2 comprimidos na 1ª hora, depois 1 comprimido a cada 1 hora até melhora (máx. 12 comprimidos por dia)' },
-  'Tandrilax':           { via: 'oral_crise',    forma: '',           instrucao: 'Tomar 1 comprimido, 3x ao dia, por 10 dias' },
+  'Tandrilax':           { via: 'oral_crise',    forma: '',           instrucao: 'Tomar 1 comprimido, de 8 em 8 horas, por 10 dias' },
   // bDMARDs subcutâneos
   'Adalimumabe':         { via: 'sc', forma: '40mg/0,8mL',   instrucao: 'Aplicar 1 injeção subcutânea, a cada 2 semanas' },
   'Etanercepte':         { via: 'sc', forma: '50mg/mL',      instrucao: 'Aplicar 1 injeção subcutânea, 1x por semana' },
@@ -2065,13 +2059,13 @@ const MED_RX = {
   'Belimumabe':          { via: 'sc', forma: '200mg/mL',     instrucao: 'Aplicar 1 injeção subcutânea, 1x por semana' },
   // Controle Especial — Neuromoduladores / Psiquiátricos (Lista C1 / B1)
   'Pregabalina':         { via: 'oral_continuo', forma: '75mg',       instrucao: 'Tomar 1 cápsula, 2x ao dia' },
-  'Gabapentina':         { via: 'oral_continuo', forma: '300mg',      instrucao: 'Tomar 1 cápsula, 3x ao dia' },
-  'Amitriptilina':       { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia, à noite' },
-  'Nortriptilina':       { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia, à noite' },
+  'Gabapentina':         { via: 'oral_continuo', forma: '300mg',      instrucao: 'Tomar 1 cápsula, de 8 em 8 horas' },
+  'Amitriptilina':       { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, antes de dormir' },
+  'Nortriptilina':       { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, antes de dormir' },
   'Duloxetina':          { via: 'oral_continuo', forma: '60mg',       instrucao: 'Tomar 1 cápsula, 1x ao dia, pela manhã' },
   'Fluoxetina':          { via: 'oral_continuo', forma: '20mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia, pela manhã' },
   'Sertralina':          { via: 'oral_continuo', forma: '50mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia' },
-  'Quetiapina':          { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, 1x ao dia, à noite' },
+  'Quetiapina':          { via: 'oral_continuo', forma: '25mg',       instrucao: 'Tomar 1 comprimido, antes de dormir' },
   'Clonazepam':          { via: 'oral_continuo', forma: '0,5mg',      instrucao: 'Tomar 1 comprimido, 1x ao dia' },
   'Alprazolam':          { via: 'oral_continuo', forma: '0,25mg',     instrucao: 'Tomar 1 comprimido, ___ x ao dia' },
   'Zolpidem':            { via: 'oral_continuo', forma: '10mg',       instrucao: 'Tomar 1 comprimido, 30 minutos antes de dormir' },
@@ -3521,6 +3515,10 @@ function calcularUnidadesPorDia(instrucao) {
   // Frequência diária: "2x ao dia" / "1x/dia"
   let mFreq = texto.match(/(\d+)\s*x\s*(?:ao dia|\/dia|por dia)/);
   if (mFreq) return unidades * parseInt(mFreq[1], 10);
+
+  // "de N em N horas" (ex: de 8 em 8 horas → 3x/dia)
+  mFreq = texto.match(/de\s*(\d+)\s*em\s*\d+\s*horas?/);
+  if (mFreq) return unidades * (24 / parseInt(mFreq[1], 10));
 
   // "1x por semana" / "2x por semana"
   mFreq = texto.match(/(\d+)\s*x\s*por\s*semana/);
