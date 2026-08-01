@@ -485,12 +485,25 @@ body.preview-live-mode .preview-toolbar{display:flex}
 
 body.preview-live-mode{padding-bottom:64px}
 
+/* Na tela, o .doc-wrapper simula uma folha A4 inteira (min-height:25cm) para
+   empurrar a assinatura/rodapé para o fim da página impressa — mas isso cria
+   um vão enorme em branco no meio da pré-visualização quando o documento tem
+   pouco conteúdo, dando a impressão de que algo quebrou. Durante a edição na
+   tela, mostramos só o conteúdo real (altura natural); a folha A4 completa
+   volta a valer exclusivamente na impressão de verdade, abaixo. */
+body.preview-live-mode .doc-wrapper{min-height:unset!important}
+body.preview-live-mode .signature-line,
+body.preview-live-mode .print-rodape{margin-top:24px!important}
+
 @media print{
   .btn-excluir-item,.preview-toolbar{display:none!important}
   body.preview-live-mode .field-group input,
   body.preview-live-mode .field-group select,
   body.preview-live-mode .field-group > .cid-wrap > input{border:none!important;min-height:unset!important}
   body.preview-live-mode .field-group{min-height:unset!important}
+  body.preview-live-mode .doc-wrapper{min-height:25cm!important}
+  body.preview-live-mode .signature-line,
+  body.preview-live-mode .print-rodape{margin-top:auto!important}
 }
 </style>
 </head>
@@ -604,7 +617,7 @@ body.preview-live-mode{padding-bottom:64px}
 <!-- ======================== BARRA DE PRÉ-VISUALIZAÇÃO DE IMPRESSÃO ======================== -->
 <div class="preview-toolbar" id="preview-toolbar">
   <div class="preview-toolbar-info">
-    <strong>🖨️ Pré-visualização de Impressão <span style="opacity:.55;font-weight:400;font-size:10px">build 2026-08-01-c</span></strong>
+    <strong>🖨️ Pré-visualização de Impressão <span style="opacity:.55;font-weight:400;font-size:10px">build 2026-08-01-d</span></strong>
     <span class="preview-toolbar-dica">Edite o texto livremente · passe o mouse sobre um campo e clique no × para removê-lo desta impressão · selecione um trecho e clique em Negrito para destacar</span>
   </div>
   <div class="preview-toolbar-acoes">
