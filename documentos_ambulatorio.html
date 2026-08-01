@@ -211,6 +211,11 @@ body{padding-bottom:64px}
   .field-group label{font-size:10px;color:#666;margin-bottom:1px}
   .field-group input,.field-group select{border:none;border-bottom:1px solid #ccc;border-radius:0;background:transparent;padding:2px 0;font-size:13px}
   .field-group textarea{border:none;background:transparent;padding:2px 0;font-size:13px;min-height:unset}
+  /* Evita que field-groups fora de uma .field-row cresçam para preencher todo o
+     espaço vertical do .doc-wrapper (flex-column) — isso deixava campos vazios
+     (Anamnese, Exame Físico etc.) esticados, criando grandes vãos em branco. */
+  .field-group{flex:none}
+  .field-row .field-group{flex:1}
 
   /* Tabela de medicamentos */
   .med-table td input{border:none;border-bottom:1px solid #ccc;background:transparent;font-size:12px}
