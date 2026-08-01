@@ -64,6 +64,11 @@ header h1{font-size:15px;font-weight:700}
 .dmard-table th{background:#f0f4f8;padding:8px 10px;text-align:left;font-weight:600;color:#4a5568;border-bottom:2px solid #e2e8f0}
 .dmard-table td{padding:5px 6px;border-bottom:1px solid #e8ecf0;vertical-align:middle}
 .dmard-table td input,.dmard-table td select{border:1px solid #cbd5e0;border-radius:4px;padding:4px 7px;font-size:12px;width:100%;background:#fafafa}
+.dmard-table td textarea.dose-flex{border:1px solid #cbd5e0;border-radius:4px;padding:4px 7px;font-size:12px;width:100%;background:#fafafa;font-family:inherit;resize:vertical;min-height:28px;line-height:1.4}
+.campo-data-flex{display:flex;gap:3px;align-items:center}
+.campo-data-flex input{flex:1;min-width:0}
+.btn-toggle-data{flex-shrink:0;border:1px solid #cbd5e0;border-radius:4px;background:#fff;cursor:pointer;font-size:11px;padding:3px 5px;line-height:1}
+.btn-toggle-data:hover{background:#ebf2ff;border-color:#90cdf4}
 .btn-primary{background:#1a56a0;color:#fff;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
 .btn-primary:hover{background:#154180}
 .btn-secondary{background:#fff;color:#1a56a0;border:2px solid #1a56a0;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
@@ -1781,8 +1786,39 @@ function fmtDate(s) {
     const iso = String(s).split('T')[0];
     const parts = iso.split('-');
     if(parts.length===3 && parts[0].length===4) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    if(parts.length===2 && parts[0].length===4) return `${parts[1]}/${parts[0]}`; // somente mês/ano
     return iso;
   } catch(e) { return String(s); }
+}
+
+// ─── Posologia flexível / datas com precisão de mês·ano ───────────────────────
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function autoResizeDoseTA(ta) {
+  ta.style.height='auto';
+  ta.style.height=ta.scrollHeight+'px';
+}
+
+function toggleDatePrecision(inputEl, btnEl, obj, flagKey) {
+  if(!inputEl) return;
+  if(inputEl.type==='date') {
+    const val=inputEl.value; // YYYY-MM-DD
+    inputEl.type='month';
+    inputEl.value=val?val.slice(0,7):'';
+    obj[flagKey]=true;
+    btnEl.textContent='📅';
+    btnEl.title='Usar data completa';
+  } else {
+    const val=inputEl.value; // YYYY-MM
+    inputEl.type='date';
+    inputEl.value=val?val+'-01':'';
+    obj[flagKey]=false;
+    btnEl.title='Usar somente mês/ano';
+    btnEl.textContent='🗓️';
+  }
+  inputEl.dispatchEvent(new Event('input', { bubbles:true }));
 }
 
 // ─── PACIENTE TESTE ───────────────────────────────────────────────────────────
@@ -2560,10 +2596,14 @@ function addDmardAtual(data) {
       style="display:${isCustomA?'block':'none'};margin-top:4px;border:1px solid #cbd5e0;border-radius:4px;padding:4px 7px;font-size:12px;width:100%;background:#fafafa"
       oninput="dmardAtuais[${idx}].med=this.value">
     </td>
-    <td><input type="text" id="doseA${idx}" placeholder="Ex: 20mg/sem" value="${d.dose||''}" oninput="dmardAtuais[${idx}].dose=this.value"></td>
-    <td><input type="date" value="${d.dataInicio||''}" oninput="dmardAtuais[${idx}].dataInicio=this.value"></td>
+    <td><textarea class="dose-flex" id="doseA${idx}" rows="1" placeholder="Ex: 20mg/semana SC" oninput="dmardAtuais[${idx}].dose=this.value;autoResizeDoseTA(this)">${escHtml(d.dose)}</textarea></td>
+    <td><div class="campo-data-flex">
+      <input type="${d.dataInicioMes?'month':'date'}" id="diA${idx}" value="${d.dataInicioMes?(d.dataInicio||'').slice(0,7):(d.dataInicio||'')}" oninput="dmardAtuais[${idx}].dataInicio=this.value">
+      <button type="button" class="btn-toggle-data" onclick="toggleDatePrecision(document.getElementById('diA${idx}'),this,dmardAtuais[${idx}],'dataInicioMes')" title="${d.dataInicioMes?'Usar data completa':'Usar somente mês/ano'}">${d.dataInicioMes?'📅':'🗓️'}</button>
+    </div></td>
     <td><button class="btn-danger" onclick="rmDmardAtual(${idx})">✕</button></td>`;
   tb.appendChild(tr);
+  autoResizeDoseTA(tr.querySelector('.dose-flex'));
 }
 
 function onDmardASelect(sel,idx){
@@ -2614,9 +2654,15 @@ function addDmard(data) {
       style="display:${isCustomD?'block':'none'};margin-top:4px;border:1px solid #cbd5e0;border-radius:4px;padding:4px 7px;font-size:12px;width:100%;background:#fafafa"
       oninput="dmards[${idx}].med=this.value">
     </td>
-    <td><input type="text" id="dose${idx}" placeholder="Ex: 20mg/sem" value="${d.dose||''}" oninput="dmards[${idx}].dose=this.value"></td>
-    <td><input type="date" value="${d.dataInicio||''}" oninput="dmards[${idx}].dataInicio=this.value"></td>
-    <td><input type="date" value="${d.dataSuspensao||''}" oninput="dmards[${idx}].dataSuspensao=this.value"></td>
+    <td><textarea class="dose-flex" id="dose${idx}" rows="1" placeholder="Ex: 20mg/semana VO" oninput="dmards[${idx}].dose=this.value;autoResizeDoseTA(this)">${escHtml(d.dose)}</textarea></td>
+    <td><div class="campo-data-flex">
+      <input type="${d.dataInicioMes?'month':'date'}" id="di${idx}" value="${d.dataInicioMes?(d.dataInicio||'').slice(0,7):(d.dataInicio||'')}" oninput="dmards[${idx}].dataInicio=this.value">
+      <button type="button" class="btn-toggle-data" onclick="toggleDatePrecision(document.getElementById('di${idx}'),this,dmards[${idx}],'dataInicioMes')" title="${d.dataInicioMes?'Usar data completa':'Usar somente mês/ano'}">${d.dataInicioMes?'📅':'🗓️'}</button>
+    </div></td>
+    <td><div class="campo-data-flex">
+      <input type="${d.dataSuspensaoMes?'month':'date'}" id="ds${idx}" value="${d.dataSuspensaoMes?(d.dataSuspensao||'').slice(0,7):(d.dataSuspensao||'')}" oninput="dmards[${idx}].dataSuspensao=this.value">
+      <button type="button" class="btn-toggle-data" onclick="toggleDatePrecision(document.getElementById('ds${idx}'),this,dmards[${idx}],'dataSuspensaoMes')" title="${d.dataSuspensaoMes?'Usar data completa':'Usar somente mês/ano'}">${d.dataSuspensaoMes?'📅':'🗓️'}</button>
+    </div></td>
     <td>
       <select onchange="onMotivoSelect(this,${idx})"><option value="">Motivo...</option>${mots}</select>
       <input type="text" id="motivoDet${idx}" placeholder="Descreva o motivo..." value="${d.motivoDetalhe||''}"
@@ -2625,6 +2671,7 @@ function addDmard(data) {
     </td>
     <td><button class="btn-danger" onclick="rmDmard(${idx})">✕</button></td>`;
   tb.appendChild(tr);
+  autoResizeDoseTA(tr.querySelector('.dose-flex'));
   updDutMsg();
 }
 
@@ -3993,7 +4040,7 @@ function revisorRelatorio() {
 
   // ── Datas inconsistentes ─────────────────────────────────────────────────────
   dmards.filter(x=>x.med&&x.dataInicio&&x.dataSuspensao).forEach(x=>{
-    if(x.dataSuspensao < x.dataInicio)
+    if(new Date(x.dataSuspensao) < new Date(x.dataInicio))
       error(`Medicamento "${x.med}": data de suspensão (${fmtDate(x.dataSuspensao)}) é anterior à data de início (${fmtDate(x.dataInicio)}).`);
   });
 
