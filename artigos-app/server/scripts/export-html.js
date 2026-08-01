@@ -2950,6 +2950,23 @@ findingsModeSearchBtn.addEventListener('click', () => {
 const findingsDiseaseSelect = document.getElementById('findingsDiseaseSelect');
 const findingsByDiseaseContent = document.getElementById('findingsByDiseaseContent');
 const RARE_WORD_RE = /raro|incomum|infrequente|ocasional/i;
+const FREQ_WORD_RANK = {
+  'muito frequente': 95, 'na maioria dos casos': 90, 'na maioria dos pacientes': 90,
+  'frequente': 65, 'comum': 60, 'pouco comum': 25, 'ocasional': 20, 'infrequente': 15,
+  'incomum': 15, 'raro': 5, 'muito raro': 2, 'extremamente raro': 1,
+};
+// Converte "10-45%" / "83,1%" / "comum" num numero comparavel, para permitir
+// ordenar por frequencia decrescente — na busca por achado (ex.: "quais
+// doencas causam aortite"), o diferencial mais provavel deve aparecer
+// primeiro, nao em ordem alfabetica de doenca.
+function frequencyRank(text) {
+  if (!text) return -1;
+  const nums = (text.match(/\d+(?:[.,]\d+)?/g) || []).map((n) => parseFloat(n.replace(',', '.')));
+  if (nums.length > 0) return nums.reduce((a, b) => a + b, 0) / nums.length;
+  const lower = text.toLowerCase();
+  const wordKey = Object.keys(FREQ_WORD_RANK).find((w) => lower.includes(w));
+  return wordKey ? FREQ_WORD_RANK[wordKey] : 0;
+}
 
 function populateFindingsDiseaseSelect() {
   const opts = optionsForFilterKey('disease');
@@ -3093,18 +3110,31 @@ function renderFindingsBySearch() {
   // à doença de fato relevante para aquela linha específica — não é mais a
   // lista completa de tags do artigo (era essa mistura que causava o antigo
   // bug de o anti-dsDNA aparecer "de todas as doenças reumáticas").
-  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
-  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Doença</th><th>Achado</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
-  rows.slice().sort((x, y) => (x.diseases[0] || '').localeCompare(y.diseases[0] || '', 'pt')).forEach((r) => {
-    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
-      '<td>' + escapeHtml(r.diseases.join(', ')) + '</td>' +
-      '<td>' + escapeHtml(r.finding) + ' <span class="finding-type-tag">' + escapeHtml(r.type) + '</span></td>' +
-      '<td>' + sourceContextCell(r, null) + '</td>' +
-      '<td>' + findingFrequencyCell(r) + '</td>' +
-      '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
-    '</tr>';
+  // Um termo de busca amplo (ex.: "aorta") pode casar com vários achados
+  // distintos (Aneurisma aórtico, Acometimento de aorta ascendente etc.) —
+  // agrupar por achado evita misturá-los, e ordenar cada grupo por
+  // frequência decrescente coloca o diagnóstico diferencial mais provável
+  // no topo, em vez de ordem alfabética de doença.
+  const byFinding = new Map();
+  rows.forEach((r) => {
+    if (!byFinding.has(r.finding)) byFinding.set(r.finding, []);
+    byFinding.get(r.finding).push(r);
   });
-  html += '</tbody></table></div>';
+  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
+  [...byFinding.keys()].sort((a, b) => a.localeCompare(b, 'pt')).forEach((finding) => {
+    const group = byFinding.get(finding);
+    html += '<h4 class="findings-group-heading">' + escapeHtml(finding) + ' <span class="finding-type-tag">' + escapeHtml(group[0].type) + '</span> <span class="citation-text">(' + group.length + ')</span></h4>';
+    html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Doença</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+    group.slice().sort((x, y) => frequencyRank(y.frequencyText) - frequencyRank(x.frequencyText)).forEach((r) => {
+      html += '<tr class="source-row" data-id="' + r.articleId + '">' +
+        '<td><b>' + escapeHtml(r.diseases.join(', ')) + '</b></td>' +
+        '<td>' + sourceContextCell(r, null) + '</td>' +
+        '<td>' + findingFrequencyCell(r) + '</td>' +
+        '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
   findingsBySearchContent.innerHTML = html;
   findingsBySearchContent.querySelectorAll('.source-row').forEach((row) => {
     row.addEventListener('click', () => openModal(Number(row.dataset.id)));
