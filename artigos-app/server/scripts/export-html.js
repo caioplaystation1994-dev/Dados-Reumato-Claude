@@ -264,6 +264,91 @@ const FINDING_DICT = {
   'AVC/evento isquêmico': { type: 'clínico', aliases: ['acidente vascular cerebral', 'infarto cerebral'] },
 };
 
+// Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
+// SECUNDÁRIA do artigo está de fato sendo discutida perto de um achado —
+// necessário porque artigos de revisão amplos (ex.: "The eye in systemic
+// inflammatory diseases") citam várias doenças no mesmo texto, e um achado
+// sobre a doença X não pode ser marcado como sendo também sobre a doença Y só
+// porque o artigo tem Y na lista de secondary_diseases. Aliases com 5
+// caracteres ou menos usam limite de palavra (\b) para não casar como
+// substring de outra palavra.
+const DISEASE_MENTION_ALIASES = {
+  'Aortite': ['aortite'],
+  'Arterite de Células Gigantes': ['arterite de celulas gigantes', 'arterite temporal', 'acg'],
+  'Arterite de Takayasu': ['takayasu'],
+  'Artrite Idiopática Juvenil Sistêmica': ['artrite idiopatica juvenil sistemica', 'still juvenil'],
+  'Artrite Reumatoide': ['artrite reumatoide'],
+  'Dermatomiosite Juvenil': ['dermatomiosite juvenil'],
+  'Displasia Fibromuscular': ['displasia fibromuscular'],
+  'Doença Inflamatória Intestinal': ['doenca inflamatoria intestinal'],
+  'Doença Relacionada a IgG4': ['relacionada a igg4', 'igg4-rd', 'igg4-related'],
+  'Doença de Behçet': ['behcet'],
+  'Doença de Graves': ['doenca de graves', 'orbitopatia de graves'],
+  'Doença de Still do Adulto': ['still do adulto'],
+  'Doença de Vogt-Koyanagi-Harada': ['vogt-koyanagi-harada', 'vkh'],
+  'Eritema Nodoso': ['eritema nodoso'],
+  'Esclerite': ['esclerite'],
+  'Esclerose Múltipla': ['esclerose multipla'],
+  'Esclerose Sistêmica': ['esclerose sistemica', 'esclerodermia'],
+  'Espondiloartrite Axial': ['espondiloartrite axial'],
+  'Granulomatose Eosinofílica com Poliangiite': ['granulomatose eosinofilica', 'churg-strauss', 'egpa'],
+  'Granulomatose com Poliangiite': ['granulomatose com poliangiite', 'wegener', 'gpa'],
+  'Hipertensão Arterial Pulmonar': ['hipertensao arterial pulmonar'],
+  'Imunodeficiência Comum Variável': ['imunodeficiencia comum variavel'],
+  'Lúpus Eritematoso Sistêmico': ['lupus eritematoso', 'les'],
+  'Miopatias': ['miopatia inflamatoria', 'miosite'],
+  'Nefropatia por IgA': ['nefropatia por iga'],
+  'Osteoartrite': ['osteoartrite'],
+  'Osteoporose': ['osteoporose'],
+  'Pioderma Gangrenoso': ['pioderma gangrenoso'],
+  'Sarcoidose': ['sarcoidose'],
+  'Síndrome Antifosfolípide': ['sindrome antifosfolipide', 'anticorpo antifosfolipide'],
+  'Síndrome de Ativação Macrofágica': ['ativacao macrofagica'],
+  'Síndrome de Sjögren': ['sjogren'],
+  'Trombose Relacionada à Gestação': ['trombose', 'gestacao'],
+  'Uveíte': ['uveite'],
+  'Vasculite Crioglobulinêmica': ['crioglobulinemica', 'crioglobulinemia'],
+  'Vasculite por IgA (Púrpura de Henoch-Schönlein)': ['henoch-schonlein', 'henoch schonlein', 'purpura de henoch'],
+  'Vasculites Sistêmicas': ['vasculites sistemicas'],
+};
+
+function diseaseMentionedNearby(normWindowText, disease) {
+  const aliases = DISEASE_MENTION_ALIASES[disease];
+  if (!aliases) return false;
+  return aliases.some((alias) => {
+    if (alias.length <= 5) return new RegExp('\\b' + alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(normWindowText);
+    return normWindowText.includes(alias);
+  });
+}
+
+// Textos de revisao/diferencial costumam empilhar uma doenca por frase
+// (ex.: "Sarcoidose acomete o olho em 7-79%... . Doenca relacionada a IgG4
+// foi reconhecida como causa..."). Um raio fixo de caracteres cruza essa
+// fronteira e mistura o contexto de uma frase com o de outra vizinha; usar a
+// propria frase (delimitada por pontuacao final) e um limite muito mais
+// fiel ao que o texto realmente afirma.
+function sentenceWindow(text, hitIndex, hitLen) {
+  const before = text.slice(0, hitIndex);
+  const lastEnd = Math.max(before.lastIndexOf('. '), before.lastIndexOf('.\n'), before.lastIndexOf('? '), before.lastIndexOf('! '), before.lastIndexOf(': '), before.lastIndexOf('; '));
+  const start = lastEnd === -1 ? 0 : lastEnd + 2;
+  const afterStart = hitIndex + hitLen;
+  const after = text.slice(afterStart);
+  const relEnd = after.search(/[.!?;](\s|$)/);
+  const end = relEnd === -1 ? text.length : afterStart + relEnd + 1;
+  return text.slice(start, end);
+}
+
+// Restringe as doencas secundarias de um achado/medicacao as que sao de fato
+// mencionadas perto do trecho onde o termo foi encontrado; a doenca primaria
+// do artigo e sempre mantida (e o tema central do artigo, mesmo quando nao
+// repetida em toda secao).
+function localizeDiseases(allDiseases, primaryDisease, windowText) {
+  if (allDiseases.length <= 1) return allDiseases;
+  const normWindow = nodeNormalizeText(windowText);
+  const confirmed = allDiseases.filter((d) => d === primaryDisease || diseaseMentionedNearby(normWindow, d));
+  return confirmed.length > 0 ? confirmed : (primaryDisease ? [primaryDisease] : allDiseases);
+}
+
 const LINE_PATTERNS = [
   { key: 'primeira-linha', re: /primeira[\s-]linha|1[ªa][\s-]linha|terapia inicial|tratamento inicial/i },
   { key: 'segunda-linha', re: /segunda[\s-]linha|2[ªa][\s-]linha/i },
@@ -331,7 +416,7 @@ function nearestMatch(text, hitIndex, hitLen, re, afterRadius, beforeRadius) {
   return null;
 }
 
-function extractMedicationsFromArticle(a) {
+function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
     scanDictionary(chunk.text, DRUG_DICT).forEach((hit) => {
@@ -348,6 +433,7 @@ function extractMedicationsFromArticle(a) {
           dose: doseMatch ? doseMatch.trim() : null,
           line,
           heading: chunk.heading || null,
+          diseases: localizeDiseases(allDiseases, primaryDisease, (chunk.heading || '') + ' ' + sentenceWindow(chunk.text, hit.index, hit.len)),
           snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
         });
       }
@@ -356,7 +442,7 @@ function extractMedicationsFromArticle(a) {
   return [...best.values()];
 }
 
-function extractFindingsFromArticle(a) {
+function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
     scanDictionary(chunk.text, FINDING_DICT).forEach((hit) => {
@@ -373,6 +459,7 @@ function extractFindingsFromArticle(a) {
           frequencyText: pct ? pct.trim() : (word || null),
           specificity: spec ? spec.toLowerCase() : null,
           heading: chunk.heading || null,
+          diseases: localizeDiseases(allDiseases, primaryDisease, (chunk.heading || '') + ' ' + sentenceWindow(chunk.text, hit.index, hit.len)),
           snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
         });
       }
@@ -422,25 +509,26 @@ articles.forEach((a) => {
   a.section_coverage = SECTION_KEYS.filter((k) => coveredKeys.has(k));
 
   if (diseases.length === 0) return;
-  const meds = extractMedicationsFromArticle(a);
-  const finds = extractFindingsFromArticle(a);
+  const primaryDisease = a.disease || diseases[0];
+  const meds = extractMedicationsFromArticle(a, diseases, primaryDisease);
+  const finds = extractFindingsFromArticle(a, diseases, primaryDisease);
 
   // Uma linha por (artigo, medicação/achado) — nao uma por tag de doenca do
-  // artigo. O campo diseases guarda todas as tags (para filtrar na visao
-  // "por doenca"), mas a exibicao usa o heading da propria secao onde o
-  // termo foi encontrado como contexto, que e muito mais confiavel que as
-  // tags gerais do artigo (uma tag secundaria generica nao significa que
-  // aquela mencao especifica seja sobre aquela doenca).
+  // artigo. O campo diseases de cada item ja vem restrito, por
+  // localizeDiseases, as doencas secundarias que sao de fato mencionadas na
+  // propria secao do achado (a doenca primaria e sempre mantida); a exibicao
+  // ainda usa o heading da secao como contexto, que continua sendo mais
+  // confiavel que qualquer tag isolada.
   meds.forEach((m) => {
     MEDICATIONS_INDEX.push({
-      diseases, primaryDisease: a.disease || diseases[0], articleId: a.id, title: a.title || a.original_name, year: a.year,
+      diseases: m.diseases, primaryDisease, articleId: a.id, title: a.title || a.original_name, year: a.year,
       evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
       drug: m.drug, class: m.class, dose: m.dose, line: m.line, heading: m.heading, snippet: m.snippet,
     });
   });
   finds.forEach((f) => {
     FINDINGS_INDEX.push({
-      diseases, primaryDisease: a.disease || diseases[0], articleId: a.id, title: a.title || a.original_name, year: a.year,
+      diseases: f.diseases, primaryDisease, articleId: a.id, title: a.title || a.original_name, year: a.year,
       evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
       finding: f.finding, type: f.type, frequencyText: f.frequencyText, specificity: f.specificity,
       heading: f.heading, snippet: f.snippet,
