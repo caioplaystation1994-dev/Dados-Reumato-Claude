@@ -2069,16 +2069,17 @@ function removerEditoresPreview() {
   document._previewEditors = [];
 }
 
-function campoTemConteudo(fieldGroup) {
-  const campo = fieldGroup.querySelector('input, textarea, select');
-  return !!campo && (campo.value || '').trim() !== '';
+function campoEhExcluivel(fieldGroup) {
+  // Qualquer field-group com campo de formulário pode ser excluído da impressão,
+  // esteja preenchido ou vazio (ex: Endereço/Idade em branco, mas ocupando espaço).
+  return !!fieldGroup.querySelector('input, textarea, select');
 }
 
 function construirBotoesExclusao(ids) {
   ids.forEach(pid => {
     const pageEl = document.getElementById(pid);
     if (!pageEl) return;
-    const alvos = [...pageEl.querySelectorAll('.field-group')].filter(campoTemConteudo)
+    const alvos = [...pageEl.querySelectorAll('.field-group')].filter(campoEhExcluivel)
       .concat([...pageEl.querySelectorAll('.print-flat-item')]);
     alvos.forEach(el => {
       const btn = document.createElement('button');
