@@ -273,6 +273,40 @@ const FINDING_DICT = {
   'Neurite óptica': { type: 'clínico', aliases: ['neurite optica'] },
   'Mielite': { type: 'clínico', aliases: ['mielite'] },
   'AVC/evento isquêmico': { type: 'clínico', aliases: ['acidente vascular cerebral', 'infarto cerebral'] },
+  // Achados clinicos/radiologicos/anatomopatologicos adicionais, identificados
+  // por revisao ampla do corpus (varredura de termos reais por artigo) para
+  // permitir busca reversa por achado (ex.: "quao comum e vasculite cutanea e
+  // quais doencas a causam") na aba Achados > Por achado.
+  'Vasculite leucocitoclástica/de pequenos vasos': { type: 'anatomopatológico', aliases: ['vasculite leucocitoclastica', 'vasculite de pequenos vasos', 'vasculite cutanea'] },
+  'Necrose fibrinoide': { type: 'anatomopatológico', aliases: ['necrose fibrinoide'] },
+  'Granuloma/inflamação granulomatosa': { type: 'anatomopatológico', aliases: ['inflamacao granulomatosa', 'granulomas'] },
+  'Depósitos de IgA (biópsia)': { type: 'anatomopatológico', aliases: ['depositos de iga', 'deposito mesangial', 'depositos mesangiais'] },
+  'Imunocomplexos (depósitos)': { type: 'anatomopatológico', aliases: ['imunocomplexos'] },
+  'Infiltrado linfoplasmocitário': { type: 'anatomopatológico', aliases: ['infiltrado linfoplasmocitario'] },
+  'Fibrose intersticial (biópsia)': { type: 'anatomopatológico', aliases: ['fibrose intersticial'] },
+  'Capilarite pulmonar': { type: 'anatomopatológico', aliases: ['capilarite'] },
+  'Glomerulonefrite': { type: 'anatomopatológico', aliases: ['glomerulonefrite'] },
+  'Nódulos subcutâneos': { type: 'clínico', aliases: ['nodulos subcutaneos', 'nodulo subcutaneo'] },
+  'Ulceração cutânea': { type: 'clínico', aliases: ['ulceracao cutanea', 'ulcera cutanea', 'ulceras cutaneas'] },
+  'Necrose digital/gangrena': { type: 'clínico', aliases: ['necrose digital', 'gangrena'] },
+  'Petéquias/equimoses': { type: 'clínico', aliases: ['petequias', 'equimoses'] },
+  'Alopecia': { type: 'clínico', aliases: ['alopecia'] },
+  'Calcinose': { type: 'clínico', aliases: ['calcinose'] },
+  'Edema palpebral/periorbitário': { type: 'clínico', aliases: ['edema palpebral', 'edema periorbitario'] },
+  'Esplenomegalia': { type: 'clínico', aliases: ['esplenomegalia'] },
+  'Bronquiectasias': { type: 'imagem', aliases: ['bronquiectasia', 'bronquiectasias'] },
+  'Eosinofilia': { type: 'laboratorial', aliases: ['eosinofilia'] },
+  'Anemia hemolítica': { type: 'laboratorial', aliases: ['anemia hemolitica'] },
+  'Trombocitopenia': { type: 'laboratorial', aliases: ['trombocitopenia'] },
+  'Leucopenia': { type: 'laboratorial', aliases: ['leucopenia'] },
+  'Opacidade em vidro fosco': { type: 'imagem', aliases: ['opacidade em vidro fosco', 'opacidades em vidro fosco'] },
+  'Cavitação pulmonar': { type: 'imagem', aliases: ['cavitacao', 'lesao cavitaria', 'lesoes cavitarias'] },
+  'Hemorragia alveolar': { type: 'clínico', aliases: ['hemorragia alveolar'] },
+  'Sinovite': { type: 'clínico', aliases: ['sinovite'] },
+  'Entesite': { type: 'clínico', aliases: ['entesite'] },
+  'Dactilite': { type: 'clínico', aliases: ['dactilite'] },
+  'Erosão óssea': { type: 'imagem', aliases: ['erosao ossea', 'erosoes osseas'] },
+  'Edema de medula óssea': { type: 'imagem', aliases: ['edema de medula ossea'] },
 };
 
 // Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
@@ -509,6 +543,20 @@ function nearestMatch(text, hitIndex, hitLen, re, afterRadius, beforeRadius) {
   return null;
 }
 
+// "Sensibilidade de 88,2%" ou "especificidade de 92%" descrevem o desempenho
+// de um CRITERIO DIAGNOSTICO (que pode citar um achado como um dos itens
+// pontuados), nao a prevalencia do achado em si — sem esse filtro, esse tipo
+// de numero seria lido como "88,2% dos pacientes tem esse achado", o que e
+// uma leitura incorreta do texto-fonte.
+const DIAGNOSTIC_PERFORMANCE_RE = /sensibilidade|especificidade|valor preditivo/i;
+function isDiagnosticPerformanceNumber(text, hitIndex, hitLen, matchedStr) {
+  if (!matchedStr) return false;
+  const win = windowAround(text, hitIndex, hitLen, 100);
+  const idx = win.indexOf(matchedStr);
+  if (idx === -1) return false;
+  return DIAGNOSTIC_PERFORMANCE_RE.test(win.slice(Math.max(0, idx - 25), idx));
+}
+
 function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
@@ -539,7 +587,8 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
     scanDictionary(chunk.text, FINDING_DICT).forEach((hit) => {
-      const pct = nearestMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
+      let pct = nearestMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
+      if (isDiagnosticPerformanceNumber(chunk.text, hit.index, hit.len, pct)) pct = null;
       const word = pct ? null : nearestMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
       const spec = nearestMatch(chunk.text, hit.index, hit.len, SPECIFICITY_RE, 50, 25);
       const score = (pct ? 3 : 0) + (word ? 1 : 0) + (spec ? 1 : 0);
