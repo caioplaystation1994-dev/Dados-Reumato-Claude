@@ -61,6 +61,12 @@ body.modo-rapido-on::before{content:'⚡ Modo preenchimento rápido ativo — Ta
 /* ── Sugestão 5: section-label com acento lateral ── */
 .section-label{font-size:10px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.6px;margin:20px 0 8px;padding:4px 0 4px 10px;border-left:3px solid #1a56a0;border-bottom:none;background:linear-gradient(90deg,rgba(26,86,160,.06) 0%,transparent 100%);border-radius:0 4px 4px 0}
 
+/* Seções colapsáveis (só afeta a tela; impressão sempre mostra tudo) */
+.section-label.secao-colapsavel{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.section-label.secao-colapsavel::after{content:'▾';font-size:11px;color:#90cdf4;transition:transform .15s;flex-shrink:0}
+.section-label.secao-colapsavel.secao-colapsada::after{transform:rotate(-90deg)}
+body.secoes-colapsam .oculta-colapsada{display:none!important}
+
 /* Tabela de medicamentos */
 .med-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
 .med-table th{background:#1a56a0;color:#fff;padding:8px 10px;text-align:left;font-size:12px}
@@ -91,6 +97,27 @@ body.modo-rapido-on::before{content:'⚡ Modo preenchimento rápido ativo — Ta
 .btn-atalho:hover{background:#1a56a0;color:#fff;border-color:#1a56a0;transform:scale(1.04)}
 .btn-atalho.destaque-busca{box-shadow:0 0 0 2px #f6ad55}
 .atalho-grupo.oculto-busca{display:none!important}
+
+/* Medicamentos personalizados */
+.med-custom-item{display:inline-flex;align-items:center;gap:2px}
+.btn-remove-custom{background:#fff;border:1.5px solid #fca5a5;color:#dc2626;border-radius:50%;width:18px;height:18px;font-size:12px;line-height:1;cursor:pointer;margin-left:-6px;padding:0;display:flex;align-items:center;justify-content:center}
+.btn-remove-custom:hover{background:#dc2626;color:#fff;border-color:#dc2626}
+.btn-add-custom{background:none;border:1.5px dashed #90cdf4;color:#1a56a0;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-top:6px}
+.btn-add-custom:hover{background:#ebf4ff}
+.form-custom-inline{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding:10px;background:#fff;border:1px solid #cbd5e0;border-radius:8px}
+.form-custom-inline input,.form-custom-inline select{border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit}
+.form-custom-inline-row{display:flex;gap:6px}
+.form-custom-inline-row > *{flex:1}
+.form-custom-acoes{display:flex;gap:6px;justify-content:flex-end}
+.med-custom-vazio{font-size:11px;color:#a0aec0;font-style:italic}
+
+/* Exames personalizados (avulsos) */
+.exam-item-add-row{display:flex;gap:6px;padding:6px 8px;margin-top:2px}
+.exam-item-add-row input{flex:1;border:1px solid #cbd5e0;border-radius:6px;padding:5px 10px;font-size:12px}
+.btn-add-exame-custom{background:#ebf4ff;color:#1a56a0;border:1px solid #90cdf4;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-add-exame-custom:hover{background:#1a56a0;color:#fff}
+.btn-remove-exame-custom{background:none;border:none;color:#cbd5e0;font-size:14px;cursor:pointer;margin-left:auto;padding:0 4px;flex-shrink:0}
+.btn-remove-exame-custom:hover{color:#e53e3e}
 
 /* ── Pacotes de exames ───────────────────────────────── */
 .pacotes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:8px}
@@ -446,7 +473,7 @@ body.preview-live-mode{padding-bottom:64px}
 }
 </style>
 </head>
-<body>
+<body class="secoes-colapsam">
 
 <header>
   <div style="display:flex;align-items:center;gap:12px">
@@ -944,6 +971,28 @@ body.preview-live-mode{padding-bottom:64px}
           <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Clonazepam')">Clonazepam</button>
           <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Alprazolam')">Alprazolam</button>
           <button class="btn-atalho" style="border-color:#fbd38d;color:#92400e" onclick="addMedRx('Zolpidem')">Zolpidem</button>
+        </div>
+      </div>
+      <div class="atalho-grupo colapsado" id="grupo-med-custom" style="border-color:#c4b5fd;background:#faf5ff">
+        <span class="atalho-titulo" style="color:#6d28d9" onclick="toggleAtalhoGrupo(this)">⭐ Meus Medicamentos</span>
+        <div class="atalho-btns" id="med-custom-btns"></div>
+        <button type="button" class="btn-add-custom" onclick="event.stopPropagation();abrirFormMedCustom()">+ Adicionar medicamento personalizado</button>
+        <div class="form-custom-inline" id="form-med-custom" style="display:none" onclick="event.stopPropagation()">
+          <div class="form-custom-inline-row">
+            <input type="text" id="mc-nome" placeholder="Nome do medicamento">
+            <input type="text" id="mc-forma" placeholder="Apresentação (ex: 2,5mg)">
+          </div>
+          <select id="mc-via">
+            <option value="oral_continuo">Uso oral contínuo</option>
+            <option value="oral_crise">Uso oral (conforme necessário)</option>
+            <option value="sc">Uso subcutâneo</option>
+            <option value="ev">Uso endovenoso</option>
+          </select>
+          <input type="text" id="mc-instrucao" placeholder="Instrução para o paciente (ex: Tomar 1 comprimido, 1x ao dia)">
+          <div class="form-custom-acoes">
+            <button type="button" class="btn-rx-action" onclick="fecharFormMedCustom()">Cancelar</button>
+            <button type="button" class="btn-rx-action" onclick="salvarMedCustom()">💾 Salvar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1509,6 +1558,92 @@ const PACOTES_IMG = [
   }
 ];
 
+// ─── Exames avulsos personalizados (salvos pelo usuário) ──────────────────────
+// São incorporados diretamente aos arrays PACOTES_LAB/PACOTES_IMG para que toda
+// a lógica existente de coleta (impressão, Word, alertas) funcione sem alteração.
+function getExamesCustomLab() { try { return JSON.parse(localStorage.getItem('exames-custom-lab') || '[]'); } catch (e) { return []; } }
+function setExamesCustomLab(arr) { localStorage.setItem('exames-custom-lab', JSON.stringify(arr)); }
+function getExamesCustomImg() { try { return JSON.parse(localStorage.getItem('exames-custom-img') || '[]'); } catch (e) { return []; } }
+function setExamesCustomImg(arr) { localStorage.setItem('exames-custom-img', JSON.stringify(arr)); }
+
+const PKG_CUSTOM_LAB = { id: 'pkg-custom-lab', titulo: '⭐ Meus Exames', exames: getExamesCustomLab() };
+PACOTES_LAB.push(PKG_CUSTOM_LAB);
+const PKG_CUSTOM_IMG = { id: 'ipkg-custom-img', titulo: '⭐ Meus Exames', exames: getExamesCustomImg() };
+PACOTES_IMG.push(PKG_CUSTOM_IMG);
+
+function renderItemsPacoteCustomLab() {
+  const container = document.getElementById(PKG_CUSTOM_LAB.id + '-items');
+  if (!container) return;
+  const itemsHtml = PKG_CUSTOM_LAB.exames.map((e, i) => `
+    <div class="exam-item" id="${PKG_CUSTOM_LAB.id}-exam-${i}" onclick="toggleExamItem('${PKG_CUSTOM_LAB.id}',${i})">
+      <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${PKG_CUSTOM_LAB.id}',${i})">
+      <label>${e}</label>
+      <button type="button" class="btn-remove-exame-custom" title="Excluir dos meus exames" onclick="event.stopPropagation();excluirExameCustomLab(${i})">×</button>
+    </div>`).join('');
+  container.innerHTML = itemsHtml + `
+    <div class="exam-item-add-row" onclick="event.stopPropagation()">
+      <input type="text" id="novo-exame-lab" placeholder="Nome do exame…" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarExameCustomLab();}">
+      <button type="button" class="btn-add-exame-custom" onclick="adicionarExameCustomLab()">+ Adicionar</button>
+    </div>`;
+}
+
+function adicionarExameCustomLab() {
+  const inp = document.getElementById('novo-exame-lab');
+  const nome = inp?.value.trim();
+  if (!nome) return;
+  if (PKG_CUSTOM_LAB.exames.includes(nome)) { alert('Esse exame já está na sua lista.'); return; }
+  PKG_CUSTOM_LAB.exames.push(nome);
+  setExamesCustomLab(PKG_CUSTOM_LAB.exames);
+  renderItemsPacoteCustomLab();
+  toggleExamItem(PKG_CUSTOM_LAB.id, PKG_CUSTOM_LAB.exames.length - 1);
+}
+
+function excluirExameCustomLab(idx) {
+  if (!confirm('Excluir "' + PKG_CUSTOM_LAB.exames[idx] + '" dos seus exames personalizados?')) return;
+  PKG_CUSTOM_LAB.exames.splice(idx, 1);
+  setExamesCustomLab(PKG_CUSTOM_LAB.exames);
+  renderItemsPacoteCustomLab();
+}
+
+function renderItemsPacoteCustomImg() {
+  const container = document.getElementById(PKG_CUSTOM_IMG.id + '-items');
+  if (!container) return;
+  const itemsHtml = PKG_CUSTOM_IMG.exames.map((e, i) => `
+    <div class="exam-item" id="${PKG_CUSTOM_IMG.id}-exam-${i}" onclick="toggleExamItem('${PKG_CUSTOM_IMG.id}',${i})">
+      <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${PKG_CUSTOM_IMG.id}',${i})">
+      <label>${e}</label>
+      <span class="lat-btns" id="${PKG_CUSTOM_IMG.id}-lat-${i}">
+        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="D" onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'D',this)">D</button>
+        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="E" onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'E',this)">E</button>
+        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="Bil." onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'Bil.',this)">Bil.</button>
+      </span>
+      <button type="button" class="btn-remove-exame-custom" title="Excluir dos meus exames" onclick="event.stopPropagation();excluirExameCustomImg(${i})">×</button>
+    </div>`).join('');
+  container.innerHTML = itemsHtml + `
+    <div class="exam-item-add-row" onclick="event.stopPropagation()">
+      <input type="text" id="novo-exame-img" placeholder="Nome do exame…" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarExameCustomImg();}">
+      <button type="button" class="btn-add-exame-custom" onclick="adicionarExameCustomImg()">+ Adicionar</button>
+    </div>`;
+}
+
+function adicionarExameCustomImg() {
+  const inp = document.getElementById('novo-exame-img');
+  const nome = inp?.value.trim();
+  if (!nome) return;
+  if (PKG_CUSTOM_IMG.exames.includes(nome)) { alert('Esse exame já está na sua lista.'); return; }
+  PKG_CUSTOM_IMG.exames.push(nome);
+  setExamesCustomImg(PKG_CUSTOM_IMG.exames);
+  renderItemsPacoteCustomImg();
+  toggleExamItem(PKG_CUSTOM_IMG.id, PKG_CUSTOM_IMG.exames.length - 1);
+}
+
+function excluirExameCustomImg(idx) {
+  if (!confirm('Excluir "' + PKG_CUSTOM_IMG.exames[idx] + '" dos seus exames personalizados?')) return;
+  PKG_CUSTOM_IMG.exames.splice(idx, 1);
+  setExamesCustomImg(PKG_CUSTOM_IMG.exames);
+  renderItemsPacoteCustomImg();
+}
+
 // ─── Renderizar pacotes laboratoriais ─────────────────────────────────────────
 function renderPacotes() {
   const container = document.getElementById('pacotes-lab');
@@ -1985,6 +2120,7 @@ function abrirPreviewImpressao(ids, onConfirm) {
 
   ativarSimulacaoImpressao();
   document.body.classList.add('preview-live-mode');
+  document.body.classList.remove('secoes-colapsam'); // preview sempre mostra seções colapsadas por completo
   construirEditoresPreview(ids);
   construirBotoesExclusao(ids);
 
@@ -1996,6 +2132,7 @@ function finalizarPreviewImpressao() {
   removerEditoresPreview();
   removerBotoesExclusao();
   document.body.classList.remove('preview-live-mode');
+  document.body.classList.add('secoes-colapsam');
   desativarSimulacaoImpressao();
   limparImpressao();
   document._previewOnConfirm = null;
@@ -2127,10 +2264,72 @@ function filtrarMedAtalhos(q) {
   }
 }
 
+// ─── Medicamentos personalizados (avulsos, salvos pelo usuário) ───────────────
+function getMedRxCustom() {
+  try { return JSON.parse(localStorage.getItem('med-rx-custom') || '{}'); } catch (e) { return {}; }
+}
+function setMedRxCustom(obj) { localStorage.setItem('med-rx-custom', JSON.stringify(obj)); }
+function getMedRxCompleto() { return { ...MED_RX, ...getMedRxCustom() }; }
+
+function abrirFormMedCustom() {
+  document.getElementById('grupo-med-custom')?.classList.remove('colapsado');
+  const f = document.getElementById('form-med-custom');
+  if (f) { f.style.display = ''; document.getElementById('mc-nome')?.focus(); }
+}
+function fecharFormMedCustom() {
+  const f = document.getElementById('form-med-custom');
+  if (f) f.style.display = 'none';
+  ['mc-nome', 'mc-forma', 'mc-instrucao'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+function salvarMedCustom() {
+  const nome = document.getElementById('mc-nome')?.value.trim();
+  const forma = document.getElementById('mc-forma')?.value.trim();
+  const via = document.getElementById('mc-via')?.value || 'oral_continuo';
+  const instrucao = document.getElementById('mc-instrucao')?.value.trim();
+  if (!nome || !instrucao) { alert('Preencha ao menos o nome do medicamento e a instrução para o paciente.'); return; }
+  const custom = getMedRxCustom();
+  custom[nome] = { via, forma, instrucao };
+  setMedRxCustom(custom);
+  fecharFormMedCustom();
+  renderMedCustomGrupo();
+}
+function excluirMedCustom(nome) {
+  if (!confirm('Excluir "' + nome + '" dos seus medicamentos personalizados?')) return;
+  const custom = getMedRxCustom();
+  delete custom[nome];
+  setMedRxCustom(custom);
+  renderMedCustomGrupo();
+}
+function renderMedCustomGrupo() {
+  const wrap = document.getElementById('med-custom-btns');
+  if (!wrap) return;
+  const nomes = Object.keys(getMedRxCustom());
+  if (!nomes.length) { wrap.innerHTML = '<span class="med-custom-vazio">Nenhum medicamento personalizado ainda.</span>'; return; }
+  wrap.innerHTML = '';
+  nomes.forEach(nome => {
+    const item = document.createElement('span');
+    item.className = 'med-custom-item';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-atalho';
+    btn.textContent = nome;
+    btn.onclick = () => addMedRx(nome);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'btn-remove-custom';
+    del.title = 'Excluir dos meus medicamentos';
+    del.textContent = '×';
+    del.onclick = (e) => { e.stopPropagation(); excluirMedCustom(nome); };
+    item.appendChild(btn);
+    item.appendChild(del);
+    wrap.appendChild(item);
+  });
+}
+
 // ─── Medicamentos ──────────────────────────────────────────────────────────────
 function addMedRx(nome) {
   const ta = document.getElementById('rx-prescricao');
-  const med = MED_RX[nome];
+  const med = getMedRxCompleto()[nome];
   const textoAtual = ta.value;
   const linhasNumeradas = textoAtual.split('\n').filter(l => /^\d+\./.test(l.trim()));
   const n = linhasNumeradas.length + 1;
@@ -2166,7 +2365,7 @@ function addMedNome(nome) { addMedRx(nome); }
 // ─── Receituário Especial ──────────────────────────────────────────────────────
 function addMedEsp(nome) {
   const ta = document.getElementById('re-prescricao');
-  const med = MED_RX[nome];
+  const med = getMedRxCompleto()[nome];
   const textoAtual = ta.value;
   const n = textoAtual.split('\n').filter(l => /^\d+\./.test(l.trim())).length + 1;
   const nomeForma = nome + (med?.forma ? ' ' + med.forma : '');
@@ -2891,9 +3090,34 @@ function attachUndoRedo(el) {
   });
 }
 
+// ─── Seções colapsáveis (clicar no título esconde/mostra o conteúdo) ─────────
+// Puramente uma conveniência de tela: a impressão/pré-visualização sempre
+// mostra tudo, independente do estado de colapso (ver abrirPreviewImpressao).
+function toggleSecao(label) {
+  const colapsada = label.classList.toggle('secao-colapsada');
+  let el = label.nextElementSibling;
+  while (el && !el.classList.contains('section-label')) {
+    el.classList.toggle('oculta-colapsada', colapsada);
+    el = el.nextElementSibling;
+  }
+}
+
+function initSecoesColapsaveis() {
+  document.querySelectorAll('.section-label').forEach(label => {
+    if (label.dataset.colapsavelInit) return;
+    label.dataset.colapsavelInit = '1';
+    label.classList.add('secao-colapsavel');
+    label.addEventListener('click', () => toggleSecao(label));
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   renderPacotes();
   renderPacotesImg();
+  renderItemsPacoteCustomLab();
+  renderItemsPacoteCustomImg();
+  renderMedCustomGrupo();
+  initSecoesColapsaveis();
   atualizarLocal();
   // Restaurar médico/CRM do localStorage
   const savedMedico = localStorage.getItem('g-medico');
@@ -3898,7 +4122,7 @@ function buscarGlobal(q) {
   CID_RHEUM.filter(([code, desc]) => desc.toLowerCase().includes(q) || code.toLowerCase().includes(q))
     .slice(0, 8).forEach(([code, desc]) => results.push({ cat: 'CID', text: code + ' — ' + desc, acao: () => selecionarCidGlobal(desc + ' – ' + code) }));
   // Medicamentos
-  Object.keys(MED_RX).filter(nome => nome.toLowerCase().includes(q))
+  Object.keys(getMedRxCompleto()).filter(nome => nome.toLowerCase().includes(q))
     .slice(0, 6).forEach(nome => results.push({ cat: 'Medicamento', text: nome, acao: () => { addMedRx(nome); fecharModal('modal-search'); } }));
   // Pacientes
   carregarPerfis().filter(p => p.nome.toLowerCase().includes(q))
