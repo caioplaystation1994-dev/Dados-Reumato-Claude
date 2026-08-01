@@ -211,7 +211,15 @@ const FINDING_DICT = {
   'IgG4 sérica elevada': { type: 'laboratorial', aliases: ['igg4 elevad', 'niveis elevados de igg4'] },
   'Proteinúria': { type: 'laboratorial', aliases: ['proteinuria'] },
   'Hematúria': { type: 'laboratorial', aliases: ['hematuria'] },
-  'Aneurisma aórtico': { type: 'imagem', aliases: ['aneurisma aortico', 'aneurisma de aorta', 'aneurisma da aorta'] },
+  'Aneurisma aórtico': { type: 'imagem', aliases: ['aneurisma aortico', 'aneurisma de aorta', 'aneurisma da aorta', 'aneurismas aorticos', 'aneurismas de aorta', 'aneurismas da aorta'] },
+  'Polimialgia reumática': { type: 'clínico', aliases: ['polimialgia reumatica'] },
+  'Astenia/síndrome constitucional': { type: 'clínico', aliases: ['astenia', 'sindrome geral', 'sindrome constitucional'] },
+  'Dor lombar inflamatória': { type: 'clínico', aliases: ['dor lombar inflamatoria'] },
+  'Claudicação de membros': { type: 'clínico', aliases: ['claudicacao de membros', 'claudicacao de extremidades'] },
+  'Acometimento de aorta ascendente': { type: 'imagem', aliases: ['aorta toracica ascendente', 'aorta ascendente'] },
+  'Acometimento de aorta descendente': { type: 'imagem', aliases: ['aorta toracica descendente', 'aorta descendente'] },
+  'Acometimento de arco aórtico': { type: 'imagem', aliases: ['arco aortico'] },
+  'Acometimento de aorta abdominal': { type: 'imagem', aliases: ['aorta abdominal'] },
   'Aneurisma de subclávia': { type: 'imagem', aliases: ['aneurisma de subclavia', 'aneurisma da subclavia', 'aneurisma subclavio'] },
   'Estenose arterial': { type: 'imagem', aliases: ['estenose arterial', 'estenose da arteria', 'estenose de arteria'] },
   'Espessamento de parede arterial': { type: 'imagem', aliases: ['espessamento da parede', 'espessamento circunferencial', 'espessamento mural'] },
@@ -330,14 +338,17 @@ function diseaseMentionedNearby(normWindowText, disease) {
 // fronteira e mistura o contexto de uma frase com o de outra vizinha; usar a
 // propria frase (delimitada por pontuacao final) e um limite muito mais
 // fiel ao que o texto realmente afirma.
+const SENTENCE_BOUNDARY_RE = /[.!?:;—]/;
 function sentenceWindow(text, hitIndex, hitLen) {
   const before = text.slice(0, hitIndex);
-  const lastEnd = Math.max(before.lastIndexOf('. '), before.lastIndexOf('.\n'), before.lastIndexOf('? '), before.lastIndexOf('! '), before.lastIndexOf(': '), before.lastIndexOf('; '));
-  const start = lastEnd === -1 ? 0 : lastEnd + 2;
+  let start = 0;
+  for (let i = before.length - 1; i >= 0; i--) {
+    if (SENTENCE_BOUNDARY_RE.test(before[i])) { start = i + 1; break; }
+  }
   const afterStart = hitIndex + hitLen;
   const after = text.slice(afterStart);
-  const relEnd = after.search(/[.!?;](\s|$)/);
-  const end = relEnd === -1 ? text.length : afterStart + relEnd + 1;
+  const m = after.match(SENTENCE_BOUNDARY_RE);
+  const end = m ? afterStart + m.index + 1 : text.length;
   return text.slice(start, end);
 }
 
@@ -350,6 +361,85 @@ function localizeDiseases(allDiseases, primaryDisease, windowText) {
   const normWindow = nodeNormalizeText(windowText);
   const confirmed = allDiseases.filter((d) => d === primaryDisease || diseaseMentionedNearby(normWindow, d));
   return confirmed.length > 0 ? confirmed : (primaryDisease ? [primaryDisease] : allDiseases);
+}
+
+// Artigos que revisam um achado/apresentação (ex.: "Aortite", "Esclerite",
+// "Eritema Nodoso") costumam trazer paragrafos de distribuicao etiologica —
+// varias doencas, cada uma com o seu proprio percentual especifico dentro da
+// mesma frase (ex.: "ACG isoladamente representou 78,5% ... e Takayasu
+// apenas 4,6%"). O FINDING_DICT generico so pegava UM percentual por termo
+// (ex.: o 83,1% da frase, que na verdade e a SOMA de ACG+Takayasu) e o
+// atribuia a todas as doencas da frase por igual — errado, porque cada
+// doenca tem seu proprio numero. Esta funcao varre cada mencao de doenca
+// reconhecida e so aceita o percentual que aparece BEM colado a ela (mesma
+// clausula, sem cruzar ';' ou '.'), nunca reaproveitando um numero que na
+// verdade pertence a doenca vizinha.
+function findDiseaseAliasHits(normText) {
+  const hits = [];
+  Object.keys(DISEASE_MENTION_ALIASES).forEach((disease) => {
+    DISEASE_MENTION_ALIASES[disease].forEach((alias) => {
+      const re = alias.length <= 5
+        ? new RegExp('\\b' + alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g')
+        : new RegExp(alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+      let m;
+      while ((m = re.exec(normText))) hits.push({ disease, index: m.index, len: m[0].length });
+    });
+  });
+  return hits;
+}
+
+// So aceita o percentual se o texto entre o nome da doenca e o numero for
+// curto (padrao "Doenca apenas/isoladamente 4,6%") ou contiver um verbo de
+// atribuicao causal ("representou", "responsavel por" etc.) — sem esse
+// filtro, uma % de RESPOSTA A TRATAMENTO ou outro dado qualquer que apareca
+// por acaso logo apos o nome da doenca (ex.: taxa de remissao de um ensaio
+// clinico) seria confundida com fatia etiologica.
+const ETIOLOGY_VERB_RE = /represent|respons[aá]vel por|correspond|somaram|contribu|constitu/i;
+function adjacentEtiologyPercent(text, hitIndex, hitLen) {
+  const after = text.slice(hitIndex + hitLen, hitIndex + hitLen + 45);
+  const cut = after.search(/[.;]/);
+  const scoped = cut === -1 ? after : after.slice(0, cut);
+  const m = scoped.match(FREQ_PCT_RE);
+  if (!m) return null;
+  const gap = scoped.slice(0, m.index);
+  if (gap.length > 20 && !ETIOLOGY_VERB_RE.test(gap)) return null;
+  return m[0].trim();
+}
+
+// Mesmo com o filtro de verbo/gap, "Doenca perto de um numero" aparece em
+// muitos contextos que NAO sao fatia etiologica — taxa de mortalidade
+// especifica por doenca, prevalencia de um achado dentro da coorte daquela
+// doenca, estatistica comparativa (X% vs Y%, p=...). So confiamos nessa
+// extracao quando a PROPRIA SECAO se anuncia como distribuicao etiologica
+// (verificado manualmente: das secoes do corpus, so as com "etiol" no
+// cabecalho realmente descrevem "doenca representou X% dos casos" — as
+// demais geraram atribuicoes erradas nos testes).
+function isEtiologyHeading(heading) {
+  return /etiol/i.test(heading || '');
+}
+
+function extractEtiologyFromArticle(a) {
+  const out = [];
+  const seen = new Set();
+  nodeGetArticleChunks(a).forEach((chunk) => {
+    if (!isEtiologyHeading(chunk.heading)) return;
+    const normText = nodeNormalizeText(chunk.text);
+    findDiseaseAliasHits(normText).forEach((hit) => {
+      if (hit.disease === a.disease) return;
+      const pct = adjacentEtiologyPercent(chunk.text, hit.index, hit.len);
+      if (!pct) return;
+      const key = hit.disease + '|' + chunk.heading;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({
+        disease: hit.disease,
+        frequencyText: pct,
+        heading: chunk.heading || null,
+        snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
+      });
+    });
+  });
+  return out;
 }
 
 const LINE_PATTERNS = [
@@ -515,6 +605,7 @@ articles.forEach((a) => {
   const primaryDisease = a.disease || diseases[0];
   const meds = extractMedicationsFromArticle(a, diseases, primaryDisease);
   const finds = extractFindingsFromArticle(a, diseases, primaryDisease);
+  const etiology = extractEtiologyFromArticle(a);
 
   // Uma linha por (artigo, medicação/achado) — nao uma por tag de doenca do
   // artigo. O campo diseases de cada item ja vem restrito, por
@@ -535,6 +626,20 @@ articles.forEach((a) => {
       evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
       finding: f.finding, type: f.type, frequencyText: f.frequencyText, specificity: f.specificity,
       heading: f.heading, snippet: f.snippet,
+    });
+  });
+  // Uma linha por doenca citada como causa especifica dentro de um paragrafo
+  // de distribuicao etiologica/diferencial do artigo (ex.: "ACG representou
+  // 78,5%"). O nome do achado usa o tema do proprio artigo (a.disease, ex.
+  // "Aortite") para deixar claro do que se trata essa fatia: lida sob a aba
+  // da doenca causadora (ex. ACG), "Causa de Aortite: 78,5%" significa que,
+  // nesta coorte de aortite, 78,5% dos casos tiveram ACG como causa.
+  etiology.forEach((e) => {
+    FINDINGS_INDEX.push({
+      diseases: [e.disease], primaryDisease, articleId: a.id, title: a.title || a.original_name, year: a.year,
+      evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
+      finding: 'Causa de ' + primaryDisease, type: 'etiológico', frequencyText: e.frequencyText, specificity: null,
+      heading: e.heading, snippet: e.snippet,
     });
   });
 });
@@ -2833,8 +2938,9 @@ function sourceContextCell(r, currentDisease) {
   return heading + (showPrimary ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '');
 }
 
-const FINDING_TYPE_ORDER = ['acometimento orgânico', 'clínico', 'laboratorial', 'imagem', 'anatomopatológico'];
+const FINDING_TYPE_ORDER = ['etiológico', 'acometimento orgânico', 'clínico', 'laboratorial', 'imagem', 'anatomopatológico'];
 const FINDING_TYPE_LABELS = {
+  'etiológico': 'Causas identificadas (diferencial etiológico)',
   'acometimento orgânico': 'Acometimento de órgãos/sítios',
   'clínico': 'Achados clínicos',
   'laboratorial': 'Achados laboratoriais',
