@@ -220,6 +220,48 @@ const FINDING_DICT = {
   'Púrpura palpável': { type: 'clínico', aliases: ['purpura palpavel'] },
   'Eritema nodoso': { type: 'clínico', aliases: ['eritema nodoso'] },
   'Xerostomia/xeroftalmia (sicca)': { type: 'clínico', aliases: ['xerostomia', 'xeroftalmia', 'sindrome sicca'] },
+  // Acometimento de órgão/sítio: identificado por revisão ampla do corpus (varredura de
+  // termos anatômicos por artigo) para capturar dados de predileção orgânica e
+  // classificação por subtipo que antes ficavam presos no texto dos artigos sem
+  // aparecer na aba de Achados (ex.: acometimento retroperitoneal/orbitário na DR-IgG4).
+  'Acometimento retroperitoneal': { type: 'acometimento orgânico', aliases: ['retroperitoneo', 'retroperitoneal', 'fibrose retroperitoneal'] },
+  'Acometimento orbitário': { type: 'acometimento orgânico', aliases: ['acometimento orbitario', 'envolvimento orbitario', 'orbita', 'orbital', 'massa orbitaria', 'pseudotumor orbitario'] },
+  'Proptose': { type: 'clínico', aliases: ['proptose'] },
+  'Acometimento meníngeo': { type: 'acometimento orgânico', aliases: ['acometimento meningeo', 'envolvimento meningeo', 'meninge', 'meningeo'] },
+  'Acometimento hipofisário': { type: 'acometimento orgânico', aliases: ['hipofise', 'pituitaria'] },
+  'Acometimento de nervos cranianos': { type: 'acometimento orgânico', aliases: ['nervo craniano', 'nervos cranianos', 'paralisia facial'] },
+  'Acometimento otológico': { type: 'acometimento orgânico', aliases: ['otite media', 'otologic', 'osso temporal', 'perda auditiva', 'surdez'] },
+  'Acometimento nasossinusal': { type: 'acometimento orgânico', aliases: ['seio paranasal', 'sinusite', 'septo nasal', 'perfuracao septal', 'deformidade em sela', 'crosta nasal', 'epistaxe'] },
+  'Gengivite em morango': { type: 'clínico', aliases: ['gengivite em morango'] },
+  'Estenose subglótica': { type: 'clínico', aliases: ['estenose subglotica'] },
+  'Acometimento laríngeo/traqueal': { type: 'acometimento orgânico', aliases: ['acometimento laringeo', 'envolvimento laringeo', 'laringe', 'traqueia'] },
+  'Acometimento pulmonar': { type: 'acometimento orgânico', aliases: ['acometimento pulmonar', 'envolvimento pulmonar', 'comprometimento pulmonar', 'pulmao'] },
+  'Fibrose pulmonar': { type: 'imagem', aliases: ['fibrose pulmonar'] },
+  'Acometimento cardíaco': { type: 'acometimento orgânico', aliases: ['acometimento cardiaco', 'envolvimento cardiaco', 'pericardio', 'miocardio'] },
+  'Acometimento mamário': { type: 'acometimento orgânico', aliases: ['acometimento mamario', 'envolvimento da mama'] },
+  'Acometimento pleural': { type: 'acometimento orgânico', aliases: ['derrame pleural', 'acometimento pleural', 'envolvimento pleural'] },
+  'Acometimento gastrointestinal': { type: 'acometimento orgânico', aliases: ['trato gastrointestinal', 'acometimento gastrointestinal', 'envolvimento gastrointestinal', 'colite'] },
+  'Acometimento hepático': { type: 'acometimento orgânico', aliases: ['acometimento hepatico', 'envolvimento hepatico', 'comprometimento hepatico'] },
+  'Acometimento esplênico': { type: 'acometimento orgânico', aliases: ['acometimento esplenico', 'envolvimento esplenico'] },
+  'Acometimento pancreático': { type: 'acometimento orgânico', aliases: ['acometimento pancreatico', 'envolvimento pancreatico', 'pancreatite autoimune'] },
+  'Colangite/vias biliares': { type: 'acometimento orgânico', aliases: ['colangite', 'via biliar', 'vias biliares'] },
+  'Acometimento renal': { type: 'acometimento orgânico', aliases: ['acometimento renal', 'envolvimento renal', 'comprometimento renal', 'nefrite tubulointersticial'] },
+  'Acometimento urogenital/prostático': { type: 'acometimento orgânico', aliases: ['acometimento urogenital', 'prostata'] },
+  'Acometimento cutâneo': { type: 'acometimento orgânico', aliases: ['acometimento cutaneo', 'envolvimento cutaneo', 'comprometimento cutaneo'] },
+  'Neuropatia periférica/mononeurite': { type: 'clínico', aliases: ['neuropatia periferica', 'sistema nervoso periferico', 'mononeurite'] },
+  'Aortite/periaortite': { type: 'acometimento orgânico', aliases: ['aortite', 'periaortite'] },
+  'Linfadenopatia': { type: 'clínico', aliases: ['linfadenopatia'] },
+  'Acometimento de medula óssea': { type: 'acometimento orgânico', aliases: ['acometimento da medula ossea', 'envolvimento da medula ossea'] },
+  'Miosite/miopatia inflamatória': { type: 'clínico', aliases: ['miosite', 'miopatia inflamatoria'] },
+  'Acometimento tireoidiano': { type: 'acometimento orgânico', aliases: ['acometimento tireoidiano', 'tireoidite'] },
+  'Sialoadenite (glândulas salivares/lacrimais)': { type: 'clínico', aliases: ['sialoadenite', 'glandula lacrimal', 'glandula salivar', 'parotida aumentada'] },
+  'Uveíte': { type: 'clínico', aliases: ['uveite'] },
+  'Episclerite': { type: 'clínico', aliases: ['episclerite'] },
+  'Esclerite': { type: 'clínico', aliases: ['esclerite'] },
+  'Conjuntivite': { type: 'clínico', aliases: ['conjuntivite'] },
+  'Neurite óptica': { type: 'clínico', aliases: ['neurite optica'] },
+  'Mielite': { type: 'clínico', aliases: ['mielite'] },
+  'AVC/evento isquêmico': { type: 'clínico', aliases: ['acidente vascular cerebral', 'infarto cerebral'] },
 };
 
 const LINE_PATTERNS = [
@@ -271,11 +313,18 @@ function detectLine(text) {
 // relacionada quando o texto tem várias estatísticas próximas umas das outras.
 function nearestMatch(text, hitIndex, hitLen, re, afterRadius, beforeRadius) {
   const afterStart = hitIndex + hitLen;
-  const afterText = text.slice(afterStart, Math.min(text.length, afterStart + afterRadius));
+  let afterText = text.slice(afterStart, Math.min(text.length, afterStart + afterRadius));
+  // Um ';' costuma separar itens independentes de uma enumeração (ex.: "doença X somou 9%
+  // (...); doença Y representou 4,6%") — sem esse corte, o número do PRÓXIMO item da lista
+  // seria erroneamente atribuído ao termo atual.
+  const semiIdx = afterText.indexOf(';');
+  if (semiIdx !== -1) afterText = afterText.slice(0, semiIdx);
   const afterMatch = afterText.match(re);
   if (afterMatch) return afterMatch[0];
   const beforeStart = Math.max(0, hitIndex - beforeRadius);
-  const beforeText = text.slice(beforeStart, hitIndex);
+  let beforeText = text.slice(beforeStart, hitIndex);
+  const lastSemiIdx = beforeText.lastIndexOf(';');
+  if (lastSemiIdx !== -1) beforeText = beforeText.slice(lastSemiIdx + 1);
   const flags = re.flags.includes('g') ? re.flags : re.flags + 'g';
   const beforeMatches = [...beforeText.matchAll(new RegExp(re.source, flags))];
   if (beforeMatches.length > 0) return beforeMatches[beforeMatches.length - 1][0];
@@ -666,6 +715,8 @@ table.data-table tr.source-row:hover td{background:#f7faff}
 .snippet-toggle{cursor:pointer;color:#1a56a0;font-size:11px;font-weight:600}
 .citation-text{font-size:11px;color:#a0aec0;font-style:italic}
 .auto-detected-note{font-size:11px;color:#b7791f;background:#fff8ed;border:1px solid #f6d9a8;border-radius:6px;padding:6px 10px;margin-bottom:10px;display:inline-block}
+.findings-group-heading{font-size:13px;font-weight:700;color:#2d3748;margin:18px 0 0;padding-top:10px;border-top:1px solid #edf2f7}
+.findings-group-heading:first-of-type{margin-top:6px;border-top:none;padding-top:0}
 .exec-summary{background:#eef4fd;border:1px solid #d6e6fb;border-radius:8px;padding:14px 16px;margin:8px 0 4px;font-size:13.5px;line-height:1.6;color:#1a3a5c}
 .exec-summary-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1a56a0;margin-bottom:6px}
 .stats-block{margin-top:10px;background:#f4f0ff;border:1px solid #d6c9f7;border-radius:8px;padding:10px 12px}
@@ -2660,10 +2711,32 @@ function findingContextCell(r, currentDisease) {
   return heading + (showPrimary ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '');
 }
 
+const FINDING_TYPE_ORDER = ['acometimento orgânico', 'clínico', 'laboratorial', 'imagem', 'anatomopatológico'];
+const FINDING_TYPE_LABELS = {
+  'acometimento orgânico': 'Acometimento de órgãos/sítios',
+  'clínico': 'Achados clínicos',
+  'laboratorial': 'Achados laboratoriais',
+  'imagem': 'Achados de imagem',
+  'anatomopatológico': 'Achados anatomopatológicos',
+};
+
+function findingsTableRows(rows, divergent, currentDisease) {
+  let html = '';
+  rows.slice().sort((x, y) => x.finding.localeCompare(y.finding, 'pt')).forEach((r) => {
+    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
+      '<td><b>' + escapeHtml(r.finding) + '</b>' + (divergent.has(r.finding) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + '</td>' +
+      '<td>' + findingContextCell(r, currentDisease) + '</td>' +
+      '<td>' + findingFrequencyCell(r) + '</td>' +
+      '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
+    '</tr>';
+  });
+  return html;
+}
+
 function renderFindingsByDisease() {
   const disease = findingsDiseaseSelect.value;
   if (!disease) {
-    findingsByDiseaseContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver todo achado clínico, laboratorial, de imagem ou anatomopatológico já documentado nos artigos desta biblioteca sobre ela.</div>';
+    findingsByDiseaseContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver todo achado clínico, laboratorial, de imagem, anatomopatológico ou de acometimento de órgão já documentado nos artigos desta biblioteca sobre ela.</div>';
     return;
   }
   const rows = FINDINGS_INDEX.filter((f) => f.diseases.includes(disease) && f.frequencyText);
@@ -2672,17 +2745,24 @@ function renderFindingsByDisease() {
     return;
   }
   const divergent = detectFrequencyDivergence(rows);
-  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
-  html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
-  rows.slice().sort((x, y) => x.finding.localeCompare(y.finding, 'pt')).forEach((r) => {
-    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
-      '<td><b>' + escapeHtml(r.finding) + '</b> <span class="finding-type-tag">' + escapeHtml(r.type) + '</span>' + (divergent.has(r.finding) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + '</td>' +
-      '<td>' + findingContextCell(r, disease) + '</td>' +
-      '<td>' + findingFrequencyCell(r) + '</td>' +
-      '<td class="snippet-cell">' + escapeHtml(r.citation) + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
-    '</tr>';
+  const byType = new Map();
+  rows.forEach((r) => {
+    const key = FINDING_TYPE_ORDER.includes(r.type) ? r.type : r.type;
+    if (!byType.has(key)) byType.set(key, []);
+    byType.get(key).push(r);
   });
-  html += '</tbody></table></div>';
+  const typeKeys = [...byType.keys()].sort((a, b) => {
+    const ia = FINDING_TYPE_ORDER.indexOf(a); const ib = FINDING_TYPE_ORDER.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+  let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
+  typeKeys.forEach((type) => {
+    const typeRows = byType.get(type);
+    html += '<h4 class="findings-group-heading">' + escapeHtml(FINDING_TYPE_LABELS[type] || type) + ' <span class="citation-text">(' + typeRows.length + ')</span></h4>';
+    html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+    html += findingsTableRows(typeRows, divergent, disease);
+    html += '</tbody></table></div>';
+  });
   findingsByDiseaseContent.innerHTML = html;
   findingsByDiseaseContent.querySelectorAll('.source-row').forEach((row) => {
     row.addEventListener('click', () => openModal(Number(row.dataset.id)));
