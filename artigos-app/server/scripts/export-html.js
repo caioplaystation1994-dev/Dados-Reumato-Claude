@@ -132,7 +132,10 @@ function nodeCategorizeHeading(heading) {
 const DOSE_RE_NODE = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|a)\s*\d+(?:[.,]\d+)?)?\s*(?:mg|g|mcg|µg|UI|ui)(?:\/kg)?(?:\/(?:dia|semana|m[eê]s|dose|m2|m²|dL|dl))?/;
 
 const DRUG_DICT = {
-  'Glicocorticoide': { class: 'Glicocorticoide', aliases: ['glicocorticoide', 'glicocorticoides', 'corticoide', 'corticoides', 'corticosteroide', 'corticosteroides', 'prednisona', 'prednisolona', 'metilprednisolona', 'dexametasona', 'budesonida'] },
+  // Glicocorticoides (prednisona, metilprednisolona etc.) foram removidos de
+  // proposito: sao usados de forma quase universal em praticamente toda
+  // doenca reumatica inflamatoria, entao lista-los como "linha de tratamento"
+  // nao ajuda a diferenciar terapias — so gera ruido repetido em toda doenca.
   'Metotrexato': { class: 'DMARD sintético convencional', aliases: ['metotrexato'] },
   'Leflunomida': { class: 'DMARD sintético convencional', aliases: ['leflunomida'] },
   'Sulfassalazina': { class: 'DMARD sintético convencional', aliases: ['sulfassalazina'] },
@@ -790,6 +793,9 @@ table.data-table td{padding:8px 10px;border-bottom:1px solid #eef1f5;vertical-al
 table.data-table tr:last-child td{border-bottom:none}
 table.data-table tr.source-row{cursor:pointer}
 table.data-table tr.source-row:hover td{background:#f7faff}
+.source-link{cursor:pointer}
+.source-link:hover{color:#1a56a0;text-decoration:underline}
+.source-sep{border:none;border-top:1px dashed #e2e8f0;margin:6px 0}
 .line-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
 .line-pill.primeira-linha{background:#e2efe3;color:#276749}
 .line-pill.segunda-linha{background:#dbeafe;color:#1e3a8a}
@@ -2697,16 +2703,28 @@ function populateTreatmentDiseaseSelect() {
   if (prev && opts.includes(prev)) treatmentDiseaseSelect.value = prev;
 }
 
+// Um mesmo farmaco frequentemente e citado por varios artigos da mesma
+// doenca — antes disso virava uma linha por artigo (repetindo o nome do
+// farmaco varias vezes na tabela). Agora cada farmaco vira UMA linha, com as
+// fontes/contexto/dose/evidencia de cada artigo listados lado a lado, na
+// mesma ordem, dentro das celulas dessa linha.
 function treatmentTableRows(rows, divergent, currentDisease) {
+  const byDrug = new Map();
+  rows.forEach((r) => {
+    if (!byDrug.has(r.drug)) byDrug.set(r.drug, []);
+    byDrug.get(r.drug).push(r);
+  });
   let html = '';
-  rows.slice().sort((x, y) => x.drug.localeCompare(y.drug, 'pt')).forEach((r) => {
-    const isDivergent = divergent.has(r.drug);
-    html += '<tr class="source-row" data-id="' + r.articleId + '">' +
-      '<td><b>' + escapeHtml(r.drug) + '</b>' + (isDivergent ? '<span class="divergence-flag" title="Outro artigo desta biblioteca cita este fármaco em linha diferente">⚠ divergente</span>' : '') + '<br><span class="citation-text">' + escapeHtml(r.class || '') + '</span></td>' +
-      '<td>' + sourceContextCell(r, currentDisease) + '</td>' +
-      '<td>' + (r.dose ? escapeHtml(r.dose) : '<span class="citation-text">não detectada</span>') + '</td>' +
-      '<td>' + (r.evidenceLevel ? escapeHtml(r.evidenceLevel) : '—') + (r.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(r.sampleSizeHint) + ')</span>' : '') + '</td>' +
-      '<td class="snippet-cell">' + escapeHtml(r.citation) + '</td>' +
+  [...byDrug.keys()].sort((a, b) => a.localeCompare(b, 'pt')).forEach((drug) => {
+    const sources = byDrug.get(drug);
+    const isDivergent = divergent.has(drug);
+    const sep = '<hr class="source-sep">';
+    html += '<tr>' +
+      '<td><b>' + escapeHtml(drug) + '</b>' + (isDivergent ? '<span class="divergence-flag" title="Outro artigo desta biblioteca cita este fármaco em linha diferente">⚠ divergente</span>' : '') + '<br><span class="citation-text">' + escapeHtml(sources[0].class || '') + '</span></td>' +
+      '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, currentDisease) + '</div>').join(sep) + '</td>' +
+      '<td>' + sources.map((s) => '<div>' + (s.dose ? escapeHtml(s.dose) : '<span class="citation-text">não detectada</span>') + '</div>').join(sep) + '</td>' +
+      '<td>' + sources.map((s) => '<div>' + (s.evidenceLevel ? escapeHtml(s.evidenceLevel) : '—') + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
+      '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + '</div>').join(sep) + '</td>' +
     '</tr>';
   });
   return html;
@@ -2734,15 +2752,16 @@ function renderTreatmentTab() {
   let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte de cada linha antes de usar clinicamente.</div>';
   lineKeys.forEach((line) => {
     const lineRows = byLine.get(line);
-    html += '<h4 class="findings-group-heading"><span class="line-pill ' + linePillClass(line) + '">' + escapeHtml(lineLabel(line)) + '</span> <span class="citation-text">(' + lineRows.length + ')</span></h4>';
+    const drugCount = new Set(lineRows.map((r) => r.drug)).size;
+    html += '<h4 class="findings-group-heading"><span class="line-pill ' + linePillClass(line) + '">' + escapeHtml(lineLabel(line)) + '</span> <span class="citation-text">(' + drugCount + ' fármaco' + (drugCount !== 1 ? 's' : '') + ')</span></h4>';
     html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fármaco / classe</th><th>Contexto (seção do artigo)</th><th>Dose detectada</th><th>Evidência</th><th>Fonte</th></tr></thead><tbody>';
     html += treatmentTableRows(lineRows, divergent, disease);
     html += '</tbody></table></div>';
   });
 
   treatmentContent.innerHTML = html;
-  treatmentContent.querySelectorAll('.source-row').forEach((row) => {
-    row.addEventListener('click', () => openModal(Number(row.dataset.id)));
+  treatmentContent.querySelectorAll('.source-link').forEach((el) => {
+    el.addEventListener('click', () => openModal(Number(el.dataset.id)));
   });
 }
 treatmentDiseaseSelect.addEventListener('change', renderTreatmentTab);
