@@ -452,6 +452,23 @@ body{padding-bottom:64px}
 body.preview-live-mode .btn-excluir-item{display:flex}
 .excluido-impressao{display:none!important}
 
+/* Exclusão permanente direto na página do formulário (não depende de abrir
+   a pré-visualização). Fica visível ao passar o mouse sobre o campo; quando
+   marcado, o campo fica esmaecido/riscado na tela como aviso, e some de
+   verdade da impressão (real e da pré-visualização). */
+.btn-excluir-permanente{position:absolute;top:-8px;right:-8px;background:#fff;border:1.5px solid #cbd5e0;color:#a0aec0;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;opacity:0;transition:.15s;z-index:15;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.field-group:hover .btn-excluir-permanente,
+.field-group .btn-excluir-permanente.ativo{opacity:1}
+.btn-excluir-permanente.ativo{background:#fed7d7;border-color:#fc8181;color:#c53030}
+.field-group.excluido-manual{opacity:.45}
+.field-group.excluido-manual label{text-decoration:line-through}
+.field-group.excluido-manual input,
+.field-group.excluido-manual textarea,
+.field-group.excluido-manual select{text-decoration:line-through;background:#f7fafc!important}
+@media print{
+  .excluido-manual{display:none!important}
+}
+
 .preview-editor{display:none}
 body.preview-live-mode .preview-editor{display:block;white-space:pre-wrap;outline:none;min-height:1.4em;border-radius:4px;padding:2px 4px;margin:-2px -4px}
 body.preview-live-mode .preview-editor:focus{box-shadow:0 0 0 2px rgba(246,173,85,.45)}
@@ -1863,6 +1880,11 @@ function clearForm(pageId) {
   page.querySelectorAll('input[type=text],input[type=date],input[type=number],textarea,select').forEach(el => {
     if (!el.classList.contains('pacote-check')) el.value = '';
   });
+  page.querySelectorAll('.field-group.excluido-manual').forEach(fg => {
+    fg.classList.remove('excluido-manual');
+    const btn = fg.querySelector('.btn-excluir-permanente');
+    if (btn) atualizarBotaoExclusaoPermanente(btn, fg);
+  });
   // checkboxes (lab e imagem)
   page.querySelectorAll('.exam-item').forEach(el => {
     el.classList.remove('checked');
@@ -2101,6 +2123,37 @@ function removerEditoresPreview() {
     div.remove();
   });
   document._previewEditors = [];
+}
+
+// ─── Exclusão permanente de campos direto na página do formulário ────────────
+// Diferente do botão × da pré-visualização (que só existe durante a sessão de
+// impressão), este fica sempre visível ao passar o mouse sobre o campo, na
+// tela normal de edição — não depende de abrir nenhum modo especial.
+function atualizarBotaoExclusaoPermanente(btn, fg) {
+  const excluido = fg.classList.contains('excluido-manual');
+  btn.textContent = excluido ? '↺' : '×';
+  btn.title = excluido
+    ? 'Este campo NÃO será impresso — clique para incluí-lo de novo'
+    : 'Excluir este campo da impressão';
+  btn.classList.toggle('ativo', excluido);
+}
+
+function construirBotoesExclusaoPermanentes() {
+  document.querySelectorAll('.page .field-group').forEach(fg => {
+    if (!fg.querySelector('input, textarea, select')) return;
+    if (fg.querySelector('.btn-excluir-permanente')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-excluir-permanente no-print';
+    atualizarBotaoExclusaoPermanente(btn, fg);
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fg.classList.toggle('excluido-manual');
+      atualizarBotaoExclusaoPermanente(btn, fg);
+    };
+    fg.appendChild(btn);
+  });
 }
 
 function campoEhExcluivel(fieldGroup) {
@@ -3158,6 +3211,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderItemsPacoteCustomImg();
   renderMedCustomGrupo();
   initSecoesColapsaveis();
+  construirBotoesExclusaoPermanentes();
   atualizarLocal();
   // Restaurar médico/CRM do localStorage
   const savedMedico = localStorage.getItem('g-medico');
