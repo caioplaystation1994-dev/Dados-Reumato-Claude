@@ -2729,6 +2729,23 @@ function setGlobalExamDate(val) {
   });
 }
 
+function toggleRxTorax(incluido) {
+  const resultInp = document.getElementById('exam_result_rx_torax');
+  const dateInp = document.getElementById('exam_date_ind_rx_torax');
+  if (!exams['rx_torax']) return;
+  if (!incluido) {
+    exams['rx_torax']._savedResult = exams['rx_torax'].result;
+    exams['rx_torax'].result = '';
+    if (resultInp) { resultInp.value = ''; resultInp.disabled = true; }
+    if (dateInp) dateInp.disabled = true;
+  } else {
+    const saved = exams['rx_torax']._savedResult || '';
+    exams['rx_torax'].result = saved;
+    if (resultInp) { resultInp.value = saved; resultInp.disabled = false; }
+    if (dateInp) dateInp.disabled = false;
+  }
+}
+
 function setSorolGroupDate(val) {
   sorolDateGlobal = val;
   SOROL_IDS.forEach(id=>{
@@ -2800,14 +2817,29 @@ function buildExams() {
           <input type="radio" name="ppd_tipo" value="ppd" ${fd.ppd_tipo==='ppd'?'checked':''} onchange="fd.ppd_tipo='ppd'"> PPD (Tuberculina)
         </label>
       </div>` : '';
+    const incluirToggle = e.id === 'rx_torax' ? `
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748b;margin-bottom:4px;cursor:pointer">
+        <input type="checkbox" id="rx_torax_incluir" checked onchange="toggleRxTorax(this.checked)" style="width:auto">
+        Incluir este exame no laudo (pode ser substituído por TC de tórax em "Outros Exames de Imagem")
+      </label>` : '';
     row.innerHTML=`<div>
         <div class="exam-label">${e.l}${e.req?'<span class="badge-req">Obrigatório</span>':''}</div>
+        ${incluirToggle}
         ${ppdTypeSelector}
         <input type="text" id="exam_result_${e.id}" placeholder="Resultado" value="${e.defaultResult||''}" oninput="${resultOninput}" style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fafafa">
       </div>
       ${dateField}`;
     c.appendChild(row);
   });
+
+  const outrosLabDiv = document.createElement('div');
+  outrosLabDiv.style.cssText = 'margin-top:6px;margin-bottom:12px;padding:12px 14px;background:#fafafa;border:1px solid #e2e8f0;border-radius:8px;';
+  outrosLabDiv.innerHTML = `
+    <div style="font-weight:600;color:#1a56a0;font-size:13px;margin-bottom:4px;">📝 Outros exames laboratoriais</div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:8px;">Inclua aqui qualquer exame não listado acima (um por linha) — inclusive sorologias ou IGRA adicionais, se preferir.</div>
+    <textarea id="lab_outros_texto" rows="4" placeholder="Ex: Vitamina D 18 ng/mL&#10;Ferritina 340 ng/mL" oninput="fd.lab_outros_texto=this.value" style="width:100%;padding:8px;border:1px solid #cbd5e0;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;font-family:inherit"></textarea>`;
+  c.appendChild(outrosLabDiv);
+  outrosLabDiv.querySelector('textarea').value = fd.lab_outros_texto || '';
 
   const ppd_alert = document.createElement('div');
   ppd_alert.id = 'ppd-alert';
@@ -2865,9 +2897,9 @@ function addImagem(data) {
     </div>
     <div>
       <div class="exam-label">Laudo / Resultado</div>
-      <input type="text" placeholder="Ex: Erosões em metacarpofalangeanas bilaterais" value="${imagens[idx].laudo}"
-        oninput="imagens[${idx}].laudo=this.value;if(typeof updOPAnalysisPanel==='function')updOPAnalysisPanel()"
-        style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fff">
+      <textarea placeholder="Ex: Erosões em metacarpofalangeanas bilaterais.&#10;Redução do espaço articular nas IFPs acometidas." rows="1"
+        oninput="imagens[${idx}].laudo=this.value;autoResizeDoseTA(this);if(typeof updOPAnalysisPanel==='function')updOPAnalysisPanel()"
+        style="border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:12px;width:100%;background:#fff;font-family:inherit;resize:vertical;min-height:32px;line-height:1.4"></textarea>
     </div>
     <div>
       <div class="exam-label">Data</div>
@@ -2879,6 +2911,9 @@ function addImagem(data) {
       <button class="btn-danger" onclick="rmImagem(${idx})">✕</button>
     </div>`;
   c.appendChild(row);
+  const laudoTA = row.querySelector('textarea');
+  laudoTA.value = imagens[idx].laudo || '';
+  autoResizeDoseTA(laudoTA);
 }
 
 function rmImagem(idx) {
@@ -3128,7 +3163,7 @@ function narrative() {
 // ─── HELPERS NARRATIVA CLÍNICA ───────────────────────────────────────────────
 function buildLabLine() {
   const lines = buildLabLines();
-  return [lines.frAnticcp, lines.sorologias, lines.igra, lines.laboratoriais].filter(Boolean).join('\n');
+  return [lines.frAnticcp, lines.sorologias, lines.igra, lines.laboratoriais, lines.outros].filter(Boolean).join('\n');
 }
 
 function stripLabUnits(s) {
@@ -3224,7 +3259,9 @@ function buildLabLines() {
     return g.date ? `(${fmtDate(g.date)})\n${line}` : line;
   }).join('\n');
 
-  return {frAnticcp, sorologias, igra, rxTorax, laboratoriais, labGroups};
+  const outros = (fd.lab_outros_texto || '').trim();
+
+  return {frAnticcp, sorologias, igra, rxTorax, laboratoriais, labGroups, outros};
 }
 
 function buildScoreLine() {
@@ -3541,7 +3578,7 @@ function buildPreview() {
   let imgSection = '';
   imagens.filter(i=>i.tipo).forEach(img => {
     imgSection += `<p style="margin:12px 0 2px"><strong>${img.tipo}${img.data?' — '+fmtDate(img.data):''}</strong></p>`;
-    if(img.laudo) imgSection += `<p style="margin:0 0 4px;line-height:1.6">${img.laudo}</p>`;
+    if(img.laudo) imgSection += `<p style="margin:0 0 4px;line-height:1.6;white-space:pre-wrap">${escHtml(img.laudo).replace(/\n/g,'<br>')}</p>`;
   });
 
   const pStyle = 'style="font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c"';
@@ -3583,6 +3620,7 @@ function buildPreview() {
           <p style="margin-top:${g.date?'2':'4'}px;font-size:13px">${g.items.join(' / ')}</p>
         `).join('') : ''}
         ${labLines.rxTorax ? `<p style="margin-top:10px;font-size:13px">${labLines.rxTorax}</p>` : ''}
+        ${labLines.outros ? `<p style="margin-top:10px;font-size:13px;white-space:pre-wrap">${escHtml(labLines.outros).replace(/\n/g,'<br>')}</p>` : ''}
 
         ${imgSection ? `<div style="margin-top:14px">${imgSection}</div>` : ''}
 
@@ -3743,6 +3781,7 @@ function genPDF() {
     });
   }
   if(labLines.rxTorax){checkPage(10);txt(labLines.rxTorax,10,false);nl(2);}
+  if(labLines.outros){checkPage(10);txt(labLines.outros,10,false);nl(2);}
 
   // ── Imagens ──────────────────────────────────────────────────────────────────
   imagens.filter(i=>i.tipo).forEach(img=>{
@@ -3832,6 +3871,7 @@ function genDOCX() {
   children.push(h2('4. EXAMES PRÉ-AUTORIZAÇÃO'));
   if(eRows.length>0) children.push(tbl(['Exame','Resultado','Data'],eRows));
   else children.push(p('Nenhum exame laboratorial registrado.'));
+  if(fd.lab_outros_texto && fd.lab_outros_texto.trim()) children.push(p('Outros exames: '+fd.lab_outros_texto.trim().replace(/\n+/g,'; ')));
   const imgRowsW=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
   if(imgRowsW.length>0){children.push(p('Exames de Imagem:'));children.push(tbl(['Exame','Laudo','Data'],imgRowsW));}
   children.push(h2('5. CRITÉRIOS ANS/DUT ATENDIDOS'));
