@@ -441,21 +441,12 @@ body{padding-bottom:64px}
 .search-empty{font-size:13px;color:#a0aec0;text-align:center;padding:20px}
 
 </style>
-<!-- Estilos exclusivos do modo de pré-visualização ao vivo. Este bloco NÃO é
-     duplicado/convertido pela função ativarSimulacaoImpressao() — por isso as
-     regras aqui usam a classe body.preview-live-mode (screen) em vez de
-     @media print, exceto onde precisamos garantir que algo NUNCA apareça na
-     impressão real (botões de exclusão, barra de ferramentas). -->
+<!-- Exclusão permanente de campos direto na página do formulário -->
 <style id="preview-interativo-style">
 .field-group,.print-flat-item{position:relative}
-.btn-excluir-item{display:none;position:absolute;top:-8px;right:-8px;background:#e53e3e;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:13px;line-height:1;cursor:pointer;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.35);align-items:center;justify-content:center}
-body.preview-live-mode .btn-excluir-item{display:flex}
-.excluido-impressao{display:none!important}
 
-/* Exclusão permanente direto na página do formulário (não depende de abrir
-   a pré-visualização). Fica visível ao passar o mouse sobre o campo; quando
-   marcado, o campo fica esmaecido/riscado na tela como aviso, e some de
-   verdade da impressão (real e da pré-visualização). */
+/* Fica visível ao passar o mouse sobre o campo; quando marcado, o campo fica
+   esmaecido/riscado na tela como aviso, e some de verdade da impressão. */
 .btn-excluir-permanente{position:absolute;top:-8px;right:-8px;background:#fff;border:1.5px solid #cbd5e0;color:#a0aec0;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;opacity:0;transition:.15s;z-index:15;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.15)}
 .field-group:hover .btn-excluir-permanente,
 .field-group .btn-excluir-permanente.ativo{opacity:1}
@@ -467,60 +458,6 @@ body.preview-live-mode .btn-excluir-item{display:flex}
 .field-group.excluido-manual select{text-decoration:line-through;background:#f7fafc!important}
 @media print{
   .excluido-manual{display:none!important}
-}
-
-.preview-editor{display:none}
-body.preview-live-mode .preview-editor{display:block;white-space:pre-wrap;outline:none;min-height:1.4em;border-radius:4px;padding:2px 4px;margin:-2px -4px}
-body.preview-live-mode .preview-editor:focus{box-shadow:0 0 0 2px rgba(246,173,85,.45)}
-body.preview-live-mode .preview-editor:hover{background:rgba(246,173,85,.08)}
-body.preview-live-mode textarea.tem-preview-editor{display:none!important}
-
-/* Contorno tracejado sutil em todo campo durante a pré-visualização, para que
-   nenhum campo (mesmo vazio, sem borda no visual de impressão) pareça "sumir"
-   da tela. Nunca aparece na impressão real (ver @media print abaixo). */
-body.preview-live-mode .field-group input,
-body.preview-live-mode .field-group select,
-body.preview-live-mode .field-group > .cid-wrap > input{
-  border:1px dashed #cbd5e0!important;
-  min-height:1.7em;
-  border-radius:4px;
-}
-body.preview-live-mode .field-group{min-height:1.4em}
-
-.preview-toolbar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(26,54,100,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;padding:10px 20px;align-items:center;gap:16px;z-index:400;box-shadow:0 -1px 0 rgba(255,255,255,.08),0 -4px 20px rgba(0,0,0,.25);flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.1)}
-body.preview-live-mode .preview-toolbar{display:flex}
-.preview-toolbar-info{flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px}
-.preview-toolbar-info strong{font-size:13px}
-.preview-toolbar-dica{font-size:11px;color:#93c5fd}
-.preview-toolbar-acoes{display:flex;gap:8px;flex-wrap:wrap}
-.btn-preview-negrito{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
-.btn-preview-negrito:hover{background:rgba(255,255,255,.25)}
-.btn-preview-cancelar{background:transparent;color:#fecaca;border:1.5px solid rgba(254,202,202,.5);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
-.btn-preview-cancelar:hover{background:rgba(254,202,202,.12)}
-.btn-preview-confirmar{background:#2563eb;color:#fff;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(37,99,235,.4)}
-.btn-preview-confirmar:hover{background:#1d4ed8}
-
-body.preview-live-mode{padding-bottom:64px}
-
-/* Na tela, o .doc-wrapper simula uma folha A4 inteira (min-height:25cm) para
-   empurrar a assinatura/rodapé para o fim da página impressa — mas isso cria
-   um vão enorme em branco no meio da pré-visualização quando o documento tem
-   pouco conteúdo, dando a impressão de que algo quebrou. Durante a edição na
-   tela, mostramos só o conteúdo real (altura natural); a folha A4 completa
-   volta a valer exclusivamente na impressão de verdade, abaixo. */
-body.preview-live-mode .doc-wrapper{min-height:unset!important}
-body.preview-live-mode .signature-line,
-body.preview-live-mode .print-rodape{margin-top:24px!important}
-
-@media print{
-  .btn-excluir-item,.preview-toolbar{display:none!important}
-  body.preview-live-mode .field-group input,
-  body.preview-live-mode .field-group select,
-  body.preview-live-mode .field-group > .cid-wrap > input{border:none!important;min-height:unset!important}
-  body.preview-live-mode .field-group{min-height:unset!important}
-  body.preview-live-mode .doc-wrapper{min-height:25cm!important}
-  body.preview-live-mode .signature-line,
-  body.preview-live-mode .print-rodape{margin-top:auto!important}
 }
 </style>
 </head>
@@ -631,18 +568,6 @@ body.preview-live-mode .print-rodape{margin-top:24px!important}
   </div>
 </div>
 
-<!-- ======================== BARRA DE PRÉ-VISUALIZAÇÃO DE IMPRESSÃO ======================== -->
-<div class="preview-toolbar" id="preview-toolbar">
-  <div class="preview-toolbar-info">
-    <strong>🖨️ Pré-visualização de Impressão <span style="opacity:.55;font-weight:400;font-size:10px">build 2026-08-01-d</span></strong>
-    <span class="preview-toolbar-dica">Edite o texto livremente · passe o mouse sobre um campo e clique no × para removê-lo desta impressão · selecione um trecho e clique em Negrito para destacar</span>
-  </div>
-  <div class="preview-toolbar-acoes">
-    <button class="btn-preview-negrito" onclick="aplicarNegritoSelecao()">🖊 Negrito na seleção</button>
-    <button class="btn-preview-cancelar" onclick="cancelarPreviewImpressao()">Cancelar</button>
-    <button class="btn-preview-confirmar" onclick="confirmarPreviewImpressao()">🖨️ Confirmar e Imprimir</button>
-  </div>
-</div>
 
 <!-- ======================== BARRA DE SELEÇÃO ======================== -->
 <div class="barra-selecao">
@@ -1935,6 +1860,10 @@ function clearForm(pageId) {
 const ESPECIAIS_PRINT = ['print-hlab27','print-igra'];
 
 function prepararImpressao(ids) {
+  // Seções colapsadas na tela sempre imprimem por completo, independente do
+  // estado de colapso — o colapso é só uma conveniência de visualização.
+  document.body.classList.remove('secoes-colapsam');
+
   document.querySelectorAll('.page').forEach(el => el.classList.remove('print-selected'));
   ids.forEach(id => document.getElementById(id)?.classList.add('print-selected'));
 
@@ -2041,88 +1970,11 @@ function limparImpressao() {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('print-selected'));
   document.querySelectorAll('.pacote').forEach(p => p.classList.remove('sem-selecao'));
   document.querySelectorAll('.oculto-impressao').forEach(el => el.classList.remove('oculto-impressao'));
+  document.body.classList.add('secoes-colapsam');
   if (document._tituloOriginal !== undefined) {
     document.title = document._tituloOriginal;
     delete document._tituloOriginal;
   }
-}
-
-// ─── Pré-visualização de impressão (ao vivo, editável) ─────────────────────────
-// Em vez de clonar a página para um iframe somente-leitura, a pré-visualização
-// agora reaproveita os elementos REAIS do documento: injeta uma cópia das
-// regras de @media print convertidas para @media screen (fazendo apenas as
-// páginas selecionadas aparecerem, exatamente como sairiam impressas), e
-// acrescenta controles interativos (botões de exclusão, editor com negrito)
-// que nunca aparecem na impressão real de fato.
-document._previewOnConfirm = null;
-document._previewIds = [];
-document._previewEditors = [];
-document._previewExclusoes = [];
-
-function ativarSimulacaoImpressao() {
-  if (document.getElementById('preview-simulacao-style')) return;
-  const estilosOriginais = [...document.querySelectorAll('style')]
-    .filter(s => s.id !== 'preview-interativo-style')
-    .map(s => s.textContent).join('\n');
-  const estilosSimulados = estilosOriginais.replace(/@media\s+print/g, '@media screen');
-  const styleEl = document.createElement('style');
-  styleEl.id = 'preview-simulacao-style';
-  styleEl.textContent = estilosSimulados;
-  document.head.appendChild(styleEl);
-}
-
-function desativarSimulacaoImpressao() {
-  document.getElementById('preview-simulacao-style')?.remove();
-}
-
-function escaparHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function converterTextoParaHtmlPreview(texto) {
-  return escaparHtml(texto)
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
-}
-
-function converterHtmlParaTextoPreview(html) {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  div.querySelectorAll('div, p').forEach(el => el.insertAdjacentHTML('beforebegin', '<br>'));
-  div.querySelectorAll('strong, b').forEach(el => { el.replaceWith('**' + el.textContent + '**'); });
-  const bruto = div.innerHTML
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/?(div|p)[^>]*>/gi, '');
-  const tmp = document.createElement('textarea');
-  tmp.innerHTML = bruto;
-  return tmp.value.replace(/^\n+/, '');
-}
-
-function construirEditoresPreview(ids) {
-  ids.forEach(pid => {
-    document.getElementById(pid)?.querySelectorAll('textarea').forEach(ta => {
-      if (!ta.value.trim()) return;
-      const div = document.createElement('div');
-      div.className = 'preview-editor';
-      div.contentEditable = 'true';
-      div.innerHTML = converterTextoParaHtmlPreview(ta.value);
-      div.addEventListener('input', () => {
-        ta.value = converterHtmlParaTextoPreview(div.innerHTML);
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
-      });
-      ta.classList.add('tem-preview-editor');
-      ta.insertAdjacentElement('afterend', div);
-      document._previewEditors.push({ ta, div });
-    });
-  });
-}
-
-function removerEditoresPreview() {
-  document._previewEditors.forEach(({ ta, div }) => {
-    ta.classList.remove('tem-preview-editor');
-    div.remove();
-  });
-  document._previewEditors = [];
 }
 
 // ─── Exclusão permanente de campos direto na página do formulário ────────────
@@ -2156,106 +2008,20 @@ function construirBotoesExclusaoPermanentes() {
   });
 }
 
-function campoEhExcluivel(fieldGroup) {
-  // Inputs/selects podem ser excluídos mesmo vazios (ex: Endereço/Idade em
-  // branco, mas que ainda ocupam espaço visual na impressão). Já uma textarea
-  // vazia já some sozinha da impressão (:placeholder-shown), então não faz
-  // sentido dar um botão de exclusão "flutuando" sobre um campo que nem
-  // aparece — isso é o que causava os × soltos sem caixa nenhuma por perto.
-  if (fieldGroup.querySelector('input, select')) return true;
-  const ta = fieldGroup.querySelector('textarea');
-  return !!ta && ta.value.trim() !== '';
-}
-
-function construirBotoesExclusao(ids) {
-  ids.forEach(pid => {
-    const pageEl = document.getElementById(pid);
-    if (!pageEl) return;
-    const alvos = [...pageEl.querySelectorAll('.field-group')].filter(campoEhExcluivel)
-      .concat([...pageEl.querySelectorAll('.print-flat-item')]);
-    alvos.forEach(el => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn-excluir-item';
-      btn.title = 'Remover desta impressão';
-      btn.textContent = '×';
-      btn.onclick = () => el.classList.add('excluido-impressao');
-      el.appendChild(btn);
-      document._previewExclusoes.push(el);
-    });
-  });
-}
-
-function removerBotoesExclusao() {
-  document._previewExclusoes.forEach(el => {
-    el.querySelectorAll('.btn-excluir-item').forEach(b => b.remove());
-    el.classList.remove('excluido-impressao');
-  });
-  document._previewExclusoes = [];
-}
-
-function aplicarNegritoSelecao() {
-  const sel = window.getSelection();
-  const noAncora = sel && sel.anchorNode;
-  const dentroDoEditor = noAncora && (noAncora.nodeType === 1 ? noAncora : noAncora.parentElement)?.closest('.preview-editor');
-  if (!sel || sel.isCollapsed || !dentroDoEditor) {
-    alert('Selecione um trecho de texto dentro da pré-visualização (dê um clique no campo, selecione o trecho) e clique novamente em "Negrito na seleção".');
-    return;
-  }
-  document.execCommand('bold');
-  dentroDoEditor.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
-function abrirPreviewImpressao(ids, onConfirm) {
-  prepararImpressao(ids);
-  document._previewOnConfirm = onConfirm || null;
-  document._previewIds = ids;
-
-  ativarSimulacaoImpressao();
-  document.body.classList.add('preview-live-mode');
-  document.body.classList.remove('secoes-colapsam'); // preview sempre mostra seções colapsadas por completo
-  construirEditoresPreview(ids);
-  construirBotoesExclusao(ids);
-
-  const primeiraPagina = document.getElementById(ids[0]);
-  primeiraPagina?.scrollIntoView({ behavior: 'instant', block: 'start' });
-}
-
-function finalizarPreviewImpressao() {
-  removerEditoresPreview();
-  removerBotoesExclusao();
-  document.body.classList.remove('preview-live-mode');
-  document.body.classList.add('secoes-colapsam');
-  desativarSimulacaoImpressao();
-  limparImpressao();
-  document._previewOnConfirm = null;
-  document._previewIds = [];
-}
-
-function cancelarPreviewImpressao() {
-  finalizarPreviewImpressao();
-}
-
-function confirmarPreviewImpressao() {
-  const onConfirm = document._previewOnConfirm;
-  try {
-    window.print();
-    if (typeof onConfirm === 'function') onConfirm();
-  } finally {
-    finalizarPreviewImpressao();
-  }
-}
-
 // ─── Impressão individual ──────────────────────────────────────────────────────
 function printDoc(pageId) {
   const nomes = {'relatorio':'Relatório Médico','receita':'Receita Médica','exames-lab':'Exames Laboratoriais','exames-img':'Exames de Imagem'};
-  abrirPreviewImpressao([pageId], () => {
+  prepararImpressao([pageId]);
+  try {
+    window.print();
     const pac = v('rel-nome') || v('rx-nome') || v('lab-nome') || v('img-nome') || '—';
     registrarLog('Impressão: ' + (nomes[pageId]||pageId), pac, '');
     if (pageId === 'relatorio') salvarHistorico();
     if (pageId === 'receita') salvarReceitaHistorico();
     if (pageId === 'exames-img') salvarImgExamesHistorico();
-  });
+  } finally {
+    limparImpressao();
+  }
 }
 
 // ─── Posologias habituais dos atalhos de receita ──────────────────────────────
@@ -2519,7 +2285,12 @@ function limparRecEsp() {
 
 function imprimirRecEsp() {
   sincRecEsp();
-  abrirPreviewImpressao(['receita-especial']);
+  prepararImpressao(['receita-especial']);
+  try {
+    window.print();
+  } finally {
+    limparImpressao();
+  }
 }
 
 // ─── Helpers Word ──────────────────────────────────────────────────────────────
@@ -2934,11 +2705,15 @@ function selecionados() {
 function imprimirSelecionados() {
   const sel = selecionados();
   if (!sel.length) { alert('Selecione ao menos um documento na barra inferior.'); return; }
-  abrirPreviewImpressao(sel, () => {
+  prepararImpressao(sel);
+  try {
+    window.print();
     if (sel.includes('relatorio')) salvarHistorico();
     if (sel.includes('receita')) salvarReceitaHistorico();
     if (sel.includes('exames-img')) salvarImgExamesHistorico();
-  });
+  } finally {
+    limparImpressao();
+  }
 }
 
 async function baixarWordSelecionados() {
@@ -3184,8 +2959,8 @@ function attachUndoRedo(el) {
 }
 
 // ─── Seções colapsáveis (clicar no título esconde/mostra o conteúdo) ─────────
-// Puramente uma conveniência de tela: a impressão/pré-visualização sempre
-// mostra tudo, independente do estado de colapso (ver abrirPreviewImpressao).
+// Puramente uma conveniência de tela: a impressão sempre mostra tudo,
+// independente do estado de colapso (ver prepararImpressao/limparImpressao).
 function toggleSecao(label) {
   const colapsada = label.classList.toggle('secao-colapsada');
   let el = label.nextElementSibling;
