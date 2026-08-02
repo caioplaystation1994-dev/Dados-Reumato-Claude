@@ -62,5 +62,8 @@ if (!columns.includes('evidence_level')) {
 if (!columns.includes('clinical_applicability')) {
   db.exec('ALTER TABLE articles ADD COLUMN clinical_applicability TEXT');
 }
+if (!columns.includes('extracted_tables')) {
+  db.exec('ALTER TABLE articles ADD COLUMN extracted_tables TEXT');
+}
 
 module.exports = db;

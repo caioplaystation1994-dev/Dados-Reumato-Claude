@@ -21,7 +21,7 @@ const outPath = path.resolve(positional[0] || path.join(__dirname, '..', '..', '
 const articles = db
   .prepare(
     `SELECT id, title, authors, year, disease, topics, summary, detailed_summary, full_text, status, original_name,
-     secondary_diseases, subtopic, evidence_level, clinical_applicability, filename
+     secondary_diseases, subtopic, evidence_level, clinical_applicability, filename, extracted_tables
      FROM articles ORDER BY created_at DESC`
   )
   .all();
@@ -1155,6 +1155,8 @@ table.data-table tr.source-row{cursor:pointer}
 table.data-table tr.source-row:hover td{background:#f7faff}
 .source-link{cursor:pointer}
 .source-link:hover{color:#1a56a0;text-decoration:underline}
+.extracted-table-label{font-size:11px;font-weight:700;color:#4a5568;margin:14px 0 4px}
+table.extracted-table th,table.extracted-table td{white-space:nowrap}
 .source-sep{border:none;border-top:1px dashed #e2e8f0;margin:6px 0}
 .line-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
 .line-pill.primeira-linha{background:#e2efe3;color:#276749}
@@ -2435,6 +2437,35 @@ function buildFullTextHtml(a) {
     '<div id="fulltextContent" class="fulltext-content">' + escapeHtml(cleaned) + '</div>';
 }
 
+// ---------- Tabelas extraídas automaticamente do PDF ----------
+function parseExtractedTables(a) {
+  if (!a.extracted_tables) return [];
+  try {
+    const parsed = JSON.parse(a.extracted_tables);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function buildTablesHtml(a) {
+  const tables = parseExtractedTables(a);
+  if (tables.length === 0) return '';
+  const note = '<div class="auto-detected-note">⚠️ Tabelas extraídas automaticamente do PDF — podem ter células desalinhadas ou perder a legenda original; confira o PDF quando a leitura parecer estranha.</div>';
+  const tablesHtml = tables.map((t) => {
+    const rows = Array.isArray(t.rows) ? t.rows : [];
+    if (rows.length === 0) return '';
+    const [headerRow, ...bodyRows] = rows;
+    const theadHtml = '<thead><tr>' + headerRow.map((c) => '<th>' + escapeHtml(c || '').replace(/\\n/g, '<br>') + '</th>').join('') + '</tr></thead>';
+    const tbodyHtml = '<tbody>' + bodyRows.map((r) =>
+      '<tr>' + r.map((c) => '<td>' + escapeHtml(c || '').replace(/\\n/g, '<br>') + '</td>').join('') + '</tr>'
+    ).join('') + '</tbody>';
+    return '<div class="extracted-table-label">Tabela detectada na página ' + t.page + '</div>' +
+      '<div class="data-table-wrap"><table class="data-table extracted-table">' + theadHtml + tbodyHtml + '</table></div>';
+  }).join('');
+  return note + tablesHtml;
+}
+
 function setupFullTextSearch() {
   const input = document.getElementById('fulltextSearchInput');
   const countEl = document.getElementById('fulltextMatchCount');
@@ -2507,6 +2538,10 @@ function openModal(id) {
     renderSummaryBody(a) +
     renderRelatedBox(a) +
     buildPdfActionsHtml(a) +
+    (parseExtractedTables(a).length > 0
+      ? '<div class="fulltext-toggle-row"><button type="button" id="toggleExtractedTables" class="btn-secondary">📊 Ver tabelas do artigo</button></div>' +
+        '<div id="extractedTablesSection" class="fulltext-section" style="display:none">' + buildTablesHtml(a) + '</div>'
+      : '') +
     '<div class="fulltext-toggle-row"><button type="button" id="toggleFullText" class="btn-secondary">📖 Ler artigo completo</button></div>' +
     '<div id="fullTextSection" class="fulltext-section" style="display:none">' + buildFullTextHtml(a) + '</div>';
 
@@ -2529,6 +2564,16 @@ function openModal(id) {
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
+
+  const tablesToggleBtn = modalBody.querySelector('#toggleExtractedTables');
+  const tablesSection = modalBody.querySelector('#extractedTablesSection');
+  if (tablesToggleBtn && tablesSection) {
+    tablesToggleBtn.addEventListener('click', () => {
+      const isHidden = tablesSection.style.display === 'none';
+      tablesSection.style.display = isHidden ? 'block' : 'none';
+      tablesToggleBtn.textContent = isHidden ? '📊 Ocultar tabelas do artigo' : '📊 Ver tabelas do artigo';
+    });
+  }
 
   const pdfToggleBtn = modalBody.querySelector('#togglePdfViewer');
   if (pdfToggleBtn) {

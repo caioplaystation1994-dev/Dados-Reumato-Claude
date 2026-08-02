@@ -11,6 +11,7 @@ const pdfParse = require('pdf-parse');
 
 const db = require('../db');
 const { UPLOAD_DIR } = require('../paths');
+const { extractTables } = require('./extract-tables');
 
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
@@ -70,11 +71,17 @@ async function main() {
     error = 'Nao foi possivel extrair texto do PDF (pode ser uma imagem digitalizada sem OCR).';
   }
 
-  const info = db
-    .prepare(`INSERT INTO articles (filename, original_name, full_text, status, error) VALUES (?, ?, ?, ?, ?)`)
-    .run(destFilename, originalName, fullText, status, error);
+  // Tabelas estruturadas (grade de celulas) sao um dado diferente do texto
+  // corrido acima — pdftotext/pdf-parse colam os valores numa sequencia sem
+  // preservar linhas/colunas. So tenta quando a extracao de texto deu certo,
+  // ja que um PDF ilegivel para texto tambem nao vai ter tabela extraivel.
+  const extractedTables = status !== 'erro' ? extractTables(destPath) : [];
 
-  console.log(JSON.stringify({ id: info.lastInsertRowid, status, originalName }, null, 2));
+  const info = db
+    .prepare(`INSERT INTO articles (filename, original_name, full_text, status, error, extracted_tables) VALUES (?, ?, ?, ?, ?, ?)`)
+    .run(destFilename, originalName, fullText, status, error, JSON.stringify(extractedTables));
+
+  console.log(JSON.stringify({ id: info.lastInsertRowid, status, originalName, tablesFound: extractedTables.length }, null, 2));
 }
 
 main();
