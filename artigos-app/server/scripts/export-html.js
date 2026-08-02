@@ -307,6 +307,37 @@ const FINDING_DICT = {
   'Dactilite': { type: 'clínico', aliases: ['dactilite'] },
   'Erosão óssea': { type: 'imagem', aliases: ['erosao ossea', 'erosoes osseas'] },
   'Edema de medula óssea': { type: 'imagem', aliases: ['edema de medula ossea'] },
+  // Granularidade adicional identificada em nova revisão do corpus: termos que
+  // antes ficavam sem entrada própria (e por isso invisíveis na aba Achados)
+  // ou corriam risco de ser confundidos com um achado vizinho mais genérico —
+  // ex.: nódulo pulmonar cavitado (GPA) não é o mesmo achado que micronódulo
+  // (padrão perilinfático, típico de sarcoidose), e glomerulonefrite
+  // membranosa/mesangiocapilar não são o mesmo achado que glomerulonefrite
+  // crescêntica, apesar de todas caírem sob o rótulo genérico "Glomerulonefrite".
+  'Nódulos/massas pulmonares': { type: 'imagem', aliases: ['nodulos e massas pulmonares', 'nodulos ou massas pulmonares', 'nodulos pulmonares', 'massas pulmonares', 'nodulo pulmonar'] },
+  'Micronódulos pulmonares (padrão perilinfático)': { type: 'imagem', aliases: ['micronodulos', 'micronodulo pulmonar', 'padrao micronodular'] },
+  'Glomerulonefrite membranosa': { type: 'anatomopatológico', aliases: ['glomerulonefrite membranosa', 'nefropatia membranosa'] },
+  'Glomerulonefrite mesangiocapilar/membranoproliferativa': { type: 'anatomopatológico', aliases: ['glomerulonefrite mesangiocapilar', 'mesangiocapilar', 'membranoproliferativa', 'gnmp'] },
+  'Aneurisma de artéria ilíaca': { type: 'imagem', aliases: ['aneurisma de iliaca', 'aneurisma da iliaca', 'aneurisma iliaco'] },
+  'Aneurisma de artéria carótida': { type: 'imagem', aliases: ['aneurisma de carotida', 'aneurisma da carotida', 'aneurisma carotideo'] },
+  // Demais achados encontrados na mesma revisão, sem entrada própria anterior
+  // (varredura de percentuais/estatísticas no corpo curado de cada artigo à
+  // procura de achados clínicos/laboratoriais/de imagem ainda invisíveis na
+  // aba Achados).
+  'Doença pulmonar intersticial linfocítica granulomatosa (GLILD)': { type: 'imagem', aliases: ['glild', 'doenca pulmonar intersticial linfocitica granulomatosa'] },
+  'Lesão gordurosa (RM)': { type: 'imagem', aliases: ['lesao gordurosa', 'lesoes gordurosas'] },
+  'Sindesmófitos/anquilose': { type: 'imagem', aliases: ['sindesmofito', 'sindesmofitos', 'anquilose'] },
+  'Sintomas/transtorno depressivo': { type: 'clínico', aliases: ['transtorno depressivo', 'sintomas de depressao', 'sintomas clinicos de depressao', 'depressao'] },
+  'Sintomas/transtorno de ansiedade': { type: 'clínico', aliases: ['transtorno de ansiedade', 'sintomas de ansiedade', 'sintomas clinicos de ansiedade', 'ansiedade'] },
+  'CK (creatinoquinase) elevada': { type: 'laboratorial', aliases: ['ck elevada', 'ck cronicamente elevada', 'creatinoquinase elevada', 'cpk elevada', 'hiperckemia'] },
+  'Sinéquias posteriores': { type: 'clínico', aliases: ['sinequias posteriores', 'sinequia posterior'] },
+  'Neovascularização coroideana': { type: 'clínico', aliases: ['neovascularizacao coroideana', 'neovascularizacao coroidea'] },
+  'Descolamento seroso de retina': { type: 'imagem', aliases: ['descolamento seroso de retina', 'descolamento seroso retiniano'] },
+  'Despigmentação coroideana ("sunset glow fundus")': { type: 'imagem', aliases: ['sunset glow fundus', 'despigmentacao coroideana'] },
+  'Uveíte anterior': { type: 'clínico', aliases: ['uveite anterior'] },
+  'Uveíte intermediária': { type: 'clínico', aliases: ['uveite intermediaria'] },
+  'Uveíte posterior': { type: 'clínico', aliases: ['uveite posterior'] },
+  'Panuveíte': { type: 'clínico', aliases: ['panuveite'] },
 };
 
 // Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
@@ -555,6 +586,31 @@ const LINE_PATTERNS = [
 const FREQ_PCT_RE = /\d{1,3}(?:[.,]\d+)?\s*(?:[-–a]\s*\d{1,3}(?:[.,]\d+)?)?\s*%/;
 const FREQ_WORD_RE = /\b(muito raro|extremamente raro|raro|incomum|infrequente|ocasional|pouco comum|comum|frequente|muito frequente|na maioria dos casos|na maioria dos pacientes)\b/i;
 const SPECIFICITY_RE = /\b(inespec[ií]fic[oa]|espec[ií]fic[oa]|sugestivo|sugere fortemente|sugere|patognom[oô]nic[oa]|achado incidental|at[ií]pic[oa])\b/i;
+
+// Achados vasculares em sítios não-mediais (subclávia, carótida, ilíaca etc.)
+// podem ocorrer de forma unilateral em qualquer um dos lados, e um aneurisma à
+// esquerda não é o mesmo achado que um à direita — sem essa checagem, os dois
+// virariam uma única linha consolidada sob o mesmo rótulo genérico (a extração
+// de achados guarda só UM resultado por nome canônico por artigo, então uma
+// mencao a "direita" e outra a "esquerda" no mesmo artigo se sobrescreveriam
+// silenciosamente). Só se aplica a achados marcados em LATERALIZABLE_FINDINGS,
+// para não lateralizar achados de linha média (ex.: aorta) onde isso não faz
+// sentido clínico.
+const LATERALITY_RE = /\b(esquerd[oa]s?|direit[oa]s?|left|right|bilateral(?:mente)?)\b/i;
+const LATERALIZABLE_FINDINGS = new Set([
+  'Aneurisma de subclávia',
+  'Aneurisma de artéria ilíaca',
+  'Aneurisma de artéria carótida',
+]);
+function lateralityQualifier(text, hitIndex, hitLen) {
+  const window = sentenceWindow(text, hitIndex, hitLen);
+  const m = window.match(LATERALITY_RE);
+  if (!m) return null;
+  const w = m[0].toLowerCase();
+  if (w.startsWith('esquerd') || w === 'left') return 'lado esquerdo';
+  if (w.startsWith('direit') || w === 'right') return 'lado direito';
+  return 'bilateral';
+}
 const SAMPLE_N_RE = /\bn\s*=\s*(\d{2,6})\b/i;
 const SAMPLE_PATIENTS_RE = /(\d{2,6})\s+(?:pacientes|casos|indiv[ií]duos)/i;
 
@@ -785,11 +841,15 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       const word = pct ? null : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
       const spec = nearestMatch(chunk.text, hit.index, hit.len, SPECIFICITY_RE, 50, 25);
       const score = (pct ? 3 : 0) + (word ? 1 : 0) + (spec ? 1 : 0);
-      const existing = best.get(hit.canonical);
+      const lateralQualifier = LATERALIZABLE_FINDINGS.has(hit.canonical)
+        ? lateralityQualifier(chunk.text, hit.index, hit.len)
+        : null;
+      const findingName = lateralQualifier ? hit.canonical + ' (' + lateralQualifier + ')' : hit.canonical;
+      const existing = best.get(findingName);
       if (!existing || score > existing.score) {
-        best.set(hit.canonical, {
+        best.set(findingName, {
           score,
-          finding: hit.canonical,
+          finding: findingName,
           type: hit.entry.type,
           frequencyText: pct ? pct.trim() : (word || null),
           specificity: spec ? spec.toLowerCase() : null,
