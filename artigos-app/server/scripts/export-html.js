@@ -866,6 +866,30 @@ function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
   return [...best.values()];
 }
 
+// O escopo "(referente a: X)" so vale a pena quando X diz algo que o rotulo
+// do achado ja nao diz. Em "Acometimento de aorta abdominal" casado pelo
+// alias "aorta abdominal", repetir o termo e puro ruido; ja em "Acometimento
+// otologico" casado por "otite media" o termo e essencial (o numero e do
+// componente, nao da categoria). A comparacao e por radical, ignorando
+// plural, para que "aneurismas aorticos" tambem seja reconhecido como
+// contido em "Aneurisma aortico".
+function stemWords(s) {
+  return new Set(
+    nodeNormalizeText(s)
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length > 2)
+      .map((w) => w.replace(/s$/, ''))
+  );
+}
+function informativeMatchedTerm(canonical, alias) {
+  if (!alias) return null;
+  const canonWords = stemWords(canonical);
+  const aliasWords = stemWords(alias);
+  if (aliasWords.size === 0) return null;
+  const contained = [...aliasWords].every((w) => canonWords.has(w));
+  return contained ? null : alias;
+}
+
 function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
@@ -923,7 +947,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
           // 22,5%" faria o leitor tomar a taxa do componente pela da
           // categoria. Guardando o termo realmente casado, a interface
           // mostra a que exatamente aquele numero se refere.
-          matchedTerm: nodeNormalizeText(hit.canonical) === nodeNormalizeText(hit.matchedAlias || '') ? null : (hit.matchedAlias || null),
+          matchedTerm: informativeMatchedTerm(hit.canonical, hit.matchedAlias),
           diseases: localizeDiseases(allDiseases, primaryDisease, (chunk.heading || '') + ' ' + sentenceWindow(chunk.text, hit.index, hit.len)),
           snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
         });
@@ -1296,6 +1320,17 @@ table.data-table.compact-studies tr.study-row:hover td{background:#f7faff}
 table.data-table.compact-studies .cite-author{display:block;font-weight:600}
 table.data-table.compact-studies .cite-title{display:block;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#718096;font-size:11.5px}
 table.data-table.compact-studies .confidence-badge{margin-left:0}
+/* Mesma compactação na visão Por doença (3 colunas, sem Contexto) */
+table.data-table.compact-findings td{padding:5px 10px;line-height:1.4}
+table.data-table.compact-findings .cite-author{display:block;font-weight:600}
+table.data-table.compact-findings .cite-title{display:block;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#718096;font-size:11.5px}
+.section-note{font-size:10.5px;color:#a0aec0;margin-top:1px}
+/* Barra de magnitude: comprimento = valor, largura = imprecisão da fonte */
+.freq-bar{display:block;position:relative;height:8px;width:92px;max-width:100%;margin-top:6px;cursor:help;
+  background:linear-gradient(#edf2f7,#edf2f7) 0 50%/100% 4px no-repeat,
+             linear-gradient(#dfe6ef,#dfe6ef) 50% 50%/1px 8px no-repeat}
+.freq-bar-fill{position:absolute;top:2px;height:4px;background:#2a78d6;border-radius:2px}
+.freq-dot{position:absolute;top:0;width:8px;height:8px;border-radius:50%;background:#2a78d6;transform:translateX(-50%)}
 .extracted-table-label{font-size:11px;font-weight:700;color:#4a5568;margin:14px 0 4px}
 table.extracted-table th,table.extracted-table td{white-space:nowrap}
 .source-sep{border:none;border-top:1px dashed #e2e8f0;margin:6px 0}
@@ -3485,7 +3520,31 @@ function findingFrequencyCell(r, isDivergent) {
     ? ' <span class="citation-text">(referente a: ' + escapeHtml(r.matchedTerm) + ')</span>'
     : '';
   return (isRare ? '<span class="specificity-tag">⚠ ' + escapeHtml(r.frequencyText) + '</span>' : escapeHtml(r.frequencyText)) +
-    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '') + scope + qualifier + confidence;
+    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '') + scope + qualifier + confidence +
+    freqBar(r.frequencyText);
+}
+
+// Barra de magnitude: "4,5%" e "78,4%" hoje têm o mesmo peso visual, e uma
+// faixa larga ("10–25%") parece tão precisa quanto um valor único. A barra
+// resolve os dois de uma vez — comprimento = magnitude, largura do bloco =
+// imprecisão declarada pela fonte. Só numérico; frequência em palavra
+// ("comum") não vira barra, porque não há valor a representar.
+function freqBar(text) {
+  const m = (text || '').match(/(\\d{1,3}(?:[.,]\\d+)?)\\s*(?:[-–a]\\s*(\\d{1,3}(?:[.,]\\d+)?))?\\s*%/);
+  if (!m) return '';
+  const a = parseFloat(m[1].replace(',', '.'));
+  const b = m[2] ? parseFloat(m[2].replace(',', '.')) : a;
+  if (isNaN(a)) return '';
+  const lo = Math.max(0, Math.min(a, isNaN(b) ? a : b));
+  const hi = Math.min(100, Math.max(a, isNaN(b) ? a : b));
+  // Posicao = magnitude nos dois casos. Valor unico vira um ponto legivel
+  // (um segmento de largura ~0 ficaria com 1px, invisivel); faixa vira um
+  // segmento cuja largura e a propria imprecisao declarada pela fonte.
+  const label = lo === hi ? lo + '% de 0–100%' : lo + '–' + hi + '% de 0–100%';
+  const inner = (hi - lo < 1)
+    ? '<span class="freq-dot" style="left:' + hi + '%"></span>'
+    : '<span class="freq-bar-fill" style="left:' + lo + '%;width:' + (hi - lo) + '%"></span>';
+  return '<span class="freq-bar" title="' + label + '">' + inner + '</span>';
 }
 
 // O contexto real de uma menção é a seção onde ela foi encontrada (heading),
@@ -3498,6 +3557,23 @@ function sourceContextCell(r, currentDisease) {
   const showPrimary = r.primaryDisease && r.primaryDisease !== currentDisease;
   const constituents = r.constituents ? '<div class="citation-text">inclui: ' + escapeHtml(r.constituents) + '</div>' : '';
   return heading + (showPrimary ? '<div class="citation-text">artigo sobre: ' + escapeHtml(r.primaryDisease) + '</div>' : '') + constituents;
+}
+
+// Seção do artigo — mantida para rastreabilidade, mas rebaixada a uma linha
+// discreta dentro da Fonte em vez de ocupar uma coluna própria.
+function sectionNote(r, currentDisease) {
+  const parts = [];
+  if (r.heading) parts.push(escapeHtml(r.heading));
+  if (r.primaryDisease && r.primaryDisease !== currentDisease) parts.push('artigo sobre: ' + escapeHtml(r.primaryDisease));
+  return parts.length ? '<div class="section-note">' + parts.join(' · ') + '</div>' : '';
+}
+
+// "inclui: ..." descreve o próprio achado (quais condições a categoria
+// etiológica reúne), então acompanha o nome do achado, não a fonte.
+function constituentsNote(sources) {
+  const withC = sources.filter((s) => s.constituents);
+  if (withC.length === 0) return '';
+  return '<div class="citation-text">inclui: ' + escapeHtml(withC[0].constituents) + '</div>';
 }
 
 const FINDING_TYPE_ORDER = ['etiológico', 'acometimento orgânico', 'clínico', 'laboratorial', 'imagem', 'anatomopatológico'];
@@ -3525,13 +3601,17 @@ function findingsTableRows(rows, divergent, currentDisease) {
   [...byFindingName.keys()].sort((a, b) => a.localeCompare(b, 'pt')).forEach((findingName) => {
     const sources = byFindingName.get(findingName).slice().sort((x, y) => frequencyRank(y.frequencyText) - frequencyRank(x.frequencyText));
     const sep = '<hr class="source-sep">';
+    // A coluna "Contexto" saiu: nesta visão a doença já está escolhida, então
+    // ela repetia a mesma seção do artigo linha após linha (quando vários
+    // achados vêm do mesmo artigo, o caso mais comum aqui). A seção continua
+    // visível, mas como linha discreta dentro da Fonte, onde não custa uma
+    // coluna inteira.
     html += '<tr>' +
-      '<td><b>' + escapeHtml(findingName) + '</b>' + (divergent.has(findingName) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + specificityRankBadge(findingName, currentDisease) + combinedSummaryNote(sources) + '</td>' +
-      '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, currentDisease) + '</div>').join(sep) + '</td>' +
+      '<td><b>' + escapeHtml(findingName) + '</b>' + (divergent.has(findingName) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + specificityRankBadge(findingName, currentDisease) + combinedSummaryNote(sources) + constituentsNote(sources) + '</td>' +
       // A % tambem e clicavel aqui: o numero e o dado que faz o leitor querer
       // conferir a fonte, entao ele proprio leva ao resumo do artigo.
       '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '" title="Abrir o resumo deste artigo">' + findingFrequencyCell(s, divergent.has(findingName)) + '</div>').join(sep) + '</td>' +
-      '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
+      '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + citationCompact(s.citation, s.sampleSizeHint) + sectionNote(s, currentDisease) + '</div>').join(sep) + '</td>' +
     '</tr>';
   });
   return html;
@@ -3563,7 +3643,7 @@ function renderFindingsByDisease() {
   typeKeys.forEach((type) => {
     const typeRows = byType.get(type);
     html += '<h4 class="findings-group-heading">' + escapeHtml(FINDING_TYPE_LABELS[type] || type) + ' <span class="citation-text">(' + typeRows.length + ')</span></h4>';
-    html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Achado</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+    html += '<div class="data-table-wrap"><table class="data-table compact-findings"><thead><tr><th>Achado</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
     html += findingsTableRows(typeRows, divergent, disease);
     html += '</tbody></table></div>';
   });
