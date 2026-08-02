@@ -1165,6 +1165,11 @@ table.data-table tr.source-row:hover td{background:#f7faff}
 .divergence-flag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fde8e8;color:#c53030;margin-left:6px}
 .finding-type-tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;background:#e6fffa;color:#065f46;border:1px solid #b2f5ea}
 .specificity-tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;background:#fff8ed;color:#975a16;margin-left:4px}
+.confidence-badge{display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:4px;cursor:help;white-space:nowrap}
+.confidence-badge.conf-alta{background:#e2efe3;color:#276749}
+.confidence-badge.conf-media{background:#fff8ed;color:#975a16}
+.confidence-badge.conf-baixa{background:#fde8e8;color:#c53030}
+.specificity-rank-badge{display:block;font-size:10.5px;font-weight:600;color:#1a56a0;margin-top:2px}
 .snippet-cell{font-size:11.5px;color:#718096;max-width:340px;line-height:1.5}
 .snippet-toggle{cursor:pointer;color:#1a56a0;font-size:11px;font-weight:600}
 .citation-text{font-size:11px;color:#a0aec0;font-style:italic}
@@ -1596,6 +1601,35 @@ function evidenceClass(level) {
   if (/Ensaio Cl[ií]nico Randomizado|Revis[aã]o Sistem[aá]tica/i.test(level)) return 'ev-strong';
   if (/Coorte|Observacional/i.test(level)) return 'ev-moderate';
   return 'ev-narrative';
+}
+
+// Combina os tres sinais ja disponiveis por linha de achado/tratamento —
+// nivel de evidencia, tamanho de amostra e se outro artigo diverge — num
+// unico indicador visual. Nao e um calculo estatistico rigoroso (seria
+// pseudo-meta-analise fingir mais precisao do que os dados tem); e so um
+// sinalizador heuristico para saber onde vale a pena conferir o
+// trecho-fonte com mais cuidado antes de usar clinicamente.
+function confidenceInfo(evidenceLevel, sampleSizeHint, isDivergent) {
+  let score = 0;
+  const rank = EVIDENCE_RANK[evidenceLevel];
+  if (rank === 0 || rank === 1) score += 2;
+  else if (rank === 2) score += 1;
+  if (sampleSizeHint) {
+    const n = parseInt(sampleSizeHint, 10);
+    if (!isNaN(n)) {
+      if (n >= 50) score += 1;
+      else if (n < 10) score -= 1;
+    }
+  }
+  if (isDivergent) score -= 2;
+  if (score >= 2) return { tier: 'alta', label: 'Confiança alta', cls: 'conf-alta' };
+  if (score <= -1) return { tier: 'baixa', label: 'Confiança baixa', cls: 'conf-baixa' };
+  return { tier: 'media', label: 'Confiança média', cls: 'conf-media' };
+}
+
+function confidenceBadge(evidenceLevel, sampleSizeHint, isDivergent) {
+  const info = confidenceInfo(evidenceLevel, sampleSizeHint, isDivergent);
+  return '<span class="confidence-badge ' + info.cls + '" title="Baseado em nível de evidência, tamanho de amostra e concordância entre artigos — não é um cálculo estatístico, apenas um sinalizador para saber onde conferir o trecho-fonte com mais atenção.">' + info.label + '</span>';
 }
 
 function tldr(str, maxLen) {
@@ -3083,7 +3117,7 @@ function treatmentTableRows(rows, divergent, currentDisease) {
       '<td><b>' + escapeHtml(drug) + '</b>' + (isDivergent ? '<span class="divergence-flag" title="Outro artigo desta biblioteca cita este fármaco em linha diferente">⚠ divergente</span>' : '') + '<br><span class="citation-text">' + escapeHtml(sources[0].class || '') + '</span></td>' +
       '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, currentDisease) + '</div>').join(sep) + '</td>' +
       '<td>' + sources.map((s) => '<div>' + (s.dose ? escapeHtml(s.dose) : '<span class="citation-text">não detectada</span>') + '</div>').join(sep) + '</td>' +
-      '<td>' + sources.map((s) => '<div>' + (s.evidenceLevel ? escapeHtml(s.evidenceLevel) : '—') + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
+      '<td>' + sources.map((s) => '<div>' + (s.evidenceLevel ? escapeHtml(s.evidenceLevel) : '—') + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + confidenceBadge(s.evidenceLevel, s.sampleSizeHint, isDivergent) + '</div>').join(sep) + '</td>' +
       '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + '</div>').join(sep) + '</td>' +
     '</tr>';
   });
@@ -3166,6 +3200,57 @@ function frequencyRank(text) {
   return wordKey ? FREQ_WORD_RANK[wordKey] : 0;
 }
 
+// Quao mais (ou menos) comum um achado e nesta doenca comparado a MEDIA das
+// outras doencas desta biblioteca que tambem o citam — util para saber, ao
+// olhar varios diferenciais de um achado, qual deles ele realmente ajuda a
+// apontar (um achado presente em 80% de uma doenca e so 5% nas demais e
+// muito mais util para diferenciar do que um presente em 40% em tudo).
+// Roda uma unica vez sobre FINDINGS_INDEX, nao a cada render.
+function computeFindingSpecificity() {
+  const byFindingDisease = new Map();
+  FINDINGS_INDEX.forEach((r) => {
+    if (!r.frequencyText) return;
+    const rank = frequencyRank(r.frequencyText);
+    if (rank < 0) return;
+    if (!byFindingDisease.has(r.finding)) byFindingDisease.set(r.finding, new Map());
+    const diseaseMap = byFindingDisease.get(r.finding);
+    r.diseases.forEach((d) => {
+      if (!diseaseMap.has(d) || rank > diseaseMap.get(d)) diseaseMap.set(d, rank);
+    });
+  });
+  const result = new Map();
+  byFindingDisease.forEach((diseaseMap, finding) => {
+    const entries = [...diseaseMap.entries()];
+    const perDisease = new Map();
+    if (entries.length === 1) {
+      perDisease.set(entries[0][0], { exclusive: true, ratio: null });
+    } else {
+      entries.forEach(([disease, value]) => {
+        const others = entries.filter(([d]) => d !== disease).map(([, v]) => v);
+        const avgOthers = others.reduce((a, b) => a + b, 0) / others.length;
+        perDisease.set(disease, { exclusive: false, ratio: avgOthers > 0 ? value / avgOthers : null });
+      });
+    }
+    result.set(finding, perDisease);
+  });
+  return result;
+}
+const FINDING_SPECIFICITY = computeFindingSpecificity();
+
+function specificityRankBadge(finding, disease) {
+  const perDisease = FINDING_SPECIFICITY.get(finding);
+  const info = perDisease && perDisease.get(disease);
+  if (!info) return '';
+  if (info.exclusive) {
+    return '<span class="specificity-rank-badge" title="Nenhuma outra doença desta biblioteca documenta este achado com frequência detectável">🎯 exclusivo nesta biblioteca</span>';
+  }
+  if (info.ratio === null) return '';
+  if (info.ratio >= 1.5) {
+    return '<span class="specificity-rank-badge" title="Frequência relatada aqui, comparada à média nas outras doenças desta biblioteca que também citam este achado">🎯 ' + info.ratio.toFixed(1).replace('.', ',') + 'x mais comum aqui</span>';
+  }
+  return '';
+}
+
 function populateFindingsDiseaseSelect() {
   const opts = optionsForFilterKey('disease');
   const prev = findingsDiseaseSelect.value;
@@ -3192,7 +3277,7 @@ function detectFrequencyDivergence(rows) {
   return divergent;
 }
 
-function findingFrequencyCell(r) {
+function findingFrequencyCell(r, isDivergent) {
   if (!r.frequencyText) return '<span class="citation-text">não detectada</span>';
   const isRare = RARE_WORD_RE.test(r.frequencyText);
   // Uma linha etiológica ("Causa de Aortite: 78,5%") é ambígua sem
@@ -3204,8 +3289,9 @@ function findingFrequencyCell(r) {
   const qualifier = r.type === 'etiológico' && r.primaryDisease
     ? ' <span class="citation-text">dos casos de ' + escapeHtml(r.primaryDisease) + '</span>'
     : '';
+  const confidence = confidenceBadge(r.evidenceLevel, r.sampleSizeHint, !!isDivergent);
   return (isRare ? '<span class="specificity-tag">⚠ ' + escapeHtml(r.frequencyText) + '</span>' : escapeHtml(r.frequencyText)) +
-    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '') + qualifier;
+    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '') + qualifier + confidence;
 }
 
 // O contexto real de uma menção é a seção onde ela foi encontrada (heading),
@@ -3246,9 +3332,9 @@ function findingsTableRows(rows, divergent, currentDisease) {
     const sources = byFindingName.get(findingName).slice().sort((x, y) => frequencyRank(y.frequencyText) - frequencyRank(x.frequencyText));
     const sep = '<hr class="source-sep">';
     html += '<tr>' +
-      '<td><b>' + escapeHtml(findingName) + '</b>' + (divergent.has(findingName) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + combinedSummaryNote(sources) + '</td>' +
+      '<td><b>' + escapeHtml(findingName) + '</b>' + (divergent.has(findingName) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + specificityRankBadge(findingName, currentDisease) + combinedSummaryNote(sources) + '</td>' +
       '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, currentDisease) + '</div>').join(sep) + '</td>' +
-      '<td>' + sources.map((s) => '<div>' + findingFrequencyCell(s) + '</div>').join(sep) + '</td>' +
+      '<td>' + sources.map((s) => '<div>' + findingFrequencyCell(s, divergent.has(findingName)) + '</div>').join(sep) + '</td>' +
       '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
     '</tr>';
   });
@@ -3347,6 +3433,7 @@ function renderFindingsBySearch() {
   let html = '<div class="auto-detected-note">⚠️ Detectado automaticamente por busca de padrão no texto — confira o trecho-fonte antes de usar clinicamente.</div>';
   [...byFinding.keys()].sort((a, b) => a.localeCompare(b, 'pt')).forEach((finding) => {
     const group = byFinding.get(finding);
+    const isDivergentFinding = detectFrequencyDivergence(group).has(finding);
     html += '<h4 class="findings-group-heading">' + escapeHtml(finding) + ' <span class="finding-type-tag">' + escapeHtml(group[0].type) + '</span> <span class="citation-text">(' + group.length + ')</span></h4>';
     html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Doença</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
     // Dentro de cada achado, agrupa por doenca: se so um artigo relata
@@ -3364,9 +3451,9 @@ function renderFindingsBySearch() {
       const sources = byDisease.get(diseaseKey).slice().sort((x, y) => frequencyRank(y.frequencyText) - frequencyRank(x.frequencyText));
       const sep = '<hr class="source-sep">';
       html += '<tr>' +
-        '<td><b>' + escapeHtml(diseaseKey) + '</b>' + combinedSummaryNote(sources) + '</td>' +
+        '<td><b>' + escapeHtml(diseaseKey) + '</b>' + specificityRankBadge(finding, sources[0].diseases[0]) + combinedSummaryNote(sources) + '</td>' +
         '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, null) + '</div>').join(sep) + '</td>' +
-        '<td>' + sources.map((s) => '<div>' + findingFrequencyCell(s) + '</div>').join(sep) + '</td>' +
+        '<td>' + sources.map((s) => '<div>' + findingFrequencyCell(s, isDivergentFinding) + '</div>').join(sep) + '</td>' +
         '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
       '</tr>';
     });
