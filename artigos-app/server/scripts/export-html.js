@@ -446,7 +446,7 @@ function findDiseaseAliasHits(normText) {
 // atribuido erradamente a "Causa infecciosa".
 function isNegatedAt(normText, hitIndex) {
   const before = normText.slice(Math.max(0, hitIndex - 20), hitIndex);
-  return /\bna[oõ][\s-]+$/.test(before);
+  return /\b(na[oõ][\s-]+|sem\s+)$/.test(before);
 }
 
 // Nem toda causa citada e uma doenca isolada rastreada nesta biblioteca —
@@ -564,6 +564,17 @@ function windowAround(text, index, len, radius) {
   return text.slice(start, end);
 }
 
+// Substring puro combinava aliases DENTRO de palavras maiores nao
+// relacionadas — bug real encontrado na revisao ampla: "mielite" (o achado)
+// casava com o meio de "osteoMIELITE" (doenca ossea, nada a ver), e
+// "miosite" com o meio de "dermatoMIOSITE" (doenca diferente). Verificar que
+// o caractere imediatamente antes/depois do match nao e letra/digito evita
+// isso sem exigir troca para regex em cada alias (mais lento para um
+// dicionario deste tamanho, rodado sobre o corpus inteiro).
+function isWordChar(ch) {
+  return ch !== undefined && /[a-z0-9]/i.test(ch);
+}
+
 function scanDictionary(chunkText, dict) {
   const normText = nodeNormalizeText(chunkText);
   const hits = [];
@@ -573,7 +584,8 @@ function scanDictionary(chunkText, dict) {
       const normAlias = nodeNormalizeText(alias);
       let idx = normText.indexOf(normAlias);
       while (idx !== -1) {
-        hits.push({ canonical, entry, index: idx, len: normAlias.length });
+        const boundaryOk = !isWordChar(normText[idx - 1]) && !isWordChar(normText[idx + normAlias.length]);
+        if (boundaryOk) hits.push({ canonical, entry, index: idx, len: normAlias.length });
         idx = normText.indexOf(normAlias, idx + normAlias.length);
       }
     });
@@ -592,45 +604,138 @@ function detectLine(text) {
 // logo depois, que é o padrão predominante em português clínico: "achado em 41%",
 // "droga 15-25mg"). Evita capturar um número/percentual de uma cláusula vizinha não
 // relacionada quando o texto tem várias estatísticas próximas umas das outras.
+// Um ';' costuma separar itens independentes de uma enumeração (ex.: "doença X somou 9%
+// (...); doença Y representou 4,6%"). Um '.' de fim de frase e a mesma coisa em escala
+// maior — sem cortar nele, um numero da PROXIMA frase (sobre outro assunto) era
+// erroneamente atribuido ao termo da frase anterior (bug real: "predileção por ...
+// vias biliares, pulmões, rins, aorta e retroperitônio. ~40% dos pacientes..." atribuiu
+// o 40% de acometimento MULTIORGANICO GERAL a "vias biliares" especificamente, quando
+// esse numero é de uma frase seguinte sobre outro assunto). O '.' só conta como fim de
+// frase quando NÃO é seguido de digito, para nunca cortar dentro de um decimal (embora
+// este corpus so use virgula para decimais, isso e uma salvaguarda).
+const CLAUSE_BOUNDARY_RE = /;|\.(?!\d)/;
+function lastClauseBoundaryIndex(str) {
+  for (let i = str.length - 1; i >= 0; i--) {
+    if (str[i] === ';' || (str[i] === '.' && !/\d/.test(str[i + 1] || ''))) return i;
+  }
+  return -1;
+}
 function nearestMatch(text, hitIndex, hitLen, re, afterRadius, beforeRadius) {
   const afterStart = hitIndex + hitLen;
   let afterText = text.slice(afterStart, Math.min(text.length, afterStart + afterRadius));
-  // Um ';' costuma separar itens independentes de uma enumeração (ex.: "doença X somou 9%
-  // (...); doença Y representou 4,6%") — sem esse corte, o número do PRÓXIMO item da lista
-  // seria erroneamente atribuído ao termo atual.
-  const semiIdx = afterText.indexOf(';');
-  if (semiIdx !== -1) afterText = afterText.slice(0, semiIdx);
+  const cutMatch = afterText.match(CLAUSE_BOUNDARY_RE);
+  if (cutMatch) afterText = afterText.slice(0, cutMatch.index);
   const afterMatch = afterText.match(re);
   if (afterMatch) return afterMatch[0];
   const beforeStart = Math.max(0, hitIndex - beforeRadius);
   let beforeText = text.slice(beforeStart, hitIndex);
-  const lastSemiIdx = beforeText.lastIndexOf(';');
-  if (lastSemiIdx !== -1) beforeText = beforeText.slice(lastSemiIdx + 1);
+  const lastBoundaryIdx = lastClauseBoundaryIndex(beforeText);
+  if (lastBoundaryIdx !== -1) beforeText = beforeText.slice(lastBoundaryIdx + 1);
   const flags = re.flags.includes('g') ? re.flags : re.flags + 'g';
   const beforeMatches = [...beforeText.matchAll(new RegExp(re.source, flags))];
   if (beforeMatches.length > 0) return beforeMatches[beforeMatches.length - 1][0];
   return null;
 }
 
-// "Sensibilidade de 88,2%" ou "especificidade de 92%" descrevem o desempenho
-// de um CRITERIO DIAGNOSTICO (que pode citar um achado como um dos itens
-// pontuados), nao a prevalencia do achado em si — sem esse filtro, esse tipo
-// de numero seria lido como "88,2% dos pacientes tem esse achado", o que e
-// uma leitura incorreta do texto-fonte.
-const DIAGNOSTIC_PERFORMANCE_RE = /sensibilidade|especificidade|valor preditivo/i;
-function isDiagnosticPerformanceNumber(text, hitIndex, hitLen, matchedStr) {
+// Duas frases distintas dentro da MESMA clausula (sem ';'/'.') tambem podem
+// misturar assuntos — ex.: "ate 75% dos pacientes COM acometimento pulmonar
+// sao assintomaticos" tem "75%" sobre ser-assintomatico-dado-que-ja-tem-o-
+// achado, nao sobre a frequencia do achado; "envolvimento X ou Y, com 10-30%
+// dos adultos progredindo para outra coisa" tem o numero sobre uma condicao
+// SEGUINTE, nao sobre X. Nesses casos o gap entre o termo e o numero e mais
+// longo E nao ha um verbo de ocorrencia ("ocorre em", "presente em",
+// "acomete") plausivelmente ligando os dois — exigir um dos dois evita reusar
+// um numero de uma clausula vizinha dentro da mesma frase.
+const OCCURRENCE_VERB_RE = /ocorr|presente|observ|acomet|afeta|identific|relatad|encontr|detect|apresent|most|revel|manifest|caracteriz/i;
+const MAX_UNVERBED_GAP = 35;
+function nearestOccurrenceMatch(text, hitIndex, hitLen, re, afterRadius, beforeRadius) {
+  const afterStart = hitIndex + hitLen;
+  let afterText = text.slice(afterStart, Math.min(text.length, afterStart + afterRadius));
+  const cutMatch = afterText.match(CLAUSE_BOUNDARY_RE);
+  if (cutMatch) afterText = afterText.slice(0, cutMatch.index);
+  const afterMatch = afterText.match(re);
+  if (afterMatch) {
+    const gap = afterText.slice(0, afterMatch.index);
+    if (gap.length <= MAX_UNVERBED_GAP || OCCURRENCE_VERB_RE.test(gap)) return afterMatch[0];
+  }
+  const beforeStart = Math.max(0, hitIndex - beforeRadius);
+  let beforeText = text.slice(beforeStart, hitIndex);
+  const lastBoundaryIdx = lastClauseBoundaryIndex(beforeText);
+  if (lastBoundaryIdx !== -1) beforeText = beforeText.slice(lastBoundaryIdx + 1);
+  const flags = re.flags.includes('g') ? re.flags : re.flags + 'g';
+  const beforeMatches = [...beforeText.matchAll(new RegExp(re.source, flags))];
+  if (beforeMatches.length > 0) {
+    const lastM = beforeMatches[beforeMatches.length - 1];
+    const gap = beforeText.slice(lastM.index + lastM[0].length);
+    // "),' logo apos o numero encontrado (ex.: "proptose (2%), diplopia,
+    // edema palpebral") indica que o parenteses daquele numero ja fechou —
+    // ele pertence ao item ANTERIOR da lista, nao ao termo atual, mesmo que
+    // o gap seja curto.
+    if (/^\)\s*,/.test(gap)) return null;
+    if (gap.length <= MAX_UNVERBED_GAP || OCCURRENCE_VERB_RE.test(gap)) return lastM[0];
+  }
+  return null;
+}
+
+// Revisao ampla do corpus encontrou varios tipos de numero que NAO sao
+// prevalencia do achado, mesmo aparecendo bem perto do termo:
+// - "sensibilidade de 88,2%" / "especificidade de 92%": desempenho de um
+//   CRITERIO DIAGNOSTICO, nao frequencia do achado;
+// - "<50% de crescentes" / ">28% teor proteico": limiar/corte de
+//   classificacao, nao frequencia observada;
+// - "apenas 37% com FR/anti-CCP TESTADOS": taxa de TESTAGEM, nao de
+//   positividade;
+// - "reducao de 40%" / "reduziu 27%": tamanho de efeito de tratamento
+//   (antes/depois), nao prevalencia basal do achado.
+// Sem filtrar esses casos, cada um vira uma "frequencia relatada" que na
+// verdade mede outra coisa — mesma classe de erro em todos: um numero real
+// do texto, mas atribuido ao achado errado.
+const SUSPECT_NUMBER_CONTEXT_RE = /sensibilidade|especificidade|valor preditivo|testad[oa]s?|testagem|redu[cç][aã]o de|reduziu|reduzida em|aumentou em|desfecho composto/i;
+// "ate 75% DOS PACIENTES COM acometimento pulmonar sao assintomaticos": o
+// numero descreve uma caracteristica de quem JA TEM o achado (aqui,
+// ser-assintomatico), nao a frequencia do achado em si — reconhecivel pelo
+// padrao "% dos (pacientes|casos|adultos) com" logo apos o numero.
+const CONDITIONED_ON_FINDING_RE = /^\s*dos\s+(pacientes|casos|adultos|indiv[ií]duos)\s+com\b/i;
+function isSuspectNumber(text, hitIndex, hitLen, matchedStr) {
   if (!matchedStr) return false;
   const win = windowAround(text, hitIndex, hitLen, 100);
   const idx = win.indexOf(matchedStr);
   if (idx === -1) return false;
-  return DIAGNOSTIC_PERFORMANCE_RE.test(win.slice(Math.max(0, idx - 25), idx));
+  const before = win.slice(Math.max(0, idx - 30), idx);
+  if (SUSPECT_NUMBER_CONTEXT_RE.test(before)) return true;
+  if (/[<>]\s*$/.test(win.slice(Math.max(0, idx - 4), idx))) return true;
+  const after = win.slice(idx + matchedStr.length, idx + matchedStr.length + 35);
+  if (CONDITIONED_ON_FINDING_RE.test(after)) return true;
+  // "risco de falencia renal ... 5% COM proteinuria <0,5g/dia": o numero e
+  // condicionado a um LIMIAR do achado citado logo depois (com um "<"/">"),
+  // nao a frequencia do achado.
+  return /^[^.;]{0,20}[<>]/.test(after);
+}
+
+// "rituximabe 2x500mg e 2x1000mg (AMBOS + metotrexato)": a dose mais proxima
+// de "metotrexato" e na verdade de OUTRO farmaco citado antes, e "ambos" e o
+// sinal disso — sem essa checagem, "1000mg" vira (por engano) a dose do
+// metotrexato.
+function isAmbiguousDose(text, hitIndex, hitLen, matchedDose) {
+  if (!matchedDose) return false;
+  const afterStart = hitIndex + hitLen;
+  const afterIdx = text.indexOf(matchedDose, afterStart);
+  if (afterIdx !== -1 && afterIdx - afterStart < 80) {
+    return /\bambo[sa]\b/i.test(text.slice(afterStart, afterIdx));
+  }
+  const beforeIdx = text.lastIndexOf(matchedDose, hitIndex);
+  if (beforeIdx !== -1 && hitIndex - (beforeIdx + matchedDose.length) < 80) {
+    return /\bambo[sa]\b/i.test(text.slice(beforeIdx + matchedDose.length, hitIndex));
+  }
+  return false;
 }
 
 function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
     scanDictionary(chunk.text, DRUG_DICT).forEach((hit) => {
-      const doseMatch = nearestMatch(chunk.text, hit.index, hit.len, DOSE_RE_NODE, 70, 30);
+      let doseMatch = nearestMatch(chunk.text, hit.index, hit.len, DOSE_RE_NODE, 70, 30);
+      if (isAmbiguousDose(chunk.text, hit.index, hit.len, doseMatch)) doseMatch = null;
       const wideWin = windowAround(chunk.text, hit.index, hit.len, 160);
       const line = detectLine(wideWin) || detectLine(chunk.heading || '');
       const score = (doseMatch ? 2 : 0) + (line ? 1 : 0);
@@ -663,10 +768,21 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
     // esclarece o que representa) convivendo com o dado ja correto e
     // granular.
     if (isEtiologyHeading(chunk.heading)) return;
+    const normChunkText = nodeNormalizeText(chunk.text);
     scanDictionary(chunk.text, FINDING_DICT).forEach((hit) => {
-      let pct = nearestMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
-      if (isDiagnosticPerformanceNumber(chunk.text, hit.index, hit.len, pct)) pct = null;
-      const word = pct ? null : nearestMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
+      // Quando o achado tem o MESMO nome do tema do proprio artigo (ex.:
+      // artigo cujo a.disease e "Esclerite" citando "Esclerite" de novo
+      // dentro do texto), qualquer numero por perto tende a ser circular ou
+      // sobre outra coisa (ex.: "52% eram idiopaticos" virando "Esclerite:
+      // 52%") — mais seguro nao extrair nada dessas mencoes autorreferentes.
+      if (hit.canonical === a.disease) return;
+      // "sem acometimento pancreático" tem o mesmo problema de negacao que
+      // ja tratamos para achados etiologicos — sem checar isso, a ausencia
+      // do achado vira, por engano, a frequencia dele.
+      if (isNegatedAt(normChunkText, hit.index)) return;
+      let pct = nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
+      if (isSuspectNumber(chunk.text, hit.index, hit.len, pct)) pct = null;
+      const word = pct ? null : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
       const spec = nearestMatch(chunk.text, hit.index, hit.len, SPECIFICITY_RE, 50, 25);
       const score = (pct ? 3 : 0) + (word ? 1 : 0) + (spec ? 1 : 0);
       const existing = best.get(hit.canonical);
