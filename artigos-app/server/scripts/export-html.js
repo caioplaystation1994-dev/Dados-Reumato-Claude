@@ -239,7 +239,11 @@ const FINDING_DICT = {
   'Acometimento orbitário': { type: 'acometimento orgânico', aliases: ['acometimento orbitario', 'envolvimento orbitario', 'orbita', 'orbital', 'massa orbitaria', 'pseudotumor orbitario'] },
   'Proptose': { type: 'clínico', aliases: ['proptose'] },
   'Acometimento meníngeo': { type: 'acometimento orgânico', aliases: ['acometimento meningeo', 'envolvimento meningeo', 'meninge', 'meningeo'] },
-  'Acometimento hipofisário': { type: 'acometimento orgânico', aliases: ['hipofise', 'pituitaria'] },
+  // 'hipofise' nao casava "hipofisário" (o alias precisa aparecer inteiro no
+  // texto) — o artigo de GPA diz "Envolvimento hipofisário ocorre em menos de
+  // 1%" e o achado ficava invisivel. Mesmo problema vale para os demais
+  // adjetivos abaixo.
+  'Acometimento hipofisário': { type: 'acometimento orgânico', aliases: ['hipofise', 'hipofisari', 'pituitaria'] },
   'Acometimento de nervos cranianos': { type: 'acometimento orgânico', aliases: ['nervo craniano', 'nervos cranianos', 'paralisia facial'] },
   'Acometimento otológico': { type: 'acometimento orgânico', aliases: ['otite media', 'otologic', 'osso temporal', 'perda auditiva', 'surdez'] },
   'Acometimento nasossinusal': { type: 'acometimento orgânico', aliases: ['seio paranasal', 'sinusite', 'septo nasal', 'perfuracao septal', 'deformidade em sela', 'crosta nasal', 'epistaxe'] },
@@ -340,6 +344,40 @@ const FINDING_DICT = {
   'Uveíte intermediária': { type: 'clínico', aliases: ['uveite intermediaria'] },
   'Uveíte posterior': { type: 'clínico', aliases: ['uveite posterior'] },
   'Panuveíte': { type: 'clínico', aliases: ['panuveite'] },
+  // Lacuna encontrada a partir da displasia fibromuscular: o artigo relata
+  // "aneurisma em qualquer leito vascular em 21,6%" e "dissecção arterial em
+  // 5,6%", mas o dicionário só tinha aneurisma POR SÍTIO (aorta, subclávia,
+  // ilíaca, carótida) — um aneurisma sem sítio nomeado, ou num leito ainda
+  // não catalogado, era simplesmente invisível. O mesmo valia para os leitos
+  // arteriais da própria FMD e para várias CATEGORIAS de acometimento que só
+  // existiam como subitens (ocular, neurológico, vias aéreas, nasal).
+  'Aneurisma (qualquer leito)': { type: 'imagem', aliases: ['aneurisma em qualquer leito', 'aneurisma em qualquer leito vascular', 'aneurismas em qualquer leito'] },
+  'Dissecção arterial': { type: 'imagem', aliases: ['disseccao arterial', 'dissecao arterial', 'dissecções arteriais', 'disseccoes arteriais'] },
+  'Acometimento de artéria renal': { type: 'imagem', aliases: ['arteria renal', 'arterias renais'] },
+  'Acometimento cerebrovascular': { type: 'imagem', aliases: ['cerebrovascular', 'cerebrovasculares'] },
+  'Acometimento de artérias viscerais': { type: 'imagem', aliases: ['arteria visceral', 'arterias viscerais', 'viscerais'] },
+  'Acometimento de artérias de membros inferiores': { type: 'imagem', aliases: ['membros inferiores'] },
+  'Doença multivascular': { type: 'imagem', aliases: ['doenca multivascular', 'multivascular'] },
+  'Aneurisma de tronco braquiocefálico': { type: 'imagem', aliases: ['aneurisma de tronco braquiocefalico', 'tronco braquiocefalico'] },
+  'Aneurisma de artéria mesentérica': { type: 'imagem', aliases: ['aneurisma de arteria mesenterica', 'arteria mesenterica superior'] },
+  'Acometimento ocular': { type: 'acometimento orgânico', aliases: ['acometimento ocular', 'envolvimento ocular', 'envolvimento oftalmico', 'acometimento oftalmico'] },
+  'Acometimento neurológico': { type: 'acometimento orgânico', aliases: ['acometimento neurologico', 'envolvimento neurologico'] },
+  'Acometimento de vias aéreas': { type: 'acometimento orgânico', aliases: ['acometimento das vias aereas', 'envolvimento das vias aereas', 'acometimento de vias aereas'] },
+  'Acometimento nasal': { type: 'acometimento orgânico', aliases: ['acometimento nasal', 'envolvimento nasal'] },
+  // "Hipertensão arterial" foi testada e REMOVIDA: o termo é ubíquo nos textos
+  // (hipertensão pulmonar, hipertensão crônica, "hipertensos") e o número
+  // vizinho quase nunca é a prevalência dela — na auditoria errou em 4 de 6
+  // casos ("73% maior probabilidade" como se fosse prevalência, o 40% do
+  // envolvimento ocular, o 88% de outro achado em hipertensos). Como
+  // comorbidade ubíqua, não compensa o risco: célula vazia é melhor que
+  // número que mede outra coisa.
+  'Cefaleia': { type: 'clínico', aliases: ['cefaleia'] },
+  'Meningismo': { type: 'clínico', aliases: ['meningismo'] },
+  'Febre': { type: 'clínico', aliases: ['febre'] },
+  'Sintomas constitucionais': { type: 'clínico', aliases: ['sintomas constitucionais'] },
+  'Artralgia/artrite': { type: 'clínico', aliases: ['artralgia/artrite/mialgia', 'artralgia/artrite', 'artralgia'] },
+  'Pleocitose liquórica': { type: 'laboratorial', aliases: ['pleocitose liquorica', 'pleocitose'] },
+  'Perda visual': { type: 'clínico', aliases: ['perda visual'] },
 };
 
 // Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
@@ -3724,7 +3762,7 @@ function renderFindingsBySearch() {
     const group = byFinding.get(finding);
     const isDivergentFinding = detectFrequencyDivergence(group).has(finding);
     html += '<h4 class="findings-group-heading">' + escapeHtml(finding) + ' <span class="finding-type-tag">' + escapeHtml(group[0].type) + '</span> <span class="citation-text">(' + group.length + ')</span></h4>';
-    html += '<div class="data-table-wrap"><table class="data-table compact-studies"><thead><tr><th>Doença</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+    html += '<div class="data-table-wrap"><table class="data-table compact-studies"><thead><tr><th>Doença</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
     // Dentro de cada achado, agrupa por doenca: se so um artigo relata
     // aquela combinacao doenca+achado, a linha e simples; se varios artigos
     // relatam, viram sub-itens dentro da MESMA linha (separados por doenca
@@ -3752,9 +3790,8 @@ function renderFindingsBySearch() {
             ? '<td rowspan="' + sources.length + '" class="disease-cell"><b>' + escapeHtml(diseaseKey) + '</b>' +
               specificityRankBadge(finding, sources[0].diseases[0]) + combinedSummaryNote(sources) + '</td>'
             : '') +
-          '<td class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, null) + '</td>' +
           '<td class="source-link" data-id="' + s.articleId + '" title="Abrir o resumo deste artigo">' + findingFrequencyCell(s, isDivergentFinding) + '</td>' +
-          '<td class="snippet-cell source-link" data-id="' + s.articleId + '">' + citationCompact(s.citation, s.sampleSizeHint) + '</td>' +
+          '<td class="snippet-cell source-link" data-id="' + s.articleId + '">' + citationCompact(s.citation, s.sampleSizeHint) + sectionNote(s, null) + '</td>' +
         '</tr>';
       });
     });
