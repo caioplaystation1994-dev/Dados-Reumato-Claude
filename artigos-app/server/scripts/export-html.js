@@ -1285,6 +1285,17 @@ table.data-table tr.source-row{cursor:pointer}
 table.data-table tr.source-row:hover td{background:#f7faff}
 .source-link{cursor:pointer}
 .source-link:hover{color:#1a56a0;text-decoration:underline}
+/* Tabela por achado: uma linha por estudo, linhas coladas dentro do mesmo
+   grupo de doença (a divisória só aparece no fim do grupo, marcado por
+   .study-row-last), para que percentuais concorrentes fiquem lado a lado. */
+table.data-table.compact-studies td{padding:4px 10px;border-bottom:none;line-height:1.4}
+table.data-table.compact-studies tr.study-row-last td{border-bottom:1px solid #e2e8f0}
+table.data-table.compact-studies tr:last-child td{border-bottom:none}
+table.data-table.compact-studies td.disease-cell{vertical-align:top;padding-top:7px;border-right:1px solid #eef1f5}
+table.data-table.compact-studies tr.study-row:hover td{background:#f7faff}
+table.data-table.compact-studies .cite-author{display:block;font-weight:600}
+table.data-table.compact-studies .cite-title{display:block;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#718096;font-size:11.5px}
+table.data-table.compact-studies .confidence-badge{margin-left:0}
 .extracted-table-label{font-size:11px;font-weight:700;color:#4a5568;margin:14px 0 4px}
 table.extracted-table th,table.extracted-table td{white-space:nowrap}
 .source-sep{border:none;border-top:1px dashed #e2e8f0;margin:6px 0}
@@ -3517,7 +3528,9 @@ function findingsTableRows(rows, divergent, currentDisease) {
     html += '<tr>' +
       '<td><b>' + escapeHtml(findingName) + '</b>' + (divergent.has(findingName) ? '<span class="divergence-flag" title="Outro artigo relata frequência bem diferente para este achado">⚠ divergente</span>' : '') + specificityRankBadge(findingName, currentDisease) + combinedSummaryNote(sources) + '</td>' +
       '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, currentDisease) + '</div>').join(sep) + '</td>' +
-      '<td>' + sources.map((s) => '<div>' + findingFrequencyCell(s, divergent.has(findingName)) + '</div>').join(sep) + '</td>' +
+      // A % tambem e clicavel aqui: o numero e o dado que faz o leitor querer
+      // conferir a fonte, entao ele proprio leva ao resumo do artigo.
+      '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '" title="Abrir o resumo deste artigo">' + findingFrequencyCell(s, divergent.has(findingName)) + '</div>').join(sep) + '</td>' +
       '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
     '</tr>';
   });
@@ -3583,6 +3596,19 @@ function combinedSummaryNote(sources) {
   return '<div class="citation-text">' + sources.length + ' estudos' + (totalN ? ' · N total ≈ ' + totalN : '') + '</div>';
 }
 
+// Numa tabela de uma linha por estudo, a altura da linha passa a ser ditada
+// pelo titulo do artigo, que quebra em 4-5 linhas e desfaz a compactacao.
+// Autor+ano identificam o estudo de relance; o titulo completo continua
+// acessivel no tooltip e no resumo (a celula inteira e clicavel).
+function citationCompact(citation, sampleSizeHint) {
+  const m = (citation || '').match(/^(.*?\\))\\.\\s*"(.*)"$/);
+  const author = m ? m[1] : (citation || '');
+  const title = m ? m[2] : '';
+  const n = sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(sampleSizeHint) + ')</span>' : '';
+  return '<span class="cite-author">' + escapeHtml(author) + n + '</span>' +
+    (title ? '<span class="cite-title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</span>' : '');
+}
+
 function renderFindingsBySearch() {
   const rawTerm = findingSearchInput.value.trim();
   const term = normalizeText(rawTerm);
@@ -3618,7 +3644,7 @@ function renderFindingsBySearch() {
     const group = byFinding.get(finding);
     const isDivergentFinding = detectFrequencyDivergence(group).has(finding);
     html += '<h4 class="findings-group-heading">' + escapeHtml(finding) + ' <span class="finding-type-tag">' + escapeHtml(group[0].type) + '</span> <span class="citation-text">(' + group.length + ')</span></h4>';
-    html += '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Doença</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
+    html += '<div class="data-table-wrap"><table class="data-table compact-studies"><thead><tr><th>Doença</th><th>Contexto (seção do artigo)</th><th>Frequência relatada</th><th>Fonte</th></tr></thead><tbody>';
     // Dentro de cada achado, agrupa por doenca: se so um artigo relata
     // aquela combinacao doenca+achado, a linha e simples; se varios artigos
     // relatam, viram sub-itens dentro da MESMA linha (separados por doenca
@@ -3632,13 +3658,25 @@ function renderFindingsBySearch() {
     const maxRank = (sources) => Math.max(...sources.map((s) => frequencyRank(s.frequencyText)));
     [...byDisease.keys()].sort((a, b) => maxRank(byDisease.get(b)) - maxRank(byDisease.get(a))).forEach((diseaseKey) => {
       const sources = byDisease.get(diseaseKey).slice().sort((x, y) => frequencyRank(y.frequencyText) - frequencyRank(x.frequencyText));
-      const sep = '<hr class="source-sep">';
-      html += '<tr>' +
-        '<td><b>' + escapeHtml(diseaseKey) + '</b>' + specificityRankBadge(finding, sources[0].diseases[0]) + combinedSummaryNote(sources) + '</td>' +
-        '<td>' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, null) + '</div>').join(sep) + '</td>' +
-        '<td>' + sources.map((s) => '<div>' + findingFrequencyCell(s, isDivergentFinding) + '</div>').join(sep) + '</td>' +
-        '<td class="snippet-cell">' + sources.map((s) => '<div class="source-link" data-id="' + s.articleId + '">' + escapeHtml(s.citation) + (s.sampleSizeHint ? ' <span class="citation-text">(n≈' + escapeHtml(s.sampleSizeHint) + ')</span>' : '') + '</div>').join(sep) + '</td>' +
-      '</tr>';
+      // Uma LINHA POR ESTUDO (em vez de varios estudos empilhados dentro de
+      // uma unica celula, separados por <hr>): quando o mesmo achado tem
+      // percentuais diferentes conforme o estudo, cada numero precisa de
+      // linha propria para ser comparavel de relance e para carregar a sua
+      // propria referencia clicavel. A doenca usa rowspan, entao o
+      // agrupamento visual continua — as linhas do mesmo grupo ficam coladas
+      // (sem borda entre elas) e so o fim do grupo desenha a divisoria.
+      sources.forEach((s, i) => {
+        const isLast = i === sources.length - 1;
+        html += '<tr class="study-row' + (isLast ? ' study-row-last' : '') + '">' +
+          (i === 0
+            ? '<td rowspan="' + sources.length + '" class="disease-cell"><b>' + escapeHtml(diseaseKey) + '</b>' +
+              specificityRankBadge(finding, sources[0].diseases[0]) + combinedSummaryNote(sources) + '</td>'
+            : '') +
+          '<td class="source-link" data-id="' + s.articleId + '">' + sourceContextCell(s, null) + '</td>' +
+          '<td class="source-link" data-id="' + s.articleId + '" title="Abrir o resumo deste artigo">' + findingFrequencyCell(s, isDivergentFinding) + '</td>' +
+          '<td class="snippet-cell source-link" data-id="' + s.articleId + '">' + citationCompact(s.citation, s.sampleSizeHint) + '</td>' +
+        '</tr>';
+      });
     });
     html += '</tbody></table></div>';
   });
