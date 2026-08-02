@@ -327,8 +327,10 @@ const FINDING_DICT = {
   'Doença pulmonar intersticial linfocítica granulomatosa (GLILD)': { type: 'imagem', aliases: ['glild', 'doenca pulmonar intersticial linfocitica granulomatosa'] },
   'Lesão gordurosa (RM)': { type: 'imagem', aliases: ['lesao gordurosa', 'lesoes gordurosas'] },
   'Sindesmófitos/anquilose': { type: 'imagem', aliases: ['sindesmofito', 'sindesmofitos', 'anquilose'] },
-  'Sintomas/transtorno depressivo': { type: 'clínico', aliases: ['transtorno depressivo', 'sintomas de depressao', 'sintomas clinicos de depressao', 'depressao'] },
-  'Sintomas/transtorno de ansiedade': { type: 'clínico', aliases: ['transtorno de ansiedade', 'sintomas de ansiedade', 'sintomas clinicos de ansiedade', 'ansiedade'] },
+  'Transtorno depressivo maior (diagnóstico formal)': { type: 'clínico', aliases: ['transtorno depressivo maior', 'transtorno depressivo'] },
+  'Sintomas depressivos (rastreio por escala)': { type: 'clínico', aliases: ['sintomas clinicos de depressao', 'sintomas de depressao'] },
+  'Transtorno de ansiedade generalizada (diagnóstico formal)': { type: 'clínico', aliases: ['transtorno de ansiedade generalizada', 'transtorno de ansiedade'] },
+  'Sintomas de ansiedade (rastreio por escala)': { type: 'clínico', aliases: ['sintomas clinicos de ansiedade', 'sintomas de ansiedade'] },
   'CK (creatinoquinase) elevada': { type: 'laboratorial', aliases: ['ck elevada', 'ck cronicamente elevada', 'creatinoquinase elevada', 'cpk elevada', 'hiperckemia'] },
   'Sinéquias posteriores': { type: 'clínico', aliases: ['sinequias posteriores', 'sinequia posterior'] },
   'Neovascularização coroideana': { type: 'clínico', aliases: ['neovascularizacao coroideana', 'neovascularizacao coroidea'] },
@@ -752,6 +754,23 @@ const SUSPECT_NUMBER_CONTEXT_RE = /sensibilidade|especificidade|valor preditivo|
 // ser-assintomatico), nao a frequencia do achado em si — reconhecivel pelo
 // padrao "% dos (pacientes|casos|adultos) com" logo apos o numero.
 const CONDITIONED_ON_FINDING_RE = /^\s*dos\s+(pacientes|casos|adultos|indiv[ií]duos)\s+com\b/i;
+// "VKH e a CAUSA MAIS COMUM DE panuveite na India (21,08%)": o numero e a
+// fatia ETIOLOGICA — quanto da panuveite e causada pela doenca do artigo —
+// e nao a frequencia com que a doenca do artigo cursa com panuveite. Ler
+// essa % como "21% dos pacientes com VKH tem panuveite" inverte o sentido
+// da frase. O sinal e o achado aparecer logo apos "causa/etiologia de".
+// A checagem e por FRASE inteira, nao so pelos caracteres imediatamente
+// antes do termo: numa frase de fatia etiologica o achado costuma ser
+// repetido varias vezes ("...causa mais comum de panuveite na India —
+// 21,08% de todos os casos de panuveite..."), e bastaria UMA dessas
+// repeticoes cair longe do prefixo "causa de" para o percentual voltar a
+// ser capturado como se fosse frequencia do achado. Em caso de duvida
+// preferimos NAO exibir numero: uma celula vazia e melhor que um numero
+// que mede outra coisa.
+const ETIOLOGIC_SHARE_RE = /\b(causa|causas|etiologia|etiol[oó]gic[ao]|respons[aá]vel por)\b/i;
+function isEtiologicShareOfFinding(text, hitIndex, hitLen) {
+  return ETIOLOGIC_SHARE_RE.test(sentenceWindow(text, hitIndex, hitLen));
+}
 function isSuspectNumber(text, hitIndex, hitLen, matchedStr) {
   if (!matchedStr) return false;
   const win = windowAround(text, hitIndex, hitLen, 100);
@@ -838,7 +857,12 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       if (isNegatedAt(normChunkText, hit.index)) return;
       let pct = nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct)) pct = null;
-      const word = pct ? null : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
+      const isEtiologic = isEtiologicShareOfFinding(chunk.text, hit.index, hit.len);
+      if (isEtiologic) pct = null;
+      // Vale tambem para a frequencia em palavras: "causa mais COMUM de
+      // panuveite" fala de quao comum a doenca e como CAUSA daquele achado,
+      // nao de quao comum o achado e em quem tem a doenca.
+      const word = (pct || isEtiologic) ? null : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
       const spec = nearestMatch(chunk.text, hit.index, hit.len, SPECIFICITY_RE, 50, 25);
       const score = (pct ? 3 : 0) + (word ? 1 : 0) + (spec ? 1 : 0);
       const lateralQualifier = LATERALIZABLE_FINDINGS.has(hit.canonical)
