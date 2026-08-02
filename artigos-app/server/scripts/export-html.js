@@ -643,7 +643,7 @@ function scanDictionary(chunkText, dict) {
       let idx = normText.indexOf(normAlias);
       while (idx !== -1) {
         const boundaryOk = !isWordChar(normText[idx - 1]) && !isWordChar(normText[idx + normAlias.length]);
-        if (boundaryOk) hits.push({ canonical, entry, index: idx, len: normAlias.length });
+        if (boundaryOk) hits.push({ canonical, entry, index: idx, len: normAlias.length, matchedAlias: alias });
         idx = normText.indexOf(normAlias, idx + normAlias.length);
       }
     });
@@ -729,7 +729,12 @@ function nearestOccurrenceMatch(text, hitIndex, hitLen, re, afterRadius, beforeR
     // edema palpebral") indica que o parenteses daquele numero ja fechou —
     // ele pertence ao item ANTERIOR da lista, nao ao termo atual, mesmo que
     // o gap seja curto.
-    if (/^\)\s*,/.test(gap)) return null;
+    // Uma virgula logo apos o numero encerra o item a que ele pertencia
+    // ("envolvimento ocular em 50%, tipicamente esclerite recorrente"): o
+    // 50% e do envolvimento ocular, e a esclerite so e descrita
+    // qualitativamente depois. Vale com ou sem parenteses fechando antes
+    // ("proptose (2%), diplopia").
+    if (/^\s*\)?\s*,/.test(gap)) return null;
     if (gap.length <= MAX_UNVERBED_GAP || OCCURRENCE_VERB_RE.test(gap)) return lastM[0];
   }
   return null;
@@ -748,7 +753,10 @@ function nearestOccurrenceMatch(text, hitIndex, hitLen, re, afterRadius, beforeR
 // Sem filtrar esses casos, cada um vira uma "frequencia relatada" que na
 // verdade mede outra coisa — mesma classe de erro em todos: um numero real
 // do texto, mas atribuido ao achado errado.
-const SUSPECT_NUMBER_CONTEXT_RE = /sensibilidade|especificidade|valor preditivo|testad[oa]s?|testagem|redu[cç][aã]o de|reduziu|reduzida em|aumentou em|desfecho composto/i;
+// - "associou-se a MORTALIDADE de 50% em 5 anos": desfecho PROGNOSTICO de
+//   quem tem o achado, nao a frequencia do achado (bug real: "esclerite ...
+//   associou-se a mortalidade de 50%" virava "Esclerite: 50%").
+const SUSPECT_NUMBER_CONTEXT_RE = /sensibilidade|especificidade|valor preditivo|testad[oa]s?|testagem|redu[cç][aã]o de|reduziu|reduzida em|aumentou em|desfecho composto|mortalidade|letalidade|sobrevida|[oó]bito/i;
 // "ate 75% DOS PACIENTES COM acometimento pulmonar sao assintomaticos": o
 // numero descreve uma caracteristica de quem JA TEM o achado (aqui,
 // ser-assintomatico), nao a frequencia do achado em si — reconhecivel pelo
@@ -767,9 +775,35 @@ const CONDITIONED_ON_FINDING_RE = /^\s*dos\s+(pacientes|casos|adultos|indiv[ií]
 // ser capturado como se fosse frequencia do achado. Em caso de duvida
 // preferimos NAO exibir numero: uma celula vazia e melhor que um numero
 // que mede outra coisa.
-const ETIOLOGIC_SHARE_RE = /\b(causa|causas|etiologia|etiol[oó]gic[ao]|respons[aá]vel por)\b/i;
+const ETIOLOGIC_SHARE_RE = /\b(causa|causas|etiologia|etiol[oó]gic[ao]|respons[aá]vel por|responde[m]? por)\b/i;
 function isEtiologicShareOfFinding(text, hitIndex, hitLen) {
   return ETIOLOGIC_SHARE_RE.test(sentenceWindow(text, hitIndex, hitLen));
+}
+
+// "(87% vs. 45%, p=0,001)" / "(18,8% vs 8,2%)": numero de COMPARACAO ENTRE
+// SUBGRUPOS do estudo (com x sem aneurisma, ANCA+ x ANCA−), nao a
+// prevalencia do achado na doenca como um todo — exibi-lo na coluna
+// "frequencia relatada" faz o leitor tomar a taxa de um braco especifico
+// como se fosse a taxa geral. Detectavel pelo "vs" logo apos o numero.
+const SUBGROUP_COMPARISON_RE = /^\s*(?:[±]\s*\d+(?:[.,]\d+)?%?\s*)?(?:vs\.?|versus)\b/i;
+function isSubgroupComparison(text, hitIndex, hitLen, matchedStr) {
+  if (!matchedStr) return false;
+  const win = windowAround(text, hitIndex, hitLen, 120);
+  const idx = win.indexOf(matchedStr);
+  if (idx === -1) return false;
+  return SUBGROUP_COMPARISON_RE.test(win.slice(idx + matchedStr.length, idx + matchedStr.length + 20));
+}
+
+// "envolvimento renal MENOS frequente que os sem ENT": capturar so a
+// palavra "frequente" inverte o sentido da frase (vira "achado frequente"
+// quando o texto diz exatamente o contrario).
+const DIMINISHED_FREQ_RE = /\bmenos\s+$/i;
+function isDiminishedFrequencyWord(text, hitIndex, hitLen, matchedWord) {
+  if (!matchedWord) return false;
+  const win = windowAround(text, hitIndex, hitLen, 120);
+  const idx = win.indexOf(matchedWord);
+  if (idx === -1) return false;
+  return DIMINISHED_FREQ_RE.test(win.slice(Math.max(0, idx - 10), idx));
 }
 function isSuspectNumber(text, hitIndex, hitLen, matchedStr) {
   if (!matchedStr) return false;
@@ -857,12 +891,14 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       if (isNegatedAt(normChunkText, hit.index)) return;
       let pct = nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct)) pct = null;
+      if (isSubgroupComparison(chunk.text, hit.index, hit.len, pct)) pct = null;
       const isEtiologic = isEtiologicShareOfFinding(chunk.text, hit.index, hit.len);
       if (isEtiologic) pct = null;
       // Vale tambem para a frequencia em palavras: "causa mais COMUM de
       // panuveite" fala de quao comum a doenca e como CAUSA daquele achado,
       // nao de quao comum o achado e em quem tem a doenca.
-      const word = (pct || isEtiologic) ? null : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
+      let word = (pct || isEtiologic) ? null : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
+      if (isDiminishedFrequencyWord(chunk.text, hit.index, hit.len, word)) word = null;
       const spec = nearestMatch(chunk.text, hit.index, hit.len, SPECIFICITY_RE, 50, 25);
       const score = (pct ? 3 : 0) + (word ? 1 : 0) + (spec ? 1 : 0);
       const lateralQualifier = LATERALIZABLE_FINDINGS.has(hit.canonical)
@@ -878,6 +914,16 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
           frequencyText: pct ? pct.trim() : (word || null),
           specificity: spec ? spec.toLowerCase() : null,
           heading: chunk.heading || null,
+          // Muitos rotulos canonicos sao CATEGORIAS amplas com aliases
+          // estreitos ("Acometimento otologico" tem alias "otite media";
+          // "Acometimento nasossinusal" tem alias "sinusite"). Quando o
+          // texto diz "envolvimento otologico em 34,8% (otite media 22,5%)",
+          // e o alias estreito que casa — e o numero capturado e o do
+          // COMPONENTE, nao o da categoria. Exibir "Acometimento otologico:
+          // 22,5%" faria o leitor tomar a taxa do componente pela da
+          // categoria. Guardando o termo realmente casado, a interface
+          // mostra a que exatamente aquele numero se refere.
+          matchedTerm: nodeNormalizeText(hit.canonical) === nodeNormalizeText(hit.matchedAlias || '') ? null : (hit.matchedAlias || null),
           diseases: localizeDiseases(allDiseases, primaryDisease, (chunk.heading || '') + ' ' + sentenceWindow(chunk.text, hit.index, hit.len)),
           snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
         });
@@ -957,7 +1003,7 @@ articles.forEach((a) => {
       diseases: f.diseases, primaryDisease, articleId: a.id, title: a.title || a.original_name, year: a.year,
       evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
       finding: f.finding, type: f.type, frequencyText: f.frequencyText, specificity: f.specificity,
-      heading: f.heading, snippet: f.snippet,
+      matchedTerm: f.matchedTerm, heading: f.heading, snippet: f.snippet,
     });
   });
   // Uma linha por doenca citada como causa especifica dentro de um paragrafo
@@ -3419,8 +3465,16 @@ function findingFrequencyCell(r, isDivergent) {
     ? ' <span class="citation-text">dos casos de ' + escapeHtml(r.primaryDisease) + '</span>'
     : '';
   const confidence = confidenceBadge(r.evidenceLevel, r.sampleSizeHint, !!isDivergent);
+  // O rótulo do achado é frequentemente uma categoria mais ampla que o termo
+  // que de fato apareceu no texto (ex.: rótulo "Acometimento otológico",
+  // termo casado "otite média"). Nesses casos o percentual é do TERMO, não
+  // da categoria — dizer qual foi o termo evita que a taxa do componente
+  // seja lida como a da categoria inteira.
+  const scope = r.matchedTerm
+    ? ' <span class="citation-text">(referente a: ' + escapeHtml(r.matchedTerm) + ')</span>'
+    : '';
   return (isRare ? '<span class="specificity-tag">⚠ ' + escapeHtml(r.frequencyText) + '</span>' : escapeHtml(r.frequencyText)) +
-    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '') + qualifier + confidence;
+    (r.specificity ? '<span class="specificity-tag">' + escapeHtml(r.specificity) + '</span>' : '') + scope + qualifier + confidence;
 }
 
 // O contexto real de uma menção é a seção onde ela foi encontrada (heading),
