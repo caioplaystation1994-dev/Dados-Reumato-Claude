@@ -928,6 +928,118 @@ function informativeMatchedTerm(canonical, alias) {
   return contained ? null : alias;
 }
 
+// ---------- Descoberta genérica de achados (complementa o dicionário) ----------
+// O FINDING_DICT é uma LISTA BRANCA: um achado cujo termo não foi previamente
+// catalogado é invisível, por mais destaque que tenha no texto (foi assim que
+// "aneurisma em qualquer leito vascular em 21,6%" da displasia fibromuscular
+// ficou de fora). Aqui a lógica é invertida: varre-se TODO percentual do texto
+// curado, recupera-se a frase nominal presa a ele, e descarta-se o que
+// comprovadamente não é achado. O dicionário continua tendo precedência —
+// ele carrega nomes canônicos e tipo revisados à mão; esta camada só entra
+// onde ele não chega, e o que ela produz fica marcado como não catalogado.
+
+// Palavras que ligam a frase nominal ao número e não fazem parte do nome do
+// achado ("acometimento renal OCORREU EM 58%").
+const BINDER_TRAIL_RE = /(?:\s|^)(?:em|de|do|da|dos|das|no|na|nos|nas|foi|foram|era|eram|e|ou|ocorre|ocorreu|ocorrem|ocorreram|acomete|acometeu|presente|presentes|afeta|afetou|afetados?|atinge|atingiu|encontrad[oa]s?|relatad[oa]s?|observad[oa]s?|documentad[oa]s?|descrit[oa]s?|identificad[oa]s?|detectad[oa]s?|apresentaram|apresentam|tinham|com|at[eé]|cerca|aproximadamente|quase|apenas|somente|entre|chega|chegando|variando|estimad[oa]s?|reportad[oa]s?)\s*$/i;
+
+// Categorias que aparecem coladas a um percentual mas NÃO são frequência de
+// achado clínico. Cada grupo saiu de um erro real visto na auditoria.
+const NOT_A_FINDING_RE = new RegExp([
+  // estatística e desenho
+  'ic\\s*95|intervalo de confian|odds|razao de chance|\\bor\\b|\\bhr\\b|\\brr\\b|valor de p|\\bp\\b\\s*[=<>]|heterogeneidade|i2|i²|poder estat|amostra|amostral|tamanho|coorte|registro|estudos?|ensaios?|randomizad|metan|revis[aã]o|inclu[ií]d|elegív|protocolo|seguimento|follow',
+  // desempenho diagnóstico
+  'sensibilidad|especificidad|valor preditivo|acur[aá]cia|rendimento diagn|falso-?negativ|falso-?positiv|concord[aâ]ncia',
+  // desfecho / prognóstico / tratamento
+  'sobrevida|mortalidad|letalidad|[oó]bito|remiss[aã]o|recidiv|recorr[eê]ncia|resposta|respondera|efic[aá]cia|efetivid|ades[aã]o|descontinua|suspens[aã]o|revasculariz|interven|cicatriza|melhora|piora|progress[aã]o|desfecho|risco|probabilidad|preditor|associa|correlacion',
+  // demografia / descrição da amostra
+  'mulher|homen|masculin|feminin|caucasian|idade|anos|sexo|etnia|pacientes do sexo',
+  // limiar / definição / medida relativa
+  'defini[cd]|crit[eé]rio|corte|limiar|maior probabilidad|menor probabilidad|vezes maior|vezes menor|aumento de|queda de|redu[cç][aã]o',
+  // dose / laboratório quantitativo
+  'dose|mg|kg|ml|mmol|mg/dl|ui/|n[ií]vel s[eé]rico',
+].join('|'), 'i');
+
+const GENERIC_STOPWORDS = new Set(['esse', 'essa', 'este', 'esta', 'aquele', 'aquela', 'qual', 'quais', 'onde', 'quando', 'sendo', 'tendo', 'ambos', 'todos', 'todas', 'outros', 'outras', 'demais', 'grupo', 'grupos', 'casos', 'caso', 'pacientes', 'paciente', 'total', 'geral', 'conjunto', 'series', 'serie']);
+
+// Um achado é um SINTAGMA NOMINAL. Quando o recorte começa por verbo, gerúndio,
+// particípio ou advérbio, o que sobrou foi um pedaço de oração ("sendo o sinal
+// predominante", "confirmou GPA histopatologicamente", "atrás apenas dos
+// sintomas sistêmicos") — o número existe, mas o nome do achado ficou para trás.
+const NON_NOUN_START_RE = /^(?:com|sem|sendo|tendo|send|manifestando|manifestand|apresentando|atras|relatara?m?|relatou|confirmou|confirmad|identificou|mostrou|revelou|encontrou|notavel|particular|especial|predominante|principal|apenas|somente|mais|menos|muito|pouco|ainda|tambem|porem|embora|enquanto|quando|onde|que|qual|cuja|cujo|da|do|de|dos|das|em|no|na|por|para|ate|entre|cerca|aproximad|reversao|resolucao|melhora|piora|permanente|documentad|observad|verificad|estimad)\b/i;
+
+// "Radiografia de tórax em 49%" numa seção de investigação é a taxa com que o
+// EXAME FOI PEDIDO, não a frequência de um achado nele. Só vira achado se o
+// texto qualificar o resultado (alterado/anormal/positivo).
+const TEST_PROCEDURE_RE = /^(?:radiografia|radiograma|tomografia|resson[aâ]ncia|angio|ultrassom|ecografia|cintilograf|pet|bi[oó]psia|puncao|punção|sorologia|rastreio|rastreamento|triagem|exame|teste|testagem|cultura|dosagem|painel|screening|hemograma|urinalise|urin[aá]lise)\b/i;
+const TEST_RESULT_QUALIFIER_RE = /\b(alterad|anormal|positiv|negativ|reagente|patol[oó]gic|compat[ií]vel)/i;
+
+// "Incidência de DILE verdadeiro" — o achado é DILE; o prefixo quantitativo
+// não faz parte do nome.
+const QUANT_PREFIX_RE = /^(?:incid[eê]ncia|preval[eê]ncia|taxa|propor[cç][aã]o|frequ[eê]ncia|percentual|n[uú]mero|m[eé]dia|mediana)\s+(?:de\s+|d[oa]s?\s+)?/i;
+
+// Se a frase TERMINA em verbo, o recorte parou no meio da oração e o nome do
+// achado ficou incompleto ("DILE verdadeiro é", "esse padrão estava",
+// "subtipo multifocal predominou").
+const TRAILING_VERB_RE = /\b(?:e|é|era|eram|esta|est[aá]|estava|estavam|esteve|estiveram|foi|foram|ser[aá]|sera|tem|t[eê]m|tinha|tinham|houve|representou|predominou|permaneceu|permaneceram|ocorreu|apresentou|manteve|incluindo|excluindo|atingiu|chegou|variou|correspondeu|somou)$/i;
+// "IC 95%" e "a maioria (X%)" nunca são nome de achado.
+const RESIDUAL_NOISE_RE = /\b(?:ic|maioria|minoria|parcela|restante|demais)\b/i;
+
+// "envolvimento renal" / "comprometimento renal" / "acometimento renal" são o
+// mesmo achado escrito de três jeitos — sem unificar, viram três linhas.
+function canonicalizeFindingPhrase(phrase) {
+  let p = phrase.trim().replace(/\s+/g, ' ');
+  p = p.replace(/^(?:o|a|os|as|um|uma|uns|umas)\s+/i, '');
+  p = p.replace(/^(?:envolvimento|comprometimento)\b/i, 'acometimento');
+  return p;
+}
+
+// Tipo inferido por pista lexical; sem pista, "clínico" é o padrão menos
+// arriscado (é o tipo mais genérico e não afirma método de detecção).
+function inferFindingType(phrase, chunkText) {
+  const p = nodeNormalizeText(phrase);
+  const ctx = nodeNormalizeText(chunkText || '');
+  if (/biopsi|histolog|histopatolog|imuno-?fluoresc|microscop|granuloma|necrose|infiltrad|deposit/.test(p)) return 'anatomopatológico';
+  if (/aneurisma|estenose|oclus|dissec|espessament|nodul|cavita|opacidad|realce|lesao|imagem|tomograf|resson|angio|pet|ultrass|radiograf|fibrose/.test(p)) return 'imagem';
+  if (/anticorp|anti-|serico|serica|proteinuria|hematuria|complement|vhs|pcr|eosinofil|anemia|plaquet|leucop|creatinina|titulo|positivid|pleocitose/.test(p)) return 'laboratorial';
+  if (/^acometimento|^envolvimento|^comprometimento/.test(p)) return 'acometimento orgânico';
+  if (/biopsi|histolog/.test(ctx) && /crescent|escleros|proliferac/.test(p)) return 'anatomopatológico';
+  return 'clínico';
+}
+
+function genericFindingCandidates(chunkText) {
+  const out = [];
+  const re = new RegExp(FREQ_PCT_RE.source, 'g');
+  let m;
+  while ((m = re.exec(chunkText))) {
+    const pctIndex = m.index;
+    // O número precisa estar preso a uma frase nominal ANTES dele; textos
+    // clínicos em português usam quase sempre "achado em X%" ou "achado (X%)".
+    let before = chunkText.slice(Math.max(0, pctIndex - 90), pctIndex);
+    before = before.replace(/[\s(<>≥≤~]+$/, '');
+    let prev = null;
+    while (prev !== before) { prev = before; before = before.replace(BINDER_TRAIL_RE, ''); }
+    // corta no limite do item anterior da enumeração / frase
+    const cut = Math.max(before.lastIndexOf(','), before.lastIndexOf(';'), before.lastIndexOf(':'),
+      before.lastIndexOf('('), before.lastIndexOf(')'), before.lastIndexOf('—'), before.lastIndexOf('.'));
+    let phrase = (cut === -1 ? before : before.slice(cut + 1)).trim();
+    phrase = phrase.replace(/^(?:e|ou|mas|por[eé]m|seguid[ao]s? por|assim como)\s+/i, '').trim();
+    phrase = phrase.replace(QUANT_PREFIX_RE, '').trim();
+    if (phrase.length < 5 || phrase.length > 55) continue;
+    if (/\d/.test(phrase)) continue;
+    if (NOT_A_FINDING_RE.test(phrase)) continue;
+    const normPhrase = nodeNormalizeText(phrase);
+    if (NON_NOUN_START_RE.test(normPhrase)) continue;
+    if (TRAILING_VERB_RE.test(phrase.trim())) continue;
+    if (RESIDUAL_NOISE_RE.test(normPhrase)) continue;
+    if (TEST_PROCEDURE_RE.test(normPhrase) && !TEST_RESULT_QUALIFIER_RE.test(normPhrase)) continue;
+    const words = normPhrase.split(/\s+/).filter(Boolean);
+    if (words.length === 0 || words.length > 6) continue;
+    if (words.every((w) => GENERIC_STOPWORDS.has(w))) continue;
+    out.push({ phrase: canonicalizeFindingPhrase(phrase), index: pctIndex, pct: m[0].trim() });
+  }
+  return out;
+}
+
 function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
@@ -991,6 +1103,50 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
         });
       }
     });
+
+    // ---- Segundo passe: descoberta genérica ----
+    // Só entra onde o dicionário não chegou. Reaproveita TODOS os guards da
+    // auditoria (número suspeito, comparação entre subgrupos, fatia
+    // etiológica, negação), porque os erros que eles pegam não dependem de
+    // como o termo foi encontrado.
+    if (isEtiologyHeading(chunk.heading)) return;
+    const normChunkTextGeneric = nodeNormalizeText(chunk.text);
+    genericFindingCandidates(chunk.text).forEach((cand) => {
+      const key = nodeNormalizeText(cand.phrase);
+      // O dicionário tem precedência: se este mesmo percentual já virou um
+      // achado catalogado, não duplicar sob outro nome.
+      const alreadyDictionary = [...best.values()].some((v) => v.frequencyText === cand.pct);
+      if (alreadyDictionary) return;
+      // E se a frase corresponde a um termo que o dicionário já conhece, ela
+      // não é "não catalogada" — deixa o passe do dicionário cuidar dela.
+      const knownAlias = Object.keys(FINDING_DICT).some((c) =>
+        FINDING_DICT[c].aliases.some((al) => key.includes(nodeNormalizeText(al))));
+      if (knownAlias) return;
+
+      const len = cand.phrase.length;
+      const idx = chunk.text.indexOf(cand.phrase);
+      const at = idx === -1 ? cand.index : idx;
+      if (isNegatedAt(normChunkTextGeneric, at)) return;
+      if (isSuspectNumber(chunk.text, at, len, cand.pct)) return;
+      if (isSubgroupComparison(chunk.text, at, len, cand.pct)) return;
+      if (isEtiologicShareOfFinding(chunk.text, at, len)) return;
+
+      const display = cand.phrase.charAt(0).toUpperCase() + cand.phrase.slice(1);
+      if (nodeNormalizeText(display) === nodeNormalizeText(a.disease || '')) return;
+      if (best.has(display)) return;
+      best.set(display, {
+        score: 3,
+        finding: display,
+        type: inferFindingType(cand.phrase, chunk.text),
+        frequencyText: cand.pct,
+        specificity: null,
+        heading: chunk.heading || null,
+        matchedTerm: null,
+        autoDiscovered: true,
+        diseases: localizeDiseases(allDiseases, primaryDisease, (chunk.heading || '') + ' ' + sentenceWindow(chunk.text, at, len)),
+        snippet: windowAround(chunk.text, at, len, 120).trim(),
+      });
+    });
   });
   return [...best.values()];
 }
@@ -1011,6 +1167,7 @@ function formatCitation(a) {
 const MEDICATIONS_INDEX = [];
 const FINDINGS_INDEX = [];
 const AUDIT_UNCATEGORIZED = [];
+const AUTO_FINDINGS = [];
 const SECTION_KEYS = ['epidemiologia', 'fisiopatologia', 'moa', 'tratamento', 'criterios', 'prognostico', 'limitacoes', 'relevancia', 'diferencial'];
 
 articles.forEach((a) => {
@@ -1060,12 +1217,25 @@ articles.forEach((a) => {
       drug: m.drug, class: m.class, dose: m.dose, line: m.line, heading: m.heading, snippet: m.snippet,
     });
   });
-  finds.forEach((f) => {
+  // Os achados descobertos genericamente NÃO entram nas tabelas clínicas.
+  // Na medição, a descoberta genérica acerta ~70% — ótimo para revelar o que
+  // o dicionário não vê, ruim demais para uma tabela que se usa à beira do
+  // leito. Misturá-los contaminaria justamente a precisão que a auditoria
+  // construiu. Vão para uma fila de revisão na aba Cobertura, onde servem
+  // para decidir o que promover ao dicionário.
+  finds.filter((f) => f.autoDiscovered).forEach((f) => {
+    AUTO_FINDINGS.push({
+      diseases: f.diseases, articleId: a.id, title: a.title || a.original_name,
+      citation: a.citation, finding: f.finding, type: f.type,
+      frequencyText: f.frequencyText, heading: f.heading, snippet: f.snippet,
+    });
+  });
+  finds.filter((f) => !f.autoDiscovered).forEach((f) => {
     FINDINGS_INDEX.push({
       diseases: f.diseases, primaryDisease, articleId: a.id, title: a.title || a.original_name, year: a.year,
       evidenceLevel: a.evidence_level, citation: a.citation, sampleSizeHint: a.sample_size_hint,
       finding: f.finding, type: f.type, frequencyText: f.frequencyText, specificity: f.specificity,
-      matchedTerm: f.matchedTerm, heading: f.heading, snippet: f.snippet,
+      matchedTerm: f.matchedTerm, autoDiscovered: !!f.autoDiscovered, heading: f.heading, snippet: f.snippet,
     });
   });
   // Uma linha por doenca citada como causa especifica dentro de um paragrafo
@@ -1097,6 +1267,7 @@ const dataJson = JSON.stringify(articles).replace(/</g, '\\u003c');
 const medsJson = JSON.stringify(MEDICATIONS_INDEX).replace(/</g, '\\u003c');
 const findsJson = JSON.stringify(FINDINGS_INDEX).replace(/</g, '\\u003c');
 const auditJson = JSON.stringify(AUDIT_UNCATEGORIZED).replace(/</g, '\\u003c');
+const autoFindingsJson = JSON.stringify(AUTO_FINDINGS).replace(/</g, '\\u003c');
 
 const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1555,9 +1726,11 @@ table.extracted-table th,table.extracted-table td{white-space:nowrap}
       <div class="view-toggle" style="margin-top:18px">
         <button type="button" id="coverageGapsBtn" class="view-btn active">Artigos com lacunas</button>
         <button type="button" id="coverageAuditBtn" class="view-btn">Seções não categorizadas</button>
+        <button type="button" id="coverageAutoBtn" class="view-btn">Achados não catalogados</button>
       </div>
       <div id="coverageGapsContent"></div>
       <div id="coverageAuditContent" style="display:none"></div>
+      <div id="coverageAutoContent" style="display:none"></div>
     </div>
   </section>
 </main>
@@ -1591,6 +1764,7 @@ const ARTICLES = ${dataJson};
 const MEDICATIONS_INDEX = ${medsJson};
 const FINDINGS_INDEX = ${findsJson};
 const AUDIT_UNCATEGORIZED = ${auditJson};
+const AUTO_FINDINGS = ${autoFindingsJson};
 const CLAUDE_MODEL = 'claude-sonnet-5';
 
 // ---------- Modo de leitura compacto ----------
@@ -3812,18 +3986,62 @@ const coverageGapsContent = document.getElementById('coverageGapsContent');
 const coverageAuditContent = document.getElementById('coverageAuditContent');
 const coverageSummary = document.getElementById('coverageSummary');
 
-coverageGapsBtn.addEventListener('click', () => {
-  coverageGapsBtn.classList.add('active');
-  coverageAuditBtn.classList.remove('active');
-  coverageGapsContent.style.display = 'block';
-  coverageAuditContent.style.display = 'none';
+const coverageAutoBtn = document.getElementById('coverageAutoBtn');
+const coverageAutoContent = document.getElementById('coverageAutoContent');
+const COVERAGE_VIEWS = [
+  [coverageGapsBtn, coverageGapsContent],
+  [coverageAuditBtn, coverageAuditContent],
+  [coverageAutoBtn, coverageAutoContent],
+];
+COVERAGE_VIEWS.forEach(([btn, panel]) => {
+  btn.addEventListener('click', () => {
+    COVERAGE_VIEWS.forEach(([b, p]) => {
+      b.classList.toggle('active', b === btn);
+      p.style.display = p === panel ? 'block' : 'none';
+    });
+    if (panel === coverageAutoContent) renderAutoFindings();
+  });
 });
-coverageAuditBtn.addEventListener('click', () => {
-  coverageAuditBtn.classList.add('active');
-  coverageGapsBtn.classList.remove('active');
-  coverageAuditContent.style.display = 'block';
-  coverageGapsContent.style.display = 'none';
-});
+
+// Fila de revisão: o que a descoberta genérica achou e o dicionário não
+// cobre. Fica FORA das tabelas clínicas de propósito — a extração genérica
+// acerta cerca de 70%, o que é excelente para revelar lacunas e insuficiente
+// para uso clínico direto. Aqui serve para decidir o que promover ao
+// dicionário (onde passa a ter nome e tipo revisados à mão).
+let autoFindingsRendered = false;
+function renderAutoFindings() {
+  if (autoFindingsRendered) return;
+  autoFindingsRendered = true;
+  if (AUTO_FINDINGS.length === 0) {
+    coverageAutoContent.innerHTML = '<div class="empty-state">Nenhum achado fora do dicionário foi detectado.</div>';
+    return;
+  }
+  const byDisease = new Map();
+  AUTO_FINDINGS.forEach((f) => {
+    const d = f.diseases[0] || '(sem doença)';
+    if (!byDisease.has(d)) byDisease.set(d, []);
+    byDisease.get(d).push(f);
+  });
+  let html = '<div class="auto-detected-note">⚠️ Candidatos extraídos sem passar pelo dicionário de achados — cerca de 1 em cada 3 não é um achado de verdade (pode ser taxa de exame, desfecho de estudo ou recorte de frase). Servem para revisar o que falta catalogar, <b>não para uso clínico direto</b>.</div>';
+  html += '<div class="citation-text" style="margin-bottom:10px">' + AUTO_FINDINGS.length + ' candidatos em ' + byDisease.size + ' doenças.</div>';
+  [...byDisease.keys()].sort((a, b) => a.localeCompare(b, 'pt')).forEach((d) => {
+    const items = byDisease.get(d);
+    html += '<h4 class="findings-group-heading">' + escapeHtml(d) + ' <span class="citation-text">(' + items.length + ')</span></h4>';
+    html += '<div class="data-table-wrap"><table class="data-table compact-findings"><thead><tr><th>Frase detectada</th><th>Frequência</th><th>Artigo</th></tr></thead><tbody>';
+    items.forEach((f) => {
+      html += '<tr class="source-link" data-id="' + f.articleId + '">' +
+        '<td>' + escapeHtml(f.finding) + ' <span class="finding-type-tag">' + escapeHtml(f.type) + '</span></td>' +
+        '<td>' + escapeHtml(f.frequencyText) + '</td>' +
+        '<td class="snippet-cell">' + citationCompact(f.citation, null) + (f.heading ? '<div class="section-note">' + escapeHtml(f.heading) + '</div>' : '') + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  coverageAutoContent.innerHTML = html;
+  coverageAutoContent.querySelectorAll('.source-link').forEach((el) => {
+    el.addEventListener('click', () => openModal(Number(el.dataset.id)));
+  });
+}
 
 const KEY_SECTIONS = ['epidemiologia', 'fisiopatologia', 'moa', 'tratamento', 'diferencial'];
 const SECTION_LABELS = {
