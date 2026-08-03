@@ -420,7 +420,12 @@ const FINDING_DICT = {
 const DISEASE_MENTION_ALIASES = {
   'Aortite': ['aortite'],
   'Arterite de Células Gigantes': ['arterite de celulas gigantes', 'arterite temporal', 'acg'],
-  'Arterite de Takayasu': ['takayasu'],
+  // Textos de diretriz usam a SIGLA quase o tempo todo ("todos os pacientes
+  // com TAK"); sem o acronimo aqui, o achado/farmaco cai todo na doenca
+  // primaria do artigo. Aliases com ate 5 caracteres ja usam limite de
+  // palavra, entao 'tak'/'pmr' nao casam dentro de outras palavras.
+  'Arterite de Takayasu': ['takayasu', 'tak'],
+  'Polimialgia Reumática': ['polimialgia reumatica', 'pmr'],
   'Artrite Idiopática Juvenil Sistêmica': ['artrite idiopatica juvenil sistemica', 'still juvenil'],
   'Artrite Reumatoide': ['artrite reumatoide'],
   'Dermatomiosite Juvenil': ['dermatomiosite juvenil'],
@@ -2023,6 +2028,10 @@ const EVIDENCE_RANK = {
   'Ensaio Clínico Randomizado': 0,
   'Revisão Sistemática/Metanálise': 1,
   'Estudo de Coorte/Observacional': 2,
+  // Diretriz e um consenso construido SOBRE revisao sistematica: forte como
+  // orientacao de conduta, mas para um numero especifico nao e evidencia
+  // primaria — por isso ao lado de coorte, e nao junto de ECR/metanalise.
+  'Diretriz/Consenso de Especialistas': 2,
   'Revisão Narrativa': 3,
   'Protocolo de Estudo': 4,
   'Bula/Documento Regulatório': 5,
