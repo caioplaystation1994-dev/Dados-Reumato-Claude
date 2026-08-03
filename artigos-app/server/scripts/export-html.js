@@ -269,7 +269,7 @@ const FINDING_DICT = {
   'Acometimento de medula óssea': { type: 'acometimento orgânico', aliases: ['acometimento da medula ossea', 'envolvimento da medula ossea'] },
   'Miosite/miopatia inflamatória': { type: 'clínico', aliases: ['miosite', 'miopatia inflamatoria'] },
   'Acometimento tireoidiano': { type: 'acometimento orgânico', aliases: ['acometimento tireoidiano', 'tireoidite'] },
-  'Sialoadenite (glândulas salivares/lacrimais)': { type: 'clínico', aliases: ['sialoadenite', 'glandula lacrimal', 'glandula salivar', 'parotida aumentada'] },
+  'Sialoadenite (glândulas salivares/lacrimais)': { type: 'clínico', aliases: ['sialoadenite', 'glandula lacrimal', 'glandula salivar', 'parotida aumentada', 'parotidas'] },
   'Uveíte': { type: 'clínico', aliases: ['uveite'] },
   'Episclerite': { type: 'clínico', aliases: ['episclerite'] },
   'Esclerite': { type: 'clínico', aliases: ['esclerite'] },
@@ -361,7 +361,7 @@ const FINDING_DICT = {
   'Aneurisma de tronco braquiocefálico': { type: 'imagem', aliases: ['aneurisma de tronco braquiocefalico', 'tronco braquiocefalico'] },
   'Aneurisma de artéria mesentérica': { type: 'imagem', aliases: ['aneurisma de arteria mesenterica', 'arteria mesenterica superior'] },
   'Acometimento ocular': { type: 'acometimento orgânico', aliases: ['acometimento ocular', 'envolvimento ocular', 'envolvimento oftalmico', 'acometimento oftalmico'] },
-  'Acometimento neurológico': { type: 'acometimento orgânico', aliases: ['acometimento neurologico', 'envolvimento neurologico'] },
+  'Acometimento neurológico': { type: 'acometimento orgânico', aliases: ['acometimento neurologico', 'envolvimento neurologico', 'sistema nervoso'] },
   'Acometimento de vias aéreas': { type: 'acometimento orgânico', aliases: ['acometimento das vias aereas', 'envolvimento das vias aereas', 'acometimento de vias aereas'] },
   'Acometimento nasal': { type: 'acometimento orgânico', aliases: ['acometimento nasal', 'envolvimento nasal'] },
   // "Hipertensão arterial" foi testada e REMOVIDA: o termo é ubíquo nos textos
@@ -378,6 +378,35 @@ const FINDING_DICT = {
   'Artralgia/artrite': { type: 'clínico', aliases: ['artralgia/artrite/mialgia', 'artralgia/artrite', 'artralgia'] },
   'Pleocitose liquórica': { type: 'laboratorial', aliases: ['pleocitose liquorica', 'pleocitose'] },
   'Perda visual': { type: 'clínico', aliases: ['perda visual'] },
+  // Promovidos da fila de revisão (Cobertura > "Achados não catalogados")
+  // após conferência um a um contra o texto-fonte. Ficaram de fora, de
+  // propósito, os candidatos que eram taxa de exame, desfecho de estudo,
+  // fator de risco (não achado), composição da coorte ou recorte de frase.
+  'Xerose': { type: 'clínico', aliases: ['xerose'] },
+  'Eczema': { type: 'clínico', aliases: ['eczema'] },
+  'Eczema psoriasiforme': { type: 'clínico', aliases: ['eczema psoriasiforme'] },
+  'Lesões psoriásicas': { type: 'clínico', aliases: ['lesoes psoriasicas', 'lesao psoriasica'] },
+  'Pustulose palmoplantar': { type: 'clínico', aliases: ['pustulose palmoplantar'] },
+  'Infecções cutâneas': { type: 'clínico', aliases: ['infeccoes cutaneas', 'infeccao cutanea'] },
+  'Câncer de pele (melanoma/não-melanoma)': { type: 'clínico', aliases: ['cancer de pele nao-melanoma/melanoma', 'cancer de pele'] },
+  'Rash/prurido': { type: 'clínico', aliases: ['rash/prurido', 'rash cutaneo', 'prurido'] },
+  'Espessamento mucoso (seios paranasais)': { type: 'imagem', aliases: ['espessamento mucoso'] },
+  'Destruição óssea': { type: 'imagem', aliases: ['destruicao ossea'] },
+  'Esclerose óssea de parede de seio': { type: 'imagem', aliases: ['esclerose ossea da parede do seio', 'esclerose ossea'] },
+  'Crostas nasais': { type: 'clínico', aliases: ['crostas nasais/rinorreia sanguinolenta', 'crostas nasais', 'crosta nasal'] },
+  'Dano cartilaginoso/ósseo': { type: 'imagem', aliases: ['dano cartilaginoso/osseo'] },
+  'Catarata': { type: 'clínico', aliases: ['catarata'] },
+  'Glaucoma': { type: 'clínico', aliases: ['glaucoma'] },
+  'Edema macular': { type: 'clínico', aliases: ['edema macular'] },
+  'Fibrose sub-retiniana': { type: 'imagem', aliases: ['fibrose sub-retiniana', 'fibrose subretiniana'] },
+  'Escotomas': { type: 'clínico', aliases: ['escotomas', 'escotoma'] },
+  'Visão turva/diminuída': { type: 'clínico', aliases: ['visao turva/diminuida', 'visao turva', 'visao embacada'] },
+  'Pneumonia': { type: 'clínico', aliases: ['pneumonia'] },
+  'Infecção de trato respiratório': { type: 'clínico', aliases: ['infeccao do trato respiratorio', 'infeccao respiratoria baixa', 'infeccao respiratoria alta'] },
+  'Septicemia/sepse': { type: 'clínico', aliases: ['septicemia', 'sepse'] },
+  'Meningite': { type: 'clínico', aliases: ['meningite'] },
+  'Citopenia autoimune': { type: 'laboratorial', aliases: ['citopenia autoimune'] },
+  'Rabdomiólise': { type: 'clínico', aliases: ['rabdomiolise recorrente', 'rabdomiolise'] },
 };
 
 // Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
@@ -843,6 +872,17 @@ function isDiminishedFrequencyWord(text, hitIndex, hitLen, matchedWord) {
   if (idx === -1) return false;
   return DIMINISHED_FREQ_RE.test(win.slice(Math.max(0, idx - 10), idx));
 }
+// "16,4% e 13,6% de desenvolvimento de glaucoma e catarata, RESPECTIVAMENTE":
+// a ligacao numero->achado e POSICIONAL, e o matcher por proximidade sempre
+// pega o numero mais perto — que aqui e o do outro achado. Sem saber casar
+// listas paralelas, o certo e nao afirmar nada quando a frase tem
+// "respectivamente" e mais de um percentual em jogo.
+const RESPECTIVELY_RE = /respectivamente/i;
+function isRespectivelyAmbiguous(text, hitIndex, hitLen) {
+  const sentence = sentenceWindow(text, hitIndex, hitLen);
+  if (!RESPECTIVELY_RE.test(sentence)) return false;
+  return (sentence.match(new RegExp(FREQ_PCT_RE.source, 'g')) || []).length > 1;
+}
 function isSuspectNumber(text, hitIndex, hitLen, matchedStr) {
   if (!matchedStr) return false;
   const win = windowAround(text, hitIndex, hitLen, 100);
@@ -1066,6 +1106,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       let pct = nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isSubgroupComparison(chunk.text, hit.index, hit.len, pct)) pct = null;
+      if (isRespectivelyAmbiguous(chunk.text, hit.index, hit.len)) pct = null;
       const isEtiologic = isEtiologicShareOfFinding(chunk.text, hit.index, hit.len);
       if (isEtiologic) pct = null;
       // Vale tambem para a frequencia em palavras: "causa mais COMUM de
@@ -1129,6 +1170,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       if (isNegatedAt(normChunkTextGeneric, at)) return;
       if (isSuspectNumber(chunk.text, at, len, cand.pct)) return;
       if (isSubgroupComparison(chunk.text, at, len, cand.pct)) return;
+      if (isRespectivelyAmbiguous(chunk.text, at, len)) return;
       if (isEtiologicShareOfFinding(chunk.text, at, len)) return;
 
       const display = cand.phrase.charAt(0).toUpperCase() + cand.phrase.slice(1);
