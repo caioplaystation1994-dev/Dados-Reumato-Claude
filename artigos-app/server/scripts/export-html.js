@@ -347,7 +347,7 @@ const FINDING_DICT = {
   'Transtorno de ansiedade generalizada (diagnóstico formal)': { type: 'clínico', aliases: ['transtorno de ansiedade generalizada', 'transtorno de ansiedade'] },
   'Sintomas de ansiedade (rastreio por escala)': { type: 'clínico', aliases: ['sintomas clinicos de ansiedade', 'sintomas de ansiedade'] },
   'CK (creatinoquinase) elevada': { type: 'laboratorial', aliases: ['ck elevada', 'ck cronicamente elevada', 'creatinoquinase elevada', 'cpk elevada', 'hiperckemia'] },
-  'Sinéquias posteriores': { type: 'clínico', aliases: ['sinequias posteriores', 'sinequia posterior'] },
+  'Sinéquias posteriores': { type: 'clínico', aliases: ['sinequias posteriores', 'sinequia posterior', 'sinequias anteriores', 'sinequias'] },
   'Neovascularização coroideana': { type: 'clínico', aliases: ['neovascularizacao coroideana', 'neovascularizacao coroidea'] },
   'Descolamento seroso de retina': { type: 'imagem', aliases: ['descolamento seroso de retina', 'descolamento seroso retiniano'] },
   'Despigmentação coroideana ("sunset glow fundus")': { type: 'imagem', aliases: ['sunset glow fundus', 'despigmentacao coroideana'] },
@@ -419,6 +419,22 @@ const FINDING_DICT = {
   'Citopenia autoimune': { type: 'laboratorial', aliases: ['citopenia autoimune'] },
   'Rabdomiólise': { type: 'clínico', aliases: ['rabdomiolise recorrente', 'rabdomiolise'] },
   'Trombose/tromboembolismo': { type: 'clínico', aliases: ['eventos tromboticos', 'evento trombotico', 'trombose venosa profunda', 'tromboembolismo'] },
+  // Semiologia ocular: a revisao de uveite (JAMA) descreve estes sinais em
+  // detalhe e nenhum tinha entrada — por isso a aba mostrava muito menos do
+  // que o artigo documenta.
+  'Precipitados ceráticos': { type: 'clínico', aliases: ['precipitados ceraticos', 'precipitado ceratico'] },
+  'Células e flare em câmara anterior': { type: 'clínico', aliases: ['celulas e flare', 'flare na camara anterior', 'celulas na camara anterior'] },
+  'Hipópio': { type: 'clínico', aliases: ['hipopio'] },
+  'Vitrite (células no vítreo)': { type: 'clínico', aliases: ['vitrite', 'celulas no humor vitreo'] },
+  'Papilite (edema de disco óptico)': { type: 'clínico', aliases: ['papilite', 'edema de disco optico'] },
+  'Hipotonia ocular': { type: 'clínico', aliases: ['hipotonia ocular', 'hipotonia'] },
+  'Vasculite retiniana': { type: 'imagem', aliases: ['vasculite retiniana', 'vasculite oclusiva'] },
+  'Embainhamento vascular retiniano': { type: 'imagem', aliases: ['embainhamento vascular'] },
+  'Coriorretinite': { type: 'clínico', aliases: ['coriorretinite', 'corioretinite'] },
+  'Cicatriz macular': { type: 'imagem', aliases: ['cicatriz macular'] },
+  'Isquemia retiniana': { type: 'imagem', aliases: ['isquemia retiniana'] },
+  'Injeção ciliar/circum-corneana': { type: 'clínico', aliases: ['injecao ciliar', 'injecao circum-corneana'] },
+  'Atrofia de íris': { type: 'clínico', aliases: ['atrofia de iris'] },
 };
 
 // Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
@@ -1264,7 +1280,12 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
   // Mesmo criterio das medicacoes: mesmo achado com a MESMA frequencia em
   // secoes diferentes e repeticao, nao evidencia adicional. Frequencias
   // diferentes ficam, porque ai o artigo esta mesmo relatando dois numeros.
-  return dedupeByContent([...best.values()], (f) => f.finding + '|' + (f.frequencyText || ''));
+  const rows = dedupeByContent([...best.values()], (f) => f.finding + '|' + (f.frequencyText || ''));
+  // Se o mesmo achado aparece quantificado numa secao e apenas citado noutra,
+  // a mencao sem numero nao acrescenta nada — mostrar as duas gera a linha
+  // "X = 8-10%" seguida de "X = nao detectada" para o mesmo artigo.
+  const quantificados = new Set(rows.filter((f) => f.frequencyText).map((f) => f.finding));
+  return rows.filter((f) => f.frequencyText || !quantificados.has(f.finding));
 }
 
 function formatCitation(a) {
@@ -3809,7 +3830,7 @@ function populateFindingsDiseaseSelect() {
   const prev = findingsDiseaseSelect.value;
   findingsDiseaseSelect.innerHTML = '<option value="">Selecione uma doença/tema...</option>' +
     opts.map((d) => {
-      const count = FINDINGS_INDEX.filter((f) => f.diseases.includes(d) && f.frequencyText).length;
+      const count = FINDINGS_INDEX.filter((f) => f.diseases.includes(d)).length;
       return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + ' (' + count + ' achado' + (count !== 1 ? 's' : '') + ')</option>';
     }).join('');
   if (prev && opts.includes(prev)) findingsDiseaseSelect.value = prev;
@@ -3955,9 +3976,16 @@ function renderFindingsByDisease() {
     findingsByDiseaseContent.innerHTML = '<div class="empty-state">Selecione uma doença acima para ver todo achado clínico, laboratorial, de imagem, anatomopatológico ou de acometimento de órgão já documentado nos artigos desta biblioteca sobre ela.</div>';
     return;
   }
-  const rows = FINDINGS_INDEX.filter((f) => f.diseases.includes(disease) && f.frequencyText);
+  // Exigir frequencia para EXIBIR escondia 275 achados — a maioria dos que o
+  // artigo descreve qualitativamente ("sinequias posteriores aumentam o risco
+  // de glaucoma"), sem percentual. A propria descricao da aba promete "com a
+  // frequencia relatada QUANDO DISPONIVEL"; filtrar por ela contradizia isso e
+  // dava a impressao de que a biblioteca documenta menos do que documenta.
+  // Achados sem frequencia entram com "nao detectada" e, como frequencyRank
+  // devolve -1 para vazio, ordenam naturalmente depois dos quantificados.
+  const rows = FINDINGS_INDEX.filter((f) => f.diseases.includes(disease));
   if (rows.length === 0) {
-    findingsByDiseaseContent.innerHTML = '<div class="empty-state">Nenhum achado com frequência detectável foi encontrado automaticamente nos artigos desta biblioteca sobre ' + escapeHtml(disease) + '.</div>';
+    findingsByDiseaseContent.innerHTML = '<div class="empty-state">Nenhum achado foi encontrado automaticamente nos artigos desta biblioteca sobre ' + escapeHtml(disease) + '.</div>';
     return;
   }
   const divergent = detectFrequencyDivergence(rows);
@@ -4028,9 +4056,9 @@ function renderFindingsBySearch() {
     findingsBySearchContent.innerHTML = '<div class="empty-state">Digite um achado acima (ex.: "anti-PR3", "aneurisma de subclávia") para ver em quais artigos desta biblioteca ele é documentado, com que frequência e em qual contexto/população.</div>';
     return;
   }
-  const rows = FINDINGS_INDEX.filter((f) => normalizeText(f.finding).includes(term) && f.frequencyText);
+  const rows = FINDINGS_INDEX.filter((f) => normalizeText(f.finding).includes(term));
   if (rows.length === 0) {
-    findingsBySearchContent.innerHTML = '<div class="empty-state">Nenhum achado com frequência detectável corresponde a "' + escapeHtml(rawTerm) + '". Tente um termo mais genérico ou veja as sugestões ao digitar.</div>';
+    findingsBySearchContent.innerHTML = '<div class="empty-state">Nenhum achado corresponde a "' + escapeHtml(rawTerm) + '". Tente um termo mais genérico ou veja as sugestões ao digitar.</div>';
     return;
   }
   // Ao buscar por achado (em vez de por doença), o dado que falta para
