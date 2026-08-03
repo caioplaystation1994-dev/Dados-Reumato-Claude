@@ -129,9 +129,20 @@ function nodeCategorizeHeading(heading) {
   return null;
 }
 
-const DOSE_RE_NODE = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|a)\s*\d+(?:[.,]\d+)?)?\s*(?:mg|g|mcg|µg|UI|ui)(?:\/kg)?(?:\/(?:dia|semana|m[eê]s|dose|m2|m²|dL|dl))?/;
+// 'dL' foi REMOVIDO das unidades: 'g/dL' e concentracao (hemoglobina, um
+// valor laboratorial), nunca posologia — sem isso, "hemoglobina abaixo de
+// 8 g/dL" virava a dose do rituximabe. Dose se expressa por kg, por m2 ou
+// por unidade de tempo.
+const DOSE_RE_NODE = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|a)\s*\d+(?:[.,]\d+)?)?\s*(?:mg|g|mcg|µg|UI|ui)(?:\/kg)?(?:\/(?:dia|semana|m[eê]s|dose|m2|m²))?(?!\s*\/?\s*d[lL])/;
 
 const DRUG_DICT = {
+  // Ausentes ate a inclusao da revisao de anemia hemolitica autoimune (NEJM).
+  'Bortezomibe': { class: 'Inibidor de proteassoma', aliases: ['bortezomibe', 'bortezomib'] },
+  'Bendamustina': { class: 'Quimioterápico alquilante', aliases: ['bendamustina', 'bendamustine'] },
+  'Sutimlimabe': { class: 'Inibidor de complemento (anti-C1s)', aliases: ['sutimlimabe', 'sutimlimab'] },
+  'Pegcetacoplan': { class: 'Inibidor de complemento (anti-C3)', aliases: ['pegcetacoplan'] },
+  'Ibrutinibe': { class: 'Inibidor de BTK', aliases: ['ibrutinibe', 'ibrutinib'] },
+  'Fludarabina': { class: 'Análogo de purina', aliases: ['fludarabina', 'fludarabine'] },
   // Glicocorticoides (prednisona, metilprednisolona etc.) foram removidos de
   // proposito: sao usados de forma quase universal em praticamente toda
   // doenca reumatica inflamatoria, entao lista-los como "linha de tratamento"
@@ -407,6 +418,7 @@ const FINDING_DICT = {
   'Meningite': { type: 'clínico', aliases: ['meningite'] },
   'Citopenia autoimune': { type: 'laboratorial', aliases: ['citopenia autoimune'] },
   'Rabdomiólise': { type: 'clínico', aliases: ['rabdomiolise recorrente', 'rabdomiolise'] },
+  'Trombose/tromboembolismo': { type: 'clínico', aliases: ['eventos tromboticos', 'evento trombotico', 'trombose venosa profunda', 'tromboembolismo'] },
 };
 
 // Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
@@ -424,6 +436,7 @@ const DISEASE_MENTION_ALIASES = {
   // com TAK"); sem o acronimo aqui, o achado/farmaco cai todo na doenca
   // primaria do artigo. Aliases com ate 5 caracteres ja usam limite de
   // palavra, entao 'tak'/'pmr' nao casam dentro de outras palavras.
+  'Anemia Hemolítica Autoimune': ['anemia hemolitica autoimune', 'aiha'],
   'Arterite de Takayasu': ['takayasu', 'tak'],
   'Polimialgia Reumática': ['polimialgia reumatica', 'pmr'],
   'Artrite Idiopática Juvenil Sistêmica': ['artrite idiopatica juvenil sistemica', 'still juvenil'],
@@ -888,7 +901,16 @@ function isRespectivelyAmbiguous(text, hitIndex, hitLen) {
   if (!RESPECTIVELY_RE.test(sentence)) return false;
   return (sentence.match(new RegExp(FREQ_PCT_RE.source, 'g')) || []).length > 1;
 }
-function isSuspectNumber(text, hitIndex, hitLen, matchedStr) {
+function mentionsOwnDisease(afterText, ownDisease) {
+  if (!ownDisease) return false;
+  const norm = nodeNormalizeText(afterText);
+  if (norm.includes(nodeNormalizeText(ownDisease))) return true;
+  const aliases = DISEASE_MENTION_ALIASES[ownDisease] || [];
+  return aliases.some((al) => (al.length <= 5
+    ? new RegExp('\\b' + escapeAliasRe(al) + '\\b').test(norm)
+    : norm.includes(al)));
+}
+function isSuspectNumber(text, hitIndex, hitLen, matchedStr, ownDisease) {
   if (!matchedStr) return false;
   const win = windowAround(text, hitIndex, hitLen, 100);
   const idx = win.indexOf(matchedStr);
@@ -897,7 +919,11 @@ function isSuspectNumber(text, hitIndex, hitLen, matchedStr) {
   if (SUSPECT_NUMBER_CONTEXT_RE.test(before)) return true;
   if (/[<>]\s*$/.test(win.slice(Math.max(0, idx - 4), idx))) return true;
   const after = win.slice(idx + matchedStr.length, idx + matchedStr.length + 35);
-  if (CONDITIONED_ON_FINDING_RE.test(after)) return true;
+  // ...mas "11 a 20% dos pacientes COM AIHA tiveram trombose" nao e
+  // condicionamento: o que vem depois de "com" e a DOENCA DO ARTIGO, nao o
+  // achado. Nesse caso o numero e exatamente a frequencia procurada. So
+  // suprime quando o termo apos "com" nao e a propria doenca em questao.
+  if (CONDITIONED_ON_FINDING_RE.test(after) && !mentionsOwnDisease(after, ownDisease)) return true;
   // "risco de falencia renal ... 5% COM proteinuria <0,5g/dia": o numero e
   // condicionado a um LIMIAR do achado citado logo depois (com um "<"/">"),
   // nao a frequencia do achado.
@@ -1109,7 +1135,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       // do achado vira, por engano, a frequencia dele.
       if (isNegatedAt(normChunkText, hit.index)) return;
       let pct = nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
-      if (isSuspectNumber(chunk.text, hit.index, hit.len, pct)) pct = null;
+      if (isSuspectNumber(chunk.text, hit.index, hit.len, pct, a.disease)) pct = null;
       if (isSubgroupComparison(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isRespectivelyAmbiguous(chunk.text, hit.index, hit.len)) pct = null;
       const isEtiologic = isEtiologicShareOfFinding(chunk.text, hit.index, hit.len);
@@ -1173,7 +1199,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       const idx = chunk.text.indexOf(cand.phrase);
       const at = idx === -1 ? cand.index : idx;
       if (isNegatedAt(normChunkTextGeneric, at)) return;
-      if (isSuspectNumber(chunk.text, at, len, cand.pct)) return;
+      if (isSuspectNumber(chunk.text, at, len, cand.pct, a.disease)) return;
       if (isSubgroupComparison(chunk.text, at, len, cand.pct)) return;
       if (isRespectivelyAmbiguous(chunk.text, at, len)) return;
       if (isEtiologicShareOfFinding(chunk.text, at, len)) return;
@@ -2250,7 +2276,7 @@ function renderTree(list) {
 }
 
 // ---------- Extração de doses (blocos visuais destacados) ----------
-const DOSE_RE = /(\\d+(?:[.,]\\d+)?(?:\\s*(?:-|–|a)\\s*\\d+(?:[.,]\\d+)?)?\\s*(?:mg|g|mcg|µg|UI|ui)(?:\\/kg)?(?:\\/(?:dia|semana|m[eê]s|dose|m2|m²|dL|dl))?)/g;
+const DOSE_RE = /(\\d+(?:[.,]\\d+)?(?:\\s*(?:-|–|a)\\s*\\d+(?:[.,]\\d+)?)?\\s*(?:mg|g|mcg|µg|UI|ui)(?:\\/kg)?(?:\\/(?:dia|semana|m[eê]s|dose|m2|m²))?)/g;
 
 function extractDoseSentences(text) {
   if (!text) return [];
