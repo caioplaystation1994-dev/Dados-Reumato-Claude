@@ -374,16 +374,16 @@ body{padding-bottom:64px}
 .rec-esp-prescricao{width:100%;min-height:120px;border:1px solid #fbd38d;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.9;font-family:inherit;background:#fffdf7;resize:none;overflow-y:hidden;transition:border-color .15s}
 .rec-esp-prescricao:focus{outline:none;border-color:#b7791f;background:#fff}
 .rec-esp-via2-texto{font-size:14px;line-height:1.9;min-height:80px;padding:8px 0;white-space:pre-wrap;color:#1a202c;border-bottom:1px solid #fbd38d}
-.rec-esp-corte{text-align:center;color:#b7791f;font-size:12px;padding:10px 0;letter-spacing:2px;user-select:none}
 .rec-esp-assinatura{margin-top:36px}
 .rec-esp-ass-linha{border-top:1px solid #4a5568;padding-top:6px;width:260px;font-size:11px;text-align:center;color:#4a5568;margin:0 auto}
 
 @media print{
-  /* Rec. especial: layout de 2 vias em uma A4 (só quando selecionada para impressão) */
+  /* Rec. especial: cada via (1ª farmácia / 2ª paciente) ocupa uma folha A4
+     inteira própria, com a assinatura empurrada para o fim da página. */
   #receita-especial.page.print-selected .doc-wrapper{display:block!important}
   .rec-esp-wrapper{padding:0;box-shadow:none;border:none;background:transparent}
-  .rec-via{padding:14px 20px;border:none;border-radius:0;box-shadow:none;page-break-inside:avoid;margin:0}
-  .rec-esp-corte{display:block!important;border-top:1px dashed #aaa;padding:3px 0;font-size:10px;color:#999;letter-spacing:2px;margin:0}
+  .rec-via{padding:16px 0 3.5cm;border:none;border-radius:0;box-shadow:none;margin:0;display:flex;flex-direction:column;min-height:25cm}
+  #rec-esp-via1{page-break-after:always}
   .rec-esp-atalhos{display:none!important}
   .rec-esp-campo input{border:none;border-bottom:1px solid #ccc;border-radius:0;background:transparent;padding:2px 0;font-size:12px}
   .rec-esp-prescricao{border:none;background:transparent;padding:4px 0;font-size:13px;min-height:unset}
@@ -391,6 +391,7 @@ body{padding-bottom:64px}
   .rec-esp-titulo{font-size:13px}
   .rec-esp-subtitulo{font-size:9px}
   .rec-esp-header::after{box-shadow:none}
+  .rec-esp-assinatura{margin-top:auto}
   .action-bar{display:none!important}
 }
 
@@ -1096,9 +1097,6 @@ body{padding-bottom:64px}
       </div>
     </div>
 
-    <!-- Linha de corte -->
-    <div class="rec-esp-corte no-print-hide">✂ · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·</div>
-
     <!-- VIA 2 (espelho — preenchida automaticamente) -->
     <div class="rec-via" id="rec-esp-via2">
       <div class="rec-esp-header">
@@ -1160,6 +1158,7 @@ body{padding-bottom:64px}
 <!-- ======================== EXAMES LABORATORIAIS ======================== -->
 <div id="exames-lab" class="page">
   <div class="doc-wrapper">
+    <div class="doc-head-block">
     <div class="doc-header">
       <div class="doc-header-logo" id="dhl-lab"><img class="doc-logo" src="" alt=""></div>
       <div class="doc-header-text">
@@ -1190,10 +1189,12 @@ body{padding-bottom:64px}
     </div>
 
     <div class="section-label">Pacotes de Exames</div>
+    </div>
 
     <div class="pacotes-grid" id="pacotes-lab"></div>
     <div id="lab-print-flat" class="print-flat-list"></div>
 
+    <div class="doc-tail-block">
     <div id="hlab27-aviso" style="display:none;background:#fffbeb;border:1.5px solid #f6ad55;border-radius:8px;padding:12px 14px;margin-top:4px;font-size:12px;color:#7b341e">
       ⚠️ <strong>HLA-B27</strong> selecionado — será gerado um <strong>arquivo .docx separado</strong> com a solicitação e justificativa específica.
       <div style="margin-top:10px">
@@ -1235,6 +1236,7 @@ body{padding-bottom:64px}
       </div>
     </div>
     <div class="signature-line">Assinatura e Carimbo</div>
+    </div>
     <div class="print-rodape"></div>
   </div>
 
@@ -1302,6 +1304,7 @@ body{padding-bottom:64px}
 <!-- ======================== EXAMES DE IMAGEM ======================== -->
 <div id="exames-img" class="page">
   <div class="doc-wrapper">
+    <div class="doc-head-block">
     <div class="doc-header">
       <div class="doc-header-logo" id="dhl-img"><img class="doc-logo" src="" alt=""></div>
       <div class="doc-header-text">
@@ -1337,9 +1340,11 @@ body{padding-bottom:64px}
     </div>
 
     <div class="section-label">Exames de Imagem</div>
+    </div>
     <div class="pacotes-grid" id="pacotes-img"></div>
     <div id="img-print-flat" class="print-flat-list"></div>
 
+    <div class="doc-tail-block">
     <div class="section-label">Exames Adicionais (texto livre)</div>
     <div class="field-group print-adicional-group">
       <textarea id="img-adicional" class="short" placeholder="Outros exames de imagem, com especificação do segmento/lado... (um por linha)"></textarea>
@@ -1361,6 +1366,7 @@ body{padding-bottom:64px}
       </div>
     </div>
     <div class="signature-line">Assinatura e Carimbo</div>
+    </div>
     <div class="print-rodape"></div>
   </div>
 
@@ -1853,6 +1859,124 @@ function clearForm(pageId) {
 // ─── Preparar / limpar estado de impressão ────────────────────────────────────
 const ESPECIAIS_PRINT = ['print-hlab27','print-igra'];
 
+// Altura útil (px, a 96dpi) reservada para os itens de exame dentro de cada
+// página de uma lista impressa: altura de uma via de A4 (mesma referência
+// usada na Rec. Especial, .rec-via{min-height:25cm}) menos o padding do
+// .doc-wrapper (16px topo + 3.5cm base) e uma folga conservadora para o
+// bloco de cabeçalho (paciente/CID) e para o rodapé — propositalmente
+// subestimada para nunca deixar o rodapé faltar por excesso de itens.
+const ALTURA_PAGINA_PX = 25 * 37.7953; // 25cm em px
+const RESERVA_TOPO_BASE_PX = 16 + (3.5 * 37.7953);
+const RESERVA_CABECALHO_RODAPE_PX = 220;
+
+// Divide uma lista de exames (já ordenada) em páginas cheias de
+// .doc-wrapper, cada uma com o mesmo cabeçalho (nome/data/CID) e o mesmo
+// rodapé (.print-rodape), para que nenhuma página impressa fique sem a
+// identificação do paciente ou o rodapé do médico/estabelecimento — problema
+// que ocorria quando a lista de exames excedia uma página e "vazava" para a
+// seguinte sem repetir cabeçalho/rodapé.
+function paginarListaExames(pageId, flatListId, exames) {
+  const pageEl = document.getElementById(pageId);
+  const flatListEl = document.getElementById(flatListId);
+  if (!pageEl || !flatListEl) return;
+
+  // Remove clones de uma impressão anterior
+  pageEl.querySelectorAll('.doc-wrapper[data-print-clone]').forEach(el => el.remove());
+
+  const origWrapper = flatListEl.closest('.doc-wrapper');
+  if (!origWrapper) return;
+  origWrapper.style.display = '';
+
+  if (exames.length === 0) {
+    flatListEl.innerHTML = '';
+    return;
+  }
+
+  // Mede a altura real de cada item (a fonte/padding do .print-flat-item já
+  // valem fora do modo impressão, só o "display" muda por media query).
+  const medidor = document.createElement('div');
+  medidor.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;width:605px';
+  medidor.className = 'print-flat-list';
+  medidor.style.display = 'block';
+  document.body.appendChild(medidor);
+  const alturas = exames.map(texto => {
+    const item = document.createElement('div');
+    item.className = 'print-flat-item';
+    item.textContent = texto;
+    medidor.appendChild(item);
+    const h = item.getBoundingClientRect().height;
+    medidor.removeChild(item);
+    return h;
+  });
+  document.body.removeChild(medidor);
+
+  const alturaDisponivel = ALTURA_PAGINA_PX - RESERVA_TOPO_BASE_PX - RESERVA_CABECALHO_RODAPE_PX;
+
+  // Agrupa os exames em blocos que cabem numa página cada
+  const paginas = [];
+  let atual = [];
+  let alturaAtual = 0;
+  exames.forEach((texto, i) => {
+    const h = alturas[i];
+    if (atual.length > 0 && alturaAtual + h > alturaDisponivel) {
+      paginas.push(atual);
+      atual = [];
+      alturaAtual = 0;
+    }
+    atual.push(texto);
+    alturaAtual += h;
+  });
+  if (atual.length > 0) paginas.push(atual);
+
+  const headBlock = origWrapper.querySelector('.doc-head-block');
+  const tailBlock = origWrapper.querySelector('.doc-tail-block');
+
+  if (paginas.length <= 1) {
+    // Cabe tudo numa página só: mantém o wrapper original como está.
+    flatListEl.innerHTML = paginas[0].map(e => `<div class="print-flat-item">${e}</div>`).join('');
+    return;
+  }
+
+  // Mais de uma página: o wrapper original vira só a última página fica com
+  // a cauda (indicação clínica, médico/CRM); as demais são clones simples
+  // com cabeçalho + fatia da lista + rodapé.
+  origWrapper.style.display = 'none';
+  let anchor = origWrapper;
+  paginas.forEach((fatia, idx) => {
+    const isUltima = idx === paginas.length - 1;
+    const clone = document.createElement('div');
+    clone.className = 'doc-wrapper';
+    clone.setAttribute('data-print-clone', '1');
+    if (headBlock) {
+      const headClone = headBlock.cloneNode(true);
+      // cloneNode não copia o valor digitado pelo usuário em inputs/textareas
+      // (só o value inicial do HTML) — copia manualmente antes de descartar os ids.
+      const origCampos = headBlock.querySelectorAll('input, textarea, select');
+      const cloneCampos = headClone.querySelectorAll('input, textarea, select');
+      origCampos.forEach((campo, i) => { if (cloneCampos[i]) cloneCampos[i].value = campo.value; });
+      clone.appendChild(headClone);
+    }
+    const listaClone = document.createElement('div');
+    listaClone.className = 'print-flat-list';
+    listaClone.innerHTML = fatia.map(e => `<div class="print-flat-item">${e}</div>`).join('');
+    clone.appendChild(listaClone);
+    if (isUltima && tailBlock) {
+      const tailClone = tailBlock.cloneNode(true);
+      const origCampos = tailBlock.querySelectorAll('input, textarea, select');
+      const cloneCampos = tailClone.querySelectorAll('input, textarea, select');
+      origCampos.forEach((campo, i) => { if (cloneCampos[i]) cloneCampos[i].value = campo.value; });
+      clone.appendChild(tailClone);
+    }
+    const rodape = document.createElement('div');
+    rodape.className = 'print-rodape';
+    clone.appendChild(rodape);
+    // Remove ids duplicados dos campos clonados (são só para exibição na impressão)
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    anchor.insertAdjacentElement('afterend', clone);
+    anchor = clone;
+  });
+}
+
 function prepararImpressao(ids) {
   // Seções colapsadas na tela sempre imprimem por completo, independente do
   // estado de colapso — o colapso é só uma conveniência de visualização.
@@ -1884,7 +2008,8 @@ function prepararImpressao(ids) {
     });
     const adicLab = (document.getElementById('lab-adicional')?.value || '').trim();
     if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
-    labFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
+    exames.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    paginarListaExames('exames-lab', 'lab-print-flat', exames);
   }
 
   // ── Páginas especiais HLA-B27 e IGRA ──
@@ -1944,7 +2069,8 @@ function prepararImpressao(ids) {
     });
     const adicImg = (document.getElementById('img-adicional')?.value || '').trim();
     if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
-    imgFlat.innerHTML = exames.map(e => `<div class="print-flat-item">${e}</div>`).join('');
+    exames.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    paginarListaExames('exames-img', 'img-print-flat', exames);
   }
 
   // ── Rodapé de impressão ──
@@ -1964,6 +2090,11 @@ function limparImpressao() {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('print-selected'));
   document.querySelectorAll('.pacote').forEach(p => p.classList.remove('sem-selecao'));
   document.querySelectorAll('.oculto-impressao').forEach(el => el.classList.remove('oculto-impressao'));
+  // Desfaz a paginação manual das listas de exames (remove clones de página e
+  // reexibe o .doc-wrapper original, que ficou display:none quando a lista
+  // precisou de mais de uma página).
+  document.querySelectorAll('.doc-wrapper[data-print-clone]').forEach(el => el.remove());
+  document.querySelectorAll('#exames-lab .doc-wrapper, #exames-img .doc-wrapper').forEach(el => { el.style.display = ''; });
   document.body.classList.add('secoes-colapsam');
   if (document._tituloOriginal !== undefined) {
     document.title = document._tituloOriginal;
