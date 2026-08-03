@@ -596,6 +596,7 @@ body{padding-bottom:64px}
 <!-- ======================== RELATÓRIO MÉDICO ======================== -->
 <div id="relatorio" class="page active">
   <div class="doc-wrapper">
+    <div class="doc-head-block">
     <div class="doc-header">
       <div class="doc-header-logo" id="dhl-relatorio"><img class="doc-logo" src="" alt=""></div>
       <div class="doc-header-text">
@@ -642,6 +643,7 @@ body{padding-bottom:64px}
           <div class="cid-suggestions" id="cid-sug-rel" style="display:none"></div>
         </div>
       </div>
+    </div>
     </div>
 
     <div class="svitais-panel no-print" id="svitais-panel">
@@ -777,31 +779,44 @@ body{padding-bottom:64px}
       </div>
     </div>
 
+    <div id="rel-corpo-print">
+    <div class="print-bloco">
     <div class="section-label no-print">Anamnese / Histórico Atual</div>
     <div class="field-group">
       <textarea id="rel-anamnese" class="tall" placeholder="Queixa principal, evolução da doença, sintomas atuais..."></textarea>
     </div>
+    </div>
 
+    <div class="print-bloco">
     <div class="section-label print-se-preenchido" data-textarea="rel-exfisico">Exame Físico</div>
     <div class="field-group">
       <textarea id="rel-exfisico" class="tall" placeholder="PA: ___x___ mmHg  |  FC: ___ bpm  |  FR: ___ irpm  |  T: ___°C  |  Peso: ___ kg&#10;&#10;Articular: &#10;Extra-articular: "></textarea>
     </div>
+    </div>
 
+    <div class="print-bloco">
     <div class="section-label print-se-preenchido" data-textarea="rel-exames">Exames Complementares Relevantes</div>
     <div class="field-group">
       <textarea id="rel-exames" class="tall" placeholder="Resultados laboratoriais e de imagem recentes..."></textarea>
     </div>
+    </div>
 
+    <div class="print-bloco">
     <div class="section-label print-se-preenchido" data-textarea="rel-conduta">Conduta / Plano Terapêutico</div>
     <div class="field-group">
       <textarea id="rel-conduta" class="tall" placeholder="Medicações prescritas, orientações, encaminhamentos, próxima consulta..."></textarea>
     </div>
+    </div>
 
+    <div class="print-bloco">
     <div class="section-label print-se-preenchido" data-textarea="rel-obs">Observações</div>
     <div class="field-group">
       <textarea id="rel-obs" class="short" placeholder="Informações adicionais relevantes..."></textarea>
     </div>
+    </div>
+    </div>
 
+    <div class="doc-tail-block">
     <div class="field-row" style="margin-top:24px">
       <div class="field-group">
         <label>Médico(a) Responsável</label>
@@ -814,6 +829,7 @@ body{padding-bottom:64px}
     </div>
 
     <div class="signature-line">Assinatura e Carimbo</div>
+    </div>
     <div class="print-rodape"></div>
   </div>
 
@@ -828,6 +844,7 @@ body{padding-bottom:64px}
 <!-- ======================== RECEITA MÉDICA ======================== -->
 <div id="receita" class="page">
   <div class="doc-wrapper">
+    <div class="doc-head-block">
     <div class="doc-header">
       <div class="doc-header-logo" id="dhl-receita"><img class="doc-logo" src="" alt=""></div>
       <div class="doc-header-text">
@@ -859,6 +876,7 @@ body{padding-bottom:64px}
         <label>Idade</label>
         <input type="text" id="rx-idade" placeholder="anos" oninput="sincPaciente('idade',this.value)">
       </div>
+    </div>
     </div>
 
     <div class="section-label">Atalhos de Medicamentos</div>
@@ -970,7 +988,6 @@ body{padding-bottom:64px}
       </div>
     </div>
 
-    <div class="section-label">Prescrição</div>
     <div class="rx-action-bar no-print">
       <button class="btn-rx-action" onclick="addLinhaPrescricao()">＋ Adicionar linha</button>
       <button class="btn-rx-action" onclick="reordenarPrescricao()">↕ Reordenar</button>
@@ -984,20 +1001,31 @@ body{padding-bottom:64px}
       <strong>⚠️ Interações medicamentosas detectadas:</strong>
       <div id="interacao-lista"></div>
     </div>
+
+    <div id="rx-corpo-print">
+    <div class="print-bloco">
+    <div class="section-label">Prescrição</div>
     <div class="field-group">
       <textarea id="rx-prescricao" style="min-height:220px;font-size:14px;line-height:1.8;overflow-y:hidden;resize:none" placeholder="1. Metotrexato 15 mg – 1 comprimido 1x/semana, via oral, uso contínuo&#10;2. Ácido fólico 5 mg – 1 comprimido 6 dias por semana, via oral&#10;&#10;(Clique nos botões acima para inserir rapidamente o nome do medicamento)" oninput="verificarInteracoes()" onblur="reordenarTexto(this)"></textarea>
     </div>
+    </div>
 
+    <div class="print-bloco">
     <div class="section-label print-se-preenchido" data-textarea="rx-orientacoes">Orientações ao Paciente</div>
     <div class="field-group">
       <textarea id="rx-orientacoes" class="tall" placeholder="Monitorizar efeitos adversos, retornar em caso de..."></textarea>
     </div>
+    </div>
 
+    <div class="print-bloco">
     <div class="section-label print-se-preenchido" data-textarea="rx-obs">Observações / Uso Contínuo</div>
     <div class="field-group">
       <textarea id="rx-obs" class="short" placeholder="Ex: Medicação de uso contínuo. Validade da receita: 30 dias."></textarea>
     </div>
+    </div>
+    </div>
 
+    <div class="doc-tail-block">
     <div class="field-row" style="margin-top:24px">
       <div class="field-group">
         <label>Médico(a) Responsável</label>
@@ -1009,6 +1037,7 @@ body{padding-bottom:64px}
       </div>
     </div>
     <div class="signature-line">Assinatura e Carimbo</div>
+    </div>
     <div class="print-rodape"></div>
   </div>
 
@@ -1869,6 +1898,14 @@ const ALTURA_PAGINA_PX = 25 * 37.7953; // 25cm em px
 const RESERVA_TOPO_BASE_PX = 16 + (3.5 * 37.7953);
 const RESERVA_CABECALHO_RODAPE_PX = 220;
 
+// cloneNode não copia o valor digitado pelo usuário em inputs/textareas (só
+// o value inicial do HTML) — copia manualmente antes de descartar os ids.
+function copiarValoresClone(orig, clone) {
+  const origCampos = orig.querySelectorAll('input, textarea, select');
+  const cloneCampos = clone.querySelectorAll('input, textarea, select');
+  origCampos.forEach((campo, i) => { if (cloneCampos[i]) cloneCampos[i].value = campo.value; });
+}
+
 // Divide uma lista de exames (já ordenada) em páginas cheias de
 // .doc-wrapper, cada uma com o mesmo cabeçalho (nome/data/CID) e o mesmo
 // rodapé (.print-rodape), para que nenhuma página impressa fique sem a
@@ -1949,11 +1986,7 @@ function paginarListaExames(pageId, flatListId, exames) {
     clone.setAttribute('data-print-clone', '1');
     if (headBlock) {
       const headClone = headBlock.cloneNode(true);
-      // cloneNode não copia o valor digitado pelo usuário em inputs/textareas
-      // (só o value inicial do HTML) — copia manualmente antes de descartar os ids.
-      const origCampos = headBlock.querySelectorAll('input, textarea, select');
-      const cloneCampos = headClone.querySelectorAll('input, textarea, select');
-      origCampos.forEach((campo, i) => { if (cloneCampos[i]) cloneCampos[i].value = campo.value; });
+      copiarValoresClone(headBlock, headClone);
       clone.appendChild(headClone);
     }
     const listaClone = document.createElement('div');
@@ -1962,15 +1995,100 @@ function paginarListaExames(pageId, flatListId, exames) {
     clone.appendChild(listaClone);
     if (isUltima && tailBlock) {
       const tailClone = tailBlock.cloneNode(true);
-      const origCampos = tailBlock.querySelectorAll('input, textarea, select');
-      const cloneCampos = tailClone.querySelectorAll('input, textarea, select');
-      origCampos.forEach((campo, i) => { if (cloneCampos[i]) cloneCampos[i].value = campo.value; });
+      copiarValoresClone(tailBlock, tailClone);
       clone.appendChild(tailClone);
     }
     const rodape = document.createElement('div');
     rodape.className = 'print-rodape';
     clone.appendChild(rodape);
     // Remove ids duplicados dos campos clonados (são só para exibição na impressão)
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    anchor.insertAdjacentElement('afterend', clone);
+    anchor = clone;
+  });
+}
+
+// Mesma ideia de paginarListaExames, mas para documentos de texto livre
+// (Relatório Médico, Receita Médica): em vez de uma lista de itens curtos,
+// o "corpo" impresso é uma sequência de blocos (.print-bloco, ex: cada seção
+// com título + campo de texto) dentro do container #<corpoId>. Cada bloco é
+// tratado como uma unidade indivisível — se um único bloco (ex: uma
+// prescrição muito longa) já ultrapassar uma página sozinho, ele continua
+// avançando por conta própria como antes (limitação aceitável: o objetivo
+// aqui é garantir cabeçalho/rodapé em todo o restante do documento).
+function paginarBlocosLivres(pageId, corpoId) {
+  const pageEl = document.getElementById(pageId);
+  const corpoEl = document.getElementById(corpoId);
+  if (!pageEl || !corpoEl) return;
+
+  pageEl.querySelectorAll('.doc-wrapper[data-print-clone]').forEach(el => el.remove());
+
+  const origWrapper = corpoEl.closest('.doc-wrapper');
+  if (!origWrapper) return;
+  origWrapper.style.display = '';
+
+  // Só entram na paginação os blocos com conteúdo (o mesmo critério que a
+  // impressão normal usa para ocultar textareas vazias: .placeholder-shown).
+  const blocos = Array.from(corpoEl.querySelectorAll(':scope > .print-bloco')).filter(b => {
+    const campos = b.querySelectorAll('textarea, input');
+    if (campos.length === 0) return true;
+    return Array.from(campos).some(c => c.value.trim() !== '');
+  });
+  if (blocos.length === 0) return;
+
+  const headBlock = origWrapper.querySelector('.doc-head-block');
+  const tailBlock = origWrapper.querySelector('.doc-tail-block');
+  // Mesma referência usada em paginarListaExames — a folga de
+  // RESERVA_CABECALHO_RODAPE_PX já cobre o cabeçalho impresso (bem mais
+  // compacto do que sua altura na tela) mais o rodapé. Medir o cabeçalho
+  // pela altura da TELA (fontes/paddings maiores que os de impressão)
+  // inflaria a reserva e geraria páginas extras desnecessárias.
+  const alturaDisponivel = ALTURA_PAGINA_PX - RESERVA_TOPO_BASE_PX - RESERVA_CABECALHO_RODAPE_PX;
+
+  const paginas = [];
+  let atual = [];
+  let alturaAtual = 0;
+  blocos.forEach(b => {
+    const h = b.getBoundingClientRect().height;
+    if (atual.length > 0 && alturaAtual + h > alturaDisponivel) {
+      paginas.push(atual);
+      atual = [];
+      alturaAtual = 0;
+    }
+    atual.push(b);
+    alturaAtual += h;
+  });
+  if (atual.length > 0) paginas.push(atual);
+
+  if (paginas.length <= 1) return; // cabe tudo numa página só: nada a fazer
+
+  origWrapper.style.display = 'none';
+  let anchor = origWrapper;
+  paginas.forEach((fatiaBlocos, idx) => {
+    const isUltima = idx === paginas.length - 1;
+    const clone = document.createElement('div');
+    clone.className = 'doc-wrapper';
+    clone.setAttribute('data-print-clone', '1');
+    if (headBlock) {
+      const headClone = headBlock.cloneNode(true);
+      copiarValoresClone(headBlock, headClone);
+      clone.appendChild(headClone);
+    }
+    const corpoClone = document.createElement('div');
+    fatiaBlocos.forEach(b => {
+      const blocoClone = b.cloneNode(true);
+      copiarValoresClone(b, blocoClone);
+      corpoClone.appendChild(blocoClone);
+    });
+    clone.appendChild(corpoClone);
+    if (isUltima && tailBlock) {
+      const tailClone = tailBlock.cloneNode(true);
+      copiarValoresClone(tailBlock, tailClone);
+      clone.appendChild(tailClone);
+    }
+    const rodape = document.createElement('div');
+    rodape.className = 'print-rodape';
+    clone.appendChild(rodape);
     clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
     anchor.insertAdjacentElement('afterend', clone);
     anchor = clone;
@@ -1996,6 +2114,12 @@ function prepararImpressao(ids) {
     const vazio = !ta || ta.value.trim() === '';
     label.classList.toggle('oculto-impressao', vazio);
   });
+
+  // ── Relatório e Receita: se o texto ultrapassar uma página, divide em
+  //    páginas cheias repetindo cabeçalho (paciente) e rodapé (médico/CRM)
+  //    em cada uma, em vez de deixá-los só na última página.
+  if (ids.includes('relatorio')) paginarBlocosLivres('relatorio', 'rel-corpo-print');
+  if (ids.includes('receita')) paginarBlocosLivres('receita', 'rx-corpo-print');
 
   // ── Lista plana de exames laboratoriais (excluindo HLA-B27 e IGRA) ──
   const labFlat = document.getElementById('lab-print-flat');
@@ -2094,7 +2218,7 @@ function limparImpressao() {
   // reexibe o .doc-wrapper original, que ficou display:none quando a lista
   // precisou de mais de uma página).
   document.querySelectorAll('.doc-wrapper[data-print-clone]').forEach(el => el.remove());
-  document.querySelectorAll('#exames-lab .doc-wrapper, #exames-img .doc-wrapper').forEach(el => { el.style.display = ''; });
+  document.querySelectorAll('#exames-lab .doc-wrapper, #exames-img .doc-wrapper, #relatorio .doc-wrapper, #receita .doc-wrapper').forEach(el => { el.style.display = ''; });
   document.body.classList.add('secoes-colapsam');
   if (document._tituloOriginal !== undefined) {
     document.title = document._tituloOriginal;
