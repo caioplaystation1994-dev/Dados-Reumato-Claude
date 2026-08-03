@@ -948,18 +948,39 @@ function isAmbiguousDose(text, hitIndex, hitLen, matchedDose) {
   return false;
 }
 
+// "Avaliacao Critica" e "Relevancia Clinica" sao secoes de COMENTARIO: elas
+// discutem a qualidade da evidencia e as implicacoes, e so citam farmaco ou
+// achado ao reprisar o que o corpo do artigo ja documentou. Extrair delas
+// gera linha duplicada (o mesmo farmaco, sem dose nem linha terapeutica)
+// competindo com a mencao original — foi o que apareceu ao indexar por
+// secao. O que houver de clinicamente relevante nelas e, por construcao,
+// repeticao do corpo.
+function isCommentaryHeading(heading) {
+  const cat = nodeCategorizeHeading(heading);
+  return cat === 'limitacoes' || cat === 'relevancia';
+}
+
 function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
+    if (isCommentaryHeading(chunk.heading)) return;
     scanDictionary(chunk.text, DRUG_DICT).forEach((hit) => {
       let doseMatch = nearestMatch(chunk.text, hit.index, hit.len, DOSE_RE_NODE, 70, 30);
       if (isAmbiguousDose(chunk.text, hit.index, hit.len, doseMatch)) doseMatch = null;
       const wideWin = windowAround(chunk.text, hit.index, hit.len, 160);
       const line = detectLine(wideWin) || detectLine(chunk.heading || '');
       const score = (doseMatch ? 2 : 0) + (line ? 1 : 0);
-      const existing = best.get(hit.canonical);
+      // Chave por (farmaco + SECAO), nao so por farmaco: uma revisao costuma
+      // tratar o mesmo farmaco em contextos diferentes dentro do mesmo artigo
+      // (rituximabe na AIHA quente primaria E na doenca por crioaglutininas,
+      // com linha terapeutica e dose distintas). Com a chave so no nome, a
+      // segunda mencao sobrescrevia a primeira em silencio e o aplicativo
+      // exibia apenas uma das indicacoes. Dentro da MESMA secao a
+      // consolidacao pelo maior score continua valendo.
+      const medKey = hit.canonical + '||' + (chunk.heading || '');
+      const existing = best.get(medKey);
       if (!existing || score > existing.score) {
-        best.set(hit.canonical, {
+        best.set(medKey, {
           score,
           drug: hit.canonical,
           class: hit.entry.class,
@@ -972,7 +993,21 @@ function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
       }
     });
   });
-  return [...best.values()];
+  // Indexar por secao preserva contextos clinicos distintos, mas tambem deixa
+  // passar a mesma informacao repetida em secoes diferentes. Duas linhas com
+  // o MESMO farmaco, MESMA dose e MESMA linha terapeutica nao acrescentam
+  // nada — colapsa mantendo a de maior score (a que trouxe mais sinal).
+  return dedupeByContent([...best.values()], (m) => m.drug + '|' + (m.dose || '') + '|' + (m.line || ''));
+}
+
+function dedupeByContent(rows, keyOf) {
+  const out = new Map();
+  rows.forEach((r) => {
+    const k = keyOf(r);
+    const prev = out.get(k);
+    if (!prev || r.score > prev.score) out.set(k, r);
+  });
+  return [...out.values()];
 }
 
 // O escopo "(referente a: X)" so vale a pena quando X diz algo que o rotulo
@@ -1122,6 +1157,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
     // esclarece o que representa) convivendo com o dado ja correto e
     // granular.
     if (isEtiologyHeading(chunk.heading)) return;
+    if (isCommentaryHeading(chunk.heading)) return;
     const normChunkText = nodeNormalizeText(chunk.text);
     scanDictionary(chunk.text, FINDING_DICT).forEach((hit) => {
       // Quando o achado tem o MESMO nome do tema do proprio artigo (ex.:
@@ -1151,9 +1187,13 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
         ? lateralityQualifier(chunk.text, hit.index, hit.len)
         : null;
       const findingName = lateralQualifier ? hit.canonical + ' (' + lateralQualifier + ')' : hit.canonical;
-      const existing = best.get(findingName);
+      // Mesma razao da chave composta usada nas medicacoes: o mesmo achado
+      // relatado em duas secoes do artigo (com numeros diferentes) nao pode
+      // apagar um ao outro.
+      const findKey = findingName + '||' + (chunk.heading || '');
+      const existing = best.get(findKey);
       if (!existing || score > existing.score) {
-        best.set(findingName, {
+        best.set(findKey, {
           score,
           finding: findingName,
           type: hit.entry.type,
@@ -1221,7 +1261,10 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       });
     });
   });
-  return [...best.values()];
+  // Mesmo criterio das medicacoes: mesmo achado com a MESMA frequencia em
+  // secoes diferentes e repeticao, nao evidencia adicional. Frequencias
+  // diferentes ficam, porque ai o artigo esta mesmo relatando dois numeros.
+  return dedupeByContent([...best.values()], (f) => f.finding + '|' + (f.frequencyText || ''));
 }
 
 function formatCitation(a) {
