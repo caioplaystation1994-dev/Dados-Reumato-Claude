@@ -378,6 +378,12 @@ th.sortable:not(.asc):not(.desc) .sort-arrow::after{content:'⇅'}
     <div class="metric-block" id="m-asdas">
       <div class="numeric-inline"><label>ASDAS (0.6–6):</label><input type="number" id="f-asdas" step="0.01" min="0.6" max="6" placeholder="0.6–6" oninput="autoClassifyAtividade()"></div>
     </div>
+    <div class="metric-block" id="m-dapsa">
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <div class="numeric-inline"><label>DAPSA (0–164):</label><input type="number" id="f-dapsa" step="0.1" min="0" max="164" placeholder="0–164" oninput="autoClassifyAtividade()"></div>
+        <div class="numeric-inline"><label>PASI (0–72):</label><input type="number" id="f-pasi" step="0.1" min="0" max="72" placeholder="0–72"></div>
+      </div>
+    </div>
     <div class="metric-block" id="m-sledai">
       <div class="numeric-inline"><label>SLEDAI (0–105):</label><input type="number" id="f-sledai" min="0" max="105" placeholder="0–105" oninput="autoClassifyAtividade()"></div>
     </div>
@@ -1252,7 +1258,7 @@ const DOENCA_METRICAS = {
   'Artrite reumatoide': ['das28'],
   'Artrite idiopática juvenil': ['das28','asdas'],
   'Espondiloartrite': ['asdas'],
-  'Artrite psorística': ['asdas'],
+  'Artrite psorística': ['dapsa'],
   'Lúpus eritematoso sistêmico': ['sledai'],
   'Lúpus juvenil': ['sledai'],
   'Dermatomiosite': ['myoact'],
@@ -2109,7 +2115,7 @@ function toggleReacao(val) {
 }
 
 function updateMetrics(doenca) {
-  const all = ['das28','asdas','sledai','myoact','bvas','itas'];
+  const all = ['das28','asdas','dapsa','sledai','myoact','bvas','itas'];
   all.forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
   const metrics = DOENCA_METRICAS[doenca] || [];
   metrics.forEach(m => document.getElementById('m-'+m).classList.add('visible'));
@@ -2167,6 +2173,12 @@ function classifyASDAS(v) {
   if (v < 3.5)  return { grau:'Moderada atividade', label:'Alta atividade (ASDAS 2,1–3,5)' };
   return              { grau:'Alta atividade',  label:'Muito alta atividade (ASDAS ≥ 3,5)' };
 }
+function classifyDAPSA(v) {
+  if (v <= 4)  return 'Remissão';
+  if (v <= 14) return 'Baixa atividade';
+  if (v <= 28) return 'Moderada atividade';
+  return 'Alta atividade';
+}
 function classifySLEDAI(v) {
   if (v === 0)  return 'Remissão';
   if (v <= 5)   return 'Baixa atividade';
@@ -2198,6 +2210,10 @@ function autoClassifyAtividade() {
   if (!grau && metrics.includes('asdas')) {
     const v = parseFloat(document.getElementById('f-asdas').value);
     if (!isNaN(v)) { const r = classifyASDAS(v); grau = r.grau; badge = `ASDAS = ${v} → ${r.label}`; }
+  }
+  if (!grau && metrics.includes('dapsa')) {
+    const v = parseFloat(document.getElementById('f-dapsa').value);
+    if (!isNaN(v)) { grau = classifyDAPSA(v); badge = `DAPSA = ${v} → ${grau}`; }
   }
   if (!grau && metrics.includes('sledai')) {
     const v = parseFloat(document.getElementById('f-sledai').value);
@@ -2740,6 +2756,8 @@ function savePatient() {
     cpk: document.getElementById('f-cpk').value,
     das28: document.getElementById('f-das28').value,
     asdas: document.getElementById('f-asdas').value,
+    dapsa: document.getElementById('f-dapsa').value,
+    pasi: document.getElementById('f-pasi').value,
     sledai: document.getElementById('f-sledai').value,
     sledai_clinico: formData.sledai_clinico ?? '',
     myoact: document.getElementById('f-myoact').value,
@@ -2859,7 +2877,7 @@ function clearForm() {
   document.getElementById('f-idade').value = '';
   { const diagInput = document.getElementById('f-diagnostico'); diagInput.value = ''; delete diagInput.dataset.original; diagInput.dataset.touched = 'false'; }
   document.getElementById('tempo-diag-badge').style.display = 'none';
-  ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-intervalo','f-gcs'].forEach(id => {
+  ['f-vhs','f-pcr','f-c3','f-c4','f-cpk','f-das28','f-asdas','f-dapsa','f-pasi','f-sledai','f-myoact','f-mmt8','f-bvas','f-itas','f-intervalo','f-gcs'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('gcs-legacy-hint').style.display = 'none';
@@ -2869,7 +2887,7 @@ function clearForm() {
   document.getElementById('lab-hint').style.display = 'block';
   document.getElementById('sub-remissao').classList.add('hidden');
   document.getElementById('sub-reacao').classList.add('hidden');
-  ['das28','asdas','sledai','myoact','bvas','itas'].forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
+  ['das28','asdas','dapsa','sledai','myoact','bvas','itas'].forEach(m => document.getElementById('m-'+m).classList.remove('visible'));
   document.getElementById('metrics-hint').style.display = 'block';
   document.getElementById('bmq-nec-box').style.display = 'none';
   document.getElementById('bmq-con-box').style.display = 'none';
@@ -3115,6 +3133,8 @@ function editPatient(idx) {
     document.getElementById('f-cpk').value = p.cpk || '';
     document.getElementById('f-das28').value = p.das28 || '';
     document.getElementById('f-asdas').value = p.asdas || '';
+    document.getElementById('f-dapsa').value = p.dapsa || '';
+    document.getElementById('f-pasi').value = p.pasi || '';
     document.getElementById('f-sledai').value = p.sledai || '';
     document.getElementById('f-myoact').value = p.myoact || '';
     document.getElementById('f-mmt8').value = p.mmt8 || '';
@@ -3239,7 +3259,7 @@ function exportCSV() {
   const db = getData();
   if (!db.length) { alert('Nenhum dado para exportar.'); return; }
   const headers = ['rghc','nome','nascimento','inicio_seg','entrevista','idade','sexo','etnia','doenca',
-    'data_diagnostico','tempo_diag','atividade','tempo_remissao','vhs','pcr','c3','c4','dsdna','cpk','dhl','das28','asdas','sledai','sledai_clinico','myoact','mmt8','bvas','itas',
+    'data_diagnostico','tempo_diag','atividade','tempo_remissao','vhs','pcr','c3','c4','dsdna','cpk','dhl','das28','asdas','dapsa','pasi','sledai','sledai_clinico','myoact','mmt8','bvas','itas',
     'num_med','gcs','csdmard','bdmard','tsdmard','tempo_dmard',
     'csdmard_prev','bdmard_prev','tsdmard_prev','comorbidades','med_continuas','med_periodicas',
     'reacao','reacao_quais','intervalo','dmard_posologia',
@@ -3330,6 +3350,8 @@ const SHEET_COLS = [
   ['cpk',             'CPK (U/L)'],
   ['das28',           'DAS28'],
   ['asdas',           'ASDAS'],
+  ['dapsa',           'DAPSA'],
+  ['pasi',            'PASI'],
   ['sledai',          'SLEDAI'],
   ['sledai_clinico',  'SLEDAI Clínico (exclui pontos sorológicos)'],
   ['myoact',          'MYOACT'],
@@ -3773,7 +3795,7 @@ function renderStats() {
   const metGrid = document.createElement('div');
   metGrid.className = 'stat-grid';
   metGrid.innerHTML = [
-    ['DAS28 (0–8)','das28'],['ASDAS (0,6–6)','asdas'],
+    ['DAS28 (0–8)','das28'],['ASDAS (0,6–6)','asdas'],['DAPSA (0–164)','dapsa'],['PASI (0–72)','pasi'],
     ['SLEDAI (0–105)','sledai'],['MYOACT (0–70)','myoact'],
     ['MMT8 (0–80)','mmt8'],['BVAS (0–63)','bvas'],['ITAS (0–51)','itas']
   ].map(([l,f]) => numericCard('Q13 · '+l, numStat(db,f))).join('');
