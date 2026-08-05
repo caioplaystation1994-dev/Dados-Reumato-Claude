@@ -270,6 +270,11 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
 <div id="page-transacoes" class="page">
   <div class="section-card">
     <div class="section-title"><span id="tx-form-title">Nova transação</span></div>
+    <div class="foot-note" style="margin:-6px 0 12px">
+      💡 <strong>Já tinha esse ativo antes de começar a usar o app?</strong> Lance uma <em>compra</em> com a data em que adquiriu
+      e o seu <em>preço médio</em> — não é preciso recadastrar cada operação antiga. Para renda fixa, fundos e previdência,
+      use “Já tenho esse investimento” na aba Renda Fixa.
+    </div>
     <div class="field-grid">
       <div class="field-group">
         <label>Data *</label>
@@ -359,7 +364,15 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
 <!-- ==================== RENDA FIXA ==================== -->
 <div id="page-rendafixa" class="page">
   <div class="section-card">
-    <div class="section-title"><span id="rf-form-title">Novo título de renda fixa</span></div>
+    <div class="section-title">
+      <span id="rf-form-title">Novo título de renda fixa</span>
+      <button class="btn-secondary btn-sm" onclick="novoInvestimentoExistente()">📥 Já tenho esse investimento</button>
+    </div>
+    <div id="rf-ajuda-informado" class="banner info" style="margin-bottom:14px">
+      Para um investimento que você já tem, não é preciso saber a taxa contratada: informe o
+      <strong>valor aplicado</strong>, a <strong>data em que aplicou</strong> e quanto ele
+      <strong>já rendeu</strong> (ou o saldo atual do extrato). O app passa a usar esse número em vez de projetar pela taxa.
+    </div>
     <div class="field-grid">
       <div class="field-group">
         <label>Descrição *</label>
@@ -369,7 +382,9 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
         <label>Tipo *</label>
         <select id="rf-tipo" onchange="onTipoRFChange()">
           <option>Tesouro Direto</option><option>CDB</option><option>RDB</option><option>LCI</option>
-          <option>LCA</option><option>Debênture</option><option>CRI/CRA</option><option>Outro</option>
+          <option>LCA</option><option>Debênture</option><option>CRI/CRA</option>
+          <option>Poupança</option><option>Fundo de investimento</option><option>Previdência privada</option>
+          <option>COE</option><option>Outro</option>
         </select>
       </div>
       <div class="field-group">
@@ -378,15 +393,16 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
         <datalist id="lista-emissores"></datalist>
       </div>
       <div class="field-group">
-        <label>Indexador *</label>
+        <label>Remuneração *</label>
         <select id="rf-indexador" onchange="onIndexadorChange()">
           <option value="CDI">% do CDI</option>
           <option value="SELIC">Selic + taxa</option>
           <option value="PRE">Prefixado (% a.a.)</option>
           <option value="IPCA">IPCA + taxa (% a.a.)</option>
+          <option value="INFORMADO">Rendimento informado por mim</option>
         </select>
       </div>
-      <div class="field-group">
+      <div class="field-group" id="rf-taxa-wrap">
         <label id="rf-taxa-label">Taxa (% do CDI) *</label>
         <input type="number" id="rf-taxa" step="0.01" placeholder="110" oninput="renderPreviewRF()">
       </div>
@@ -401,6 +417,24 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
       <div class="field-group">
         <label>Vencimento</label>
         <input type="date" id="rf-venc" onchange="renderPreviewRF()">
+      </div>
+      <div class="field-group informado-only" style="display:none">
+        <label>O que você vai informar *</label>
+        <select id="rf-modo-informado" onchange="onModoInformadoChange()">
+          <option value="valor">Saldo atual (R$)</option>
+          <option value="rendimento">Rendimento acumulado (R$)</option>
+          <option value="percentual">Rentabilidade acumulada (%)</option>
+        </select>
+      </div>
+      <div class="field-group informado-only" style="display:none">
+        <label id="rf-informado-label">Saldo atual (R$) *</label>
+        <input type="number" id="rf-valor-informado" step="0.01" placeholder="12500.00" oninput="renderPreviewRF()">
+        <span class="hint" id="rf-informado-hint">Valor bruto que aparece hoje no extrato da corretora ou do banco.</span>
+      </div>
+      <div class="field-group informado-only" style="display:none">
+        <label>Data desse saldo *</label>
+        <input type="date" id="rf-data-informado" onchange="renderPreviewRF()">
+        <span class="hint">Use “atualizar saldo” na lista abaixo sempre que quiser refrescar esse número.</span>
       </div>
       <div class="field-group">
         <label>Liquidez *</label>
@@ -451,6 +485,10 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
     <div class="foot-note">
       O FGC cobre até <strong>R$ 250 mil por CPF em cada instituição</strong> (CDB, RDB, LCI, LCA e poupança), com teto global de
       R$ 1 milhão a cada 4 anos. Tesouro Direto, debêntures e CRI/CRA <strong>não têm cobertura do FGC</strong> e são listados à parte.
+      Fundos de investimento, previdência e COE também ficam fora da cobertura.</div><div class="foot-note">
+      O IR usa a tabela regressiva padrão (22,5% até 180 dias · 20% até 360 · 17,5% até 720 · 15% acima); LCI, LCA, CRI/CRA,
+      debêntures incentivadas e poupança entram como isentos. Previdência e fundos têm regras próprias (tabela de 35% a 10%
+      e come-cotas) — aqui o cálculo é uma aproximação.
     </div>
   </div>
 </div>
@@ -689,7 +727,7 @@ const CLASSES = {
 };
 const CLASSES_B3 = ['acao', 'fii', 'etf', 'bdr'];
 const TIPOS_EVENTO = { compra: 'Compra', venda: 'Venda', desdobramento: 'Desdobramento', grupamento: 'Grupamento', bonificacao: 'Bonificação' };
-const TIPOS_FGC = ['CDB', 'RDB', 'LCI', 'LCA'];
+const TIPOS_FGC = ['CDB', 'RDB', 'LCI', 'LCA', 'Poupança'];
 const LIMITE_FGC = 250000;
 
 function nomeClasse(c) { return CLASSES[c] ? CLASSES[c].nome : c; }
@@ -950,7 +988,7 @@ function iofPct(dias) {
 function aliquotaIR(dias) {
   return dias <= 180 ? 22.5 : dias <= 360 ? 20 : dias <= 720 ? 17.5 : 15;
 }
-function isentoIR(tipo) { return ['LCI', 'LCA', 'Debênture', 'CRI/CRA'].indexOf(tipo) >= 0; }
+function isentoIR(tipo) { return ['LCI', 'LCA', 'Debênture', 'CRI/CRA', 'Poupança'].indexOf(tipo) >= 0; }
 
 function calcRF(r, db) {
   const cfg = db.config;
@@ -966,7 +1004,11 @@ function calcRF(r, db) {
   const usaSerie = cdi.temSerie && cdi.du > 0;
   const du = usaSerie ? cdi.du : dias * 252 / 365;
 
-  if (r.indexador === 'CDI') {
+  if (r.indexador === 'INFORMADO') {
+    // investimento já existente: o saldo vem do extrato, não de uma projeção
+    bruto = isFinite(+r.valorInformadoBruto) && +r.valorInformadoBruto > 0 ? +r.valorInformadoBruto : aplicado;
+    metodo = 'saldo informado por você' + (r.valorInformadoData ? ' em ' + dataBR(r.valorInformadoData) : '');
+  } else if (r.indexador === 'CDI') {
     if (usaSerie) { bruto = aplicado * cdi.fator; metodo = 'CDI diário do Banco Central'; }
     else { bruto = aplicado * Math.pow(1 + (+cfg.cdi || 0) / 100 * taxa, du / 252); metodo = 'CDI estimado'; }
   } else if (r.indexador === 'SELIC') {
@@ -1000,8 +1042,15 @@ function calcRF(r, db) {
   const emCarencia = r.liquidez === 'carencia' && r.carenciaAte && r.carenciaAte > hoje;
   const soVencimento = r.liquidez === 'vencimento' && r.vencimento && r.vencimento > hoje;
 
+  const informado = r.indexador === 'INFORMADO';
+  const diasInformado = (informado && r.valorInformadoData) ? diasEntre(r.valorInformadoData, hoje) : 0;
+  // taxa equivalente implícita, para comparar um saldo informado com as demais aplicações
+  const equivAA = (aplicado > 0 && dias > 0 && valor > 0)
+    ? (Math.pow(valor / aplicado, 365 / dias) - 1) * 100 : null;
+
   return {
     dias, du: duUsados, metodo, bruto, mtm, valor, rendimento,
+    informado, diasInformado, desatualizado: informado && diasInformado > 45, equivAA,
     curva: bruto, agio: mtm != null ? mtm - bruto : 0,
     iof, iofPct: iofPct(dias), ir, aliq, liquido,
     isento: isentoIR(r.tipo),
@@ -1518,6 +1567,7 @@ function selosLiquidez(c) {
   return '<span class="tag tag-ok">disponível</span>';
 }
 function rotuloIndexador(t) {
+  if (t.indexador === 'INFORMADO') return 'saldo informado';
   if (t.indexador === 'CDI') return num(t.taxa, 0) + '% do CDI';
   if (t.indexador === 'SELIC') return 'Selic + ' + num(t.taxa) + '%';
   if (t.indexador === 'IPCA') return 'IPCA + ' + num(t.taxa) + '%';
@@ -2077,10 +2127,40 @@ let rfEditando = null;
 
 function onIndexadorChange() {
   const ix = document.getElementById('rf-indexador').value;
+  const informado = ix === 'INFORMADO';
+  document.getElementById('rf-taxa-wrap').style.display = informado ? 'none' : 'flex';
+  document.querySelectorAll('.informado-only').forEach(e => e.style.display = informado ? 'flex' : 'none');
+  document.getElementById('rf-ajuda-informado').className = 'banner info' + (informado ? ' show' : '');
   document.getElementById('rf-taxa-label').textContent =
     ix === 'CDI' ? 'Taxa (% do CDI) *' : ix === 'SELIC' ? 'Taxa (Selic + % a.a.) *'
     : ix === 'IPCA' ? 'Taxa (IPCA + % a.a.) *' : 'Taxa prefixada (% a.a.) *';
+  if (informado && !document.getElementById('rf-data-informado').value) {
+    document.getElementById('rf-data-informado').value = hojeISO();
+  }
+  onModoInformadoChange();
+}
+
+function onModoInformadoChange() {
+  const modo = document.getElementById('rf-modo-informado').value;
+  const rot = { valor: 'Saldo atual (R$) *', rendimento: 'Rendimento acumulado (R$) *', percentual: 'Rentabilidade acumulada (%) *' };
+  const dica = {
+    valor: 'Valor bruto que aparece hoje no extrato da corretora ou do banco.',
+    rendimento: 'Quanto o investimento rendeu desde a aplicação, em reais.',
+    percentual: 'Quanto rendeu no total desde a aplicação — ex.: 23,5 para 23,5%.'
+  };
+  document.getElementById('rf-informado-label').textContent = rot[modo];
+  document.getElementById('rf-informado-hint').textContent = dica[modo];
   renderPreviewRF();
+}
+
+// Atalho: abre o formulário já no modo de investimento existente
+function novoInvestimentoExistente() {
+  limparRF();
+  document.getElementById('rf-indexador').value = 'INFORMADO';
+  document.getElementById('rf-data-informado').value = hojeISO();
+  onIndexadorChange();
+  document.getElementById('rf-nome').focus();
+  window.scrollTo(0, 0);
 }
 function onTipoRFChange() {
   const t = document.getElementById('rf-tipo').value === 'Tesouro Direto';
@@ -2093,9 +2173,25 @@ function onLiquidezChange() {
   renderPreviewRF();
 }
 
+// Converte o que o usuário informou (saldo, rendimento em R$ ou %) em saldo bruto
+function saldoInformado(modo, entrada, aplicado) {
+  if (entrada == null || !isFinite(entrada)) return null;
+  const v = modo === 'rendimento' ? aplicado + entrada
+    : modo === 'percentual' ? aplicado * (1 + entrada / 100)
+    : entrada;
+  return Math.round(v * 100) / 100;
+}
+
 function lerFormRF() {
+  const aplicado = parseFloat(document.getElementById('rf-valor').value);
+  const modo = document.getElementById('rf-modo-informado').value;
+  const entrada = parseFloat(document.getElementById('rf-valor-informado').value);
   return {
     id: rfEditando || novoId(),
+    modoInformado: modo,
+    valorInformadoEntrada: isFinite(entrada) ? entrada : null,
+    valorInformadoBruto: saldoInformado(modo, entrada, isFinite(aplicado) ? aplicado : 0),
+    valorInformadoData: document.getElementById('rf-data-informado').value,
     nome: document.getElementById('rf-nome').value.trim(),
     tipo: document.getElementById('rf-tipo').value,
     emissor: document.getElementById('rf-emissor').value.trim(),
@@ -2115,10 +2211,14 @@ function lerFormRF() {
 function renderPreviewRF() {
   const r = lerFormRF();
   const el = document.getElementById('rf-preview');
-  if (!isFinite(r.taxa) || !isFinite(r.valorAplicado) || !r.dataAplicacao) { el.innerHTML = ''; return; }
+  const informado = r.indexador === 'INFORMADO';
+  const faltaDado = informado ? (r.valorInformadoBruto == null || !isFinite(r.valorInformadoBruto)) : !isFinite(r.taxa);
+  if (faltaDado || !isFinite(r.valorAplicado) || !r.dataAplicacao) { el.innerHTML = ''; return; }
   const c = calcRF(r, getDB());
-  el.innerHTML = '📊 Estimativa hoje: valor <strong>' + brl(c.valor) + '</strong> · rendimento ' + brl(c.rendimento) +
+  el.innerHTML = '📊 ' + (informado ? 'Posição informada' : 'Estimativa hoje') + ': valor <strong>' + brl(c.valor) +
+    '</strong> · rendimento ' + brl(c.rendimento) +
     ' (' + pct(c.rentPct) + ') em ' + c.dias + ' dias corridos · método: ' + esc(c.metodo) +
+    (informado && c.equivAA != null ? ' · equivale a ' + pct(c.equivAA) + ' a.a.' : '') +
     (c.mtm != null ? ' · ágio/deságio sobre a curva: ' + brl(c.agio) : '') +
     '<br>Descontos: ' + (c.iof > 0 ? 'IOF ' + pct(c.iofPct, 0) + ' = ' + brl(c.iof) + ' · ' : '') +
     (c.isento ? 'isento de IR' : 'IR ' + pct(c.aliq) + ' = ' + brl(c.ir)) + ' → líquido <strong>' + brl(c.liquido) + '</strong>' +
@@ -2127,8 +2227,22 @@ function renderPreviewRF() {
 
 function salvarRF() {
   const r = lerFormRF();
-  if (!r.nome || !isFinite(r.taxa) || !isFinite(r.valorAplicado) || r.valorAplicado <= 0 || !r.dataAplicacao) {
-    alert('Preencha descrição, taxa, valor aplicado e data da aplicação.');
+  const informado = r.indexador === 'INFORMADO';
+  if (!r.nome || !isFinite(r.valorAplicado) || r.valorAplicado <= 0 || !r.dataAplicacao) {
+    alert('Preencha descrição, valor aplicado e data da aplicação.');
+    return;
+  }
+  if (informado) {
+    if (r.valorInformadoEntrada == null || !isFinite(r.valorInformadoEntrada)) {
+      alert('Informe o saldo atual, o rendimento acumulado ou a rentabilidade.');
+      return;
+    }
+    if (!r.valorInformadoData) { alert('Informe a data do saldo.'); return; }
+    if (r.valorInformadoData < r.dataAplicacao) { alert('A data do saldo não pode ser anterior à data da aplicação.'); return; }
+    if (r.valorInformadoBruto <= 0) { alert('O saldo resultante precisa ser maior que zero.'); return; }
+    r.taxa = 0;
+  } else if (!isFinite(r.taxa)) {
+    alert('Preencha a taxa contratada.');
     return;
   }
   if (r.liquidez === 'carencia' && !r.carenciaAte) { alert('Informe a data de fim da carência.'); return; }
@@ -2152,12 +2266,14 @@ function salvarRF() {
 function limparRF() {
   rfEditando = null;
   document.getElementById('rf-form-title').textContent = 'Novo título de renda fixa';
-  ['rf-nome', 'rf-emissor', 'rf-taxa', 'rf-valor', 'rf-venc', 'rf-carencia', 'rf-qtd-titulos', 'rf-pu-atual']
-    .forEach(id => document.getElementById(id).value = '');
+  ['rf-nome', 'rf-emissor', 'rf-taxa', 'rf-valor', 'rf-venc', 'rf-carencia', 'rf-qtd-titulos', 'rf-pu-atual',
+   'rf-valor-informado', 'rf-data-informado'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('rf-data').value = hojeISO();
   document.getElementById('rf-liquidez').value = 'diaria';
+  document.getElementById('rf-modo-informado').value = 'valor';
   onLiquidezChange();
   onTipoRFChange();
+  onIndexadorChange();
   document.getElementById('rf-preview').innerHTML = '';
 }
 
@@ -2178,6 +2294,9 @@ function editarRF(id) {
   document.getElementById('rf-carencia').value = r.carenciaAte || '';
   document.getElementById('rf-qtd-titulos').value = r.qtdTitulos || '';
   document.getElementById('rf-pu-atual').value = r.puAtual || '';
+  document.getElementById('rf-modo-informado').value = r.modoInformado || 'valor';
+  document.getElementById('rf-valor-informado').value = r.valorInformadoEntrada != null ? r.valorInformadoEntrada : '';
+  document.getElementById('rf-data-informado').value = r.valorInformadoData || '';
   onIndexadorChange(); onLiquidezChange(); onTipoRFChange();
   window.scrollTo(0, 0);
 }
@@ -2198,6 +2317,52 @@ function alternarResgate(id) {
   renderRF(); renderFGC();
 }
 
+// Refresca o saldo de um investimento cadastrado com rendimento informado
+function atualizarSaldo(id) {
+  const db = getDB();
+  const r = db.rendafixa.find(x => x.id === id);
+  if (!r) return;
+  const c = calcRF(r, db);
+  abrirModal('<h3>Atualizar saldo · ' + esc(r.nome) + '</h3>' +
+    '<p class="muted small" style="margin-bottom:12px">Aplicado ' + brl(+r.valorAplicado) + ' em ' + dataBR(r.dataAplicacao) +
+    ' · saldo atual registrado: <strong>' + brl(c.valor) + '</strong>' +
+    (r.valorInformadoData ? ' (informado em ' + dataBR(r.valorInformadoData) + ')' : '') + '</p>' +
+    '<div class="field-grid">' +
+    '<div class="field-group"><label>O que você vai informar</label>' +
+    '<select id="md-modo">' + [['valor', 'Saldo atual (R$)'], ['rendimento', 'Rendimento acumulado (R$)'],
+      ['percentual', 'Rentabilidade acumulada (%)']].map(([v, t]) =>
+      '<option value="' + v + '"' + ((r.modoInformado || 'valor') === v ? ' selected' : '') + '>' + t + '</option>').join('') +
+    '</select></div>' +
+    '<div class="field-group"><label>Valor</label>' +
+    '<input type="number" step="0.01" id="md-valor" placeholder="0.00"></div>' +
+    '<div class="field-group"><label>Data do saldo</label>' +
+    '<input type="date" id="md-data" value="' + hojeISO() + '"></div></div>' +
+    '<div class="form-actions"><button class="btn-secondary" onclick="fecharModal()">Cancelar</button>' +
+    '<button class="btn-primary" onclick="confirmarSaldo(' + id + ')">Salvar saldo</button></div>');
+}
+
+function confirmarSaldo(id) {
+  const db = getDB();
+  const r = db.rendafixa.find(x => x.id === id);
+  if (!r) return;
+  const modo = document.getElementById('md-modo').value;
+  const entrada = parseFloat(document.getElementById('md-valor').value);
+  const data = document.getElementById('md-data').value;
+  const bruto = saldoInformado(modo, entrada, +r.valorAplicado || 0);
+  if (bruto == null || !data) { alert('Informe o valor e a data.'); return; }
+  if (data < r.dataAplicacao) { alert('A data do saldo não pode ser anterior à aplicação.'); return; }
+  if (!(bruto > 0)) { alert('O saldo resultante precisa ser maior que zero.'); return; }
+  r.indexador = 'INFORMADO';
+  r.modoInformado = modo;
+  r.valorInformadoEntrada = entrada;
+  r.valorInformadoBruto = bruto;
+  r.valorInformadoData = data;
+  setDB(db);
+  registrarSnapshot(true);
+  fecharModal();
+  renderRF(); renderFGC();
+}
+
 function excluirRF(id) {
   if (!confirm('Excluir este título?')) return;
   const db = getDB();
@@ -2213,7 +2378,8 @@ function renderRF() {
   const temSerie = serieDados('cdi').length > 0;
   document.getElementById('rf-metodo').innerHTML = temSerie
     ? '✅ Cálculo usando as séries reais de CDI e IPCA do Banco Central (atualizadas em ' +
-      dataBR((db.series.cdi || {}).atualizado) + '). O valor líquido desconta IOF (até 30 dias) e IR regressivo.'
+      dataBR((db.series.cdi || {}).atualizado) + '). O valor líquido desconta IOF (até 30 dias) e IR regressivo. ' +
+      'Títulos com <strong>saldo informado</strong> não são projetados: usam o número que você digitou.'
     : '⚠️ Séries do Banco Central ainda não baixadas — os valores usam o CDI e o IPCA estimados das Configurações. ' +
       'Clique em <em>Atualizar séries</em> lá para obter as taxas reais.';
   if (!itens.length) { el.innerHTML = '<div class="empty">Nenhum título cadastrado.</div>'; return; }
@@ -2225,7 +2391,8 @@ function renderRF() {
       const c = calcRF(r, db);
       return '<tr' + (r.resgatado ? ' style="opacity:.55"' : '') + '>' +
         '<td><strong>' + esc(r.nome) + '</strong><br><span class="muted small">' + esc(r.tipo) +
-        (r.emissor ? ' · ' + esc(r.emissor) : '') + (c.mtm != null ? ' · PU ' + brl(+r.puAtual) : '') + '</span></td>' +
+        (r.emissor ? ' · ' + esc(r.emissor) : '') + (c.mtm != null ? ' · PU ' + brl(+r.puAtual) : '') +
+        (c.informado && r.valorInformadoData ? ' · saldo de ' + dataBR(r.valorInformadoData) : '') + '</span></td>' +
         '<td>' + esc(rotuloIndexador(r)) + '</td>' +
         '<td>' + dataBR(r.dataAplicacao) + '</td>' +
         '<td>' + dataBR(r.vencimento) + '</td>' +
@@ -2235,8 +2402,11 @@ function renderRF() {
         '<td class="num">' + brl(c.liquido) +
         ((c.iof + c.ir) > 0 ? '<br><span class="small muted">−' + brl(c.iof + c.ir) + ' de IOF/IR</span>' : '') + '</td>' +
         '<td>' + (r.resgatado ? '<span class="tag tag-rf">resgatado ' + dataBR(r.dataResgate) + '</span>'
-          : (c.vencido ? '<span class="tag tag-etf">vencido</span>' : selosLiquidez(c))) + '</td>' +
-        '<td style="white-space:nowrap"><button class="btn-ghost" onclick="editarRF(' + r.id + ')">editar</button> ' +
+          : (c.vencido ? '<span class="tag tag-etf">vencido</span>' : selosLiquidez(c))) +
+          (c.desatualizado ? ' <span class="tag tag-aviso">saldo de ' + c.diasInformado + 'd atrás</span>' : '') + '</td>' +
+        '<td style="white-space:nowrap">' +
+        (c.informado && !r.resgatado ? '<button class="btn-ghost" onclick="atualizarSaldo(' + r.id + ')">atualizar saldo</button> ' : '') +
+        '<button class="btn-ghost" onclick="editarRF(' + r.id + ')">editar</button> ' +
         '<button class="btn-ghost" onclick="alternarResgate(' + r.id + ')">' + (r.resgatado ? 'reativar' : 'resgatar') + '</button> ' +
         '<button class="btn-danger" onclick="excluirRF(' + r.id + ')">excluir</button></td></tr>';
     }).join('') + '</tbody></table></div>';
@@ -2498,12 +2668,13 @@ function exportCSV(qual) {
     baixarCSV('proventos', [['Data', 'Ativo', 'Tipo', 'Valor']]
       .concat(db.proventos.slice().sort((a, b) => a.data.localeCompare(b.data)).map(p => [p.data, p.ticker, p.tipo, p.valor])));
   } else if (qual === 'rendafixa') {
-    baixarCSV('renda_fixa', [['Titulo', 'Tipo', 'Emissor', 'Indexador', 'Taxa', 'Aplicacao', 'Vencimento', 'Liquidez',
-      'Aplicado', 'ValorHoje', 'Metodo', 'IOF', 'IR', 'LiquidoEst', 'Resgatado']]
+    baixarCSV('renda_fixa', [['Titulo', 'Tipo', 'Emissor', 'Remuneracao', 'Taxa', 'Aplicacao', 'Vencimento', 'Liquidez',
+      'Aplicado', 'ValorHoje', 'Metodo', 'SaldoInformadoEm', 'EquivalenteAA', 'IOF', 'IR', 'LiquidoEst', 'Resgatado']]
       .concat(db.rendafixa.map(r => {
         const c = calcRF(r, db);
         return [r.nome, r.tipo, r.emissor || '', r.indexador, r.taxa, r.dataAplicacao, r.vencimento || '', r.liquidez || '',
-                r.valorAplicado, c.valor.toFixed(2), c.metodo, c.iof.toFixed(2), c.ir.toFixed(2), c.liquido.toFixed(2),
+                r.valorAplicado, c.valor.toFixed(2), c.metodo, c.informado ? (r.valorInformadoData || '') : '',
+                c.equivAA != null ? c.equivAA.toFixed(2) : '', c.iof.toFixed(2), c.ir.toFixed(2), c.liquido.toFixed(2),
                 r.resgatado ? 'sim' : 'nao'];
       })));
   } else if (qual === 'historico') {
