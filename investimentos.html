@@ -371,7 +371,9 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
     <div id="rf-ajuda-informado" class="banner info" style="margin-bottom:14px">
       Para um investimento que você já tem, não é preciso saber a taxa contratada: informe o
       <strong>valor aplicado</strong>, a <strong>data em que aplicou</strong> e quanto ele
-      <strong>já rendeu</strong> (ou o saldo atual do extrato). O app passa a usar esse número em vez de projetar pela taxa.
+      <strong>já rendeu</strong> (ou o saldo atual do extrato). Esse número vira o ponto de partida, e
+      <strong>daí em diante o app corrige o valor dia a dia</strong> — pela rentabilidade média que ele já teve,
+      por um índice real (CDI, Selic, IPCA) ou por nada, se você preferir atualizar o saldo na mão.
     </div>
     <div class="field-grid">
       <div class="field-group">
@@ -435,6 +437,22 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
         <label>Data desse saldo *</label>
         <input type="date" id="rf-data-informado" onchange="renderPreviewRF()">
         <span class="hint">Use “atualizar saldo” na lista abaixo sempre que quiser refrescar esse número.</span>
+      </div>
+      <div class="field-group informado-only" style="display:none">
+        <label>Daí em diante, corrigir por *</label>
+        <select id="rf-correcao" onchange="onCorrecaoChange()">
+          <option value="IMPLICITA">Rentabilidade média observada</option>
+          <option value="CDI">% do CDI</option>
+          <option value="SELIC">Selic + taxa</option>
+          <option value="PRE">Prefixado (% a.a.)</option>
+          <option value="IPCA">IPCA + taxa (% a.a.)</option>
+          <option value="nenhuma">Não corrigir (valor fixo até eu atualizar)</option>
+        </select>
+        <span class="hint" id="rf-correcao-hint">Projeta pela média entre a aplicação e o saldo informado.</span>
+      </div>
+      <div class="field-group informado-only" id="rf-correcao-taxa-wrap" style="display:none">
+        <label id="rf-correcao-taxa-label">Taxa da correção *</label>
+        <input type="number" id="rf-correcao-taxa" step="0.01" placeholder="110" oninput="renderPreviewRF()">
       </div>
       <div class="field-group">
         <label>Liquidez *</label>
@@ -628,7 +646,7 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
    Persistência e migração de schema
    ============================================================ */
 const DB_KEY = 'investimentos_db';
-const VERSAO = 2;
+const VERSAO = 3;
 const DB_PADRAO = {
   versao: VERSAO,
   transacoes: [], proventos: [], rendafixa: [], cotacoes: {}, ativos: {}, snapshots: [],
@@ -656,6 +674,13 @@ function migrar(db, de) {
       if (!t.tipo) t.tipo = 'compra';
     });
     db.rendafixa.forEach(r => { if (!r.liquidez) r.liquidez = 'diaria'; });
+  }
+  if (de < 3) {
+    // saldos informados na v2 ficavam parados; mantém assim para não mudar
+    // silenciosamente os valores que a pessoa já viu
+    db.rendafixa.forEach(r => {
+      if (r.indexador === 'INFORMADO' && !r.correcao) r.correcao = 'nenhuma';
+    });
   }
   db.versao = VERSAO;
   return db;
@@ -990,6 +1015,32 @@ function aliquotaIR(dias) {
 }
 function isentoIR(tipo) { return ['LCI', 'LCA', 'Debênture', 'CRI/CRA', 'Poupança'].indexOf(tipo) >= 0; }
 
+// Fator de remuneração de um indexador entre duas datas, dia útil a dia útil
+// quando as séries do Banco Central estão disponíveis.
+function fatorRemuneracao(indexador, taxaPct, ini, fim, cfg) {
+  const taxa = (+taxaPct || 0) / 100;
+  const dias = Math.max(0, diasEntre(ini, fim));
+  const cdi = fatorCDI(ini, fim, indexador === 'CDI' ? taxa : 1);
+  const usaSerie = cdi.temSerie && cdi.du > 0;
+  const du = usaSerie ? cdi.du : dias * 252 / 365;
+  let fator, metodo;
+  if (indexador === 'CDI') {
+    if (usaSerie) { fator = cdi.fator; metodo = 'CDI diário do Banco Central'; }
+    else { fator = Math.pow(1 + (+cfg.cdi || 0) / 100 * taxa, du / 252); metodo = 'CDI estimado'; }
+  } else if (indexador === 'SELIC') {
+    if (usaSerie) { fator = cdi.fator * Math.pow(1 + taxa, du / 252); metodo = 'Selic/CDI do Banco Central + spread'; }
+    else { fator = Math.pow(1 + (+cfg.cdi || 0) / 100 + taxa, du / 252); metodo = 'Selic estimada + spread'; }
+  } else if (indexador === 'IPCA') {
+    const ip = fatorIPCA(ini, fim);
+    if (ip.temSerie && ip.meses > 0) { fator = ip.fator * Math.pow(1 + taxa, du / 252); metodo = 'IPCA do IBGE/BCB + spread'; }
+    else { fator = Math.pow((1 + (+cfg.ipca || 0) / 100) * (1 + taxa), du / 252); metodo = 'IPCA estimado + spread'; }
+  } else {
+    fator = Math.pow(1 + taxa, du / 252);
+    metodo = 'prefixado';
+  }
+  return { fator, du, metodo };
+}
+
 function calcRF(r, db) {
   const cfg = db.config;
   const ini = r.dataAplicacao || hojeISO();
@@ -997,32 +1048,50 @@ function calcRF(r, db) {
   const fim = (r.vencimento && r.vencimento < hoje) ? r.vencimento : hoje;
   const dias = Math.max(0, diasEntre(ini, fim));
   const aplicado = +r.valorAplicado || 0;
-  const taxa = (+r.taxa || 0) / 100;
 
-  let bruto, metodo, duUsados;
-  const cdi = fatorCDI(ini, fim, r.indexador === 'CDI' ? taxa : 1);
-  const usaSerie = cdi.temSerie && cdi.du > 0;
-  const du = usaSerie ? cdi.du : dias * 252 / 365;
+  let bruto, metodo, duUsados, taxaCorrecao = null, diasCorrigidos = 0;
 
   if (r.indexador === 'INFORMADO') {
-    // investimento já existente: o saldo vem do extrato, não de uma projeção
-    bruto = isFinite(+r.valorInformadoBruto) && +r.valorInformadoBruto > 0 ? +r.valorInformadoBruto : aplicado;
-    metodo = 'saldo informado por você' + (r.valorInformadoData ? ' em ' + dataBR(r.valorInformadoData) : '');
-  } else if (r.indexador === 'CDI') {
-    if (usaSerie) { bruto = aplicado * cdi.fator; metodo = 'CDI diário do Banco Central'; }
-    else { bruto = aplicado * Math.pow(1 + (+cfg.cdi || 0) / 100 * taxa, du / 252); metodo = 'CDI estimado'; }
-  } else if (r.indexador === 'SELIC') {
-    if (usaSerie) { bruto = aplicado * cdi.fator * Math.pow(1 + taxa, du / 252); metodo = 'Selic/CDI do Banco Central + spread'; }
-    else { bruto = aplicado * Math.pow(1 + (+cfg.cdi || 0) / 100 + taxa, du / 252); metodo = 'Selic estimada + spread'; }
-  } else if (r.indexador === 'IPCA') {
-    const ip = fatorIPCA(ini, fim);
-    if (ip.temSerie && ip.meses > 0) { bruto = aplicado * ip.fator * Math.pow(1 + taxa, du / 252); metodo = 'IPCA do IBGE/BCB + spread'; }
-    else { bruto = aplicado * Math.pow((1 + (+cfg.ipca || 0) / 100) * (1 + taxa), du / 252); metodo = 'IPCA estimado + spread'; }
+    // Investimento já existente: o saldo vem do extrato. A partir da data desse
+    // saldo o valor pode continuar sendo corrigido dia a dia, se você indicar por quê.
+    const base = isFinite(+r.valorInformadoBruto) && +r.valorInformadoBruto > 0 ? +r.valorInformadoBruto : aplicado;
+    const dataBase = r.valorInformadoData || ini;
+    const correcao = r.correcao || 'nenhuma';
+    const fimCorr = fim > dataBase ? fim : dataBase;
+    diasCorrigidos = Math.max(0, diasEntre(dataBase, fimCorr));
+    const diasAteBase = Math.max(0, diasEntre(ini, dataBase));
+    // rentabilidade média observada entre a aplicação e o saldo informado
+    const implicita = (aplicado > 0 && base > 0 && diasAteBase >= 30)
+      ? Math.pow(base / aplicado, 365 / diasAteBase) - 1 : null;
+    const rotuloBase = 'saldo de ' + dataBR(dataBase);
+
+    if (correcao === 'nenhuma' || diasCorrigidos <= 0) {
+      bruto = base;
+      metodo = 'saldo informado por você' + (r.valorInformadoData ? ' em ' + dataBR(dataBase) : '');
+      duUsados = dias * 252 / 365;
+    } else if (correcao === 'IMPLICITA') {
+      if (implicita == null) {
+        bruto = base;
+        metodo = rotuloBase + ' (sem histórico suficiente para estimar a correção)';
+      } else {
+        bruto = base * Math.pow(1 + implicita, diasCorrigidos / 365);
+        taxaCorrecao = implicita * 100;
+        metodo = rotuloBase + ' corrigido por ' + pct(taxaCorrecao) + ' a.a., a média observada até ali';
+      }
+      duUsados = dias * 252 / 365;
+    } else {
+      const f = fatorRemuneracao(correcao, r.correcaoTaxa, dataBase, fimCorr, cfg);
+      bruto = base * f.fator;
+      taxaCorrecao = +r.correcaoTaxa || 0;
+      metodo = rotuloBase + ' corrigido por ' + f.metodo;
+      duUsados = f.du;
+    }
   } else {
-    bruto = aplicado * Math.pow(1 + taxa, du / 252);
-    metodo = 'prefixado';
+    const f = fatorRemuneracao(r.indexador, r.taxa, ini, fim, cfg);
+    bruto = aplicado * f.fator;
+    metodo = f.metodo;
+    duUsados = f.du;
   }
-  duUsados = du;
 
   // marcação a mercado do Tesouro Direto, quando há PU informado
   let mtm = null;
@@ -1043,6 +1112,7 @@ function calcRF(r, db) {
   const soVencimento = r.liquidez === 'vencimento' && r.vencimento && r.vencimento > hoje;
 
   const informado = r.indexador === 'INFORMADO';
+  const corrigindo = informado && (r.correcao || 'nenhuma') !== 'nenhuma' && taxaCorrecao != null;
   const diasInformado = (informado && r.valorInformadoData) ? diasEntre(r.valorInformadoData, hoje) : 0;
   // taxa equivalente implícita, para comparar um saldo informado com as demais aplicações
   const equivAA = (aplicado > 0 && dias > 0 && valor > 0)
@@ -1050,7 +1120,8 @@ function calcRF(r, db) {
 
   return {
     dias, du: duUsados, metodo, bruto, mtm, valor, rendimento,
-    informado, diasInformado, desatualizado: informado && diasInformado > 45, equivAA,
+    informado, corrigindo, diasInformado, diasCorrigidos, taxaCorrecao, equivAA,
+    desatualizado: informado && !corrigindo && diasInformado > 45,
     curva: bruto, agio: mtm != null ? mtm - bruto : 0,
     iof, iofPct: iofPct(dias), ir, aliq, liquido,
     isento: isentoIR(r.tipo),
@@ -1567,7 +1638,15 @@ function selosLiquidez(c) {
   return '<span class="tag tag-ok">disponível</span>';
 }
 function rotuloIndexador(t) {
-  if (t.indexador === 'INFORMADO') return 'saldo informado';
+  if (t.indexador === 'INFORMADO') {
+    const c = t.correcao || 'nenhuma';
+    if (c === 'nenhuma') return 'saldo informado';
+    if (c === 'IMPLICITA') return 'saldo + média observada';
+    if (c === 'CDI') return 'saldo + ' + num(t.correcaoTaxa, 0) + '% do CDI';
+    if (c === 'SELIC') return 'saldo + Selic + ' + num(t.correcaoTaxa) + '%';
+    if (c === 'IPCA') return 'saldo + IPCA + ' + num(t.correcaoTaxa) + '%';
+    return 'saldo + ' + num(t.correcaoTaxa) + '% a.a.';
+  }
   if (t.indexador === 'CDI') return num(t.taxa, 0) + '% do CDI';
   if (t.indexador === 'SELIC') return 'Selic + ' + num(t.taxa) + '%';
   if (t.indexador === 'IPCA') return 'IPCA + ' + num(t.taxa) + '%';
@@ -2137,7 +2216,22 @@ function onIndexadorChange() {
   if (informado && !document.getElementById('rf-data-informado').value) {
     document.getElementById('rf-data-informado').value = hojeISO();
   }
+  onCorrecaoChange();
   onModoInformadoChange();
+}
+
+function onCorrecaoChange() {
+  const c = document.getElementById('rf-correcao').value;
+  const precisaTaxa = ['CDI', 'SELIC', 'PRE', 'IPCA'].indexOf(c) >= 0;
+  document.getElementById('rf-correcao-taxa-wrap').style.display = precisaTaxa ? 'flex' : 'none';
+  document.getElementById('rf-correcao-taxa-label').textContent =
+    c === 'CDI' ? 'Taxa (% do CDI) *' : c === 'SELIC' ? 'Taxa (Selic + % a.a.) *'
+    : c === 'IPCA' ? 'Taxa (IPCA + % a.a.) *' : 'Taxa prefixada (% a.a.) *';
+  document.getElementById('rf-correcao-hint').textContent =
+    c === 'IMPLICITA' ? 'Projeta pela média entre a aplicação e o saldo informado.'
+    : c === 'nenhuma' ? 'O valor fica parado até você usar “atualizar saldo”.'
+    : 'Corrige dia a dia pelo índice real, a partir da data do saldo.';
+  renderPreviewRF();
 }
 
 function onModoInformadoChange() {
@@ -2192,6 +2286,8 @@ function lerFormRF() {
     valorInformadoEntrada: isFinite(entrada) ? entrada : null,
     valorInformadoBruto: saldoInformado(modo, entrada, isFinite(aplicado) ? aplicado : 0),
     valorInformadoData: document.getElementById('rf-data-informado').value,
+    correcao: document.getElementById('rf-correcao').value,
+    correcaoTaxa: parseFloat(document.getElementById('rf-correcao-taxa').value),
     nome: document.getElementById('rf-nome').value.trim(),
     tipo: document.getElementById('rf-tipo').value,
     emissor: document.getElementById('rf-emissor').value.trim(),
@@ -2240,6 +2336,11 @@ function salvarRF() {
     if (!r.valorInformadoData) { alert('Informe a data do saldo.'); return; }
     if (r.valorInformadoData < r.dataAplicacao) { alert('A data do saldo não pode ser anterior à data da aplicação.'); return; }
     if (r.valorInformadoBruto <= 0) { alert('O saldo resultante precisa ser maior que zero.'); return; }
+    if (['CDI', 'SELIC', 'PRE', 'IPCA'].indexOf(r.correcao) >= 0 && !isFinite(r.correcaoTaxa)) {
+      alert('Informe a taxa que corrigirá o saldo daqui em diante.');
+      return;
+    }
+    if (!isFinite(r.correcaoTaxa)) r.correcaoTaxa = 0;
     r.taxa = 0;
   } else if (!isFinite(r.taxa)) {
     alert('Preencha a taxa contratada.');
@@ -2267,7 +2368,8 @@ function limparRF() {
   rfEditando = null;
   document.getElementById('rf-form-title').textContent = 'Novo título de renda fixa';
   ['rf-nome', 'rf-emissor', 'rf-taxa', 'rf-valor', 'rf-venc', 'rf-carencia', 'rf-qtd-titulos', 'rf-pu-atual',
-   'rf-valor-informado', 'rf-data-informado'].forEach(id => document.getElementById(id).value = '');
+   'rf-valor-informado', 'rf-data-informado', 'rf-correcao-taxa'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('rf-correcao').value = 'IMPLICITA';
   document.getElementById('rf-data').value = hojeISO();
   document.getElementById('rf-liquidez').value = 'diaria';
   document.getElementById('rf-modo-informado').value = 'valor';
@@ -2297,7 +2399,9 @@ function editarRF(id) {
   document.getElementById('rf-modo-informado').value = r.modoInformado || 'valor';
   document.getElementById('rf-valor-informado').value = r.valorInformadoEntrada != null ? r.valorInformadoEntrada : '';
   document.getElementById('rf-data-informado').value = r.valorInformadoData || '';
-  onIndexadorChange(); onLiquidezChange(); onTipoRFChange();
+  document.getElementById('rf-correcao').value = r.correcao || 'nenhuma';
+  document.getElementById('rf-correcao-taxa').value = isFinite(r.correcaoTaxa) ? r.correcaoTaxa : '';
+  onIndexadorChange(); onLiquidezChange(); onTipoRFChange(); onCorrecaoChange();
   window.scrollTo(0, 0);
 }
 
@@ -2392,7 +2496,8 @@ function renderRF() {
       return '<tr' + (r.resgatado ? ' style="opacity:.55"' : '') + '>' +
         '<td><strong>' + esc(r.nome) + '</strong><br><span class="muted small">' + esc(r.tipo) +
         (r.emissor ? ' · ' + esc(r.emissor) : '') + (c.mtm != null ? ' · PU ' + brl(+r.puAtual) : '') +
-        (c.informado && r.valorInformadoData ? ' · saldo de ' + dataBR(r.valorInformadoData) : '') + '</span></td>' +
+        (c.informado && r.valorInformadoData ? ' · saldo de ' + dataBR(r.valorInformadoData) +
+          (c.corrigindo ? ', corrigido há ' + c.diasCorrigidos + ' dias' : '') : '') + '</span></td>' +
         '<td>' + esc(rotuloIndexador(r)) + '</td>' +
         '<td>' + dataBR(r.dataAplicacao) + '</td>' +
         '<td>' + dataBR(r.vencimento) + '</td>' +
@@ -2669,11 +2774,12 @@ function exportCSV(qual) {
       .concat(db.proventos.slice().sort((a, b) => a.data.localeCompare(b.data)).map(p => [p.data, p.ticker, p.tipo, p.valor])));
   } else if (qual === 'rendafixa') {
     baixarCSV('renda_fixa', [['Titulo', 'Tipo', 'Emissor', 'Remuneracao', 'Taxa', 'Aplicacao', 'Vencimento', 'Liquidez',
-      'Aplicado', 'ValorHoje', 'Metodo', 'SaldoInformadoEm', 'EquivalenteAA', 'IOF', 'IR', 'LiquidoEst', 'Resgatado']]
+      'Aplicado', 'ValorHoje', 'Metodo', 'SaldoInformadoEm', 'Correcao', 'EquivalenteAA', 'IOF', 'IR', 'LiquidoEst', 'Resgatado']]
       .concat(db.rendafixa.map(r => {
         const c = calcRF(r, db);
         return [r.nome, r.tipo, r.emissor || '', r.indexador, r.taxa, r.dataAplicacao, r.vencimento || '', r.liquidez || '',
                 r.valorAplicado, c.valor.toFixed(2), c.metodo, c.informado ? (r.valorInformadoData || '') : '',
+                c.informado ? (r.correcao || 'nenhuma') : '',
                 c.equivAA != null ? c.equivAA.toFixed(2) : '', c.iof.toFixed(2), c.ir.toFixed(2), c.liquido.toFixed(2),
                 r.resgatado ? 'sim' : 'nao'];
       })));
