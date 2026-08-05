@@ -286,12 +286,17 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
   </div>
 
   <div class="section-card">
-    <div class="section-title">Imposto estimado sobre lucro realizado</div>
+    <div class="section-title">
+      <span>Imposto de renda — apuração mensal</span>
+      <button class="btn-ghost" onclick="exportCSV('ir')">Exportar CSV</button>
+    </div>
     <div id="tabela-ir"></div>
     <div class="foot-note">
-      Alíquotas aplicadas: 20% para FIIs, 15% para ações, ETFs, BDRs, ativos internacionais e cripto.
-      <strong>Estimativa simplificada</strong> — ainda não considera apuração mês a mês, isenção de R$ 20 mil em vendas de ações,
-      isenção de R$ 35 mil em cripto, compensação de prejuízos acumulados nem day trade.
+      Apuração mês a mês, com isenção de R$ 20 mil em vendas de ações e R$ 35 mil em cripto e ativos no exterior,
+      compensação de prejuízos dentro da mesma categoria, day trade a 20% e acúmulo do DARF abaixo de R$ 10.
+      Prejuízo apurado em mês isento não é aproveitável, conforme a regra.
+      <strong>Ainda é uma estimativa</strong>: não trata rendimentos no exterior pela Lei 14.754/2023, fundos com come-cotas,
+      operações a termo e opções, nem a separação por corretora. Confira antes de recolher.
     </div>
   </div>
 </div>
@@ -389,6 +394,8 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
         <select id="tx-tipo" onchange="onTipoChange()">
           <option value="compra">Compra</option>
           <option value="venda">Venda</option>
+          <option value="subscricao">Subscrição</option>
+          <option value="amortizacao">Amortização (FII)</option>
           <option value="desdobramento">Desdobramento (split)</option>
           <option value="grupamento">Grupamento (inplit)</option>
           <option value="bonificacao">Bonificação em ativos</option>
@@ -903,7 +910,10 @@ const CLASSES = {
   rf:     { nome: 'Renda fixa',    cor: '#5a6b80' }
 };
 const CLASSES_B3 = ['acao', 'fii', 'etf', 'bdr'];
-const TIPOS_EVENTO = { compra: 'Compra', venda: 'Venda', desdobramento: 'Desdobramento', grupamento: 'Grupamento', bonificacao: 'Bonificação' };
+const TIPOS_EVENTO = {
+  compra: 'Compra', venda: 'Venda', subscricao: 'Subscrição', amortizacao: 'Amortização',
+  desdobramento: 'Desdobramento', grupamento: 'Grupamento', bonificacao: 'Bonificação'
+};
 const TIPOS_FGC = ['CDB', 'RDB', 'LCI', 'LCA', 'Poupança'];
 const LIMITE_FGC = 250000;
 
@@ -924,12 +934,37 @@ function logoAtivo(ticker) {
    ============================================================ */
 const SGS = { cdi: 12, ipca: 433 };
 
-async function buscarJSON(url) {
-  const r = await fetch(url, { headers: { Accept: 'application/json' } });
-  const j = await r.json().catch(() => null);
-  if (!r.ok) throw new Error((j && (j.message || j.error)) || ('HTTP ' + r.status));
-  return j;
+function esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Falha de rede e limite de requisições são temporários: vale repetir com espera
+// progressiva antes de desistir. Erros de autenticação e de dados não são repetidos.
+async function buscarJSON(url, tentativas) {
+  const max = tentativas === undefined ? 3 : tentativas;
+  let ultimoErro = null;
+  for (let i = 0; i < max; i++) {
+    try {
+      const r = await fetch(url, { headers: { Accept: 'application/json' } });
+      const j = await r.json().catch(() => null);
+      if (r.ok) return j;
+      const msg = (j && (j.message || j.error)) || ('HTTP ' + r.status);
+      if (r.status === 429 || r.status >= 500) { ultimoErro = new Error(msg); }
+      else throw new Error(msg);
+    } catch (e) {
+      ultimoErro = e;
+      if (/HTTP 4[0-24-9]/.test(e.message)) throw e;
+    }
+    if (i < max - 1) await esperar(600 * Math.pow(2, i));
+  }
+  throw ultimoErro || new Error('falha na consulta');
 }
+
+// Consultas com muitos tickers são recusadas inteiras: divide em lotes menores
+function emLotes(itens, tamanho) {
+  const out = [];
+  for (let i = 0; i < itens.length; i += tamanho) out.push(itens.slice(i, i + tamanho));
+  return out;
+}
+const LOTE_COTACOES = 12;
 
 // Série diária do CDI (% ao dia, um registro por dia útil)
 async function buscarSGS(codigo, iniISO) {
@@ -1054,6 +1089,11 @@ function taxasOrig(t, cbo) {
 function percorrer(db, aoEvento) {
   const tx = db.transacoes.slice().sort((a, b) =>
     a.data === b.data ? a.id - b.id : String(a.data).localeCompare(String(b.data)));
+  // compras do mesmo ativo no mesmo dia caracterizam day trade na venda
+  const comprasDoDia = {};
+  tx.forEach(t => {
+    if (t.tipo === 'compra' || t.tipo === 'subscricao') comprasDoDia[t.ticker + '|' + t.data] = true;
+  });
   const pos = {};
   tx.forEach(t => {
     const k = t.ticker;
@@ -1074,13 +1114,30 @@ function percorrer(db, aoEvento) {
       const receita = q * pr * cbo - taxasBRL(t, cbo);
       const lucro = receita - pm * q;
       p.realizado += lucro;
-      p.vendas.push({ data: t.data, lucro: lucro, classe: t.classe });
+      p.vendas.push({
+        data: t.data, lucro: lucro, classe: t.classe, volume: q * pr * cbo,
+        dayTrade: !!comprasDoDia[t.ticker + '|' + t.data]
+      });
       p.custo = Math.max(0, p.custo - pm * q);
       p.custoOrig = Math.max(0, p.custoOrig - pmO * q);
       p.qtd -= q;
       p.taxas += taxasBRL(t, cbo);
       fluxo = -receita;
       if (p.qtd < 1e-9) { p.qtd = 0; p.custo = 0; p.custoOrig = 0; }
+    } else if (t.tipo === 'amortizacao') {
+      // FII devolvendo capital: reduz o custo da posição, não é provento.
+      // O que passar do custo vira ganho tributável.
+      const valor = q * pr * cbo;
+      const reduz = Math.min(p.custo, valor);
+      const frac = p.custo > 0 ? reduz / p.custo : 0;
+      p.custo -= reduz;
+      p.custoOrig -= p.custoOrig * frac;
+      const excedente = valor - reduz;
+      if (excedente > 0) {
+        p.realizado += excedente;
+        p.vendas.push({ data: t.data, lucro: excedente, classe: t.classe, volume: valor, dayTrade: false });
+      }
+      fluxo = -valor;
     } else if (t.tipo === 'desdobramento') {
       p.qtd *= fator;                       // custo total não muda: o preço médio se divide
     } else if (t.tipo === 'grupamento') {
@@ -1100,6 +1157,14 @@ function percorrer(db, aoEvento) {
     if (aoEvento) aoEvento(t, p, fluxo, pos);
   });
   return pos;
+}
+
+// Quantidade disponível de um ativo numa data, opcionalmente ignorando um lançamento
+function posicaoEm(ticker, dataISO, excluirId) {
+  const db = getDB();
+  db.transacoes = db.transacoes.filter(t => t.id !== excluirId && t.data <= dataISO);
+  const pos = percorrer(db);
+  return pos[ticker] ? pos[ticker].qtd : 0;
 }
 
 function proventosPorTicker(db, desdeISO) {
@@ -1155,7 +1220,8 @@ function consolidarAgora() {
       dy12: valor > 0 ? p12 / valor * 100 : 0,
       yoc: p.custo > 0 ? p12 / p.custo * 100 : 0,
       setor: setorDe(k),
-      fonte: cot ? cot.fonte : null, dataCot: cot ? cot.data : null, horaCot: cot ? cot.hora : null
+      fonte: cot ? cot.fonte : null, dataCot: cot ? cot.data : null, horaCot: cot ? cot.hora : null,
+      pregao: cot ? cot.pregao : null
     };
   }).sort((a, b) => b.valor - a.valor);
 
@@ -1210,57 +1276,105 @@ function fatorRemuneracao(indexador, taxaPct, ini, fim, cfg) {
   return { fator, du, metodo };
 }
 
+// Aplicação inicial, aportes e resgates parciais em ordem cronológica.
+// Para um título com saldo informado, o saldo já embute o que veio antes dele.
+function movimentosRF(r, fimISO) {
+  const aportes = (r.aportes || [])
+    .filter(a => a.data && a.data <= fimISO)
+    .map(a => ({ data: a.data, valor: +a.valor || 0, tipo: 'aporte' }));
+  const resgates = (r.resgates || [])
+    .filter(x => x.data && x.data <= fimISO)
+    .map(x => ({ data: x.data, valor: -Math.abs(+x.valor || 0), tipo: 'resgate' }));
+  const ordenar = (a, b) => a.data === b.data ? (b.valor - a.valor) : a.data.localeCompare(b.data);
+
+  if (r.indexador === 'INFORMADO') {
+    const dataBase = r.valorInformadoData || r.dataAplicacao;
+    const base = isFinite(+r.valorInformadoBruto) && +r.valorInformadoBruto > 0
+      ? +r.valorInformadoBruto : (+r.valorAplicado || 0);
+    const antes = aportes.concat(resgates).filter(m => m.data <= dataBase)
+      .reduce((s, m) => s + m.valor, 0);
+    const movs = [{ data: dataBase, valor: base, tipo: 'base' }]
+      .concat(aportes.filter(a => a.data > dataBase), resgates.filter(x => x.data > dataBase))
+      .sort(ordenar);
+    return { movs: movs, principalInicial: (+r.valorAplicado || 0) + antes, dataBase: dataBase };
+  }
+  const movs = [{ data: r.dataAplicacao, valor: +r.valorAplicado || 0, tipo: 'aplicacao' }]
+    .concat(aportes, resgates).sort(ordenar);
+  return { movs: movs, principalInicial: 0, dataBase: null };
+}
+
 function calcRF(r, db, ateISO) {
   const cfg = db.config;
   const ini = r.dataAplicacao || hojeISO();
   const hoje = ateISO || hojeISO();
   const fim = (r.vencimento && r.vencimento < hoje) ? r.vencimento : hoje;
   const dias = Math.max(0, diasEntre(ini, fim));
-  const aplicado = +r.valorAplicado || 0;
+  const informado = r.indexador === 'INFORMADO';
 
-  let bruto, metodo, duUsados, taxaCorrecao = null, diasCorrigidos = 0;
+  // fator de remuneração entre duas datas, conforme o tipo do título
+  let metodo, duTotal = dias * 252 / 365, taxaCorrecao = null, diasCorrigidos = 0, implicita = null;
+  let fatorEntre;
 
-  if (r.indexador === 'INFORMADO') {
-    // Investimento já existente: o saldo vem do extrato. A partir da data desse
-    // saldo o valor pode continuar sendo corrigido dia a dia, se você indicar por quê.
-    const base = isFinite(+r.valorInformadoBruto) && +r.valorInformadoBruto > 0 ? +r.valorInformadoBruto : aplicado;
-    const dataBase = r.valorInformadoData || ini;
+  if (informado) {
+    const { principalInicial, dataBase } = movimentosRF(r, fim);
+    const base = isFinite(+r.valorInformadoBruto) && +r.valorInformadoBruto > 0
+      ? +r.valorInformadoBruto : (+r.valorAplicado || 0);
     const correcao = r.correcao || 'nenhuma';
-    const fimCorr = fim > dataBase ? fim : dataBase;
-    diasCorrigidos = Math.max(0, diasEntre(dataBase, fimCorr));
     const diasAteBase = Math.max(0, diasEntre(ini, dataBase));
-    // rentabilidade média observada entre a aplicação e o saldo informado
-    const implicita = (aplicado > 0 && base > 0 && diasAteBase >= 30)
-      ? Math.pow(base / aplicado, 365 / diasAteBase) - 1 : null;
+    diasCorrigidos = Math.max(0, diasEntre(dataBase, fim));
+    implicita = (principalInicial > 0 && base > 0 && diasAteBase >= 30)
+      ? Math.pow(base / principalInicial, 365 / diasAteBase) - 1 : null;
     const rotuloBase = 'saldo de ' + dataBR(dataBase);
 
     if (correcao === 'nenhuma' || diasCorrigidos <= 0) {
-      bruto = base;
+      fatorEntre = () => 1;
       metodo = 'saldo informado por você' + (r.valorInformadoData ? ' em ' + dataBR(dataBase) : '');
-      duUsados = dias * 252 / 365;
     } else if (correcao === 'IMPLICITA') {
       if (implicita == null) {
-        bruto = base;
+        fatorEntre = () => 1;
         metodo = rotuloBase + ' (sem histórico suficiente para estimar a correção)';
       } else {
-        bruto = base * Math.pow(1 + implicita, diasCorrigidos / 365);
         taxaCorrecao = implicita * 100;
+        fatorEntre = (a, b) => Math.pow(1 + implicita, Math.max(0, diasEntre(a, b)) / 365);
         metodo = rotuloBase + ' corrigido por ' + pct(taxaCorrecao) + ' a.a., a média observada até ali';
       }
-      duUsados = dias * 252 / 365;
     } else {
-      const f = fatorRemuneracao(correcao, r.correcaoTaxa, dataBase, fimCorr, cfg);
-      bruto = base * f.fator;
       taxaCorrecao = +r.correcaoTaxa || 0;
-      metodo = rotuloBase + ' corrigido por ' + f.metodo;
-      duUsados = f.du;
+      fatorEntre = (a, b) => fatorRemuneracao(correcao, r.correcaoTaxa, a, b, cfg).fator;
+      metodo = rotuloBase + ' corrigido por ' + fatorRemuneracao(correcao, r.correcaoTaxa, dataBase, fim, cfg).metodo;
+      duTotal = fatorRemuneracao(correcao, r.correcaoTaxa, dataBase, fim, cfg).du;
     }
   } else {
-    const f = fatorRemuneracao(r.indexador, r.taxa, ini, fim, cfg);
-    bruto = aplicado * f.fator;
-    metodo = f.metodo;
-    duUsados = f.du;
+    const geral = fatorRemuneracao(r.indexador, r.taxa, ini, fim, cfg);
+    metodo = geral.metodo;
+    duTotal = geral.du;
+    fatorEntre = (a, b) => fatorRemuneracao(r.indexador, r.taxa, a, b, cfg).fator;
   }
+
+  // percorre os movimentos: cada aporte rende do seu próprio dia, e cada resgate
+  // retira principal e rendimento na mesma proporção do saldo
+  const { movs, principalInicial } = movimentosRF(r, fim);
+  let saldo = 0, principal = principalInicial, anterior = null;
+  let totalAportes = 0, totalResgates = 0;
+  movs.forEach(m => {
+    if (anterior && saldo > 0) saldo *= fatorEntre(anterior, m.data);
+    if (m.valor >= 0) {
+      saldo += m.valor;
+      if (m.tipo !== 'base') principal += m.valor;
+      if (m.tipo === 'aporte') totalAportes += m.valor;
+    } else {
+      const saque = Math.min(saldo, -m.valor);
+      const frac = saldo > 0 ? saque / saldo : 0;
+      principal -= principal * frac;
+      saldo -= saque;
+      totalResgates += saque;
+    }
+    anterior = m.data;
+  });
+  if (anterior && saldo > 0) saldo *= fatorEntre(anterior, fim);
+
+  const aplicado = Math.max(0, principal);
+  let bruto = saldo;
 
   // marcação a mercado do Tesouro Direto, quando há PU informado
   let mtm = null;
@@ -1281,16 +1395,14 @@ function calcRF(r, db, ateISO) {
 
   const emCarencia = r.liquidez === 'carencia' && r.carenciaAte && r.carenciaAte > hoje;
   const soVencimento = r.liquidez === 'vencimento' && r.vencimento && r.vencimento > hoje;
-
-  const informado = r.indexador === 'INFORMADO';
   const corrigindo = informado && (r.correcao || 'nenhuma') !== 'nenhuma' && taxaCorrecao != null;
   const diasInformado = (informado && r.valorInformadoData) ? diasEntre(r.valorInformadoData, hoje) : 0;
-  // taxa equivalente implícita, para comparar um saldo informado com as demais aplicações
   const equivAA = (aplicado > 0 && dias > 0 && valor > 0)
     ? (Math.pow(valor / aplicado, 365 / dias) - 1) * 100 : null;
 
   return {
-    dias, du: duUsados, metodo, bruto, mtm, valor, rendimento,
+    dias, du: duTotal, metodo, bruto, mtm, valor, rendimento, aplicado,
+    totalAportes, totalResgates, movimentos: movs.length,
     informado, corrigindo, diasInformado, diasCorrigidos, taxaCorrecao, equivAA,
     desatualizado: informado && !corrigindo && diasInformado > 45,
     curva: bruto, agio: mtm != null ? mtm - bruto : 0,
@@ -1310,7 +1422,7 @@ function resumoRF() { return _memo('rf', resumoRFAgora); }
 function resumoRFAgora() {
   const db = getDB();
   const itens = db.rendafixa.filter(r => !r.resgatado).map(r => ({ r, c: calcRF(r, db) }));
-  const aplicado = itens.reduce((s, i) => s + (+i.r.valorAplicado || 0), 0);
+  const aplicado = itens.reduce((s, i) => s + i.c.aplicado, 0);
   const bruto = itens.reduce((s, i) => s + i.c.valor, 0);
   const liquido = itens.reduce((s, i) => s + i.c.liquido, 0);
   return { itens, aplicado, bruto, liquido, rendimento: bruto - aplicado };
@@ -1434,17 +1546,16 @@ function fluxosPorData() {
     fluxo[t.data] = (fluxo[t.data] || 0) + f;
     fluxoVar[t.data] = (fluxoVar[t.data] || 0) + f;
   });
+  const lancarRF = (data, valor) => {
+    if (!data || !valor) return;
+    fluxo[data] = (fluxo[data] || 0) + valor;
+    fluxoRF[data] = (fluxoRF[data] || 0) + valor;
+  };
   db.rendafixa.forEach(r => {
-    if (r.dataAplicacao) {
-      const v = +r.valorAplicado || 0;
-      fluxo[r.dataAplicacao] = (fluxo[r.dataAplicacao] || 0) + v;
-      fluxoRF[r.dataAplicacao] = (fluxoRF[r.dataAplicacao] || 0) + v;
-    }
-    if (r.resgatado && r.dataResgate) {
-      const v = +r.valorResgate || 0;
-      fluxo[r.dataResgate] = (fluxo[r.dataResgate] || 0) - v;
-      fluxoRF[r.dataResgate] = (fluxoRF[r.dataResgate] || 0) - v;
-    }
+    lancarRF(r.dataAplicacao, +r.valorAplicado || 0);
+    (r.aportes || []).forEach(a => lancarRF(a.data, +a.valor || 0));
+    (r.resgates || []).forEach(x => lancarRF(x.data, -Math.abs(+x.valor || 0)));
+    if (r.resgatado && r.dataResgate) lancarRF(r.dataResgate, -(+r.valorResgate || 0));
   });
   db.proventos.forEach(p => {
     if (p.status === 'previsto') return;
@@ -1637,7 +1748,7 @@ async function reconstruirHistorico() {
       if (r.resgatado && r.dataResgate && r.dataResgate <= dia) return;
       const c = calcRF(r, db, dia);
       rfBruto += c.valor;
-      rfAplicado += +r.valorAplicado || 0;
+      rfAplicado += c.aplicado;
     });
     if (rfBruto > 0) porAtivo['__rf'] = Math.round(rfBruto * 100) / 100;
 
@@ -2362,6 +2473,7 @@ function renderDashboard() {
   const proventos = db.proventos.reduce((s, p) => s + (+p.valor || 0), 0);
   const prov12 = lista.reduce((s, p) => s + p.proventos12, 0);
   const dia = abertas.reduce((s, p) => s + p.resultadoDia, 0);
+  const pregaoRef = (abertas.find(p => p.pregao) || {}).pregao || null;
 
   const custoTotal = custoVar + rf.aplicado;
   const patrimonio = valorVar + rf.bruto;
@@ -2382,7 +2494,9 @@ function renderDashboard() {
 
   document.getElementById('stat-grid').innerHTML = [
     card('Patrimônio total', brl(patrimonio), abertas.length + ' ativo(s) + ' + rf.itens.length + ' título(s)', ''),
-    card('Resultado do dia', brl(dia), dia !== 0 ? '<span class="' + sinal(dia) + '">' + pctSin(diaPct) + '</span>' : 'sem variação registrada',
+    card(mercadoAberto() ? 'Resultado do dia' : 'Último pregão', brl(dia),
+      dia !== 0 ? '<span class="' + sinal(dia) + '">' + pctSin(diaPct) + '</span>' +
+        (pregaoRef ? ' · ' + dataBR(pregaoRef) : '') : 'sem variação registrada',
       dia > 0 ? 'green' : dia < 0 ? 'red' : ''),
     card('Total investido', brl(custoTotal), 'custo de aquisição', ''),
     card('Resultado não realizado', brl(naoRealizado),
@@ -2497,13 +2611,14 @@ function renderCarteira() {
 
   el.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
     '<th>Ativo</th><th>Classe</th><th>Setor</th><th class="num">Qtd</th><th class="num">Preço médio</th>' +
-    '<th class="num">Preço atual</th><th class="num">Dia</th><th class="num">Investido</th><th class="num">Valor atual</th>' +
+    '<th class="num">Preço atual</th><th class="num">' + (mercadoAberto() ? 'Dia' : 'Último pregão') +
+    '</th><th class="num">Investido</th><th class="num">Valor atual</th>' +
     '<th class="num">Resultado</th><th class="num">%</th><th class="num">% carteira</th><th class="num">DY 12m</th>' +
     '</tr></thead><tbody>' +
     itens.map(p => {
       const simb = p.moeda === 'USD' ? 'US$ ' : 'R$ ';
       const titulo = p.dataCot ? 'atualizado em ' + dataBR(p.dataCot) + (p.horaCot ? ' ' + p.horaCot : '') +
-        ' · fonte: ' + (p.fonte || '—') : 'sem cotação';
+        (p.pregao ? ' · pregão de ' + dataBR(p.pregao) : '') + ' · fonte: ' + (p.fonte || '—') : 'sem cotação';
       return '<tr>' +
         '<td><span style="display:flex;align-items:center;gap:7px">' + logoAtivo(p.ticker) +
         '<span><button class="ticker-link" onclick="verAtivo(\'' + esc(p.ticker) + '\')">' + esc(p.ticker) + '</button>' +
@@ -2518,7 +2633,8 @@ function renderCarteira() {
         '<td class="num">' + simb + '<input type="number" step="0.00000001" class="price-input' +
         (p.fonte === 'manual' ? ' manual' : '') + '" value="' + (p.precoOrig != null ? p.precoOrig : '') +
         '" title="' + esc(titulo) + '" onchange="setPrecoManual(\'' + esc(p.ticker) + '\',this.value,\'' + p.moeda + '\')"></td>' +
-        '<td class="num ' + (p.varPct == null ? 'muted' : sinal(p.varPct)) + '">' +
+        '<td class="num ' + (p.varPct == null ? 'muted' : sinal(p.varPct)) + '" title="' +
+        (p.pregao ? 'pregão de ' + dataBR(p.pregao) : '') + '">' +
         (p.varPct == null ? '—' : pctSin(p.varPct) + '<br><span class="small">' + brl(p.resultadoDia) + '</span>') + '</td>' +
         '<td class="num">' + brl(p.custo) + '</td>' +
         '<td class="num">' + (p.qtd > 0 ? brl(p.valor) : '—') + '</td>' +
@@ -2551,7 +2667,8 @@ function renderCarteiraRF() {
       '<tr><td><strong>' + esc(t.nome) + '</strong><br><span class="muted small">' + esc(t.tipo) +
       (t.emissor ? ' · ' + esc(t.emissor) : '') + '</span></td>' +
       '<td>' + esc(rotuloIndexador(t)) + '</td>' +
-      '<td class="num">' + brl(+t.valorAplicado) + '</td>' +
+      '<td class="num">' + brl(c.aplicado) +
+      (c.totalAportes > 0 ? '<br><span class="small muted">+' + brl(c.totalAportes) + ' em aportes</span>' : '') + '</td>' +
       '<td class="num">' + brl(c.valor) + (c.mtm != null ? '<br><span class="small muted">a mercado</span>' : '') + '</td>' +
       '<td class="num ' + sinal(c.rendimento) + '">' + brl(c.rendimento) + '</td>' +
       '<td class="num ' + sinal(c.rendimento) + '">' + pct(c.rentPct) + '</td>' +
@@ -2715,7 +2832,7 @@ function renderDesempenho() {
   renderPeriodos();
   renderBenchmarks();
   renderDecomposicao(lista);
-  renderIR(lista);
+  renderIR();
 }
 
 function renderRisco() {
@@ -2887,39 +3004,148 @@ function renderDecomposicao(lista) {
     '</tr></tfoot></table></div>';
 }
 
-const ALIQ_CLASSE = { fii: 20, acao: 15, etf: 15, bdr: 15, stock: 15, cripto: 15 };
-function renderIR(lista) {
-  const el = document.getElementById('tabela-ir');
-  const ano = hojeISO().slice(0, 4);
-  const m = {};
-  lista.forEach(p => {
-    p.vendas.forEach(v => {
-      const k = v.classe;
-      if (!m[k]) m[k] = { classe: k, total: 0, ano: 0 };
-      m[k].total += v.lucro;
-      if (v.data.slice(0, 4) === ano) m[k].ano += v.lucro;
-    });
+/* ============================================================
+   Apuração mensal do imposto de renda
+   ============================================================ */
+// Cada categoria tem alíquota, isenção mensal por volume de vendas e prejuízo
+// que só compensa dentro da própria categoria.
+const CATEGORIAS_IR = {
+  acao:     { nome: 'Ações (swing trade)', aliq: 15, isencao: 20000, codigo: '6015' },
+  etf:      { nome: 'ETFs e BDRs',         aliq: 15, isencao: 0,     codigo: '6015' },
+  fii:      { nome: 'FIIs',                aliq: 20, isencao: 0,     codigo: '6015' },
+  cripto:   { nome: 'Criptomoedas',        aliq: 15, isencao: 35000, codigo: '4600' },
+  stock:    { nome: 'Ativos no exterior',  aliq: 15, isencao: 35000, codigo: '4600' },
+  daytrade: { nome: 'Day trade',           aliq: 20, isencao: 0,     codigo: '6015' }
+};
+const PISO_DARF = 10;
+
+function categoriaIR(venda) {
+  if (venda.dayTrade) return 'daytrade';
+  if (venda.classe === 'bdr') return 'etf';
+  return CATEGORIAS_IR[venda.classe] ? venda.classe : 'acao';
+}
+
+function apuracaoIR() {
+  const { lista } = consolidar();
+  const vendas = [];
+  lista.forEach(p => (p.vendas || []).forEach(v => vendas.push(v)));
+  if (!vendas.length) return null;
+  vendas.sort((a, b) => a.data.localeCompare(b.data));
+
+  // agrupa por mês e categoria
+  const meses = {};
+  vendas.forEach(v => {
+    const m = v.data.slice(0, 7);
+    const cat = categoriaIR(v);
+    if (!meses[m]) meses[m] = {};
+    if (!meses[m][cat]) meses[m][cat] = { volume: 0, resultado: 0, operacoes: 0 };
+    meses[m][cat].volume += v.volume || 0;
+    meses[m][cat].resultado += v.lucro;
+    meses[m][cat].operacoes++;
   });
-  const linhas = Object.values(m);
-  if (!linhas.length) { el.innerHTML = '<div class="empty">Nenhuma venda registrada.</div>'; return; }
-  let irAno = 0, irTotal = 0;
-  const corpo = linhas.map(l => {
-    const aliq = ALIQ_CLASSE[l.classe] || 15;
-    const iAno = Math.max(0, l.ano) * aliq / 100, iTot = Math.max(0, l.total) * aliq / 100;
-    irAno += iAno; irTotal += iTot;
-    return '<tr><td>' + tagClasse(l.classe) + '</td><td class="num">' + pct(aliq, 0) + '</td>' +
-      '<td class="num ' + sinal(l.ano) + '">' + brl(l.ano) + '</td><td class="num">' + brl(iAno) + '</td>' +
-      '<td class="num ' + sinal(l.total) + '">' + brl(l.total) + '</td><td class="num">' + brl(iTot) + '</td></tr>';
+
+  const prejuizo = {};        // prejuízo acumulado por categoria
+  let darfAcumulado = 0;
+  const linhas = [];
+  Object.keys(meses).sort().forEach(m => {
+    const cats = [];
+    let irMes = 0;
+    Object.keys(meses[m]).sort().forEach(cat => {
+      const d = meses[m][cat];
+      const regra = CATEGORIAS_IR[cat];
+      const isento = regra.isencao > 0 && d.volume <= regra.isencao;
+      let compensado = 0, base = 0, ir = 0;
+      if (isento) {
+        // em operação isenta o lucro não tributa e o prejuízo não é aproveitável
+      } else if (d.resultado > 0) {
+        compensado = Math.min(prejuizo[cat] || 0, d.resultado);
+        prejuizo[cat] = (prejuizo[cat] || 0) - compensado;
+        base = d.resultado - compensado;
+        ir = base * regra.aliq / 100;
+        irMes += ir;
+      } else {
+        prejuizo[cat] = (prejuizo[cat] || 0) + Math.abs(d.resultado);
+      }
+      cats.push({
+        cat, nome: regra.nome, aliq: regra.aliq, codigo: regra.codigo,
+        volume: d.volume, resultado: d.resultado, operacoes: d.operacoes,
+        isento, limite: regra.isencao, compensado, base, ir,
+        prejuizoAcumulado: prejuizo[cat] || 0
+      });
+    });
+    darfAcumulado += irMes;
+    const pagar = darfAcumulado >= PISO_DARF ? darfAcumulado : 0;
+    if (pagar) darfAcumulado = 0;
+    linhas.push({ mes: m, categorias: cats, ir: irMes, darf: pagar, acumulado: darfAcumulado });
+  });
+
+  const ano = hojeISO().slice(0, 4);
+  return {
+    linhas,
+    prejuizos: prejuizo,
+    irAno: linhas.filter(l => l.mes.slice(0, 4) === ano).reduce((s, l) => s + l.ir, 0),
+    irTotal: linhas.reduce((s, l) => s + l.ir, 0),
+    darfPendente: darfAcumulado,
+    totalPrejuizo: Object.keys(prejuizo).reduce((s, k) => s + prejuizo[k], 0)
+  };
+}
+
+const ALIQ_CLASSE = { fii: 20, acao: 15, etf: 15, bdr: 15, stock: 15, cripto: 15 };
+function renderIR() {
+  const el = document.getElementById('tabela-ir');
+  const a = apuracaoIR();
+  if (!a) { el.innerHTML = '<div class="empty">Nenhuma venda registrada.</div>'; return; }
+  const ano = hojeISO().slice(0, 4);
+
+  const cards = '<div class="stat-grid" style="margin-bottom:16px">' + [
+    card('IR apurado em ' + ano, brl(a.irAno), 'somando todos os meses do ano', a.irAno > 0 ? 'red' : 'green'),
+    card('DARF pendente', brl(a.darfPendente),
+      a.darfPendente > 0 ? 'abaixo de ' + brl(PISO_DARF) + ', acumula para o mês seguinte' : 'nada a recolher', ''),
+    card('Prejuízo a compensar', brl(a.totalPrejuizo), 'abatido dos lucros futuros', a.totalPrejuizo > 0 ? 'blue' : '')
+  ].join('') + '</div>';
+
+  const linhas = a.linhas.slice().reverse().map(l => {
+    const detalhe = l.categorias.map(c =>
+      '<tr><td class="muted">' + dataBR(l.mes + '-01').slice(3) + '</td>' +
+      '<td>' + esc(c.nome) + (c.operacoes > 1 ? ' <span class="small muted">(' + c.operacoes + ' vendas)</span>' : '') + '</td>' +
+      '<td class="num">' + brl(c.volume) + '</td>' +
+      '<td class="num ' + sinal(c.resultado) + '">' + brl(c.resultado) + '</td>' +
+      '<td>' + (c.isento ? '<span class="tag tag-ok">isento até ' + brlCurto(c.limite) + '</span>'
+        : c.resultado <= 0 ? '<span class="tag tag-rf">prejuízo</span>'
+        : '<span class="tag tag-aviso">' + pct(c.aliq, 0) + '</span>') + '</td>' +
+      '<td class="num">' + (c.compensado > 0 ? '−' + brl(c.compensado) : '—') + '</td>' +
+      '<td class="num">' + (c.base > 0 ? brl(c.base) : '—') + '</td>' +
+      '<td class="num ' + (c.ir > 0 ? 'neg' : 'muted') + '">' + (c.ir > 0 ? brl(c.ir) : '—') + '</td></tr>').join('');
+    const total = '<tr style="background:#f2f9f7"><td colspan="7"><strong>' + dataBR(l.mes + '-01').slice(3) +
+      '</strong> · imposto do mês' + (l.darf > 0 ? ' · <strong>DARF de ' + brl(l.darf) + ' a recolher</strong>'
+        : l.ir > 0 ? ' · abaixo do piso, acumula ' + brl(l.acumulado) : '') + '</td>' +
+      '<td class="num"><strong>' + brl(l.ir) + '</strong></td></tr>';
+    return detalhe + total;
   }).join('');
-  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Classe</th><th class="num">Alíquota</th>' +
-    '<th class="num">Lucro em ' + ano + '</th><th class="num">IR estimado ' + ano + '</th>' +
-    '<th class="num">Lucro acumulado</th><th class="num">IR estimado total</th></tr></thead><tbody>' + corpo +
-    '</tbody><tfoot><tr><td colspan="3">TOTAL</td><td class="num">' + brl(irAno) +
-    '</td><td></td><td class="num">' + brl(irTotal) + '</td></tr></tfoot></table></div>';
+
+  el.innerHTML = cards +
+    '<div class="table-wrap"><table><thead><tr><th>Mês</th><th>Categoria</th><th class="num">Vendas</th>' +
+    '<th class="num">Resultado</th><th>Situação</th><th class="num">Prejuízo usado</th>' +
+    '<th class="num">Base</th><th class="num">IR</th></tr></thead><tbody>' + linhas + '</tbody></table></div>' +
+    (a.totalPrejuizo > 0 ? '<div class="foot-note">Prejuízo por categoria: ' +
+      Object.keys(a.prejuizos).filter(k => a.prejuizos[k] > 0)
+        .map(k => CATEGORIAS_IR[k].nome + ' ' + brl(a.prejuizos[k])).join(' · ') +
+      '. Prejuízo só compensa lucro da mesma categoria.</div>' : '');
 }
 /* ============================================================
    Cotações — brapi.dev
    ============================================================ */
+// Data do pregão a que a cotação se refere — no fim de semana continua sendo sexta
+function dataPregao(momento) {
+  if (!momento) return null;
+  const d = typeof momento === 'number' ? new Date(momento * 1000) : new Date(momento);
+  return isFinite(d.getTime()) ? isoDe(d) : null;
+}
+function mercadoAberto() {
+  const h = new Date().getHours();
+  return ehDiaUtil(hojeISO()) && h >= 10 && h < 18;
+}
+
 function statusCotacoes() {
   const db = getDB();
   const el = document.getElementById('cot-status');
@@ -2951,10 +3177,11 @@ async function atualizarCotacoes(silencioso) {
   const qs = token ? '&token=' + encodeURIComponent(token) : '';
   const ok = [], falhas = [];
 
-  function guardar(sym, preco, moeda, variacao, fechamento, setor, nome, logo) {
+  function guardar(sym, preco, moeda, variacao, fechamento, setor, nome, logo, momento) {
     db.cotacoes[sym] = {
       preco: +preco, moeda: moeda, variacao: isFinite(variacao) ? +variacao : null,
       fechamentoAnterior: isFinite(fechamento) ? +fechamento : null,
+      pregao: dataPregao(momento),
       fonte: 'brapi', data: hojeISO(), hora: agoraHora()
     };
     const a = db.ativos[sym] || {};
@@ -2966,24 +3193,25 @@ async function atualizarCotacoes(silencioso) {
   }
 
   for (const grupo of [b3, intl]) {
-    if (!grupo.length) continue;
-    try {
-      const j = await buscarJSON('https://brapi.dev/api/quote/' + grupo.map(encodeURIComponent).join('%2C') + '?range=1d&interval=1d' + qs);
-      ((j && j.results) || []).forEach(q => {
-        if (q && q.regularMarketPrice != null) {
-          guardar(String(q.symbol).toUpperCase(), q.regularMarketPrice, q.currency === 'USD' ? 'USD' : 'BRL',
-            q.regularMarketChangePercent, q.regularMarketPreviousClose,
-            q.sector || (q.summaryProfile && q.summaryProfile.sector),
-            q.longName || q.shortName, q.logourl);
-        }
-      });
-      grupo.forEach(t => { if (ok.indexOf(t) < 0) falhas.push(t); });
-    } catch (e) { grupo.forEach(t => falhas.push(t)); console.warn('quote:', e.message); }
+    for (const lote of emLotes(grupo, LOTE_COTACOES)) {
+      try {
+        const j = await buscarJSON('https://brapi.dev/api/quote/' + lote.map(encodeURIComponent).join('%2C') + '?range=1d&interval=1d' + qs);
+        ((j && j.results) || []).forEach(q => {
+          if (q && q.regularMarketPrice != null) {
+            guardar(String(q.symbol).toUpperCase(), q.regularMarketPrice, q.currency === 'USD' ? 'USD' : 'BRL',
+              q.regularMarketChangePercent, q.regularMarketPreviousClose,
+              q.sector || (q.summaryProfile && q.summaryProfile.sector),
+              q.longName || q.shortName, q.logourl, q.regularMarketTime);
+          }
+        });
+        lote.forEach(t => { if (ok.indexOf(t) < 0) falhas.push(t); });
+      } catch (e) { lote.forEach(t => falhas.push(t)); console.warn('quote:', e.message); }
+    }
   }
 
-  if (cripto.length) {
+  for (const lote of emLotes(cripto, LOTE_COTACOES)) {
     try {
-      const j = await buscarJSON('https://brapi.dev/api/v2/crypto?coin=' + cripto.map(encodeURIComponent).join('%2C') + '&currency=BRL' + qs);
+      const j = await buscarJSON('https://brapi.dev/api/v2/crypto?coin=' + lote.map(encodeURIComponent).join('%2C') + '&currency=BRL' + qs);
       ((j && j.coins) || []).forEach(c => {
         if (c && c.regularMarketPrice != null) {
           const sym = String(c.coin || c.symbol || '').toUpperCase().replace('-BRL', '');
@@ -2991,8 +3219,8 @@ async function atualizarCotacoes(silencioso) {
             'Criptomoedas', c.coinName, c.coinImageUrl);
         }
       });
-      cripto.forEach(t => { if (ok.indexOf(t) < 0) falhas.push(t); });
-    } catch (e) { cripto.forEach(t => falhas.push(t)); console.warn('crypto:', e.message); }
+      lote.forEach(t => { if (ok.indexOf(t) < 0) falhas.push(t); });
+    } catch (e) { lote.forEach(t => falhas.push(t)); console.warn('crypto:', e.message); }
   }
 
   if (intl.length) {
@@ -3101,7 +3329,12 @@ function onTipoChange() {
   document.getElementById('tx-qtd-wrap').style.display = split ? 'none' : 'flex';
   document.getElementById('tx-preco-wrap').style.display = split ? 'none' : 'flex';
   document.getElementById('tx-taxas-wrap').style.display = (split || bonif) ? 'none' : 'flex';
-  document.getElementById('tx-preco-label').textContent = bonif ? 'Custo atribuído por unidade' : 'Preço unitário *';
+  document.getElementById('tx-preco-label').textContent =
+    bonif ? 'Custo atribuído por unidade'
+    : t === 'amortizacao' ? 'Valor amortizado por cota *'
+    : t === 'subscricao' ? 'Preço de subscrição *' : 'Preço unitário *';
+  document.getElementById('tx-qtd-label').textContent =
+    t === 'amortizacao' ? 'Cotas que receberam *' : 'Quantidade *';
   document.getElementById('tx-fator-label').textContent = t === 'grupamento' ? 'Fator do grupamento *' : 'Fator do desdobramento *';
   document.getElementById('tx-fator-hint').textContent = t === 'grupamento'
     ? 'Grupamento 10:1 → fator 10 (cada 10 cotas viram 1)'
@@ -3161,6 +3394,16 @@ function salvarTx() {
       const c = parseFloat(document.getElementById('tx-cambio').value);
       if (!isFinite(c) || c <= 0) { alert('Informe o câmbio (USD/BRL) da operação.'); return; }
       reg.cambio = c;
+    }
+    // vender ou amortizar mais do que existe costuma ser erro de digitação
+    if (tipo === 'venda' || tipo === 'amortizacao') {
+      const disponivel = posicaoEm(ticker, data, txEditando);
+      if (qtd > disponivel + 1e-9) {
+        const rotulo = tipo === 'venda' ? 'vender' : 'amortizar';
+        if (!confirm('Em ' + dataBR(data) + ' você tinha ' + qtdFmt(disponivel) + ' de ' + ticker +
+            ', e está tentando ' + rotulo + ' ' + qtdFmt(qtd) + '.\n\n' +
+            'Isso costuma indicar um lançamento antigo faltando. Salvar mesmo assim?')) return;
+      }
     }
   }
 
@@ -3233,7 +3476,7 @@ function renderTx() {
       const simb = t.moeda === 'USD' ? 'US$ ' : 'R$ ';
       const simbTx = t.taxasMoeda === 'USD' ? 'US$ ' : 'R$ ';
       const total = (+t.quantidade || 0) * (+t.preco || 0);
-      const rot = t.tipo === 'compra' ? '<span class="pos">Compra</span>'
+      const rot = t.tipo === 'compra' || t.tipo === 'subscricao' ? '<span class="pos">' + esc(TIPOS_EVENTO[t.tipo]) + '</span>'
         : t.tipo === 'venda' ? '<span class="neg">Venda</span>'
         : '<span class="tag tag-rf">' + esc(TIPOS_EVENTO[t.tipo] || t.tipo) + '</span>';
       return '<tr><td>' + dataBR(t.data) + '</td><td>' + rot + '</td>' +
@@ -3359,7 +3602,8 @@ function renderPreviewRF() {
   const faltaDado = informado ? (r.valorInformadoBruto == null || !isFinite(r.valorInformadoBruto)) : !isFinite(r.taxa);
   if (faltaDado || !isFinite(r.valorAplicado) || !r.dataAplicacao) { el.innerHTML = ''; return; }
   const c = calcRF(r, getDB());
-  el.innerHTML = '📊 ' + (informado ? 'Posição informada' : 'Estimativa hoje') + ': valor <strong>' + brl(c.valor) +
+  el.innerHTML = '📊 ' + (informado ? 'Posição informada' : 'Estimativa hoje') + ': aplicado ' + brl(c.aplicado) +
+    ' · valor <strong>' + brl(c.valor) +
     '</strong> · rendimento ' + brl(c.rendimento) +
     ' (' + pct(c.rentPct) + ') em ' + c.dias + ' dias corridos · método: ' + esc(c.metodo) +
     (informado && c.equivAA != null ? ' · equivale a ' + pct(c.equivAA) + ' a.a.' : '') +
@@ -3469,12 +3713,84 @@ function alternarResgate(id) {
   renderRF(); renderEventosRF(); renderFGC();
 }
 
+/* ---------- Aportes e resgates parciais ---------- */
+function movimentacoesRF(id) {
+  const db = getDB();
+  const r = db.rendafixa.find(x => x.id === id);
+  if (!r) return;
+  const c = calcRF(r, db);
+  const linhas = [{ data: r.dataAplicacao, valor: +r.valorAplicado || 0, tipo: 'aplicacao', idx: -1 }]
+    .concat((r.aportes || []).map((a, i) => ({ data: a.data, valor: +a.valor || 0, tipo: 'aporte', idx: i })))
+    .concat((r.resgates || []).map((x, i) => ({ data: x.data, valor: +x.valor || 0, tipo: 'resgate', idx: i })))
+    .sort((a, b) => a.data.localeCompare(b.data));
+  const rot = { aplicacao: 'Aplicação inicial', aporte: 'Aporte', resgate: 'Resgate parcial' };
+
+  abrirModal('<h3>Movimentações · ' + esc(r.nome) + '</h3>' +
+    '<p class="muted small" style="margin-bottom:12px">Principal aplicado hoje: <strong>' + brl(c.aplicado) +
+    '</strong> · saldo bruto ' + brl(c.valor) + '. Cada aporte rende a partir do próprio dia; ' +
+    'um resgate parcial retira principal e rendimento na mesma proporção.</p>' +
+    '<div class="table-wrap" style="max-height:34vh;overflow-y:auto"><table><thead><tr><th>Data</th><th>Tipo</th>' +
+    '<th class="num">Valor</th><th></th></tr></thead><tbody>' +
+    linhas.map(l => '<tr><td>' + dataBR(l.data) + '</td><td>' + rot[l.tipo] + '</td>' +
+      '<td class="num ' + (l.tipo === 'resgate' ? 'neg' : '') + '">' + (l.tipo === 'resgate' ? '−' : '') + brl(l.valor) + '</td>' +
+      '<td>' + (l.idx >= 0 ? '<button class="btn-danger" onclick="removerMovRF(' + id + ',\'' + l.tipo +
+        '\',' + l.idx + ')">excluir</button>' : '<span class="muted small">cadastro</span>') + '</td></tr>').join('') +
+    '</tbody></table></div>' +
+    '<h3 style="margin-top:16px;font-size:14px">Lançar movimentação</h3>' +
+    '<div class="field-grid">' +
+    '<div class="field-group"><label>Tipo</label><select id="mv-tipo">' +
+    '<option value="aporte">Aporte</option><option value="resgate">Resgate parcial</option></select></div>' +
+    '<div class="field-group"><label>Data</label><input type="date" id="mv-data" value="' + hojeISO() + '"></div>' +
+    '<div class="field-group"><label>Valor (R$)</label><input type="number" step="0.01" id="mv-valor" placeholder="500.00"></div>' +
+    '</div>' +
+    '<div class="form-actions"><button class="btn-secondary" onclick="fecharModal()">Fechar</button>' +
+    '<button class="btn-primary" onclick="adicionarMovRF(' + id + ')">Lançar</button></div>');
+}
+
+function adicionarMovRF(id) {
+  const db = getDB();
+  const r = db.rendafixa.find(x => x.id === id);
+  if (!r) return;
+  const tipo = document.getElementById('mv-tipo').value;
+  const data = document.getElementById('mv-data').value;
+  const valor = parseFloat(document.getElementById('mv-valor').value);
+  if (!data || !isFinite(valor) || valor <= 0) { alert('Informe a data e um valor maior que zero.'); return; }
+  if (data < r.dataAplicacao) { alert('A movimentação não pode ser anterior à aplicação.'); return; }
+  if (tipo === 'resgate') {
+    const saldo = calcRF(r, db, data).valor;
+    if (valor > saldo + 0.01 && !confirm('O saldo em ' + dataBR(data) + ' era de ' + brl(saldo) +
+        '. Resgatar ' + brl(valor) + ' mesmo assim?')) return;
+  }
+  const lista = tipo === 'aporte' ? (r.aportes = r.aportes || []) : (r.resgates = r.resgates || []);
+  lista.push({ data: data, valor: valor });
+  lista.sort((a, b) => a.data.localeCompare(b.data));
+  setDB(db);
+  registrarSnapshot(true);
+  movimentacoesRF(id);
+  renderRF(); renderEventosRF(); renderFGC();
+}
+
+function removerMovRF(id, tipo, idx) {
+  const db = getDB();
+  const r = db.rendafixa.find(x => x.id === id);
+  if (!r) return;
+  const lista = tipo === 'aporte' ? r.aportes : r.resgates;
+  if (!lista || !lista[idx]) return;
+  if (!confirm('Excluir esta movimentação?')) return;
+  lista.splice(idx, 1);
+  setDB(db);
+  registrarSnapshot(true);
+  movimentacoesRF(id);
+  renderRF(); renderEventosRF(); renderFGC();
+}
+
 // Refresca o saldo de um investimento cadastrado com rendimento informado
 function atualizarSaldo(id) {
   const db = getDB();
   const r = db.rendafixa.find(x => x.id === id);
   if (!r) return;
   const c = calcRF(r, db);
+  const hist = (r.historicoSaldos || []).slice().reverse().slice(0, 8);
   abrirModal('<h3>Atualizar saldo · ' + esc(r.nome) + '</h3>' +
     '<p class="muted small" style="margin-bottom:12px">Aplicado ' + brl(+r.valorAplicado) + ' em ' + dataBR(r.dataAplicacao) +
     ' · saldo atual registrado: <strong>' + brl(c.valor) + '</strong>' +
@@ -3489,6 +3805,15 @@ function atualizarSaldo(id) {
     '<input type="number" step="0.01" id="md-valor" placeholder="0.00"></div>' +
     '<div class="field-group"><label>Data do saldo</label>' +
     '<input type="date" id="md-data" value="' + hojeISO() + '"></div></div>' +
+    (hist.length ? '<h3 style="margin-top:16px;font-size:14px">Saldos anteriores</h3>' +
+      '<div class="table-wrap"><table><thead><tr><th>Data</th><th class="num">Saldo</th>' +
+      '<th class="num">Variação</th></tr></thead><tbody>' +
+      hist.map((h, i) => {
+        const ant = hist[i + 1];
+        const dif = ant ? h.valor - ant.valor : null;
+        return '<tr><td>' + dataBR(h.data) + '</td><td class="num">' + brl(h.valor) + '</td>' +
+          '<td class="num ' + (dif == null ? 'muted' : sinal(dif)) + '">' + (dif == null ? '—' : brl(dif)) + '</td></tr>';
+      }).join('') + '</tbody></table></div>' : '') +
     '<div class="form-actions"><button class="btn-secondary" onclick="fecharModal()">Cancelar</button>' +
     '<button class="btn-primary" onclick="confirmarSaldo(' + id + ')">Salvar saldo</button></div>');
 }
@@ -3504,6 +3829,14 @@ function confirmarSaldo(id) {
   if (bruto == null || !data) { alert('Informe o valor e a data.'); return; }
   if (data < r.dataAplicacao) { alert('A data do saldo não pode ser anterior à aplicação.'); return; }
   if (!(bruto > 0)) { alert('O saldo resultante precisa ser maior que zero.'); return; }
+  r.historicoSaldos = r.historicoSaldos || [];
+  if (r.valorInformadoData && isFinite(+r.valorInformadoBruto)) {
+    r.historicoSaldos.push({ data: r.valorInformadoData, valor: +r.valorInformadoBruto });
+    r.historicoSaldos = r.historicoSaldos
+      .filter((h, i, arr) => arr.findIndex(y => y.data === h.data) === i)
+      .sort((a, b) => a.data.localeCompare(b.data))
+      .slice(-60);
+  }
   r.indexador = 'INFORMADO';
   r.modoInformado = modo;
   r.valorInformadoEntrada = entrada;
@@ -3549,7 +3882,10 @@ function renderRF() {
         '<td>' + esc(rotuloIndexador(r)) + '</td>' +
         '<td>' + dataBR(r.dataAplicacao) + '</td>' +
         '<td>' + dataBR(r.vencimento) + '</td>' +
-        '<td class="num">' + brl(+r.valorAplicado) + '</td>' +
+        '<td class="num">' + brl(c.aplicado) +
+        (c.totalAportes > 0 || c.totalResgates > 0 ? '<br><span class="small muted">' +
+          (c.totalAportes > 0 ? '+' + brlCurto(c.totalAportes) : '') +
+          (c.totalResgates > 0 ? ' −' + brlCurto(c.totalResgates) : '') + '</span>' : '') + '</td>' +
         '<td class="num">' + brl(c.valor) + (c.mtm != null ? '<br><span class="small muted">curva ' + brl(c.curva) + '</span>' : '') + '</td>' +
         '<td class="num ' + sinal(c.rendimento) + '">' + brl(c.rendimento) + '<br><span class="small">' + pct(c.rentPct) + '</span></td>' +
         '<td class="num">' + brl(c.liquido) +
@@ -3559,6 +3895,7 @@ function renderRF() {
           (c.desatualizado ? ' <span class="tag tag-aviso">saldo de ' + c.diasInformado + 'd atrás</span>' : '') + '</td>' +
         '<td style="white-space:nowrap">' +
         (c.informado && !r.resgatado ? '<button class="btn-ghost" onclick="atualizarSaldo(' + r.id + ')">atualizar saldo</button> ' : '') +
+        (!r.resgatado ? '<button class="btn-ghost" onclick="movimentacoesRF(' + r.id + ')">aportes</button> ' : '') +
         '<button class="btn-ghost" onclick="editarRF(' + r.id + ')">editar</button> ' +
         '<button class="btn-ghost" onclick="alternarResgate(' + r.id + ')">' + (r.resgatado ? 'reativar' : 'resgatar') + '</button> ' +
         '<button class="btn-danger" onclick="excluirRF(' + r.id + ')">excluir</button></td></tr>';
@@ -3900,15 +4237,24 @@ function exportCSV(qual) {
       .concat(db.proventos.slice().sort((a, b) => a.data.localeCompare(b.data)).map(p => [p.data, p.ticker, p.tipo, p.valor])));
   } else if (qual === 'rendafixa') {
     baixarCSV('renda_fixa', [['Titulo', 'Tipo', 'Emissor', 'Remuneracao', 'Taxa', 'Aplicacao', 'Vencimento', 'Liquidez',
-      'Aplicado', 'ValorHoje', 'Metodo', 'SaldoInformadoEm', 'Correcao', 'EquivalenteAA', 'IOF', 'IR', 'LiquidoEst', 'Resgatado']]
+      'Aplicado', 'Aportes', 'Resgates', 'ValorHoje', 'Metodo', 'SaldoInformadoEm', 'Correcao', 'EquivalenteAA',
+      'IOF', 'IR', 'LiquidoEst', 'Resgatado']]
       .concat(db.rendafixa.map(r => {
         const c = calcRF(r, db);
         return [r.nome, r.tipo, r.emissor || '', r.indexador, r.taxa, r.dataAplicacao, r.vencimento || '', r.liquidez || '',
-                r.valorAplicado, c.valor.toFixed(2), c.metodo, c.informado ? (r.valorInformadoData || '') : '',
+                c.aplicado.toFixed(2), c.totalAportes.toFixed(2), c.totalResgates.toFixed(2),
+                c.valor.toFixed(2), c.metodo, c.informado ? (r.valorInformadoData || '') : '',
                 c.informado ? (r.correcao || 'nenhuma') : '',
                 c.equivAA != null ? c.equivAA.toFixed(2) : '', c.iof.toFixed(2), c.ir.toFixed(2), c.liquido.toFixed(2),
                 r.resgatado ? 'sim' : 'nao'];
       })));
+  } else if (qual === 'ir') {
+    const a = apuracaoIR();
+    const linhas = [['Mes', 'Categoria', 'Vendas', 'Resultado', 'Isento', 'PrejuizoUsado', 'Base', 'Aliquota', 'IR', 'DARFdoMes', 'Codigo']];
+    if (a) a.linhas.forEach(l => l.categorias.forEach(c =>
+      linhas.push([l.mes, c.nome, c.volume.toFixed(2), c.resultado.toFixed(2), c.isento ? 'sim' : 'nao',
+        c.compensado.toFixed(2), c.base.toFixed(2), c.aliq, c.ir.toFixed(2), l.darf.toFixed(2), c.codigo])));
+    baixarCSV('apuracao_ir', linhas);
   } else if (qual === 'historico') {
     baixarCSV('historico_patrimonio', [['Data', 'Patrimonio', 'CustoInvestido', 'RendaVariavel', 'RendaFixa', 'ProventosAcum', 'RealizadoAcum']]
       .concat(db.snapshots.map(s => [s.data, s.patrimonio.toFixed(2), s.custo.toFixed(2), s.valorVar.toFixed(2),

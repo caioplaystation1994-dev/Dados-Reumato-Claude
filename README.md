@@ -9,6 +9,7 @@ usa (`localStorage`); nada é enviado para servidores além das consultas públi
 |---|---|
 | `investimentos.html` | Carteira de investimentos: renda variável, renda fixa, proventos, desempenho e planejamento |
 | `coleta_dados_reumatologia.html` | Formulário de coleta de dados de pesquisa em reumatologia (adesão ao tratamento) |
+| `testes/` | Testes de ponta a ponta do app de investimentos, com as APIs simuladas ([detalhes](testes/README.md)) |
 
 ---
 
@@ -28,7 +29,7 @@ usa (`localStorage`); nada é enviado para servidores além das consultas públi
 
 | O quê | Origem | Observações |
 |---|---|---|
-| Ações, FIIs, ETFs, BDRs, ativos internacionais | brapi.dev `/api/quote` | Ativos internacionais dependem do plano do token |
+| Ações, FIIs, ETFs, BDRs, ativos internacionais | brapi.dev `/api/quote` | Consultado em lotes de até 12 tickers, com repetição em caso de limite ou falha de rede |
 | Criptomoedas | brapi.dev `/api/v2/crypto` | Sem série histórica: não entram na reconstrução |
 | Dólar (USD/BRL) | brapi.dev `/api/v2/currency` | Atualizado junto com as cotações |
 | CDI diário (série 12) e IPCA mensal (série 433) | API de dados abertos do Banco Central | Uma taxa por dia útil |
@@ -42,13 +43,16 @@ a renda fixa cai para as taxas estimadas das Configurações.
 
 ### Renda variável
 
-- **Preço médio**: custo total ÷ quantidade. Compras somam quantidade e custo (incluindo taxas);
-  vendas dão baixa no custo pelo preço médio vigente.
+- **Preço médio**: custo total ÷ quantidade. Compras e subscrições somam quantidade e custo
+  (incluindo taxas); vendas dão baixa no custo pelo preço médio vigente. Vender mais do que a
+  posição da data dispara um aviso, porque costuma indicar lançamento antigo faltando.
 - **Lucro realizado** de uma venda: `quantidade × preço − taxas − preço médio × quantidade`.
 - **Desdobramento / grupamento**: alteram só a quantidade; o custo total não muda, e o preço médio
   se divide ou se multiplica pelo fator.
 - **Bonificação**: entra quantidade com o custo atribuído informado (pode ser zero), diluindo o
   preço médio.
+- **Amortização de FII**: devolve capital, então reduz o custo da posição sem mexer na quantidade.
+  O que passar do custo vira ganho tributável.
 - **Ativos em dólar**: o custo é convertido pelo **câmbio da própria operação**, informado no
   lançamento. Taxas podem ser lançadas em reais ou em dólar.
 - **Decomposição do resultado**, com `pm₀` = preço médio em dólar e `fx₀` = câmbio médio de compra:
@@ -63,6 +67,10 @@ a renda fixa cai para as taxas estimadas das Configurações.
 - **Prefixado**: `(1 + taxa)^(du/252)`, com `du` contado pelos dias úteis da própria série.
 - **IPCA+**: fator do IPCA acumulado no período × `(1 + spread)^(du/252)`. O IPCA tem defasagem de
   divulgação de cerca de 45 dias, então períodos muito recentes ficam subestimados.
+- **Aportes e resgates parciais**: cada aporte rende a partir do próprio dia. Um resgate parcial
+  retira principal e rendimento na mesma proporção do saldo — retirar `X` de um saldo `S` com
+  principal `P` reduz o principal em `P × X/S`. A alíquota de IR continua sendo calculada pelo prazo
+  desde a aplicação inicial, o que é uma simplificação.
 - **Saldo informado**: o valor digitado é o ponto de partida; a partir da data desse saldo o valor
   pode continuar sendo corrigido pela rentabilidade média observada
   (`(saldo/aplicado)^(365/dias) − 1`), por um índice real, ou por nada.
@@ -109,9 +117,23 @@ a renda fixa cai para as taxas estimadas das Configurações.
 
 ### Imposto de renda sobre renda variável
 
-Estimativa simplificada: 20% para FIIs e 15% para ações, ETFs, BDRs, ativos internacionais e cripto,
-aplicados sobre o lucro realizado. **Não** considera apuração mês a mês, isenção de R$ 20 mil em
-vendas de ações, isenção de R$ 35 mil em cripto, compensação de prejuízos acumulados nem day trade.
+Apuração **mês a mês**, por categoria, com prejuízo que só compensa lucro da mesma categoria:
+
+| Categoria | Alíquota | Isenção mensal por volume de vendas |
+|---|---|---|
+| Ações (swing trade) | 15% | R$ 20.000 |
+| ETFs e BDRs | 15% | — |
+| FIIs | 20% | — |
+| Criptomoedas | 15% | R$ 35.000 |
+| Ativos no exterior | 15% | R$ 35.000 |
+| Day trade | 20% | — |
+
+Day trade é identificado quando há compra e venda do mesmo ativo na mesma data. Prejuízo apurado em
+mês isento não é aproveitável, conforme a regra. O imposto do mês vira DARF; abaixo de R$ 10 ele
+acumula para o mês seguinte.
+
+Continua sendo **estimativa**: não trata rendimentos no exterior pela Lei 14.754/2023, fundos com
+come-cotas, operações a termo e opções, nem separação por corretora.
 
 ### Planejamento
 
@@ -139,12 +161,14 @@ migração automática ao abrir:
 | 3 | Correção do saldo informado a partir da data de referência |
 | 4 | Proventos com situação (recebido/previsto), metas de alocação e preços históricos |
 
+Aportes e resgates parciais de renda fixa, subscrição e amortização de FII entram como campos
+opcionais e não exigiram nova versão de schema.
+
 ## Limitações conhecidas
 
-- Não há apuração mensal de IR nem geração de DARF.
 - Fundos de investimento não têm come-cotas; previdência e fundos usam aproximações de IR.
-- Um título de renda fixa aceita um único valor aplicado — aportes mensais recorrentes ainda não
-  são suportados.
+- Rendimentos no exterior seguem a regra antiga de ganho de capital, não a Lei 14.754/2023.
 - Não há importação do extrato da B3 nem de notas de corretagem.
 - Proventos são lançados manualmente.
+- Não há separação por corretora nem controle de operações a termo e opções.
 - Os dados vivem em um só navegador, sem sincronização entre dispositivos.
