@@ -140,6 +140,7 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
     <button id="nav-dashboard" class="active" onclick="showPage('dashboard')">Painel</button>
     <button id="nav-carteira" onclick="showPage('carteira')">Carteira</button>
     <button id="nav-desempenho" onclick="showPage('desempenho')">Desempenho</button>
+    <button id="nav-planejamento" onclick="showPage('planejamento')">Planejamento</button>
     <button id="nav-transacoes" onclick="showPage('transacoes')">Transações</button>
     <button id="nav-rendafixa" onclick="showPage('rendafixa')">Renda Fixa</button>
     <button id="nav-proventos" onclick="showPage('proventos')">Proventos</button>
@@ -222,6 +223,10 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
 <!-- ==================== DESEMPENHO ==================== -->
 <div id="page-desempenho" class="page">
   <div id="banner-desemp" class="banner"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <button class="btn-secondary btn-sm" onclick="reconstruirHistorico()">📈 Reconstruir histórico com preços passados</button>
+    <button class="btn-ghost" onclick="editarHistorico()">Editar registros de patrimônio</button>
+  </div>
   <div class="stat-grid" id="desemp-cards"></div>
 
   <div class="section-card">
@@ -231,6 +236,25 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
       TWR (<em>time-weighted return</em>) elimina o efeito dos aportes e resgates, permitindo comparação justa com os índices.
       Calculada a partir dos registros diários de patrimônio — períodos anteriores ao primeiro registro aparecem como “—”.
     </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">
+      <span>Risco</span>
+      <span class="small muted">calculado sobre os retornos diários</span>
+    </div>
+    <div class="stat-grid" id="cards-risco" style="margin-bottom:0"></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Retornos mensais</div>
+    <div id="tabela-mensal"></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Renda variável × renda fixa</div>
+    <div id="tabela-bolsos"></div>
+    <div class="foot-note">Cada bolso é medido com os seus próprios aportes e resgates, então as duas colunas são comparáveis entre si.</div>
   </div>
 
   <div class="section-card">
@@ -256,6 +280,12 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
   </div>
 
   <div class="section-card">
+    <div class="section-title">Correlação entre os ativos</div>
+    <div id="tabela-correlacao"></div>
+    <div class="foot-note">Calculada com os retornos diários dos preços históricos. Valores próximos de 1 andam juntos; próximos de −1 andam em sentidos opostos. Exige a reconstrução do histórico.</div>
+  </div>
+
+  <div class="section-card">
     <div class="section-title">Imposto estimado sobre lucro realizado</div>
     <div id="tabela-ir"></div>
     <div class="foot-note">
@@ -263,6 +293,80 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
       <strong>Estimativa simplificada</strong> — ainda não considera apuração mês a mês, isenção de R$ 20 mil em vendas de ações,
       isenção de R$ 35 mil em cripto, compensação de prejuízos acumulados nem day trade.
     </div>
+  </div>
+</div>
+
+<!-- ==================== PLANEJAMENTO ==================== -->
+<div id="page-planejamento" class="page">
+  <div class="stat-grid" id="plan-cards"></div>
+
+  <div class="section-card">
+    <div class="section-title">
+      <span>Alocação-alvo por classe</span>
+      <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="switch">banda de tolerância
+          <input type="number" id="plan-banda" step="0.5" min="0" style="width:70px;border:1px solid #cbd5e0;border-radius:6px;padding:4px 8px" onchange="salvarBanda()"> pp
+        </label>
+      </span>
+    </div>
+    <div id="tabela-alvos"></div>
+    <div class="foot-note">
+      Defina o percentual desejado de cada classe. O rebalanceamento só é sugerido quando o desvio passa da banda —
+      o que evita ficar ajustando a carteira por variações pequenas.
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="section-card">
+      <div class="section-title">Simular aporte</div>
+      <div class="field-grid">
+        <div class="field-group">
+          <label>Valor do aporte (R$)</label>
+          <input type="number" id="plan-aporte" step="0.01" placeholder="1000.00" oninput="renderAporte()">
+        </div>
+        <div class="field-group">
+          <label>Aporte mensal previsto (R$)</label>
+          <input type="number" id="plan-aporte-mensal" step="0.01" placeholder="1000.00" onchange="salvarAporteMensal()">
+          <span class="hint">Usado na projeção e na meta de patrimônio.</span>
+        </div>
+      </div>
+      <div id="resultado-aporte" style="margin-top:12px"></div>
+      <div class="foot-note">O aporte é distribuído entre as classes mais abaixo do alvo, sem precisar vender nada.</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">Rebalancear a carteira</div>
+      <div id="resultado-rebalanceamento"></div>
+      <div class="foot-note">Aqui entram vendas: é o ajuste completo para voltar exatamente aos alvos definidos.</div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Meta de patrimônio</div>
+    <div class="field-grid">
+      <div class="field-group">
+        <label>Quanto quero acumular (R$)</label>
+        <input type="number" id="plan-meta" step="0.01" placeholder="1000000.00" onchange="salvarMetaPatrimonio()">
+      </div>
+      <div class="field-group">
+        <label>Até quando</label>
+        <input type="date" id="plan-meta-data" onchange="salvarMetaPatrimonio()">
+      </div>
+    </div>
+    <div id="resultado-meta" style="margin-top:12px"></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">
+      <span>Projeção de patrimônio</span>
+      <select id="plan-anos" onchange="renderPlanejamento()" style="border:1px solid #cbd5e0;border-radius:8px;padding:6px 10px;font-size:12.5px">
+        <option value="5">5 anos</option><option value="10" selected>10 anos</option>
+        <option value="20">20 anos</option><option value="30">30 anos</option>
+      </select>
+    </div>
+    <svg id="chart-projecao" viewBox="0 0 860 260"></svg>
+    <div class="chart-legend" id="leg-projecao"></div>
+    <div class="foot-note" id="nota-projecao"></div>
   </div>
 </div>
 
@@ -498,6 +602,12 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
   </div>
 
   <div class="section-card">
+    <div class="section-title">Próximos vencimentos e carências</div>
+    <div id="rf-eventos"></div>
+    <div class="foot-note">Títulos vencidos são baixados automaticamente na data do vencimento, com o valor líquido calculado ali. Dá para reverter pelo botão “reativar”.</div>
+  </div>
+
+  <div class="section-card">
     <div class="section-title">Exposição por emissor e cobertura do FGC</div>
     <div id="rf-fgc"></div>
     <div class="foot-note">
@@ -538,6 +648,18 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
         <label>Valor líquido (R$) *</label>
         <input type="number" id="pv-valor" step="0.01" placeholder="120.00">
       </div>
+      <div class="field-group">
+        <label>Data-com</label>
+        <input type="date" id="pv-data-com">
+        <span class="hint">Data em que era preciso ter o ativo. Opcional.</span>
+      </div>
+      <div class="field-group">
+        <label>Situação *</label>
+        <select id="pv-status">
+          <option value="recebido">Recebido</option>
+          <option value="previsto">Previsto (anunciado, ainda não pago)</option>
+        </select>
+      </div>
     </div>
     <div class="form-actions">
       <button class="btn-secondary" onclick="limparPV()">Limpar</button>
@@ -551,6 +673,12 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
       <button class="btn-ghost" onclick="exportCSV('proventos')">Exportar CSV</button>
     </div>
     <div id="pv-tabela"></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Calendário de proventos</div>
+    <div id="pv-calendario"></div>
+    <div class="foot-note">Proventos marcados como previstos não entram no total recebido nem no dividend yield — aparecem só como agenda.</div>
   </div>
 
   <div class="section-card">
@@ -587,6 +715,11 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
         <label>Intervalo mínimo (minutos)</label>
         <input type="number" id="cfg-intervalo" step="1" min="1" placeholder="15">
         <span class="hint">Evita gastar as requisições do plano a cada recarga.</span>
+      </div>
+      <div class="field-group">
+        <label>Atualizar sozinho durante o pregão</label>
+        <input type="number" id="cfg-intraday" step="1" min="0" placeholder="0">
+        <span class="hint">Minutos entre atualizações com o app aberto, em dias úteis das 10h às 18h. Zero desliga.</span>
       </div>
     </div>
   </div>
@@ -646,12 +779,13 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
    Persistência e migração de schema
    ============================================================ */
 const DB_KEY = 'investimentos_db';
-const VERSAO = 3;
+const VERSAO = 4;
 const DB_PADRAO = {
   versao: VERSAO,
   transacoes: [], proventos: [], rendafixa: [], cotacoes: {}, ativos: {}, snapshots: [],
+  precosHist: {}, metas: { alocacao: {}, banda: 5, patrimonioMeta: 0, dataMeta: '', aporteMensal: 0 },
   series: { cdi: null, ipca: null, ibov: null, ifix: null },
-  config: { token: '', cdi: 10.65, ipca: 4.5, usdbrl: 5.4, autoUpdate: true, intervaloMin: 15, ultimaAtualizacao: null }
+  config: { token: '', cdi: 10.65, ipca: 4.5, usdbrl: 5.4, autoUpdate: true, intervaloMin: 15, intradayMin: 0, ultimaAtualizacao: null }
 };
 
 function getDB() {
@@ -660,7 +794,8 @@ function getDB() {
   const db = JSON.parse(JSON.stringify(DB_PADRAO));
   if (!raw) return db;
   ['transacoes', 'proventos', 'rendafixa', 'snapshots'].forEach(k => { if (Array.isArray(raw[k])) db[k] = raw[k]; });
-  ['cotacoes', 'ativos'].forEach(k => { if (raw[k] && typeof raw[k] === 'object') db[k] = raw[k]; });
+  ['cotacoes', 'ativos', 'precosHist'].forEach(k => { if (raw[k] && typeof raw[k] === 'object') db[k] = raw[k]; });
+  if (raw.metas && typeof raw.metas === 'object') Object.assign(db.metas, raw.metas);
   if (raw.series && typeof raw.series === 'object') Object.assign(db.series, raw.series);
   if (raw.config) Object.assign(db.config, raw.config);
   return migrar(db, raw.versao || 1);
@@ -682,12 +817,29 @@ function migrar(db, de) {
       if (r.indexador === 'INFORMADO' && !r.correcao) r.correcao = 'nenhuma';
     });
   }
+  if (de < 4) {
+    // proventos lançados antes da agenda são todos recebidos
+    db.proventos.forEach(p => { if (!p.status) p.status = 'recebido'; });
+  }
   db.versao = VERSAO;
   return db;
 }
 
+// Cache das duas funções mais caras. A chave é o próprio conteúdo salvo, o que
+// mantém o cache correto mesmo quando algo grava no localStorage por fora.
+const _cache = { chave: null, consolidado: null, rf: null, precos: null };
+function _chaveDB() { return localStorage.getItem(DB_KEY) || ''; }
+function _memo(nome, calcular) {
+  const k = _chaveDB();
+  if (_cache.chave !== k) { _cache.chave = k; _cache.consolidado = null; _cache.rf = null; }
+  if (_cache[nome] == null) _cache[nome] = calcular();
+  return _cache[nome];
+}
+function invalidarCache() { _cache.chave = null; }
+
 function setDB(db) {
   db.versao = VERSAO;
+  invalidarCache();
   try {
     localStorage.setItem(DB_KEY, JSON.stringify(db));
   } catch (e) {
@@ -759,6 +911,13 @@ function nomeClasse(c) { return CLASSES[c] ? CLASSES[c].nome : c; }
 function corClasse(c) { return CLASSES[c] ? CLASSES[c].cor : '#8a94a6'; }
 function tagClasse(c) { return '<span class="tag tag-' + esc(c) + '">' + esc(nomeClasse(c)) + '</span>'; }
 function setorDe(ticker) { const a = getDB().ativos[ticker]; return (a && a.setor) || ''; }
+function nomeAtivo(ticker) { const a = getDB().ativos[ticker]; return (a && a.nome) || ''; }
+function logoAtivo(ticker) {
+  const a = getDB().ativos[ticker];
+  if (!a || !a.logo) return '';
+  return '<img src="' + esc(a.logo) + '" alt="" width="22" height="22" loading="lazy" ' +
+    'style="border-radius:4px;object-fit:contain;background:#fff;flex-shrink:0" onerror="this.remove()">';
+}
 
 /* ============================================================
    Séries econômicas — Banco Central (SGS) e brapi
@@ -946,13 +1105,16 @@ function percorrer(db, aoEvento) {
 function proventosPorTicker(db, desdeISO) {
   const m = {};
   db.proventos.forEach(p => {
+    if (p.status === 'previsto') return;
     if (desdeISO && p.data < desdeISO) return;
     m[p.ticker] = (m[p.ticker] || 0) + (+p.valor || 0);
   });
   return m;
 }
 
-function consolidar() {
+function consolidar() { return _memo('consolidado', consolidarAgora); }
+
+function consolidarAgora() {
   const db = getDB();
   const pos = percorrer(db);
   const prov = proventosPorTicker(db);
@@ -1013,6 +1175,13 @@ function iofPct(dias) {
 function aliquotaIR(dias) {
   return dias <= 180 ? 22.5 : dias <= 360 ? 20 : dias <= 720 ? 17.5 : 15;
 }
+// Previdência (PGBL/VGBL) tem tabela própria, por faixas de anos
+function aliquotaPrevidencia(dias, tributacao) {
+  if (tributacao === 'progressiva') return 15;      // retido na fonte; ajuste na declaração
+  const anos = dias / 365;
+  return anos < 2 ? 35 : anos < 4 ? 30 : anos < 6 ? 25 : anos < 8 ? 20 : anos < 10 ? 15 : 10;
+}
+function ehPrevidencia(tipo) { return tipo === 'Previdência privada'; }
 function isentoIR(tipo) { return ['LCI', 'LCA', 'Debênture', 'CRI/CRA', 'Poupança'].indexOf(tipo) >= 0; }
 
 // Fator de remuneração de um indexador entre duas datas, dia útil a dia útil
@@ -1041,10 +1210,10 @@ function fatorRemuneracao(indexador, taxaPct, ini, fim, cfg) {
   return { fator, du, metodo };
 }
 
-function calcRF(r, db) {
+function calcRF(r, db, ateISO) {
   const cfg = db.config;
   const ini = r.dataAplicacao || hojeISO();
-  const hoje = hojeISO();
+  const hoje = ateISO || hojeISO();
   const fim = (r.vencimento && r.vencimento < hoje) ? r.vencimento : hoje;
   const dias = Math.max(0, diasEntre(ini, fim));
   const aplicado = +r.valorAplicado || 0;
@@ -1104,7 +1273,9 @@ function calcRF(r, db) {
 
   const iof = isentoIR(r.tipo) ? 0 : Math.max(0, rendimento) * iofPct(dias) / 100;
   const baseIR = Math.max(0, rendimento - iof);
-  const aliq = isentoIR(r.tipo) ? 0 : aliquotaIR(dias);
+  const aliq = isentoIR(r.tipo) ? 0
+    : ehPrevidencia(r.tipo) ? aliquotaPrevidencia(dias, r.tributacao)
+    : aliquotaIR(dias);
   const ir = baseIR * aliq / 100;
   const liquido = valor - iof - ir;
 
@@ -1134,7 +1305,9 @@ function calcRF(r, db) {
   };
 }
 
-function resumoRF() {
+function resumoRF() { return _memo('rf', resumoRFAgora); }
+
+function resumoRFAgora() {
   const db = getDB();
   const itens = db.rendafixa.filter(r => !r.resgatado).map(r => ({ r, c: calcRF(r, db) }));
   const aplicado = itens.reduce((s, i) => s + (+i.r.valorAplicado || 0), 0);
@@ -1162,21 +1335,34 @@ function exposicaoEmissores() {
    ============================================================ */
 const MAX_SNAPSHOTS = 3650;
 
+// Um dia é útil se aparece na série diária do CDI; sem série, cai no dia da semana
+function ehDiaUtil(iso) {
+  const d = serieDados('cdi');
+  if (d.length && iso <= d[d.length - 1][0]) return d.some(x => x[0] === iso);
+  const dow = dataDe(iso).getDay();
+  return dow !== 0 && dow !== 6;
+}
+
 function fotoAtual() {
   const { lista, db } = consolidar();
   const abertas = lista.filter(p => p.qtd > 0);
   const rf = resumoRF();
   const valorVar = abertas.reduce((s, p) => s + p.valor, 0);
   const custoVar = abertas.reduce((s, p) => s + p.custo, 0);
+  const porAtivo = {};
+  abertas.forEach(p => { porAtivo[p.ticker] = Math.round(p.valor * 100) / 100; });
+  if (rf.bruto > 0) porAtivo['__rf'] = Math.round(rf.bruto * 100) / 100;
   return {
     data: hojeISO(),
     patrimonio: valorVar + rf.bruto,
     custo: custoVar + rf.aplicado,
     valorVar, custoVar,
     rfBruto: rf.bruto, rfAplicado: rf.aplicado,
-    proventosAcum: db.proventos.reduce((s, p) => s + (+p.valor || 0), 0),
+    proventosAcum: db.proventos.reduce((s, p) => s + (p.status === 'previsto' ? 0 : (+p.valor || 0)), 0),
     realizadoAcum: lista.reduce((s, p) => s + p.realizado, 0),
-    completo: abertas.every(p => p.temCot)
+    completo: abertas.every(p => p.temCot),
+    util: ehDiaUtil(hojeISO()),
+    porAtivo: porAtivo
   };
 }
 
@@ -1196,17 +1382,75 @@ function registrarSnapshot(forcar) {
   setDB(db);
 }
 
+// Baixa automática dos títulos vencidos, na data do vencimento
+function baixarVencidos() {
+  const db = getDB();
+  const hoje = hojeISO();
+  const baixados = [];
+  db.rendafixa.forEach(r => {
+    if (r.resgatado || !r.vencimento || r.vencimento > hoje) return;
+    const c = calcRF(r, db, r.vencimento);
+    r.resgatado = true;
+    r.dataResgate = r.vencimento;
+    r.valorResgate = c.liquido;
+    r.baixaAutomatica = true;
+    baixados.push({ nome: r.nome, data: r.vencimento, valor: c.liquido });
+  });
+  if (baixados.length) setDB(db);
+  return baixados;
+}
+
+// Títulos que vencem ou saem da carência nos próximos dias
+function proximosEventosRF(dias) {
+  const db = getDB();
+  const hoje = hojeISO();
+  const limite = isoDe(new Date(dataDe(hoje).getTime() + dias * 86400000));
+  const eventos = [];
+  db.rendafixa.filter(r => !r.resgatado).forEach(r => {
+    const c = calcRF(r, db);
+    if (r.vencimento && r.vencimento >= hoje && r.vencimento <= limite) {
+      eventos.push({ tipo: 'Vencimento', data: r.vencimento, nome: r.nome, valor: c.liquido, r: r,
+        dias: diasEntre(hoje, r.vencimento) });
+    }
+    if (c.emCarencia && r.carenciaAte <= limite) {
+      eventos.push({ tipo: 'Fim da carência', data: r.carenciaAte, nome: r.nome, valor: c.liquido, r: r,
+        dias: diasEntre(hoje, r.carenciaAte) });
+    }
+  });
+  return eventos.sort((a, b) => a.data.localeCompare(b.data));
+}
+
+// Só os dias úteis alimentam TWR, volatilidade e drawdown
+function snapshotsUteis() {
+  return getDB().snapshots.filter(s => s.util !== false).sort((a, b) => a.data.localeCompare(b.data));
+}
+
 // Aportes/resgates líquidos e proventos por data — necessários para a TWR
 function fluxosPorData() {
   const db = getDB();
-  const fluxo = {}, prov = {};
-  percorrer(db, (t, p, f) => { if (f) fluxo[t.data] = (fluxo[t.data] || 0) + f; });
-  db.rendafixa.forEach(r => {
-    if (r.dataAplicacao) fluxo[r.dataAplicacao] = (fluxo[r.dataAplicacao] || 0) + (+r.valorAplicado || 0);
-    if (r.resgatado && r.dataResgate) fluxo[r.dataResgate] = (fluxo[r.dataResgate] || 0) - (+r.valorResgate || 0);
+  const fluxo = {}, prov = {}, fluxoVar = {}, fluxoRF = {};
+  percorrer(db, (t, p, f) => {
+    if (!f) return;
+    fluxo[t.data] = (fluxo[t.data] || 0) + f;
+    fluxoVar[t.data] = (fluxoVar[t.data] || 0) + f;
   });
-  db.proventos.forEach(p => { prov[p.data] = (prov[p.data] || 0) + (+p.valor || 0); });
-  return { fluxo, prov };
+  db.rendafixa.forEach(r => {
+    if (r.dataAplicacao) {
+      const v = +r.valorAplicado || 0;
+      fluxo[r.dataAplicacao] = (fluxo[r.dataAplicacao] || 0) + v;
+      fluxoRF[r.dataAplicacao] = (fluxoRF[r.dataAplicacao] || 0) + v;
+    }
+    if (r.resgatado && r.dataResgate) {
+      const v = +r.valorResgate || 0;
+      fluxo[r.dataResgate] = (fluxo[r.dataResgate] || 0) - v;
+      fluxoRF[r.dataResgate] = (fluxoRF[r.dataResgate] || 0) - v;
+    }
+  });
+  db.proventos.forEach(p => {
+    if (p.status === 'previsto') return;
+    prov[p.data] = (prov[p.data] || 0) + (+p.valor || 0);
+  });
+  return { fluxo, prov, fluxoVar, fluxoRF };
 }
 
 function somaIntervalo(mapa, apos, ate) {
@@ -1216,29 +1460,50 @@ function somaIntervalo(mapa, apos, ate) {
 }
 
 // Série de retornos diários ponderados pelo tempo
-function serieTWR() {
-  const db = getDB();
-  const snaps = db.snapshots.slice().sort((a, b) => a.data.localeCompare(b.data));
+// Capital médio empregado no intervalo: aportes pesam pelos dias em que ficaram
+// aplicados (Modified Dietz), em vez de contarem como se fossem do último dia.
+function capitalMedio(V0, fluxo, iniISO, fimISO) {
+  const total = Math.max(1, diasEntre(iniISO, fimISO));
+  let base = V0;
+  Object.keys(fluxo).forEach(d => {
+    if (d > iniISO && d <= fimISO) {
+      const peso = (total - diasEntre(iniISO, d)) / total;
+      base += fluxo[d] * peso;
+    }
+  });
+  return base;
+}
+
+function serieTWR(escopo) {
+  const snaps = snapshotsUteis();
   if (snaps.length < 2) return [];
-  const { fluxo, prov } = fluxosPorData();
+  const { fluxo, prov, fluxoVar, fluxoRF } = fluxosPorData();
+  const f = escopo === 'var' ? fluxoVar : escopo === 'rf' ? fluxoRF : fluxo;
+  const valor = s => escopo === 'var' ? s.valorVar : escopo === 'rf' ? s.rfBruto : s.patrimonio;
   const out = [];
   let acum = 1;
   for (let i = 1; i < snaps.length; i++) {
     const a = snaps[i - 1], b = snaps[i];
-    const F = somaIntervalo(fluxo, a.data, b.data);
-    const P = somaIntervalo(prov, a.data, b.data);
-    let r = 0;
-    if (a.patrimonio > 0) r = (b.patrimonio - a.patrimonio - F + P) / a.patrimonio;
-    if (!isFinite(r) || r < -0.95 || r > 3) r = 0;   // descarta discrepâncias grosseiras
+    const V0 = valor(a), V1 = valor(b);
+    const F = somaIntervalo(f, a.data, b.data);
+    const P = escopo === 'rf' ? 0 : somaIntervalo(prov, a.data, b.data);
+    const base = capitalMedio(V0, f, a.data, b.data);
+    let r = 0, descartado = false;
+    if (base > 0) r = (V1 - V0 - F + P) / base;
+    if (!isFinite(r) || r < -0.95 || r > 3) { r = 0; descartado = true; }
     acum *= (1 + r);
-    out.push({ data: b.data, r: r, acum: (acum - 1) * 100 });
+    out.push({ data: b.data, r: r, acum: (acum - 1) * 100, descartado: descartado, fluxo: F });
   }
   return out;
 }
 
+function retornosDescartados() {
+  return serieTWR().filter(x => x.descartado).map(x => x.data);
+}
+
 // TWR de um intervalo, recomposto a partir da série diária
-function twrPeriodo(desdeISO) {
-  const s = serieTWR();
+function twrPeriodo(desdeISO, escopo) {
+  const s = serieTWR(escopo);
   if (!s.length) return null;
   const trecho = desdeISO ? s.filter(x => x.data > desdeISO) : s;
   if (!trecho.length) return null;
@@ -1251,6 +1516,301 @@ function twrPeriodo(desdeISO) {
     anualizado: dias >= 30 ? (Math.pow(f, 365 / dias) - 1) * 100 : null,
     inicio: ini, fim: fim, dias: dias, pontos: trecho.length
   };
+}
+
+/* ============================================================
+   Reconstrução do histórico com preços passados
+   ============================================================ */
+function faixaBrapi(dias) {
+  return dias <= 30 ? '1mo' : dias <= 90 ? '3mo' : dias <= 180 ? '6mo'
+    : dias <= 365 ? '1y' : dias <= 730 ? '2y' : dias <= 1825 ? '5y' : '10y';
+}
+
+// Calendário de dias úteis entre duas datas, pela série do CDI quando existe
+function diasUteis(iniISO, fimISO) {
+  const d = serieDados('cdi').filter(x => x[0] >= iniISO && x[0] <= fimISO).map(x => x[0]);
+  if (d.length > 5) {
+    const ultimo = d[d.length - 1];
+    const extra = [];
+    let cur = ultimo;
+    while (cur < fimISO) {
+      const dt = dataDe(cur); dt.setDate(dt.getDate() + 1); cur = isoDe(dt);
+      if (dt.getDay() !== 0 && dt.getDay() !== 6 && cur <= fimISO) extra.push(cur);
+    }
+    return d.concat(extra);
+  }
+  const out = [];
+  let cur = iniISO;
+  let guarda = 0;
+  while (cur <= fimISO && guarda++ < 4000) {
+    const dt = dataDe(cur);
+    if (dt.getDay() !== 0 && dt.getDay() !== 6) out.push(cur);
+    dt.setDate(dt.getDate() + 1);
+    cur = isoDe(dt);
+  }
+  return out;
+}
+
+// Estado das posições ao fim de cada data com lançamento
+function estadosPorData(db) {
+  const estados = [];
+  let ultimo = null;
+  percorrer(db, (t, p, f, pos) => {
+    const foto = {};
+    Object.keys(pos).forEach(k => { if (pos[k].qtd > 0) foto[k] = { qtd: pos[k].qtd, custo: pos[k].custo, moeda: pos[k].moeda }; });
+    const custo = Object.keys(foto).reduce((s, k) => s + foto[k].custo, 0);
+    if (ultimo && ultimo.data === t.data) { ultimo.pos = foto; ultimo.custo = custo; }
+    else { ultimo = { data: t.data, pos: foto, custo: custo }; estados.push(ultimo); }
+  });
+  return estados;
+}
+
+async function reconstruirHistorico() {
+  const db = getDB();
+  const banner = document.getElementById('banner-desemp');
+  if (!db.transacoes.length && !db.rendafixa.length) {
+    if (banner) mostrarBanner(banner, 'warn', 'Não há lançamentos para reconstruir.');
+    return;
+  }
+  let inicio = hojeISO();
+  db.transacoes.forEach(t => { if (t.data < inicio) inicio = t.data; });
+  db.rendafixa.forEach(r => { if (r.dataAplicacao && r.dataAplicacao < inicio) inicio = r.dataAplicacao; });
+  const dias = Math.max(1, diasEntre(inicio, hojeISO()));
+
+  if (banner) mostrarBanner(banner, 'info', '⏳ Baixando preços históricos e recompondo o patrimônio dia a dia...');
+
+  // 1) baixa o histórico de preços de cada ativo que já esteve em carteira
+  const tickers = Array.from(new Set(db.transacoes
+    .filter(t => t.classe !== 'cripto')
+    .map(t => t.ticker)));
+  const token = (db.config.token || '').trim();
+  const qs = token ? '&token=' + encodeURIComponent(token) : '';
+  db.precosHist = db.precosHist || {};
+  const semPreco = [];
+  for (const t of tickers) {
+    try {
+      const j = await buscarJSON('https://brapi.dev/api/quote/' + encodeURIComponent(t) +
+        '?range=' + faixaBrapi(dias) + '&interval=1d' + qs);
+      const h = ((j && j.results && j.results[0] && j.results[0].historicalDataPrice) || [])
+        .map(x => [isoDe(new Date(x.date * 1000)), +x.close])
+        .filter(x => isFinite(x[1]) && x[1] > 0)
+        .sort((a, b) => a[0].localeCompare(b[0]));
+      if (h.length) db.precosHist[t] = h.slice(-1500);
+      else semPreco.push(t);
+    } catch (e) { semPreco.push(t); console.warn('histórico ' + t + ':', e.message); }
+  }
+
+  // 2) recompõe o patrimônio em cada dia útil
+  const estados = estadosPorData(db);
+  const calendario = diasUteis(inicio, hojeISO());
+  const idx = {};
+  tickers.forEach(t => { idx[t] = 0; });
+  const ultimoPreco = {};
+  const novos = [];
+  let e = 0, estadoAtual = null;
+
+  calendario.forEach(dia => {
+    while (e < estados.length && estados[e].data <= dia) { estadoAtual = estados[e]; e++; }
+    // avança os preços de cada ativo até o dia corrente
+    tickers.forEach(t => {
+      const serie = db.precosHist[t] || [];
+      while (idx[t] < serie.length && serie[idx[t]][0] <= dia) { ultimoPreco[t] = serie[idx[t]][1]; idx[t]++; }
+    });
+    if (!estadoAtual) return;
+
+    const porAtivo = {};
+    let valorVar = 0, custoVar = 0, completo = true;
+    Object.keys(estadoAtual.pos).forEach(k => {
+      const p = estadoAtual.pos[k];
+      const preco = ultimoPreco[k];
+      const fx = p.moeda === 'USD' ? (+db.config.usdbrl || 1) : 1;
+      const v = preco != null ? p.qtd * preco * fx : p.custo;
+      if (preco == null) completo = false;
+      porAtivo[k] = Math.round(v * 100) / 100;
+      valorVar += v;
+      custoVar += p.custo;
+    });
+
+    let rfBruto = 0, rfAplicado = 0;
+    db.rendafixa.forEach(r => {
+      if (!r.dataAplicacao || r.dataAplicacao > dia) return;
+      if (r.resgatado && r.dataResgate && r.dataResgate <= dia) return;
+      const c = calcRF(r, db, dia);
+      rfBruto += c.valor;
+      rfAplicado += +r.valorAplicado || 0;
+    });
+    if (rfBruto > 0) porAtivo['__rf'] = Math.round(rfBruto * 100) / 100;
+
+    novos.push({
+      data: dia, patrimonio: valorVar + rfBruto, custo: custoVar + rfAplicado,
+      valorVar, custoVar, rfBruto, rfAplicado,
+      proventosAcum: db.proventos.filter(x => x.data <= dia && x.status !== 'previsto')
+        .reduce((s, x) => s + (+x.valor || 0), 0),
+      realizadoAcum: 0, completo: completo, util: true, porAtivo: porAtivo, reconstruido: true
+    });
+  });
+
+  // 3) preserva os registros reais já existentes
+  const reais = {};
+  db.snapshots.filter(x => !x.reconstruido).forEach(x => { reais[x.data] = x; });
+  const juntos = novos.filter(x => !reais[x.data]).concat(Object.values(reais));
+  juntos.sort((a, b) => a.data.localeCompare(b.data));
+  db.snapshots = juntos.slice(-MAX_SNAPSHOTS);
+  setDB(db);
+  registrarSnapshot(true);
+
+  if (banner) {
+    mostrarBanner(banner, semPreco.length ? 'warn' : 'ok',
+      '✅ Histórico reconstruído: <strong>' + novos.length + ' dias</strong> desde ' + dataBR(inicio) + '.' +
+      (semPreco.length ? ' ⚠️ Sem preços históricos para ' + esc(semPreco.join(', ')) +
+        ' — nesses ativos o valor usa o custo de aquisição (cripto não tem série histórica na brapi).' : ''));
+  }
+  renderDesempenho();
+}
+
+/* ============================================================
+   Métricas de risco e retorno
+   ============================================================ */
+// Volatilidade anualizada, drawdown e Sharpe a partir dos retornos diários
+function metricasRisco() {
+  const s = serieTWR().filter(x => !x.descartado);
+  if (s.length < 5) return null;
+  const rs = s.map(x => x.r);
+  const media = rs.reduce((a, b) => a + b, 0) / rs.length;
+  const varia = rs.reduce((a, b) => a + Math.pow(b - media, 2), 0) / Math.max(1, rs.length - 1);
+  const volDiaria = Math.sqrt(varia);
+  const vol = volDiaria * Math.sqrt(252) * 100;
+
+  let pico = 1, atual = 1, maxDD = 0, ddAtual = 0, dataPico = s[0].data, dataFundo = s[0].data, piorFundo = s[0].data;
+  s.forEach(x => {
+    atual *= (1 + x.r);
+    if (atual > pico) { pico = atual; dataPico = x.data; }
+    const dd = (atual / pico - 1) * 100;
+    if (dd < maxDD) { maxDD = dd; piorFundo = x.data; }
+    ddAtual = dd;
+    dataFundo = x.data;
+  });
+
+  const total = twrPeriodo(null);
+  const dias = total ? total.dias : 0;
+  const fatorTotal = 1 + (total ? total.retorno / 100 : 0);
+  const anualizado = dias >= 30 ? (Math.pow(fatorTotal, 365 / dias) - 1) * 100 : null;
+  const cdiPer = benchPeriodo('cdi', s[0].data, s[s.length - 1].data);
+  const cdiAnual = (cdiPer != null && dias >= 30) ? (Math.pow(1 + cdiPer / 100, 365 / dias) - 1) * 100 : null;
+  const sharpe = (anualizado != null && cdiAnual != null && vol > 0) ? (anualizado - cdiAnual) / vol : null;
+
+  return { vol, volDiaria: volDiaria * 100, maxDD, ddAtual, dataPico, piorFundo, anualizado, cdiAnual, sharpe, pontos: s.length };
+}
+
+// TIR do investidor: considera quando cada real entrou e saiu
+function xirr() {
+  const db = getDB();
+  const { fluxo, prov } = fluxosPorData();
+  const cf = [];
+  Object.keys(fluxo).forEach(d => { if (fluxo[d]) cf.push({ data: d, v: -fluxo[d] }); });
+  Object.keys(prov).forEach(d => { if (prov[d]) cf.push({ data: d, v: prov[d] }); });
+  const foto = fotoAtual();
+  if (foto.patrimonio > 0) cf.push({ data: hojeISO(), v: foto.patrimonio });
+  if (cf.length < 2) return null;
+  cf.sort((a, b) => a.data.localeCompare(b.data));
+  const t0 = cf[0].data;
+  const positivos = cf.some(c => c.v > 0), negativos = cf.some(c => c.v < 0);
+  if (!positivos || !negativos) return null;
+
+  const npv = r => cf.reduce((s, c) => s + c.v / Math.pow(1 + r, diasEntre(t0, c.data) / 365), 0);
+  let lo = -0.9499, hi = 1;
+  // em janelas curtas a taxa anualizada fica muito alta, então o teto é expandido
+  // até o VPL trocar de sinal
+  let tentativas = 0;
+  while (npv(hi) > 0 && tentativas++ < 60) hi *= 2;
+  if (npv(lo) * npv(hi) > 0) return null;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    if (npv(lo) * npv(mid) <= 0) hi = mid; else lo = mid;
+  }
+  const taxa = (lo + hi) / 2;
+  const dias = diasEntre(t0, hojeISO());
+  return { taxa: taxa * 100, fluxos: cf.length, desde: t0, dias: dias, curto: dias < 90 };
+}
+
+// Retornos mês a mês, no formato ano x mês
+function retornosMensais() {
+  const s = serieTWR().filter(x => !x.descartado);
+  if (!s.length) return [];
+  const meses = {};
+  s.forEach(x => {
+    const m = x.data.slice(0, 7);
+    meses[m] = (meses[m] || 1) * (1 + x.r);
+  });
+  const anos = {};
+  Object.keys(meses).sort().forEach(m => {
+    const [ano, mes] = m.split('-');
+    if (!anos[ano]) anos[ano] = { ano: ano, meses: {}, total: 1 };
+    anos[ano].meses[+mes] = (meses[m] - 1) * 100;
+    anos[ano].total *= meses[m];
+  });
+  return Object.values(anos).map(a => ({ ano: a.ano, meses: a.meses, total: (a.total - 1) * 100 }))
+    .sort((a, b) => b.ano.localeCompare(a.ano));
+}
+
+// Correlação entre ativos, a partir dos preços históricos baixados
+function correlacoes() {
+  const db = getDB();
+  const hist = db.precosHist || {};
+  const { lista } = consolidar();
+  const tickers = lista.filter(p => p.qtd > 0 && (hist[p.ticker] || []).length > 20).map(p => p.ticker);
+  if (tickers.length < 2) return null;
+
+  const retornos = {};
+  const datasComuns = {};
+  tickers.forEach(t => {
+    const serie = hist[t];
+    retornos[t] = {};
+    for (let i = 1; i < serie.length; i++) {
+      if (serie[i - 1][1] > 0) {
+        retornos[t][serie[i][0]] = serie[i][1] / serie[i - 1][1] - 1;
+        datasComuns[serie[i][0]] = (datasComuns[serie[i][0]] || 0) + 1;
+      }
+    }
+  });
+  const datas = Object.keys(datasComuns).filter(d => datasComuns[d] === tickers.length).sort();
+  if (datas.length < 20) return null;
+
+  const media = {}, desvio = {};
+  tickers.forEach(t => {
+    const v = datas.map(d => retornos[t][d]);
+    media[t] = v.reduce((a, b) => a + b, 0) / v.length;
+    desvio[t] = Math.sqrt(v.reduce((a, b) => a + Math.pow(b - media[t], 2), 0) / Math.max(1, v.length - 1));
+  });
+  const matriz = tickers.map(a => tickers.map(b => {
+    if (a === b) return 1;
+    const cov = datas.reduce((s, d) => s + (retornos[a][d] - media[a]) * (retornos[b][d] - media[b]), 0) / Math.max(1, datas.length - 1);
+    const den = desvio[a] * desvio[b];
+    return den > 0 ? cov / den : 0;
+  }));
+  return { tickers, matriz, dias: datas.length };
+}
+
+// Quanto do patrimônio depende do dólar
+function exposicaoCambial() {
+  const { lista } = consolidar();
+  const abertas = lista.filter(p => p.qtd > 0);
+  const rf = resumoRF();
+  const patrimonio = abertas.reduce((s, p) => s + p.valor, 0) + rf.bruto;
+  const direta = abertas.filter(p => p.moeda === 'USD').reduce((s, p) => s + p.valor, 0);
+  const indireta = abertas.filter(p => p.classe === 'bdr').reduce((s, p) => s + p.valor, 0);
+  return {
+    direta, indireta, total: direta + indireta, patrimonio,
+    pct: patrimonio > 0 ? (direta + indireta) / patrimonio * 100 : 0
+  };
+}
+
+// Custo total pago em taxas e corretagem
+function custoTaxas() {
+  const { lista } = consolidar();
+  const total = lista.reduce((s, p) => s + p.taxas, 0);
+  const investido = lista.reduce((s, p) => s + p.custo, 0);
+  return { total, pctSobreCusto: investido > 0 ? total / investido * 100 : 0 };
 }
 
 function periodosAnalise() {
@@ -1272,6 +1832,60 @@ function benchPeriodo(chave, iniISO, fimISO) {
   if (chave === 'ipca') { const f = fatorIPCA(iniISO, fimISO); return f.temSerie && f.meses ? (f.fator - 1) * 100 : null; }
   const d = serieDados(chave).filter(x => x[0] >= iniISO && x[0] <= fimISO);
   return d.length >= 2 ? (d[d.length - 1][1] / d[0][1] - 1) * 100 : null;
+}
+
+/* ============================================================
+   Editor do histórico de patrimônio
+   ============================================================ */
+function editarHistorico() {
+  const db = getDB();
+  const s = db.snapshots.slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 150);
+  const recon = db.snapshots.filter(x => x.reconstruido).length;
+  abrirModal('<h3>Histórico de patrimônio</h3>' +
+    '<p class="muted small" style="margin-bottom:10px">' + db.snapshots.length + ' registro(s)' +
+    (recon ? ', dos quais ' + recon + ' reconstruído(s) a partir de preços históricos' : '') +
+    '. Corrija ou apague um dia em que a cotação veio errada — a rentabilidade é recalculada na hora.</p>' +
+    (recon ? '<div class="form-actions" style="justify-content:flex-start;margin:0 0 10px">' +
+      '<button class="btn-ghost" onclick="limparReconstruidos()">Apagar os reconstruídos</button></div>' : '') +
+    '<div class="table-wrap" style="max-height:46vh;overflow-y:auto"><table><thead><tr><th>Data</th>' +
+    '<th class="num">Patrimônio</th><th>Origem</th><th></th></tr></thead><tbody>' +
+    (s.length ? s.map(x =>
+      '<tr><td>' + dataBR(x.data) + (x.util === false ? ' <span class="tag tag-rf">não útil</span>' : '') + '</td>' +
+      '<td class="num"><input type="number" step="0.01" class="price-input" style="width:120px" value="' +
+      x.patrimonio.toFixed(2) + '" onchange="salvarSnapshot(\'' + x.data + '\',this.value)"></td>' +
+      '<td class="small muted">' + (x.reconstruido ? 'reconstruído' : x.completo ? 'registrado' : 'parcial') + '</td>' +
+      '<td><button class="btn-danger" onclick="excluirSnapshot(\'' + x.data + '\')">excluir</button></td></tr>'
+    ).join('') : '<tr><td colspan="4" class="muted">Nenhum registro ainda.</td></tr>') +
+    '</tbody></table></div>' +
+    '<div class="form-actions"><button class="btn-secondary" onclick="fecharModal()">Fechar</button></div>');
+}
+
+function salvarSnapshot(data, valor) {
+  const v = parseFloat(String(valor).replace(',', '.'));
+  if (!isFinite(v) || v < 0) { alert('Valor inválido.'); return; }
+  const db = getDB();
+  const s = db.snapshots.find(x => x.data === data);
+  if (!s) return;
+  s.patrimonio = v;
+  s.corrigidoManualmente = true;
+  setDB(db);
+  if (document.getElementById('page-desempenho').classList.contains('active')) renderDesempenho();
+}
+
+function excluirSnapshot(data) {
+  const db = getDB();
+  db.snapshots = db.snapshots.filter(x => x.data !== data);
+  setDB(db);
+  editarHistorico();
+  if (document.getElementById('page-desempenho').classList.contains('active')) renderDesempenho();
+}
+
+function limparReconstruidos() {
+  if (!confirm('Apagar todos os registros reconstruídos? Os dias registrados pelo uso do app são mantidos.')) return;
+  const db = getDB();
+  db.snapshots = db.snapshots.filter(x => !x.reconstruido);
+  setDB(db);
+  editarHistorico();
 }
 
 /* ============================================================
@@ -1351,7 +1965,18 @@ function desenharLinhas(svg, legendaEl, series, opts) {
       '" font-size="10" fill="#a0aec0">' + rot + '</text>';
   }
 
-  svg.innerHTML = grid + corpo + labels;
+  // marcas verticais: aportes e resgates relevantes
+  let marcadores = '';
+  (o.marcas || []).forEach(m => {
+    if (m.data < isoDe(new Date(minX)) || m.data > isoDe(new Date(maxX))) return;
+    const x = X(m.data);
+    marcadores += '<line x1="' + x.toFixed(1) + '" y1="' + pad.t + '" x2="' + x.toFixed(1) + '" y2="' + (pad.t + ih) +
+      '" stroke="' + (m.cor || '#a0aec0') + '" stroke-width="1" stroke-dasharray="3 3" opacity=".8"></line>' +
+      '<circle cx="' + x.toFixed(1) + '" cy="' + (pad.t + 4) + '" r="3.2" fill="' + (m.cor || '#a0aec0') + '"><title>' +
+      esc(m.texto || '') + '</title></circle>';
+  });
+
+  svg.innerHTML = grid + marcadores + corpo + labels;
   if (legendaEl) {
     legendaEl.innerHTML = vis.map(s =>
       '<span><i style="background:' + s.cor + (s.tracejado ? ';opacity:.75' : '') + '"></i>' + esc(s.nome) + '</span>').join('');
@@ -1402,6 +2027,140 @@ function barras(itens, opts) {
   }).join('');
 }
 /* ============================================================
+   Planejamento: alocação-alvo, aporte e projeção
+   ============================================================ */
+const CLASSES_ALVO = ['acao', 'fii', 'etf', 'bdr', 'stock', 'cripto', 'rf'];
+
+function metas() {
+  const m = getDB().metas || {};
+  return {
+    alocacao: m.alocacao || {},
+    banda: isFinite(m.banda) ? +m.banda : 5,
+    patrimonioMeta: +m.patrimonioMeta || 0,
+    dataMeta: m.dataMeta || '',
+    aporteMensal: +m.aporteMensal || 0
+  };
+}
+
+function salvarMetas(parcial) {
+  const db = getDB();
+  db.metas = Object.assign(metas(), parcial);
+  setDB(db);
+}
+
+function carteiraPorClasse() {
+  const { lista } = consolidar();
+  const rf = resumoRF();
+  const valores = {};
+  CLASSES_ALVO.forEach(c => { valores[c] = 0; });
+  lista.filter(p => p.qtd > 0).forEach(p => { valores[p.classe] = (valores[p.classe] || 0) + p.valor; });
+  valores.rf = rf.bruto;
+  const total = Object.keys(valores).reduce((s, k) => s + valores[k], 0);
+  return { valores, total };
+}
+
+function analiseAlocacao() {
+  const m = metas();
+  const { valores, total } = carteiraPorClasse();
+  const somaAlvo = CLASSES_ALVO.reduce((s, c) => s + (+m.alocacao[c] || 0), 0);
+  const linhas = CLASSES_ALVO.map(c => {
+    const alvoPct = +m.alocacao[c] || 0;
+    const atual = valores[c] || 0;
+    const atualPct = total > 0 ? atual / total * 100 : 0;
+    const alvoValor = total * alvoPct / 100;
+    const desvio = atualPct - alvoPct;
+    return {
+      classe: c, alvoPct, atualPct, atual, alvoValor, desvio,
+      ajuste: alvoValor - atual,
+      fora: Math.abs(desvio) > m.banda && (alvoPct > 0 || atual > 0)
+    };
+  }).filter(l => l.alvoPct > 0 || l.atual > 0);
+  return { linhas, total, somaAlvo, banda: m.banda, definida: somaAlvo > 0 };
+}
+
+// Distribui um aporte novo priorizando quem está mais abaixo do alvo, sem vender
+function sugerirAporte(valor) {
+  const m = metas();
+  const { valores, total } = carteiraPorClasse();
+  const novoTotal = total + valor;
+  const deficits = CLASSES_ALVO.map(c => {
+    const alvo = novoTotal * (+m.alocacao[c] || 0) / 100;
+    return { classe: c, deficit: Math.max(0, alvo - (valores[c] || 0)) };
+  }).filter(d => d.deficit > 0);
+  const soma = deficits.reduce((s, d) => s + d.deficit, 0);
+  if (soma <= 0) return { itens: [], sobra: valor };
+  const fator = Math.min(1, valor / soma);
+  const itens = deficits.map(d => ({
+    classe: d.classe,
+    valor: Math.round(d.deficit * fator * 100) / 100,
+    pct: valor > 0 ? d.deficit * fator / valor * 100 : 0
+  })).filter(i => i.valor >= 0.01).sort((a, b) => b.valor - a.valor);
+  const distribuido = itens.reduce((s, i) => s + i.valor, 0);
+  return { itens, sobra: Math.max(0, Math.round((valor - distribuido) * 100) / 100) };
+}
+
+// Projeção do patrimônio com três cenários, usando a volatilidade real da carteira
+function projecaoPatrimonio(anos) {
+  const m = metas();
+  const { total } = carteiraPorClasse();
+  const risco = metricasRisco();
+  const tw = twrPeriodo(null);
+  const mu = (risco && risco.anualizado != null) ? risco.anualizado / 100
+    : (tw && tw.anualizado != null) ? tw.anualizado / 100 : 0.08;
+  const sigma = risco ? risco.vol / 100 : 0.12;
+  const meses = Math.round(anos * 12);
+  const cenarios = [
+    { nome: 'Pessimista', taxa: mu - sigma, cor: '#c05252' },
+    { nome: 'Base', taxa: mu, cor: '#12403a' },
+    { nome: 'Otimista', taxa: mu + sigma, cor: '#2f8f5c' }
+  ];
+  const hoje = hojeISO();
+  cenarios.forEach(c => {
+    const rm = Math.pow(1 + Math.max(-0.9, c.taxa), 1 / 12) - 1;
+    let v = total;
+    c.pontos = [{ data: hoje, v: v }];
+    for (let i = 1; i <= meses; i++) {
+      v = v * (1 + rm) + m.aporteMensal;
+      c.pontos.push({ data: somaMeses(hoje, i), v: v });
+    }
+    c.final = v;
+  });
+  return { cenarios, mu: mu * 100, sigma: sigma * 100, inicial: total, aporte: m.aporteMensal, estimado: !risco };
+}
+
+// Meta de patrimônio: progresso, aporte necessário e data projetada
+function analiseMeta() {
+  const m = metas();
+  const { total } = carteiraPorClasse();
+  if (!m.patrimonioMeta) return null;
+  const risco = metricasRisco();
+  const tw = twrPeriodo(null);
+  const mu = (risco && risco.anualizado != null) ? risco.anualizado / 100
+    : (tw && tw.anualizado != null) ? tw.anualizado / 100 : 0.08;
+  const rm = Math.pow(1 + Math.max(-0.9, mu), 1 / 12) - 1;
+  const progresso = m.patrimonioMeta > 0 ? total / m.patrimonioMeta * 100 : 0;
+
+  // meses até a meta com o aporte atual
+  let v = total, meses = 0;
+  while (v < m.patrimonioMeta && meses < 1200) { v = v * (1 + rm) + m.aporteMensal; meses++; }
+  const alcancavel = meses < 1200;
+
+  // aporte necessário para chegar na data desejada
+  let aporteNecessario = null, mesesAlvo = null;
+  if (m.dataMeta && m.dataMeta > hojeISO()) {
+    mesesAlvo = Math.max(1, Math.round(diasEntre(hojeISO(), m.dataMeta) / 30.44));
+    const fator = Math.pow(1 + rm, mesesAlvo);
+    const acumFator = rm > 0 ? (fator - 1) / rm : mesesAlvo;
+    aporteNecessario = Math.max(0, (m.patrimonioMeta - total * fator) / acumFator);
+  }
+  return {
+    meta: m.patrimonioMeta, atual: total, progresso, falta: Math.max(0, m.patrimonioMeta - total),
+    meses, alcancavel, dataProjetada: alcancavel ? somaMeses(hojeISO(), meses) : null,
+    aporteNecessario, mesesAlvo, aporteAtual: m.aporteMensal, taxaUsada: mu * 100, estimada: !risco && !tw
+  };
+}
+
+/* ============================================================
    Navegação
    ============================================================ */
 function showPage(id) {
@@ -1413,9 +2172,10 @@ function showPage(id) {
   if (id === 'dashboard') renderDashboard();
   if (id === 'carteira') { renderCarteira(); renderCarteiraRF(); }
   if (id === 'desempenho') renderDesempenho();
+  if (id === 'planejamento') renderPlanejamento();
   if (id === 'transacoes') renderTx();
-  if (id === 'rendafixa') { renderRF(); renderFGC(); renderPreviewRF(); }
-  if (id === 'proventos') { renderPV(); renderPVChart(); renderDY(); }
+  if (id === 'rendafixa') { renderRF(); renderEventosRF(); renderFGC(); renderPreviewRF(); }
+  if (id === 'proventos') { renderPV(); renderCalendarioPV(); renderPVChart(); renderDY(); }
   if (id === 'config') { carregarConfig(); renderStatusSeries(); }
 }
 function card(lbl, val, sub, cls) {
@@ -1424,6 +2184,169 @@ function card(lbl, val, sub, cls) {
 }
 function mostrarBanner(el, tipo, html) { el.className = 'banner ' + tipo + ' show'; el.innerHTML = html; }
 function esconderBanner(el) { el.className = 'banner'; }
+
+/* ============================================================
+   Planejamento
+   ============================================================ */
+function renderPlanejamento() {
+  const m = metas();
+  document.getElementById('plan-banda').value = m.banda;
+  const el = id => document.getElementById(id);
+  if (!el('plan-aporte-mensal').value) el('plan-aporte-mensal').value = m.aporteMensal || '';
+  if (!el('plan-meta').value) el('plan-meta').value = m.patrimonioMeta || '';
+  if (!el('plan-meta-data').value) el('plan-meta-data').value = m.dataMeta || '';
+
+  const { total } = carteiraPorClasse();
+  const a = analiseAlocacao();
+  const fora = a.linhas.filter(l => l.fora).length;
+  const meta = analiseMeta();
+
+  el('plan-cards').innerHTML = [
+    card('Patrimônio atual', brl(total), a.definida ? a.linhas.length + ' classes em carteira' : 'defina seus alvos abaixo', ''),
+    card('Fora da banda', String(fora), fora ? 'classe(s) pedindo ajuste' : 'tudo dentro da tolerância', fora ? 'red' : 'green'),
+    card('Aporte mensal', brl(m.aporteMensal), 'usado na projeção', 'blue'),
+    meta ? card('Progresso da meta', pct(Math.min(100, meta.progresso)),
+      'faltam ' + brl(meta.falta), meta.progresso >= 100 ? 'green' : '')
+      : card('Meta de patrimônio', '—', 'defina uma meta abaixo', '')
+  ].join('');
+
+  renderAlvos(a);
+  renderAporte();
+  renderRebalanceamento(a);
+  renderMeta(meta);
+  renderProjecao();
+}
+
+function renderAlvos(a) {
+  const el = document.getElementById('tabela-alvos');
+  const m = metas();
+  const linhas = CLASSES_ALVO.map(c => {
+    const l = a.linhas.find(x => x.classe === c) ||
+      { classe: c, alvoPct: +m.alocacao[c] || 0, atualPct: 0, atual: 0, alvoValor: 0, desvio: 0, ajuste: 0, fora: false };
+    return '<tr><td>' + tagClasse(c) + '</td>' +
+      '<td class="num"><input type="number" step="1" min="0" max="100" class="price-input" style="width:74px" value="' +
+      (l.alvoPct || '') + '" onchange="salvarAlvo(\'' + c + '\',this.value)"> %</td>' +
+      '<td class="num">' + pct(l.atualPct) + '</td>' +
+      '<td class="num">' + brl(l.atual) + '</td>' +
+      '<td class="num">' + brl(l.alvoValor) + '</td>' +
+      '<td class="num ' + (l.fora ? sinal(-Math.abs(l.desvio)) : 'muted') + '">' + pctSin(l.desvio) + '</td>' +
+      '<td class="num ' + (l.fora ? sinal(l.ajuste) : 'muted') + '">' + (Math.abs(l.ajuste) < 0.01 ? '—' :
+        (l.ajuste > 0 ? 'comprar ' : 'vender ') + brl(Math.abs(l.ajuste)) +
+        (l.fora ? '' : '<br><span class="small">dentro da banda</span>')) + '</td>' +
+      '<td>' + (!a.definida ? '<span class="muted small">—</span>'
+        : l.fora ? '<span class="tag tag-alerta">fora da banda</span>'
+        : '<span class="tag tag-ok">dentro</span>') + '</td></tr>';
+  }).join('');
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Classe</th><th class="num">Alvo</th>' +
+    '<th class="num">Atual</th><th class="num">Valor atual</th><th class="num">Valor-alvo</th>' +
+    '<th class="num">Desvio</th><th class="num">Ajuste</th><th>Situação</th></tr></thead><tbody>' + linhas +
+    '</tbody><tfoot><tr><td>TOTAL</td><td class="num ' + (Math.abs(a.somaAlvo - 100) < 0.01 || !a.definida ? '' : 'neg') + '">' +
+    pct(a.somaAlvo, 0) + '</td><td class="num">' + (a.total > 0 ? '100%' : '—') + '</td>' +
+    '<td class="num">' + brl(a.total) + '</td><td colspan="4"></td></tr></tfoot></table></div>' +
+    (a.definida && Math.abs(a.somaAlvo - 100) > 0.01
+      ? '<div class="banner warn show" style="margin-top:10px">⚠️ Os alvos somam ' + pct(a.somaAlvo, 0) +
+        '. Ajuste para 100% para que o rebalanceamento faça sentido.</div>' : '');
+}
+
+function salvarAlvo(classe, valor) {
+  const m = metas();
+  const v = parseFloat(String(valor).replace(',', '.'));
+  m.alocacao[classe] = isFinite(v) && v > 0 ? v : 0;
+  salvarMetas({ alocacao: m.alocacao });
+  renderPlanejamento();
+}
+function salvarBanda() {
+  const v = parseFloat(document.getElementById('plan-banda').value);
+  salvarMetas({ banda: isFinite(v) && v >= 0 ? v : 5 });
+  renderPlanejamento();
+}
+function salvarAporteMensal() {
+  const v = parseFloat(document.getElementById('plan-aporte-mensal').value);
+  salvarMetas({ aporteMensal: isFinite(v) && v > 0 ? v : 0 });
+  renderPlanejamento();
+}
+function salvarMetaPatrimonio() {
+  const v = parseFloat(document.getElementById('plan-meta').value);
+  salvarMetas({ patrimonioMeta: isFinite(v) && v > 0 ? v : 0, dataMeta: document.getElementById('plan-meta-data').value });
+  renderPlanejamento();
+}
+
+function renderAporte() {
+  const el = document.getElementById('resultado-aporte');
+  const valor = parseFloat(document.getElementById('plan-aporte').value);
+  if (!isFinite(valor) || valor <= 0) { el.innerHTML = '<div class="empty">Informe o valor para ver a distribuição.</div>'; return; }
+  if (!analiseAlocacao().definida) { el.innerHTML = '<div class="empty">Defina os alvos por classe primeiro.</div>'; return; }
+  const r = sugerirAporte(valor);
+  if (!r.itens.length) {
+    el.innerHTML = '<div class="banner ok show">A carteira já está nos alvos — distribua o aporte como preferir, ' +
+      'ou aumente as metas das classes que quer reforçar.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Classe</th><th class="num">Aplicar</th>' +
+    '<th class="num">% do aporte</th></tr></thead><tbody>' +
+    r.itens.map(i => '<tr><td>' + tagClasse(i.classe) + '</td><td class="num"><strong>' + brl(i.valor) + '</strong></td>' +
+      '<td class="num">' + pct(i.pct, 0) + '</td></tr>').join('') +
+    (r.sobra > 0.01 ? '<tr><td class="muted">Sobra (todas as classes já no alvo)</td><td class="num">' +
+      brl(r.sobra) + '</td><td></td></tr>' : '') +
+    '</tbody></table></div>';
+}
+
+function renderRebalanceamento(a) {
+  const el = document.getElementById('resultado-rebalanceamento');
+  if (!a.definida) { el.innerHTML = '<div class="empty">Defina os alvos por classe para simular.</div>'; return; }
+  const ajustes = a.linhas.filter(l => Math.abs(l.ajuste) >= 0.01 && l.fora);
+  if (!ajustes.length) {
+    el.innerHTML = '<div class="banner ok show">✅ Nenhuma classe fora da banda de ' + pct(a.banda, 0) +
+      '. Não há o que rebalancear agora.</div>';
+    return;
+  }
+  const compras = ajustes.filter(l => l.ajuste > 0).reduce((s, l) => s + l.ajuste, 0);
+  const vendas = ajustes.filter(l => l.ajuste < 0).reduce((s, l) => s - l.ajuste, 0);
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Classe</th><th class="num">Operação</th>' +
+    '<th class="num">Desvio</th></tr></thead><tbody>' +
+    ajustes.sort((x, y) => y.ajuste - x.ajuste).map(l =>
+      '<tr><td>' + tagClasse(l.classe) + '</td>' +
+      '<td class="num ' + sinal(l.ajuste) + '">' + (l.ajuste > 0 ? 'comprar ' : 'vender ') + brl(Math.abs(l.ajuste)) + '</td>' +
+      '<td class="num">' + pctSin(l.desvio) + '</td></tr>').join('') +
+    '</tbody></table></div>' +
+    '<div class="foot-note">Total a comprar ' + brl(compras) + ' · total a vender ' + brl(vendas) +
+    '. Vender gera imposto sobre o lucro — considere primeiro direcionar os próximos aportes.</div>';
+}
+
+function renderMeta(meta) {
+  const el = document.getElementById('resultado-meta');
+  if (!meta) { el.innerHTML = '<div class="empty">Defina quanto quer acumular para ver a projeção.</div>'; return; }
+  const barra = '<div class="bar-track" style="height:14px"><div class="bar-fill" style="width:' +
+    Math.min(100, meta.progresso) + '%;background:#12403a"></div></div>';
+  el.innerHTML = barra +
+    '<div class="foot-note" style="margin-top:10px">' +
+    'Você tem <strong>' + brl(meta.atual) + '</strong> de ' + brl(meta.meta) + ' (' + pct(meta.progresso) + ').' +
+    (meta.alcancavel
+      ? ' Mantendo ' + brl(meta.aporteAtual) + '/mês e ' + pct(meta.taxaUsada) + ' a.a., a meta chega em <strong>' +
+        dataBR(meta.dataProjetada) + '</strong> (' + meta.meses + ' meses).'
+      : ' Com o aporte atual de ' + brl(meta.aporteAtual) + '/mês a meta não é atingida em 100 anos — aumente o aporte.') +
+    (meta.aporteNecessario != null
+      ? '<br>Para chegar em ' + dataBR(metas().dataMeta) + ' (' + meta.mesesAlvo + ' meses), o aporte precisaria ser de <strong>' +
+        brl(meta.aporteNecessario) + '/mês</strong>.' : '') +
+    (meta.estimada ? '<br>⚠️ Ainda sem histórico suficiente: a projeção usa 8% a.a. como referência.' : '') +
+    '</div>';
+}
+
+function renderProjecao() {
+  const anos = +document.getElementById('plan-anos').value || 10;
+  const pr = projecaoPatrimonio(anos);
+  const series = pr.cenarios.map(c => ({
+    nome: c.nome + ' · ' + brlCurto(c.final), cor: c.cor, pontos: c.pontos, area: c.nome === 'Base'
+  }));
+  desenharLinhas(document.getElementById('chart-projecao'), document.getElementById('leg-projecao'), series,
+    { formatY: brlCurto, zeroBase: true, vazio: 'Cadastre investimentos para projetar.' });
+  document.getElementById('nota-projecao').innerHTML =
+    'Partindo de ' + brl(pr.inicial) + ' e aportando ' + brl(pr.aporte) + '/mês, com retorno de <strong>' +
+    pct(pr.mu) + ' a.a.</strong> e volatilidade de ' + pct(pr.sigma) + '. ' +
+    'Os cenários são retorno menos e mais um desvio-padrão. ' +
+    (pr.estimado ? '⚠️ Sem histórico suficiente ainda: os números usados são referências genéricas, não a sua carteira.'
+      : 'Ambos vêm do histórico real da sua carteira.');
+}
 
 /* ============================================================
    Painel
@@ -1527,10 +2450,17 @@ function renderChartPatrimonio() {
   if (custo.length) custo.push({ data: hojeISO(), v: acum });
 
   const patr = db.snapshots.map(s => ({ data: s.data, v: s.patrimonio }));
+  // marca os aportes e resgates que pesam mais de 5% do patrimônio atual
+  const { fluxo } = fluxosPorData();
+  const limiar = Math.max(500, (patr.length ? patr[patr.length - 1].v : 0) * 0.05);
+  const marcas = Object.keys(fluxo).filter(d => Math.abs(fluxo[d]) >= limiar).map(d => ({
+    data: d, cor: fluxo[d] > 0 ? '#2f8f5c' : '#c05252',
+    texto: (fluxo[d] > 0 ? 'Aporte de ' : 'Resgate de ') + brl(Math.abs(fluxo[d])) + ' em ' + dataBR(d)
+  }));
   desenharLinhas(svg, document.getElementById('leg-patrimonio'), [
     { nome: 'Patrimônio', cor: '#12403a', pontos: patr, area: true },
     { nome: 'Custo investido', cor: '#d98324', pontos: custo, tracejado: true }
-  ], { formatY: brlCurto, zeroBase: true, vazio: 'Cadastre lançamentos para ver a evolução.' });
+  ], { formatY: brlCurto, zeroBase: true, marcas: marcas, vazio: 'Cadastre lançamentos para ver a evolução.' });
 
   if (db.snapshots.length < 2) {
     nota.innerHTML = '📌 O patrimônio é registrado automaticamente uma vez por dia, a cada abertura do app. ' +
@@ -1575,8 +2505,11 @@ function renderCarteira() {
       const titulo = p.dataCot ? 'atualizado em ' + dataBR(p.dataCot) + (p.horaCot ? ' ' + p.horaCot : '') +
         ' · fonte: ' + (p.fonte || '—') : 'sem cotação';
       return '<tr>' +
-        '<td><button class="ticker-link" onclick="verAtivo(\'' + esc(p.ticker) + '\')">' + esc(p.ticker) + '</button>' +
-        (p.qtd <= 0 ? ' <span class="muted small">(encerrada)</span>' : '') + '</td>' +
+        '<td><span style="display:flex;align-items:center;gap:7px">' + logoAtivo(p.ticker) +
+        '<span><button class="ticker-link" onclick="verAtivo(\'' + esc(p.ticker) + '\')">' + esc(p.ticker) + '</button>' +
+        (p.qtd <= 0 ? ' <span class="muted small">(encerrada)</span>' : '') +
+        (nomeAtivo(p.ticker) ? '<br><span class="small muted">' + esc(nomeAtivo(p.ticker)) + '</span>' : '') +
+        '</span></span></td>' +
         '<td>' + tagClasse(p.classe) + '</td>' +
         '<td><button class="setor-link" onclick="editarSetor(\'' + esc(p.ticker) + '\')">' +
         (p.setor ? esc(p.setor) : '+ definir') + '</button></td>' +
@@ -1748,20 +2681,115 @@ function renderDesempenho() {
   const cambio = abertas.reduce((s, p) => s + p.ganhoCambio, 0);
   const ativo = abertas.reduce((s, p) => s + p.ganhoAtivo, 0);
 
+  const tir = xirr();
+  const taxas = custoTaxas();
+  const fx = exposicaoCambial();
+
   document.getElementById('desemp-cards').innerHTML = [
     card('TWR desde o início', total ? pctSin(total.retorno) : '—',
-      total ? total.pontos + ' dias registrados' : 'aguardando 2º registro', total && total.retorno >= 0 ? 'green' : total ? 'red' : ''),
+      total ? total.pontos + ' dias úteis registrados' : 'aguardando 2º registro', total && total.retorno >= 0 ? 'green' : total ? 'red' : ''),
     card('TWR anualizada', total && total.anualizado != null ? pctSin(total.anualizado) : '—',
       total && total.anualizado == null ? 'menos de 30 dias' : 'equivalente ao ano', 'blue'),
+    card('TIR do investidor (XIRR)', (tir && !tir.curto) ? pctSin(tir.taxa) : '—',
+      !tir ? 'precisa de aportes registrados'
+        : tir.curto ? 'só a partir de 90 dias de histórico (tem ' + tir.dias + ')'
+        : 'ao ano, considerando quando cada real entrou', 'blue'),
     card('Ganho do ativo', brl(ativo), 'variação de preço na moeda de origem', ativo >= 0 ? 'green' : 'red'),
     card('Efeito câmbio', brl(cambio), 'variação do dólar sobre o custo', cambio >= 0 ? 'green' : 'red'),
+    card('Exposição ao dólar', pct(fx.pct), brl(fx.total) + (fx.indireta ? ' (com BDRs)' : ''), ''),
+    card('Taxas e corretagem', brl(taxas.total), pct(taxas.pctSobreCusto) + ' do que foi investido', taxas.total > 0 ? 'red' : ''),
     card('Patrimônio × custo', brl(patr - custoTotal), custoTotal > 0 ? pctSin((patr / custoTotal - 1) * 100) + ' sobre o investido' : '')
   ].join('');
 
+  const descartados = retornosDescartados();
+  if (descartados.length && total) {
+    mostrarBanner(banner, 'warn', '⚠️ ' + descartados.length + ' dia(s) com variação implausível foram ignorados no cálculo (' +
+      esc(descartados.slice(0, 5).map(dataBR).join(', ')) + (descartados.length > 5 ? '…' : '') +
+      '). Isso costuma indicar cotação errada ou lançamento faltando — dá para corrigir em <em>Editar registros de patrimônio</em>.');
+  }
+
+  renderRisco();
+  renderMensal();
+  renderBolsos();
+  renderCorrelacao();
   renderPeriodos();
   renderBenchmarks();
   renderDecomposicao(lista);
   renderIR(lista);
+}
+
+function renderRisco() {
+  const el = document.getElementById('cards-risco');
+  const r = metricasRisco();
+  if (!r) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">Precisa de pelo menos 5 dias úteis registrados. ' +
+      'Use <em>Reconstruir histórico</em> acima para obter isso na hora.</div>';
+    return;
+  }
+  el.innerHTML = [
+    card('Volatilidade anual', pct(r.vol), 'oscilação típica da carteira', ''),
+    card('Maior queda (drawdown)', pct(r.maxDD), 'pior recuo desde um topo · ' + dataBR(r.piorFundo), 'red'),
+    card('Queda atual', pct(r.ddAtual), r.ddAtual < -0.01 ? 'abaixo do topo histórico' : 'no topo histórico',
+      r.ddAtual < -5 ? 'red' : 'green'),
+    card('Índice de Sharpe', r.sharpe != null ? num(r.sharpe, 2) : '—',
+      r.sharpe != null ? 'retorno acima do CDI por unidade de risco' : 'precisa de 30 dias', r.sharpe > 0 ? 'green' : '')
+  ].join('');
+}
+
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+function renderMensal() {
+  const el = document.getElementById('tabela-mensal');
+  const anos = retornosMensais();
+  if (!anos.length) { el.innerHTML = '<div class="empty">Sem retornos calculados ainda.</div>'; return; }
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Ano</th>' +
+    MESES_ABREV.map(m => '<th class="num">' + m + '</th>').join('') + '<th class="num">Ano</th></tr></thead><tbody>' +
+    anos.map(a => '<tr><td><strong>' + a.ano + '</strong></td>' +
+      MESES_ABREV.map((_, i) => {
+        const v = a.meses[i + 1];
+        return v == null ? '<td class="num muted">—</td>'
+          : '<td class="num ' + sinal(v) + '">' + num(v, 1) + '</td>';
+      }).join('') +
+      '<td class="num ' + sinal(a.total) + '"><strong>' + num(a.total, 1) + '</strong></td></tr>').join('') +
+    '</tbody></table></div><div class="foot-note">Valores em % de retorno ponderado pelo tempo.</div>';
+}
+
+function renderBolsos() {
+  const el = document.getElementById('tabela-bolsos');
+  const geral = twrPeriodo(null), rv = twrPeriodo(null, 'var'), rf = twrPeriodo(null, 'rf');
+  if (!geral) { el.innerHTML = '<div class="empty">Sem histórico suficiente.</div>'; return; }
+  const foto = fotoAtual();
+  const linha = (nome, t, valor) => '<tr><td><strong>' + nome + '</strong></td>' +
+    '<td class="num">' + brl(valor) + '</td>' +
+    '<td class="num ' + (t ? sinal(t.retorno) : 'muted') + '">' + (t ? pctSin(t.retorno) : '—') + '</td>' +
+    '<td class="num ' + (t && t.anualizado != null ? sinal(t.anualizado) : 'muted') + '">' +
+    (t && t.anualizado != null ? pctSin(t.anualizado) : '—') + '</td></tr>';
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Bolso</th><th class="num">Valor hoje</th>' +
+    '<th class="num">Retorno no período</th><th class="num">Anualizado</th></tr></thead><tbody>' +
+    linha('Renda variável', rv, foto.valorVar) +
+    linha('Renda fixa', rf, foto.rfBruto) +
+    linha('Carteira toda', geral, foto.patrimonio) +
+    '</tbody></table></div>';
+}
+
+function renderCorrelacao() {
+  const el = document.getElementById('tabela-correlacao');
+  const c = correlacoes();
+  if (!c) {
+    el.innerHTML = '<div class="empty">Reconstrua o histórico para baixar os preços e calcular as correlações.</div>';
+    return;
+  }
+  const cor = v => {
+    if (v >= 0.7) return 'background:#fde8e8';
+    if (v >= 0.4) return 'background:#fdf3e0';
+    if (v <= -0.3) return 'background:#e6f5ec';
+    return '';
+  };
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th></th>' +
+    c.tickers.map(t => '<th class="num">' + esc(t) + '</th>').join('') + '</tr></thead><tbody>' +
+    c.tickers.map((t, i) => '<tr><td><strong>' + esc(t) + '</strong></td>' +
+      c.matriz[i].map((v, j) => '<td class="num" style="' + (i === j ? 'color:#a0aec0' : cor(v)) + '">' +
+        num(v, 2) + '</td>').join('') + '</tr>').join('') +
+    '</tbody></table></div><div class="foot-note">Baseado em ' + c.dias + ' dias com preço para todos os ativos.</div>';
 }
 
 function renderPeriodos() {
@@ -1782,7 +2810,8 @@ function renderPeriodos() {
     '<th class="num">IPCA</th><th class="num">Real (acima do IPCA)</th></tr></thead><tbody>' +
     linhas.map(l => {
       if (l.vazio) return '<tr><td>' + esc(l.nome) + '</td><td colspan="7" class="muted">sem registros suficientes</td></tr>';
-      const doCDI = (l.cdi != null && l.cdi > 0) ? l.twr / l.cdi * 100 : null;
+      // com retorno negativo a razão vira um número sem significado
+      const doCDI = (l.cdi != null && l.cdi > 0 && l.twr > 0) ? l.twr / l.cdi * 100 : null;
       const real = l.ipca != null ? ((1 + l.twr / 100) / (1 + l.ipca / 100) - 1) * 100 : null;
       const c = v => v == null ? '<td class="num muted">—</td>' : '<td class="num ' + sinal(v) + '">' + pctSin(v) + '</td>';
       return '<tr><td><strong>' + esc(l.nome) + '</strong></td>' + c(l.twr) + c(l.cdi) +
@@ -1922,16 +2951,17 @@ async function atualizarCotacoes(silencioso) {
   const qs = token ? '&token=' + encodeURIComponent(token) : '';
   const ok = [], falhas = [];
 
-  function guardar(sym, preco, moeda, variacao, fechamento, setor) {
+  function guardar(sym, preco, moeda, variacao, fechamento, setor, nome, logo) {
     db.cotacoes[sym] = {
       preco: +preco, moeda: moeda, variacao: isFinite(variacao) ? +variacao : null,
       fechamentoAnterior: isFinite(fechamento) ? +fechamento : null,
       fonte: 'brapi', data: hojeISO(), hora: agoraHora()
     };
-    if (setor) {
-      const a = db.ativos[sym] || {};
-      if (!a.setor) { a.setor = setor; db.ativos[sym] = a; }
-    }
+    const a = db.ativos[sym] || {};
+    if (setor && !a.setor) a.setor = setor;
+    if (nome && !a.nome) a.nome = String(nome).slice(0, 60);
+    if (logo && /^https:\/\//.test(logo)) a.logo = logo;
+    if (Object.keys(a).length) db.ativos[sym] = a;
     ok.push(sym);
   }
 
@@ -1942,7 +2972,9 @@ async function atualizarCotacoes(silencioso) {
       ((j && j.results) || []).forEach(q => {
         if (q && q.regularMarketPrice != null) {
           guardar(String(q.symbol).toUpperCase(), q.regularMarketPrice, q.currency === 'USD' ? 'USD' : 'BRL',
-            q.regularMarketChangePercent, q.regularMarketPreviousClose, q.sector || (q.summaryProfile && q.summaryProfile.sector));
+            q.regularMarketChangePercent, q.regularMarketPreviousClose,
+            q.sector || (q.summaryProfile && q.summaryProfile.sector),
+            q.longName || q.shortName, q.logourl);
         }
       });
       grupo.forEach(t => { if (ok.indexOf(t) < 0) falhas.push(t); });
@@ -1955,7 +2987,8 @@ async function atualizarCotacoes(silencioso) {
       ((j && j.coins) || []).forEach(c => {
         if (c && c.regularMarketPrice != null) {
           const sym = String(c.coin || c.symbol || '').toUpperCase().replace('-BRL', '');
-          guardar(sym, c.regularMarketPrice, 'BRL', c.regularMarketChangePercent, c.regularMarketPreviousClose, 'Criptomoedas');
+          guardar(sym, c.regularMarketPrice, 'BRL', c.regularMarketChangePercent, c.regularMarketPreviousClose,
+            'Criptomoedas', c.coinName, c.coinImageUrl);
         }
       });
       cripto.forEach(t => { if (ok.indexOf(t) < 0) falhas.push(t); });
@@ -1988,6 +3021,21 @@ async function atualizarCotacoes(silencioso) {
   } else {
     mostrarBanner(banner, 'ok', '✅ ' + ok.length + ' cotação(ões) atualizada(s) às ' + agoraHora() + '.');
   }
+}
+
+// Atualização periódica com o app aberto, só em dia útil e horário de pregão
+let timerIntraday = null;
+function agendarIntraday() {
+  if (timerIntraday) clearInterval(timerIntraday);
+  const min = +getDB().config.intradayMin || 0;
+  if (min <= 0) return;
+  timerIntraday = setInterval(() => {
+    const agora = new Date();
+    const h = agora.getHours();
+    if (!ehDiaUtil(hojeISO()) || h < 10 || h >= 18) return;
+    if (document.hidden) return;
+    atualizarCotacoes(true).catch(e => console.warn('intraday:', e.message));
+  }, Math.max(1, min) * 60000);
 }
 
 async function autoAtualizar() {
@@ -2025,7 +3073,7 @@ async function atualizarTesouro() {
       if (pu) { r.puAtual = +pu; r.puAtualData = hojeISO(); n++; }
     });
     setDB(db);
-    renderRF(); renderFGC();
+    renderRF(); renderEventosRF(); renderFGC();
     mostrarBanner(banner, n ? 'ok' : 'warn', n
       ? '✅ PU atualizado para ' + n + ' título(s) do Tesouro.'
       : '⚠️ Nenhum título casou pelo nome. Ajuste a descrição para o nome oficial (ex.: “Tesouro Selic 2029”) ou informe o PU manualmente.');
@@ -2360,7 +3408,7 @@ function salvarRF() {
   setDB(db);
   registrarSnapshot(true);
   limparRF();
-  renderRF(); renderFGC();
+  renderRF(); renderEventosRF(); renderFGC();
   atualizarDatalists();
 }
 
@@ -2418,7 +3466,7 @@ function alternarResgate(id) {
   }
   setDB(db);
   registrarSnapshot(true);
-  renderRF(); renderFGC();
+  renderRF(); renderEventosRF(); renderFGC();
 }
 
 // Refresca o saldo de um investimento cadastrado com rendimento informado
@@ -2464,7 +3512,7 @@ function confirmarSaldo(id) {
   setDB(db);
   registrarSnapshot(true);
   fecharModal();
-  renderRF(); renderFGC();
+  renderRF(); renderEventosRF(); renderFGC();
 }
 
 function excluirRF(id) {
@@ -2472,7 +3520,7 @@ function excluirRF(id) {
   const db = getDB();
   db.rendafixa = db.rendafixa.filter(x => x.id !== id);
   setDB(db);
-  renderRF(); renderFGC();
+  renderRF(); renderEventosRF(); renderFGC();
 }
 
 function renderRF() {
@@ -2517,6 +3565,34 @@ function renderRF() {
     }).join('') + '</tbody></table></div>';
 }
 
+function renderEventosRF() {
+  const el = document.getElementById('rf-eventos');
+  const ev = proximosEventosRF(90);
+  if (!ev.length) { el.innerHTML = '<div class="empty">Nada vencendo ou saindo de carência nos próximos 90 dias.</div>'; return; }
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Quando</th><th>Evento</th><th>Título</th>' +
+    '<th class="num">Valor líquido estimado</th></tr></thead><tbody>' +
+    ev.map(e => '<tr><td>' + dataBR(e.data) + ' <span class="tag ' + (e.dias <= 30 ? 'tag-aviso' : 'tag-rf') + '">em ' +
+      e.dias + 'd</span></td><td>' + esc(e.tipo) + '</td><td><strong>' + esc(e.nome) + '</strong></td>' +
+      '<td class="num">' + brl(e.valor) + '</td></tr>').join('') +
+    '</tbody></table></div>';
+}
+
+// Teto global do FGC: R$ 1 milhão por CPF a cada 4 anos
+const TETO_GLOBAL_FGC = 1000000;
+function tetoGlobalFGC(coberto) {
+  const uso = coberto / TETO_GLOBAL_FGC * 100;
+  const cor = uso >= 100 ? '#c53030' : uso >= 80 ? '#d69e2e' : '#2f8f5c';
+  return '<div style="margin-top:14px">' +
+    '<div class="small" style="display:flex;justify-content:space-between;margin-bottom:4px;gap:10px;flex-wrap:wrap">' +
+    '<span><strong>Teto global do FGC</strong> — R$ 1 milhão por CPF a cada 4 anos</span>' +
+    '<span>' + brl(coberto) + ' de ' + brl(TETO_GLOBAL_FGC) + ' · ' + pct(uso, 1) + '</span></div>' +
+    '<div class="bar-track" style="height:12px"><div class="bar-fill" style="width:' + Math.min(100, uso) +
+    '%;background:' + cor + '"></div></div>' +
+    (uso >= 100 ? '<div class="banner warn show" style="margin-top:10px">⚠️ O total coberto passou do teto global. ' +
+      'O excedente não seria ressarcido pelo FGC dentro da mesma janela de 4 anos.</div>' : '') +
+    '</div>';
+}
+
 function renderFGC() {
   const el = document.getElementById('rf-fgc');
   const exp = exposicaoEmissores();
@@ -2542,7 +3618,8 @@ function renderFGC() {
           : e.coberto ? '<span class="tag tag-ok">dentro do limite</span>'
           : '<span class="tag tag-rf">sem FGC</span>') + '</td></tr>';
     }).join('') + '</tbody><tfoot><tr><td colspan="2">TOTAL COBERTO</td>' +
-    '<td class="num">' + brl(totalCoberto) + '</td><td colspan="4"></td></tr></tfoot></table></div>';
+    '<td class="num">' + brl(totalCoberto) + '</td><td colspan="4"></td></tr></tfoot></table></div>' +
+    tetoGlobalFGC(totalCoberto);
 }
 
 /* ============================================================
@@ -2556,14 +3633,20 @@ function salvarPV() {
   const valor = parseFloat(document.getElementById('pv-valor').value);
   if (!data || !ticker || !isFinite(valor)) { alert('Preencha data, ativo e valor.'); return; }
   const db = getDB();
-  const reg = { id: pvEditando || novoId(), data, ticker, tipo: document.getElementById('pv-tipo').value, valor };
+  const reg = {
+    id: pvEditando || novoId(), data, ticker, valor,
+    tipo: document.getElementById('pv-tipo').value,
+    dataCom: document.getElementById('pv-data-com').value,
+    status: document.getElementById('pv-status').value
+  };
+  if (reg.dataCom && reg.dataCom > reg.data) { alert('A data-com não pode ser posterior ao crédito.'); return; }
   if (pvEditando) {
     const i = db.proventos.findIndex(p => p.id === pvEditando);
     if (i >= 0) db.proventos[i] = reg;
   } else db.proventos.push(reg);
   setDB(db);
   limparPV();
-  renderPV(); renderPVChart(); renderDY();
+  renderPV(); renderCalendarioPV(); renderPVChart(); renderDY();
 }
 
 function limparPV() {
@@ -2571,6 +3654,8 @@ function limparPV() {
   document.getElementById('pv-form-title').textContent = 'Novo provento recebido';
   document.getElementById('pv-ticker').value = '';
   document.getElementById('pv-valor').value = '';
+  document.getElementById('pv-data-com').value = '';
+  document.getElementById('pv-status').value = 'recebido';
   document.getElementById('pv-data').value = hojeISO();
 }
 
@@ -2583,6 +3668,8 @@ function editarPV(id) {
   document.getElementById('pv-ticker').value = p.ticker;
   document.getElementById('pv-tipo').value = p.tipo;
   document.getElementById('pv-valor').value = p.valor;
+  document.getElementById('pv-data-com').value = p.dataCom || '';
+  document.getElementById('pv-status').value = p.status || 'recebido';
   window.scrollTo(0, 0);
 }
 
@@ -2591,16 +3678,18 @@ function excluirPV(id) {
   const db = getDB();
   db.proventos = db.proventos.filter(p => p.id !== id);
   setDB(db);
-  renderPV(); renderPVChart(); renderDY();
+  renderPV(); renderCalendarioPV(); renderPVChart(); renderDY();
 }
 
 function renderPV() {
   const db = getDB();
   const { lista } = consolidar();
   const itens = db.proventos.slice().sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id);
-  const total = db.proventos.reduce((s, p) => s + (+p.valor || 0), 0);
+  const recebidos = db.proventos.filter(p => p.status !== 'previsto');
+  const previstos = db.proventos.filter(p => p.status === 'previsto');
+  const total = recebidos.reduce((s, p) => s + (+p.valor || 0), 0);
   const doze = somaMeses(hojeISO(), -12);
-  const ult12 = db.proventos.filter(p => p.data > doze);
+  const ult12 = recebidos.filter(p => p.data > doze);
   const soma12 = ult12.reduce((s, p) => s + (+p.valor || 0), 0);
   const meses = new Set(ult12.map(p => p.data.slice(0, 7))).size || 1;
   const media = soma12 / Math.max(1, Math.min(12, meses));
@@ -2611,7 +3700,8 @@ function renderPV() {
   const projecao = patr * dyCart / 100 / 12;
 
   document.getElementById('pv-cards').innerHTML = [
-    card('Total recebido', brl(total), db.proventos.length + ' lançamento(s)', 'green'),
+    card('Total recebido', brl(total), recebidos.length + ' lançamento(s)' +
+      (previstos.length ? ' · ' + previstos.length + ' previsto(s)' : ''), 'green'),
     card('Últimos 12 meses', brl(soma12), meses + ' mês(es) com recebimento', 'green'),
     card('Média mensal (12m)', brl(media), 'base para a projeção', ''),
     card('Renda passiva projetada', brl(projecao), 'DY de ' + pct(dyCart) + ' sobre ' + brlCurto(patr) + '/mês', 'blue'),
@@ -2622,8 +3712,11 @@ function renderPV() {
   if (!itens.length) { el.innerHTML = '<div class="empty">Nenhum provento registrado.</div>'; return; }
   el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Data</th><th>Ativo</th><th>Tipo</th>' +
     '<th class="num">Valor</th><th></th></tr></thead><tbody>' +
-    itens.map(p => '<tr><td>' + dataBR(p.data) + '</td><td><strong>' + esc(p.ticker) + '</strong></td>' +
-      '<td>' + esc(p.tipo) + '</td><td class="num pos">' + brl(+p.valor) + '</td>' +
+    itens.map(p => '<tr' + (p.status === 'previsto' ? ' style="opacity:.65"' : '') + '><td>' + dataBR(p.data) +
+      (p.status === 'previsto' ? ' <span class="tag tag-aviso">previsto</span>' : '') + '</td>' +
+      '<td><strong>' + esc(p.ticker) + '</strong>' +
+      (p.dataCom ? '<br><span class="small muted">com: ' + dataBR(p.dataCom) + '</span>' : '') + '</td>' +
+      '<td>' + esc(p.tipo) + '</td><td class="num ' + (p.status === 'previsto' ? 'muted' : 'pos') + '">' + brl(+p.valor) + '</td>' +
       '<td style="white-space:nowrap"><button class="btn-ghost" onclick="editarPV(' + p.id + ')">editar</button> ' +
       '<button class="btn-danger" onclick="excluirPV(' + p.id + ')">excluir</button></td></tr>').join('') +
     '</tbody></table></div>';
@@ -2640,12 +3733,42 @@ function renderPVChart() {
     meses.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
   }
   const soma = {};
-  db.proventos.forEach(p => { const m = p.data.slice(0, 7); soma[m] = (soma[m] || 0) + (+p.valor || 0); });
+  db.proventos.filter(p => p.status !== 'previsto').forEach(p => {
+    const m = p.data.slice(0, 7); soma[m] = (soma[m] || 0) + (+p.valor || 0);
+  });
   const itens = meses.map(m => ({
     rotulo: m.split('-')[1] + '/' + m.split('-')[0], valor: soma[m] || 0,
     cor: '#2f8f5c', texto: soma[m] ? brl(soma[m]) : '—'
   }));
   el.innerHTML = barras(itens, {});
+}
+
+function renderCalendarioPV() {
+  const db = getDB();
+  const el = document.getElementById('pv-calendario');
+  const hoje = hojeISO();
+  const futuros = db.proventos.filter(p => p.status === 'previsto' || p.data >= hoje)
+    .sort((a, b) => a.data.localeCompare(b.data)).slice(0, 20);
+  if (!futuros.length) {
+    el.innerHTML = '<div class="empty">Nada agendado. Cadastre um provento anunciado marcando a situação como “previsto”.</div>';
+    return;
+  }
+  const totalPrevisto = futuros.filter(p => p.status === 'previsto').reduce((s, p) => s + (+p.valor || 0), 0);
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Pagamento</th><th>Data-com</th><th>Ativo</th>' +
+    '<th>Tipo</th><th class="num">Valor</th><th>Situação</th></tr></thead><tbody>' +
+    futuros.map(p => {
+      const dias = diasEntre(hoje, p.data);
+      return '<tr><td>' + dataBR(p.data) +
+        (dias > 0 ? ' <span class="tag tag-rf">em ' + dias + 'd</span>' : '') + '</td>' +
+        '<td>' + dataBR(p.dataCom) + '</td>' +
+        '<td><strong>' + esc(p.ticker) + '</strong></td><td>' + esc(p.tipo) + '</td>' +
+        '<td class="num">' + brl(+p.valor) + '</td>' +
+        '<td>' + (p.status === 'previsto' ? '<span class="tag tag-aviso">previsto</span>'
+          : '<span class="tag tag-ok">recebido</span>') + '</td></tr>';
+    }).join('') +
+    '</tbody></table></div>' +
+    (totalPrevisto > 0 ? '<div class="foot-note">Total anunciado e ainda não pago: <strong>' + brl(totalPrevisto) +
+      '</strong>. Edite o lançamento e mude a situação para “recebido” quando o dinheiro cair.</div>' : '');
 }
 
 function renderDY() {
@@ -2681,6 +3804,7 @@ function carregarConfig() {
   document.getElementById('cfg-usdbrl').value = c.usdbrl;
   document.getElementById('cfg-auto').value = c.autoUpdate ? '1' : '0';
   document.getElementById('cfg-intervalo').value = c.intervaloMin;
+  document.getElementById('cfg-intraday').value = c.intradayMin || 0;
   const s = getDB().snapshots;
   document.getElementById('info-snapshots').innerHTML = s.length
     ? '📈 ' + s.length + ' registro(s) diário(s) de patrimônio, de ' + dataBR(s[0].data) + ' a ' + dataBR(s[s.length - 1].data) + '.'
@@ -2695,7 +3819,9 @@ function salvarConfig() {
   db.config.usdbrl = parseFloat(document.getElementById('cfg-usdbrl').value) || 1;
   db.config.autoUpdate = document.getElementById('cfg-auto').value === '1';
   db.config.intervaloMin = Math.max(1, parseInt(document.getElementById('cfg-intervalo').value, 10) || 15);
+  db.config.intradayMin = Math.max(0, parseInt(document.getElementById('cfg-intraday').value, 10) || 0);
   setDB(db);
+  agendarIntraday();
   alert('Configurações salvas.');
 }
 
@@ -2825,9 +3951,17 @@ window.addEventListener('resize', () => {
   onLiquidezChange();
   onTipoRFChange();
   atualizarDatalists();
+  const baixados = baixarVencidos();
   registrarSnapshot(false);
   statusCotacoes();
   renderDashboard();
+  agendarIntraday();
+  if (baixados.length) {
+    const b = document.getElementById('banner-dash');
+    mostrarBanner(b, 'info', '📅 ' + baixados.length + ' título(s) venceram e foram baixados automaticamente: ' +
+      esc(baixados.map(x => x.nome + ' (' + dataBR(x.data) + ', ' + brl(x.valor) + ')').join('; ')) +
+      '. Use “reativar” na aba Renda Fixa se preferir mantê-los em carteira.');
+  }
   autoAtualizar();
 })();
 </script>
