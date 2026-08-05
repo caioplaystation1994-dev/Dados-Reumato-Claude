@@ -1,3 +1,4 @@
 testes/node_modules/
 testes/capturas/
 testes/package-lock.json
+*.png
