@@ -1,4 +1,4 @@
-import { abrirNavegador, APP, capturas } from './navegador.mjs';
+import { abrirNavegador, APP, capturas, CABECALHO_JSON } from './navegador.mjs';
 const HOJE = new Date();
 const iso = d => d.toISOString().slice(0, 10);
 const menosDias = n => { const d = new Date(HOJE); d.setDate(d.getDate() - n); return iso(d); };
@@ -9,6 +9,9 @@ const erros = [], alertas = [];
 p.on('pageerror', e => erros.push('PAGEERROR: ' + e.message));
 p.on('console', m => { if (m.type() === 'error') erros.push('CONSOLE: ' + m.text()); });
 p.on('dialog', d => { alertas.push(d.message().split('\n')[0]); d.accept(); });
+// nenhuma chamada externa deve escapar do teste
+await p.route('**api.bcb.gov.br**', r => r.fulfill({ status: 200, headers: CABECALHO_JSON, body: '[]' }));
+await p.route('**brapi.dev**', r => r.fulfill({ status: 200, headers: CABECALHO_JSON, body: JSON.stringify({ results: [] }) }));
 
 const falhas = [];
 const ok = (nome, cond, obtido, esperado) => {

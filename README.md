@@ -65,8 +65,18 @@ a renda fixa cai para as taxas estimadas das Configurações.
 - **CDI e Selic**: fator acumulado dia útil a dia útil, `∏ (1 + taxa_do_dia × percentual)`, com a
   série real do Banco Central. Sem a série, cai para `(1 + taxa)^(du/252)` com o CDI estimado.
 - **Prefixado**: `(1 + taxa)^(du/252)`, com `du` contado pelos dias úteis da própria série.
-- **IPCA+**: fator do IPCA acumulado no período × `(1 + spread)^(du/252)`. O IPCA tem defasagem de
-  divulgação de cerca de 45 dias, então períodos muito recentes ficam subestimados.
+- **IPCA+**: fator do IPCA acumulado no período × `(1 + spread)^(du/252)`. O IPCA sai com cerca de
+  45 dias de atraso, então os meses ainda não divulgados entram pela estimativa das Configurações.
+- **Dias úteis (`du`)**: contados pelo calendário real da série do CDI quando ela cobre o período —
+  o que respeita feriados — e pela convenção de `dias × 252/365` fora disso. **Nunca dependem do
+  tamanho da série**: uma série curta não pode encolher o tempo decorrido.
+- **Cobertura parcial**: quando a série do Banco Central começa depois da aplicação, o trecho
+  anterior entra pela taxa estimada e o título é marcado como *parcial*, com o método dizendo até
+  onde vai o dado oficial. As séries são rebaixadas automaticamente quando um título mais antigo
+  que elas é cadastrado.
+- **Saldo conferido**: em qualquer título com taxa contratada dá para informar o valor que aparece
+  no extrato numa data. Ele vira o novo ponto de partida e, dali em diante, o título volta a render
+  pelo próprio indexador — a divergência contra a curva teórica é mostrada e para de se acumular.
 - **Aportes e resgates parciais**: cada aporte rende a partir do próprio dia. Um resgate parcial
   retira principal e rendimento na mesma proporção do saldo — retirar `X` de um saldo `S` com
   principal `P` reduz o principal em `P × X/S`. A alíquota de IR continua sendo calculada pelo prazo

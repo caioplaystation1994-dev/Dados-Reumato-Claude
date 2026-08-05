@@ -996,6 +996,18 @@ function inicioNecessario() {
   return min < limite ? limite : somaMeses(min, -2);
 }
 
+// As séries guardadas precisam alcançar a aplicação mais antiga. Cadastrar um
+// título velho depois de já ter baixado as séries no mesmo dia deixava o
+// período descoberto — e é isso que esta checagem impede.
+function seriesCobrem() {
+  const s = getDB().series.cdi;
+  return !!(s && s.inicio && s.inicio <= inicioNecessario());
+}
+function seriesPrecisamAtualizar() {
+  const s = getDB().series.cdi;
+  return !s || s.atualizado !== hojeISO() || !seriesCobrem();
+}
+
 async function atualizarSeries(silencioso) {
   const db = getDB();
   const ini = inicioNecessario();
@@ -1029,6 +1041,31 @@ function serieDados(chave) {
   return (s && Array.isArray(s.dados)) ? s.dados : [];
 }
 
+// Até onde cada série vai. Uma série que não alcança o início do período não
+// pode ser usada sozinha: o trecho descoberto precisa entrar pela taxa estimada.
+function cobertura(chave, iniISO) {
+  const d = serieDados(chave);
+  if (!d.length) return { tem: false, cobreInicio: false, inicio: null, fim: null };
+  return { tem: true, cobreInicio: d[0][0] <= iniISO, inicio: d[0][0], fim: d[d.length - 1][0] };
+}
+
+// Dias úteis entre duas datas. Usa o calendário real da série do CDI quando ele
+// cobre o período (respeitando feriados) e, fora disso, a convenção de 252/365.
+function duEntre(iniISO, fimISO) {
+  const dias = Math.max(0, diasEntre(iniISO, fimISO));
+  if (dias === 0) return 0;
+  const d = serieDados('cdi');
+  if (d.length && d[0][0] <= iniISO) {
+    let n = 0;
+    for (let i = 0; i < d.length; i++) if (d[i][0] > iniISO && d[i][0] <= fimISO) n++;
+    // a série do BCB sai com um ou dois dias de atraso: completa o rabo
+    const ultimo = d[d.length - 1][0];
+    if (ultimo < fimISO) n += Math.max(0, diasEntre(ultimo, fimISO)) * 252 / 365;
+    return n;
+  }
+  return dias * 252 / 365;
+}
+
 // Fator acumulado do CDI entre duas datas (percentual = 1 para 100% do CDI)
 function fatorCDI(iniISO, fimISO, percentual) {
   const d = serieDados('cdi');
@@ -1042,11 +1079,11 @@ function fatorCDI(iniISO, fimISO, percentual) {
 // Fator acumulado do IPCA (série mensal) entre duas datas
 function fatorIPCA(iniISO, fimISO) {
   const d = serieDados('ipca');
-  let f = 1, meses = 0;
+  let f = 1, meses = 0, ultimo = null;
   for (let i = 0; i < d.length; i++) {
-    if (d[i][0] >= iniISO && d[i][0] <= fimISO) { f *= (1 + d[i][1] / 100); meses++; }
+    if (d[i][0] >= iniISO && d[i][0] <= fimISO) { f *= (1 + d[i][1] / 100); meses++; ultimo = d[i][0]; }
   }
-  return { fator: f, meses: meses, temSerie: d.length > 0 };
+  return { fator: f, meses: meses, ultimo: ultimo, temSerie: d.length > 0 };
 }
 
 // Série de índice normalizada em base 100 a partir de uma data
@@ -1255,29 +1292,78 @@ function isentoIR(tipo) { return ['LCI', 'LCA', 'Debênture', 'CRI/CRA', 'Poupan
 function fatorRemuneracao(indexador, taxaPct, ini, fim, cfg) {
   const taxa = (+taxaPct || 0) / 100;
   const dias = Math.max(0, diasEntre(ini, fim));
-  const cdi = fatorCDI(ini, fim, indexador === 'CDI' ? taxa : 1);
-  const usaSerie = cdi.temSerie && cdi.du > 0;
-  const du = usaSerie ? cdi.du : dias * 252 / 365;
-  let fator, metodo;
-  if (indexador === 'CDI') {
-    if (usaSerie) { fator = cdi.fator; metodo = 'CDI diário do Banco Central'; }
-    else { fator = Math.pow(1 + (+cfg.cdi || 0) / 100 * taxa, du / 252); metodo = 'CDI estimado'; }
-  } else if (indexador === 'SELIC') {
-    if (usaSerie) { fator = cdi.fator * Math.pow(1 + taxa, du / 252); metodo = 'Selic/CDI do Banco Central + spread'; }
-    else { fator = Math.pow(1 + (+cfg.cdi || 0) / 100 + taxa, du / 252); metodo = 'Selic estimada + spread'; }
+  const du = duEntre(ini, fim);
+  if (dias <= 0) return { fator: 1, du: 0, metodo: 'sem período decorrido', parcial: false };
+
+  const cdiEstimado = (+cfg.cdi || 0) / 100;
+  const ipcaEstimado = (+cfg.ipca || 0) / 100;
+  let fator, metodo, parcial = false;
+
+  if (indexador === 'CDI' || indexador === 'SELIC') {
+    const pct = indexador === 'CDI' ? taxa : 1;
+    const cob = cobertura('cdi', ini);
+    if (cob.tem) {
+      // trecho coberto pela série, dia útil a dia útil
+      const desde = cob.cobreInicio ? ini : cob.inicio;
+      const serie = fatorCDI(desde, fim, pct);
+      // trechos sem série (antes do início e depois da última divulgação) pela taxa estimada
+      let fFalta = 1;
+      if (!cob.cobreInicio) fFalta *= Math.pow(1 + cdiEstimado * pct, duEntre(ini, cob.inicio) / 252);
+      if (cob.fim < fim) fFalta *= Math.pow(1 + cdiEstimado * pct, (Math.max(0, diasEntre(cob.fim, fim)) * 252 / 365) / 252);
+      fator = serie.fator * fFalta;
+      parcial = !cob.cobreInicio;
+      metodo = cob.cobreInicio
+        ? (indexador === 'CDI' ? 'CDI diário do Banco Central' : 'Selic/CDI do Banco Central + spread')
+        : 'CDI do Banco Central desde ' + dataBR(cob.inicio) + ', estimado antes disso';
+    } else {
+      fator = Math.pow(1 + cdiEstimado * pct, du / 252);
+      metodo = indexador === 'CDI' ? 'CDI estimado' : 'Selic estimada + spread';
+      parcial = true;
+    }
+    if (indexador === 'SELIC') fator *= Math.pow(1 + taxa, du / 252);
   } else if (indexador === 'IPCA') {
+    const cob = cobertura('ipca', ini);
     const ip = fatorIPCA(ini, fim);
-    if (ip.temSerie && ip.meses > 0) { fator = ip.fator * Math.pow(1 + taxa, du / 252); metodo = 'IPCA do IBGE/BCB + spread'; }
-    else { fator = Math.pow((1 + (+cfg.ipca || 0) / 100) * (1 + taxa), du / 252); metodo = 'IPCA estimado + spread'; }
+    const mensalEstimado = Math.pow(1 + ipcaEstimado, 1 / 12) - 1;
+    // meses do período que a série não cobre (antes do início e depois da última
+    // divulgação, que sai com cerca de 45 dias de atraso)
+    const mesesPeriodo = dias / 30.44;
+    const mesesFaltando = Math.max(0, mesesPeriodo - ip.meses);
+    const fInflacao = (ip.temSerie && ip.meses > 0)
+      ? ip.fator * Math.pow(1 + mensalEstimado, mesesFaltando)
+      : Math.pow(1 + mensalEstimado, mesesPeriodo);
+    fator = fInflacao * Math.pow(1 + taxa, du / 252);
+    parcial = !(ip.temSerie && ip.meses > 0 && cob.cobreInicio && mesesFaltando < 2);
+    metodo = !ip.temSerie ? 'IPCA estimado + spread'
+      : ip.meses === 0 ? 'IPCA estimado + spread (série não cobre o período)'
+      : mesesFaltando >= 0.5
+        ? 'IPCA do IBGE até ' + dataBR(ip.ultimo).slice(3) + ' + estimativa no restante + spread'
+        : 'IPCA do IBGE/BCB + spread';
   } else {
     fator = Math.pow(1 + taxa, du / 252);
     metodo = 'prefixado';
   }
-  return { fator, du, metodo };
+  return { fator, du, metodo, parcial };
+}
+
+// Ponto de partida do cálculo. Pode ser a aplicação inicial ou um saldo que
+// você conferiu no extrato: dali em diante o título volta a render pelo próprio
+// indexador, e a divergência da curva teórica deixa de se propagar.
+function baseRF(r) {
+  if (r.indexador === 'INFORMADO') {
+    const v = isFinite(+r.valorInformadoBruto) && +r.valorInformadoBruto > 0
+      ? +r.valorInformadoBruto : (+r.valorAplicado || 0);
+    return { data: r.valorInformadoData || r.dataAplicacao, valor: v, conferido: false };
+  }
+  const c = r.saldoConferido;
+  if (c && c.data && +c.valor > 0 && c.data >= r.dataAplicacao) {
+    return { data: c.data, valor: +c.valor, conferido: true };
+  }
+  return null;
 }
 
 // Aplicação inicial, aportes e resgates parciais em ordem cronológica.
-// Para um título com saldo informado, o saldo já embute o que veio antes dele.
+// Quando há base conferida, ela já embute tudo o que veio antes.
 function movimentosRF(r, fimISO) {
   const aportes = (r.aportes || [])
     .filter(a => a.data && a.data <= fimISO)
@@ -1287,13 +1373,12 @@ function movimentosRF(r, fimISO) {
     .map(x => ({ data: x.data, valor: -Math.abs(+x.valor || 0), tipo: 'resgate' }));
   const ordenar = (a, b) => a.data === b.data ? (b.valor - a.valor) : a.data.localeCompare(b.data);
 
-  if (r.indexador === 'INFORMADO') {
-    const dataBase = r.valorInformadoData || r.dataAplicacao;
-    const base = isFinite(+r.valorInformadoBruto) && +r.valorInformadoBruto > 0
-      ? +r.valorInformadoBruto : (+r.valorAplicado || 0);
+  const base = baseRF(r);
+  if (base && base.data <= fimISO) {
+    const dataBase = base.data;
     const antes = aportes.concat(resgates).filter(m => m.data <= dataBase)
       .reduce((s, m) => s + m.valor, 0);
-    const movs = [{ data: dataBase, valor: base, tipo: 'base' }]
+    const movs = [{ data: dataBase, valor: base.valor, tipo: 'base' }]
       .concat(aportes.filter(a => a.data > dataBase), resgates.filter(x => x.data > dataBase))
       .sort(ordenar);
     return { movs: movs, principalInicial: (+r.valorAplicado || 0) + antes, dataBase: dataBase };
@@ -1312,7 +1397,8 @@ function calcRF(r, db, ateISO) {
   const informado = r.indexador === 'INFORMADO';
 
   // fator de remuneração entre duas datas, conforme o tipo do título
-  let metodo, duTotal = dias * 252 / 365, taxaCorrecao = null, diasCorrigidos = 0, implicita = null;
+  let metodo, duTotal = dias * 252 / 365, taxaCorrecao = null, diasCorrigidos = 0, implicita = null, parcial = false;
+  let conferido = null, divergencia = 0, curvaNaBase = null;
   let fatorEntre;
 
   if (informado) {
@@ -1348,7 +1434,19 @@ function calcRF(r, db, ateISO) {
     const geral = fatorRemuneracao(r.indexador, r.taxa, ini, fim, cfg);
     metodo = geral.metodo;
     duTotal = geral.du;
+    parcial = geral.parcial;
     fatorEntre = (a, b) => fatorRemuneracao(r.indexador, r.taxa, a, b, cfg).fator;
+    const base = baseRF(r);
+    if (base && base.conferido && base.data <= fim) {
+      // quanto a curva teórica dizia naquele dia, para mostrar a diferença
+      const aplicadoAteBase = (+r.valorAplicado || 0) +
+        (r.aportes || []).filter(x => x.data <= base.data).reduce((s, x) => s + (+x.valor || 0), 0) -
+        (r.resgates || []).filter(x => x.data <= base.data).reduce((s, x) => s + Math.abs(+x.valor || 0), 0);
+      curvaNaBase = aplicadoAteBase * fatorRemuneracao(r.indexador, r.taxa, ini, base.data, cfg).fator;
+      divergencia = base.valor - curvaNaBase;
+      conferido = { data: base.data, valor: base.valor };
+      metodo = 'saldo conferido em ' + dataBR(base.data) + ', seguindo por ' + geral.metodo;
+    }
   }
 
   // percorre os movimentos: cada aporte rende do seu próprio dia, e cada resgate
@@ -1401,7 +1499,8 @@ function calcRF(r, db, ateISO) {
     ? (Math.pow(valor / aplicado, 365 / dias) - 1) * 100 : null;
 
   return {
-    dias, du: duTotal, metodo, bruto, mtm, valor, rendimento, aplicado,
+    dias, du: duTotal, metodo, parcial, bruto, mtm, valor, rendimento, aplicado,
+    conferido, divergencia, curvaNaBase,
     totalAportes, totalResgates, movimentos: movs.length,
     informado, corrigindo, diasInformado, diasCorrigidos, taxaCorrecao, equivAA,
     desatualizado: informado && !corrigindo && diasInformado > 45,
@@ -3273,8 +3372,7 @@ async function autoAtualizar() {
   const u = db.config.ultimaAtualizacao || 0;
   if (Date.now() - u < intervalo) return;
   try { await atualizarCotacoes(true); } catch (e) { console.warn('auto:', e.message); }
-  const s = db.series.cdi;
-  if (!s || s.atualizado !== hojeISO()) { try { await atualizarSeries(true); } catch (e) { console.warn(e.message); } }
+  if (seriesPrecisamAtualizar()) { try { await atualizarSeries(true); } catch (e) { console.warn(e.message); } }
 }
 
 // Marcação a mercado do Tesouro Direto (preços oficiais)
@@ -3654,6 +3752,12 @@ function salvarRF() {
   limparRF();
   renderRF(); renderEventosRF(); renderFGC();
   atualizarDatalists();
+  // só rebaixa quando já existe série e ela ficou curta para o novo título;
+  // sem série nenhuma o cálculo já cai na taxa estimada e o aviso aparece na tela
+  if (serieDados('cdi').length && !seriesCobrem()) {
+    atualizarSeries(true).then(() => { renderRF(); renderEventosRF(); renderFGC(); })
+      .catch(e => console.warn('séries:', e.message));
+  }
 }
 
 function limparRF() {
@@ -3791,10 +3895,15 @@ function atualizarSaldo(id) {
   if (!r) return;
   const c = calcRF(r, db);
   const hist = (r.historicoSaldos || []).slice().reverse().slice(0, 8);
-  abrirModal('<h3>Atualizar saldo · ' + esc(r.nome) + '</h3>' +
-    '<p class="muted small" style="margin-bottom:12px">Aplicado ' + brl(+r.valorAplicado) + ' em ' + dataBR(r.dataAplicacao) +
-    ' · saldo atual registrado: <strong>' + brl(c.valor) + '</strong>' +
-    (r.valorInformadoData ? ' (informado em ' + dataBR(r.valorInformadoData) + ')' : '') + '</p>' +
+  const indexado = r.indexador !== 'INFORMADO';
+  abrirModal('<h3>' + (indexado ? 'Conferir saldo · ' : 'Atualizar saldo · ') + esc(r.nome) + '</h3>' +
+    '<p class="muted small" style="margin-bottom:12px">Aplicado ' + brl(c.aplicado) + ' em ' + dataBR(r.dataAplicacao) +
+    ' · o app calcula hoje <strong>' + brl(c.valor) + '</strong>' +
+    (r.valorInformadoData ? ' (informado em ' + dataBR(r.valorInformadoData) + ')' : '') +
+    (c.conferido ? ' · última conferência em ' + dataBR(c.conferido.data) : '') + '</p>' +
+    (indexado ? '<div class="banner info show" style="margin-bottom:12px">Informe o valor que o banco mostra hoje. ' +
+      'Ele vira o novo ponto de partida e, <strong>daí em diante, o título volta a render por ' +
+      esc(rotuloIndexador(r)) + '</strong> — a diferença contra a curva teórica para de se acumular.</div>' : '') +
     '<div class="field-grid">' +
     '<div class="field-group"><label>O que você vai informar</label>' +
     '<select id="md-modo">' + [['valor', 'Saldo atual (R$)'], ['rendimento', 'Rendimento acumulado (R$)'],
@@ -3825,23 +3934,31 @@ function confirmarSaldo(id) {
   const modo = document.getElementById('md-modo').value;
   const entrada = parseFloat(document.getElementById('md-valor').value);
   const data = document.getElementById('md-data').value;
+  const indexado = r.indexador !== 'INFORMADO';
   const bruto = saldoInformado(modo, entrada, +r.valorAplicado || 0);
   if (bruto == null || !data) { alert('Informe o valor e a data.'); return; }
   if (data < r.dataAplicacao) { alert('A data do saldo não pode ser anterior à aplicação.'); return; }
   if (!(bruto > 0)) { alert('O saldo resultante precisa ser maior que zero.'); return; }
+
   r.historicoSaldos = r.historicoSaldos || [];
-  if (r.valorInformadoData && isFinite(+r.valorInformadoBruto)) {
-    r.historicoSaldos.push({ data: r.valorInformadoData, valor: +r.valorInformadoBruto });
-    r.historicoSaldos = r.historicoSaldos
-      .filter((h, i, arr) => arr.findIndex(y => y.data === h.data) === i)
-      .sort((a, b) => a.data.localeCompare(b.data))
-      .slice(-60);
+  const anterior = indexado ? r.saldoConferido
+    : (r.valorInformadoData && isFinite(+r.valorInformadoBruto)
+        ? { data: r.valorInformadoData, valor: +r.valorInformadoBruto } : null);
+  if (anterior && anterior.data) r.historicoSaldos.push({ data: anterior.data, valor: +anterior.valor });
+  r.historicoSaldos = r.historicoSaldos
+    .filter((h, i, arr) => arr.findIndex(y => y.data === h.data) === i)
+    .sort((a, b) => a.data.localeCompare(b.data))
+    .slice(-60);
+
+  if (indexado) {
+    // mantém a taxa contratada: o saldo vira só o novo ponto de partida
+    r.saldoConferido = { data: data, valor: bruto };
+  } else {
+    r.modoInformado = modo;
+    r.valorInformadoEntrada = entrada;
+    r.valorInformadoBruto = bruto;
+    r.valorInformadoData = data;
   }
-  r.indexador = 'INFORMADO';
-  r.modoInformado = modo;
-  r.valorInformadoEntrada = entrada;
-  r.valorInformadoBruto = bruto;
-  r.valorInformadoData = data;
   setDB(db);
   registrarSnapshot(true);
   fecharModal();
@@ -3861,12 +3978,21 @@ function renderRF() {
   const el = document.getElementById('rf-tabela');
   const itens = db.rendafixa.slice().sort((a, b) => (a.vencimento || '9999').localeCompare(b.vencimento || '9999'));
   const temSerie = serieDados('cdi').length > 0;
-  document.getElementById('rf-metodo').innerHTML = temSerie
-    ? '✅ Cálculo usando as séries reais de CDI e IPCA do Banco Central (atualizadas em ' +
-      dataBR((db.series.cdi || {}).atualizado) + '). O valor líquido desconta IOF (até 30 dias) e IR regressivo. ' +
-      'Títulos com <strong>saldo informado</strong> não são projetados: usam o número que você digitou.'
-    : '⚠️ Séries do Banco Central ainda não baixadas — os valores usam o CDI e o IPCA estimados das Configurações. ' +
-      'Clique em <em>Atualizar séries</em> lá para obter as taxas reais.';
+  const cobre = seriesCobrem();
+  const parciais = itens.filter(r => !r.resgatado && calcRF(r, db).parcial).length;
+  document.getElementById('rf-metodo').innerHTML = !temSerie
+    ? '⚠️ Séries do Banco Central ainda não baixadas — os valores usam o CDI e o IPCA estimados das Configurações. ' +
+      'Clique em <em>Atualizar séries</em> lá para obter as taxas reais.'
+    : (!cobre
+        ? '⚠️ A série do Banco Central começa em ' + dataBR((db.series.cdi || {}).inicio) +
+          ', depois da aplicação mais antiga. O trecho anterior entra pela taxa estimada — ' +
+          '<button class="btn-ghost" onclick="atualizarSeries()">baixar o histórico completo</button>'
+        : '✅ Cálculo usando as séries reais de CDI e IPCA do Banco Central (atualizadas em ' +
+          dataBR((db.series.cdi || {}).atualizado) + ').') +
+      ' O valor líquido desconta IOF (até 30 dias) e IR regressivo. ' +
+      'Títulos com <strong>saldo informado</strong> não são projetados: usam o número que você digitou.' +
+      (parciais ? '<br>⚠️ ' + parciais + ' título(s) com parte do período estimada — a linha “método” de cada um diz até onde ' +
+        'o dado oficial alcança. O IPCA sai com cerca de 45 dias de atraso, então o mês corrente é sempre estimado.' : '');
   if (!itens.length) { el.innerHTML = '<div class="empty">Nenhum título cadastrado.</div>'; return; }
 
   el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Título</th><th>Indexador</th><th>Aplicação</th>' +
@@ -3878,8 +4004,12 @@ function renderRF() {
         '<td><strong>' + esc(r.nome) + '</strong><br><span class="muted small">' + esc(r.tipo) +
         (r.emissor ? ' · ' + esc(r.emissor) : '') + (c.mtm != null ? ' · PU ' + brl(+r.puAtual) : '') +
         (c.informado && r.valorInformadoData ? ' · saldo de ' + dataBR(r.valorInformadoData) +
-          (c.corrigindo ? ', corrigido há ' + c.diasCorrigidos + ' dias' : '') : '') + '</span></td>' +
-        '<td>' + esc(rotuloIndexador(r)) + '</td>' +
+          (c.corrigindo ? ', corrigido há ' + c.diasCorrigidos + ' dias' : '') : '') +
+        (c.conferido ? ' · conferido em ' + dataBR(c.conferido.data) +
+          (Math.abs(c.divergencia) >= 0.5 ? ' (' + (c.divergencia > 0 ? '+' : '−') + brl(Math.abs(c.divergencia)) +
+            ' vs. a curva)' : '') : '') + '</span></td>' +
+        '<td>' + esc(rotuloIndexador(r)) +
+        (c.parcial ? ' <span class="tag tag-aviso" title="' + esc(c.metodo) + '">parcial</span>' : '') + '</td>' +
         '<td>' + dataBR(r.dataAplicacao) + '</td>' +
         '<td>' + dataBR(r.vencimento) + '</td>' +
         '<td class="num">' + brl(c.aplicado) +
@@ -3894,7 +4024,8 @@ function renderRF() {
           : (c.vencido ? '<span class="tag tag-etf">vencido</span>' : selosLiquidez(c))) +
           (c.desatualizado ? ' <span class="tag tag-aviso">saldo de ' + c.diasInformado + 'd atrás</span>' : '') + '</td>' +
         '<td style="white-space:nowrap">' +
-        (c.informado && !r.resgatado ? '<button class="btn-ghost" onclick="atualizarSaldo(' + r.id + ')">atualizar saldo</button> ' : '') +
+        (!r.resgatado ? '<button class="btn-ghost" onclick="atualizarSaldo(' + r.id + ')">' +
+          (c.informado ? 'atualizar saldo' : 'conferir saldo') + '</button> ' : '') +
         (!r.resgatado ? '<button class="btn-ghost" onclick="movimentacoesRF(' + r.id + ')">aportes</button> ' : '') +
         '<button class="btn-ghost" onclick="editarRF(' + r.id + ')">editar</button> ' +
         '<button class="btn-ghost" onclick="alternarResgate(' + r.id + ')">' + (r.resgatado ? 'reativar' : 'resgatar') + '</button> ' +

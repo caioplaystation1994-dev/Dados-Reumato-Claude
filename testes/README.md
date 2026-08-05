@@ -32,6 +32,7 @@ Cada suíte imprime uma linha por verificação e sai com código diferente de z
 | `05-correcao-do-saldo.mjs` | Correção diária do saldo informado pela média observada e por índice real, casos de borda e migração de schema |
 | `06-risco-e-planejamento.mjs` | Reconstrução do histórico, Modified Dietz, XIRR, volatilidade, drawdown, correlação, metas, rebalanceamento, projeção e memoização |
 | `07-imposto-e-aportes.mjs` | Lotes e repetição nas cotações, subscrição, amortização de FII, aportes e resgates parciais, apuração mensal de IR com isenções, compensação e DARF |
+| `08-cobertura-e-conferencia.mjs` | Regressão do erro em que uma série curta do Banco Central encolhia o tempo decorrido, rebaixamento automático das séries e conferência de saldo com a taxa contratada preservada |
 
 ## Escrevendo uma suíte nova
 
