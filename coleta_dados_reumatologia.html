@@ -840,7 +840,7 @@ const B_DMARD = ['Abatacept','Adalimumabe','Anifrolumabe','Belimumabe','Certoliz
 const TS_DMARD = ['Baricitinibe','Tofacitinibe','Upadacitinibe'];
 const TEMPO_DMARD = ['< 6 meses','6–12 meses','12–24 meses','24–48 meses','48 meses ou mais'];
 const COMORBIDADES = [
-  'Ansiedade','Apneia obstrutiva do sono','Arterite de Takayasu','Artrite psoriásica','Artrite reumatoide','Artroplastia joelho','Artroplastia quadril','Asma','AVCi',
+  'Amiloidose ATTR','Ansiedade','Apneia obstrutiva do sono','Arterite de Takayasu','Artrite psoriásica','Artrite reumatoide','Artroplastia joelho','Artroplastia quadril','Asma','AVCi',
   'Baixa acuidade visual','Capsulite adesiva','Catarata','Cefaleia crônica','Cirrose','Cirurgia bariátrica','Colangite biliar primária',
   'DAC','DACV','DAOP','Depressão','Dermatite atópica','DLP','DM 1','DM 2','Doença celíaca','Doença de Crohn','Doença de Sjogren',
   'Doença inflamatória intestinal','Dor crônica','DPI','DPOC','DRC','DRGE',
@@ -868,14 +868,14 @@ const MED_CONTINUAS = [
   'Lacosamida','Lactulose','Lamivudina','Lamotrigina','Levetiracetam','Levotiroxina','Liraglutida','Lisdexanfetamina','Loperamida','Loratadina','Losartana',
   'Magnésio','Mebevarina','Melatonina','Metadona','Metformina','Metildopa','Metoclopramida','Metoprolol','Mirtazapina',
   'Naltrexona','Nebivolol','Nifedipino','Nitrazepam','Nitrofurantoína','Nortriptilina',
-  'Omega 3','Omeprazol','Ondansetrona','Oxandrolona','Oxcarbazepina',
-  'Pantoprazol','Paracetamol','Paroxetina','Pioglitazona','Polivitamínico','Pregabalina','Primidona','Propranolol',
+  'Omega 3','Omeprazol','Ondansetrona','Orlistat','Oxandrolona','Oxcarbazepina',
+  'Pantoprazol','Paracetamol','Paroxetina','Pioglitazona','Piridoxina','Polivitamínico','Pregabalina','Primidona','Propranolol',
   'Quetiapina','Quimioterapia','Ramipril','Rifapentina','Risedronato de sódio','Risperidona','Ritonavir','Rivaroxabana','Romosozumabe','Rosuvastatina',
-  'Salbutamol','Semaglutida','Sertralina','Sevelamer','Sildenafil','Simeticona','Sinvastatina','Sulfato ferroso',
-  'Tadalafil','Tamoxifeno','Tansulosina','Tapazol','Tenofovir','Teriparatida','Tiamina','Ticagrelor','Tiotrópio','Tirzepatida','Topiramato','Tramadol','Trazodona',
+  'Salbutamol','Semaglutida','Sertralina','Sevelamer','Sildenafil','Silimarina','Simeticona','Sinvastatina','Sulfato ferroso',
+  'Tadalafil','Tafamidis','Tamoxifeno','Tansulosina','Tapazol','Tenofovir','Teriparatida','Tiamina','Ticagrelor','Tiotrópio','Tirzepatida','Topiramato','Tramadol','Trazodona',
   'Ursacol',
   'Valsartana','Varfarina','Venlafaxina','Vidagliptina','Vitamina B6',
-  'Ziprasidona','Zolpidem'
+  'Zidovudina','Ziprasidona','Zolpidem'
 ];
 // Sinônimos: busca pelo termo à esquerda encontra/seleciona a medicação canônica à direita
 const MED_CONTINUAS_ALIASES = {
@@ -896,7 +896,7 @@ const ESTADO_CIVIL = ['Casado','Divorciado','Solteiro','União estável','Viúvo
 const FILHOS = ['Sem filhos','1','2','3','4','5','6 ou mais'];
 const ESCOLARIDADE = ['Menos de 1 ano de estudo','Ensino Fundamental incompleto','Ensino Fundamental completo','Ensino Médio incompleto','Ensino Médio completo','Ensino Superior incompleto','Ensino Superior completo','Pós-graduação'];
 const RENDA = ['Até 1 salário mínimo','1 a 3 salários mínimos','3 a 5 salários mínimos','Mais de 5 salários mínimos'];
-const OCUPACAO = ['Advogado','Afastado INSS','Agente de saúde','Analista de sistema','Aposentado','Assistente administrativo','Assistente social','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de creche','Auxiliar de limpeza','Auxiliar escola','Balconista','Bióloga','Biólogo','Cabeleireiro','Comercial corporativo','Cozinheiro','Dentista','Desempregado','Educador físico','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Engenheira','Entregador','Estagiário (a)','Estética animais domésticos','Estudante','Farmacêutica','Faxineiro','Funcionário público','Garçom','Gerente','Gerente de vendas','Jornalista','Logística corporativa','Motorista','Motoboy','Operadora de máquina','Pedreiro','Pintor','Porteiro','Professor','Psicóloga','Recepcionista','Representante comercial','RH','Segurança','Técnico de enfermagem','Técnico de informática','Técnico de instalação','Telemarketing','Vendedora de loja','Zelador'];
+const OCUPACAO = ['Advogado','Afastado INSS','Agente de saúde','Analista de sistema','Aposentado','Assistente administrativo','Assistente social','Atendente de loja','Autônomo','Auxiliar administrativo','Auxiliar de cozinha','Auxiliar de creche','Auxiliar de limpeza','Auxiliar escola','Balconista','Bióloga','Biólogo','Cabeleireiro','Comercial corporativo','Cozinheiro','Dentista','Desempregado','Educador físico','Eletricista','Empregado doméstico','Encanador(a)','Enfermeiro','Engenheira','Entregador','Estagiário (a)','Estética animais domésticos','Estudante','Farmacêutica','Faxineiro','Funcionário público','Garçom','Gerente','Gerente de vendas','Jornalista','Logística corporativa','Manutenção','Mecânico','Motorista','Motoboy','Operadora de máquina','Pedreiro','Pintor','Porteiro','Professor','Psicóloga','Recepcionista','Representante comercial','RH','Segurança','Técnico de enfermagem','Técnico de informática','Técnico de instalação','Telemarketing','Vendedora de loja','Zelador'];
 const CARGA_HORARIA = ['< 14 horas','15–39 horas','40 a 48 horas','49 a 60 horas','> 60 horas'];
 const LOCOMOCAO = ['Bicicleta','Caminhada','Carro','Metrô','Moto','Ônibus','Táxi/aplicativo','Trem','Van'];
 const LOCAL_RESIDENCIA = ['Área urbana','Área rural','Área semi-urbana'];
