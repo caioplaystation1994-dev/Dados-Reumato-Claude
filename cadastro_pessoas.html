@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro de Pessoas</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a202c;font-size:14px}
+header{background:#1a56a0;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+header h1{font-size:17px;font-weight:600}
+nav button{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 16px;border-radius:6px;cursor:pointer;margin-left:6px;font-size:13px;transition:.2s}
+nav button.active,nav button:hover{background:rgba(255,255,255,.3)}
+.page{display:none;padding:20px 24px;max-width:840px;margin:0 auto}
+.page.active{display:block}
+
+/* Form */
+.section-card{background:#fff;border-radius:10px;padding:20px 24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.section-title{font-size:13px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e8f0fc}
+.field-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-group label{font-size:12px;font-weight:600;color:#4a5568}
+.field-group input{border:1px solid #cbd5e0;border-radius:6px;padding:8px 10px;font-size:13px;width:100%;background:#fafafa}
+.field-group input:focus{outline:none;border-color:#1a56a0;background:#fff}
+.field-group input.invalid{border-color:#e53e3e;background:#fff5f5}
+.field-error{font-size:11px;color:#c53030;min-height:14px}
+
+/* Buttons */
+.btn-primary{background:#1a56a0;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:.2s}
+.btn-primary:hover{background:#154180}
+.btn-secondary{background:#fff;color:#1a56a0;border:2px solid #1a56a0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-danger{background:#e53e3e;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn-sm{padding:5px 12px;font-size:12px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* Lista */
+.search-bar{display:flex;gap:10px;margin-bottom:16px}
+.search-bar input{flex:1;border:1px solid #cbd5e0;border-radius:8px;padding:9px 14px;font-size:13px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+th{background:#1a56a0;color:#fff;padding:10px 14px;text-align:left;font-size:12px;font-weight:600}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{background:#154180}
+td{padding:9px 14px;border-bottom:1px solid #e8ecf0;font-size:13px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f7faff}
+.col-acoes{width:180px;text-align:right;white-space:nowrap}
+.col-acoes button{margin-left:6px}
+.empty-msg{background:#fff;border-radius:10px;padding:28px;text-align:center;color:#718096;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:10px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stat-card .val{font-size:32px;font-weight:700;color:#1a56a0}
+.stat-card .lbl{font-size:12px;color:#718096;margin-top:2px}
+.chart-section{background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.chart-title{font-size:13px;font-weight:700;color:#2d3748;margin-bottom:12px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.bar-row .bar-label{width:110px;font-size:12px;text-align:right;color:#4a5568;flex-shrink:0}
+.bar-row .bar-track{flex:1;background:#e8ecf0;border-radius:4px;height:18px;overflow:hidden}
+.bar-row .bar-fill{height:100%;background:#1a56a0;border-radius:4px;transition:.3s}
+.bar-row .bar-count{width:40px;font-size:12px;color:#4a5568;text-align:right;flex-shrink:0}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#276749;color:#fff;padding:11px 22px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transition:.25s;pointer-events:none;z-index:200}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.hint{font-size:12px;color:#718096;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Cadastro de Pessoas</h1>
+  <nav>
+    <button id="tab-cadastro" class="active" onclick="showPage('cadastro')">Cadastro</button>
+    <button id="tab-lista" onclick="showPage('lista')">Lista</button>
+    <button id="tab-stats" onclick="showPage('stats')">Estatísticas</button>
+  </nav>
+</header>
+
+<!-- ============ CADASTRO ============ -->
+<div id="page-cadastro" class="page active">
+  <div class="section-card">
+    <div class="section-title" id="form-title">Nova pessoa</div>
+    <div class="field-grid">
+      <div class="field-group">
+        <label for="inp-nome">Nome completo</label>
+        <input type="text" id="inp-nome" maxlength="120" placeholder="Ex.: Maria da Silva" autocomplete="off">
+        <div class="field-error" id="err-nome"></div>
+      </div>
+      <div class="field-group">
+        <label for="inp-idade">Idade (anos)</label>
+        <input type="number" id="inp-idade" min="0" max="130" step="1" placeholder="Ex.: 42">
+        <div class="field-error" id="err-idade"></div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="btn-cancelar" onclick="cancelarEdicao()" style="display:none">Cancelar</button>
+      <button class="btn-primary" onclick="salvarPessoa()" id="btn-salvar">Salvar</button>
+    </div>
+  </div>
+  <div class="section-card">
+    <div class="section-title">Backup</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-secondary btn-sm" onclick="exportarCSV()">Exportar CSV</button>
+      <button class="btn-secondary btn-sm" onclick="exportarJSON()">Exportar JSON</button>
+      <button class="btn-secondary btn-sm" onclick="document.getElementById('inp-import').click()">Importar JSON</button>
+      <input type="file" id="inp-import" accept=".json" style="display:none" onchange="importarJSON(this)">
+    </div>
+    <div class="hint">Os dados ficam salvos apenas neste navegador (localStorage). Use o backup para transferir entre computadores.</div>
+  </div>
+</div>
+
+<!-- ============ LISTA ============ -->
+<div id="page-lista" class="page">
+  <div class="search-bar">
+    <input type="text" id="inp-busca" placeholder="Buscar por nome..." oninput="renderLista()">
+  </div>
+  <div id="lista-container"></div>
+</div>
+
+<!-- ============ ESTATÍSTICAS ============ -->
+<div id="page-stats" class="page">
+  <div class="stat-grid" id="stat-grid"></div>
+  <div class="chart-section">
+    <div class="chart-title">Distribuição por faixa etária</div>
+    <div id="chart-faixas"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const STORAGE_KEY = 'cadastro_pessoas_db';
+let editandoId = null;
+let ordem = { campo: 'nome', asc: true };
+
+function getData() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+function setData(arr) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+}
+
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+function showPage(nome) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + nome).classList.add('active');
+  document.getElementById('tab-' + nome).classList.add('active');
+  if (nome === 'lista') renderLista();
+  if (nome === 'stats') renderStats();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ============================================================
+// CADASTRO
+// ============================================================
+function validar(nome, idadeTxt) {
+  let ok = true;
+  const inpNome = document.getElementById('inp-nome');
+  const inpIdade = document.getElementById('inp-idade');
+  const errNome = document.getElementById('err-nome');
+  const errIdade = document.getElementById('err-idade');
+
+  inpNome.classList.remove('invalid');
+  inpIdade.classList.remove('invalid');
+  errNome.textContent = '';
+  errIdade.textContent = '';
+
+  if (!nome) {
+    errNome.textContent = 'Informe o nome.';
+    inpNome.classList.add('invalid');
+    ok = false;
+  } else if (nome.length < 2) {
+    errNome.textContent = 'Nome muito curto.';
+    inpNome.classList.add('invalid');
+    ok = false;
+  }
+
+  const idade = Number(idadeTxt);
+  if (idadeTxt === '') {
+    errIdade.textContent = 'Informe a idade.';
+    inpIdade.classList.add('invalid');
+    ok = false;
+  } else if (!Number.isInteger(idade) || idade < 0 || idade > 130) {
+    errIdade.textContent = 'Idade deve ser um número inteiro entre 0 e 130.';
+    inpIdade.classList.add('invalid');
+    ok = false;
+  }
+
+  return ok ? { nome, idade } : null;
+}
+
+function salvarPessoa() {
+  const nome = document.getElementById('inp-nome').value.trim().replace(/\s+/g, ' ');
+  const idadeTxt = document.getElementById('inp-idade').value.trim();
+  const dados = validar(nome, idadeTxt);
+  if (!dados) return;
+
+  const db = getData();
+  if (editandoId !== null) {
+    const p = db.find(x => x.id === editandoId);
+    if (!p) { cancelarEdicao(); return; }
+    p.nome = dados.nome;
+    p.idade = dados.idade;
+    p.atualizadoEm = new Date().toISOString();
+    setData(db);
+    toast('✓ Cadastro atualizado');
+    cancelarEdicao();
+  } else {
+    db.push({
+      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)),
+      nome: dados.nome,
+      idade: dados.idade,
+      criadoEm: new Date().toISOString()
+    });
+    setData(db);
+    toast('✓ Pessoa cadastrada');
+    limparForm();
+  }
+  renderLista();
+}
+
+function limparForm() {
+  document.getElementById('inp-nome').value = '';
+  document.getElementById('inp-idade').value = '';
+  document.getElementById('err-nome').textContent = '';
+  document.getElementById('err-idade').textContent = '';
+  document.getElementById('inp-nome').classList.remove('invalid');
+  document.getElementById('inp-idade').classList.remove('invalid');
+  document.getElementById('inp-nome').focus();
+}
+
+function editarPessoa(id) {
+  const p = getData().find(x => x.id === id);
+  if (!p) return;
+  editandoId = id;
+  document.getElementById('inp-nome').value = p.nome;
+  document.getElementById('inp-idade').value = p.idade;
+  document.getElementById('form-title').textContent = 'Editando: ' + p.nome;
+  document.getElementById('btn-salvar').textContent = 'Salvar alterações';
+  document.getElementById('btn-cancelar').style.display = '';
+  showPage('cadastro');
+  document.getElementById('inp-nome').focus();
+}
+
+function cancelarEdicao() {
+  editandoId = null;
+  document.getElementById('form-title').textContent = 'Nova pessoa';
+  document.getElementById('btn-salvar').textContent = 'Salvar';
+  document.getElementById('btn-cancelar').style.display = 'none';
+  limparForm();
+}
+
+function excluirPessoa(id) {
+  const db = getData();
+  const p = db.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`Excluir "${p.nome}" do cadastro?`)) return;
+  setData(db.filter(x => x.id !== id));
+  if (editandoId === id) cancelarEdicao();
+  renderLista();
+  toast('Registro excluído');
+}
+
+// ============================================================
+// LISTA
+// ============================================================
+function ordenarPor(campo) {
+  if (ordem.campo === campo) ordem.asc = !ordem.asc;
+  else ordem = { campo, asc: true };
+  renderLista();
+}
+
+function renderLista() {
+  const termo = document.getElementById('inp-busca').value.trim().toLowerCase();
+  let db = getData();
+  if (termo) db = db.filter(p => p.nome.toLowerCase().includes(termo));
+
+  db.sort((a, b) => {
+    const r = ordem.campo === 'idade'
+      ? a.idade - b.idade
+      : a.nome.localeCompare(b.nome, 'pt-BR');
+    return ordem.asc ? r : -r;
+  });
+
+  const c = document.getElementById('lista-container');
+  if (!db.length) {
+    c.innerHTML = `<div class="empty-msg">${termo ? 'Nenhuma pessoa encontrada para essa busca.' : 'Nenhuma pessoa cadastrada ainda.'}</div>`;
+    return;
+  }
+
+  const seta = campo => ordem.campo === campo ? (ordem.asc ? ' ▲' : ' ▼') : '';
+  const linhas = db.map(p => `
+      <tr>
+        <td>${escapeHtml(p.nome)}</td>
+        <td>${p.idade}</td>
+        <td class="col-acoes">
+          <button class="btn-secondary btn-sm" onclick="editarPessoa('${p.id}')">Editar</button>
+          <button class="btn-danger" onclick="excluirPessoa('${p.id}')">Excluir</button>
+        </td>
+      </tr>`).join('');
+
+  c.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" onclick="ordenarPor('nome')">Nome${seta('nome')}</th>
+          <th class="sortable" onclick="ordenarPor('idade')">Idade${seta('idade')}</th>
+          <th class="col-acoes">Ações</th>
+        </tr>
+      </thead>
+      <tbody>${linhas}</tbody>
+    </table>
+    <div class="hint">${db.length} registro(s) exibido(s).</div>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+// ============================================================
+// ESTATÍSTICAS
+// ============================================================
+const FAIXAS = [
+  { lbl: '0–17',  min: 0,  max: 17 },
+  { lbl: '18–29', min: 18, max: 29 },
+  { lbl: '30–44', min: 30, max: 44 },
+  { lbl: '45–59', min: 45, max: 59 },
+  { lbl: '60–74', min: 60, max: 74 },
+  { lbl: '75+',   min: 75, max: 130 }
+];
+
+function renderStats() {
+  const db = getData();
+  const n = db.length;
+  const idades = db.map(p => p.idade);
+  const media = n ? (idades.reduce((a, b) => a + b, 0) / n) : 0;
+
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-card"><div class="val">${n}</div><div class="lbl">Pessoas cadastradas</div></div>
+    <div class="stat-card"><div class="val">${n ? media.toFixed(1) : '–'}</div><div class="lbl">Idade média</div></div>
+    <div class="stat-card"><div class="val">${n ? Math.min(...idades) : '–'}</div><div class="lbl">Idade mínima</div></div>
+    <div class="stat-card"><div class="val">${n ? Math.max(...idades) : '–'}</div><div class="lbl">Idade máxima</div></div>`;
+
+  const contagens = FAIXAS.map(f => ({
+    lbl: f.lbl,
+    qtd: db.filter(p => p.idade >= f.min && p.idade <= f.max).length
+  }));
+  const maior = Math.max(1, ...contagens.map(f => f.qtd));
+
+  document.getElementById('chart-faixas').innerHTML = n
+    ? contagens.map(f => `
+        <div class="bar-row">
+          <div class="bar-label">${f.lbl} anos</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(f.qtd / maior * 100).toFixed(1)}%"></div></div>
+          <div class="bar-count">${f.qtd}</div>
+        </div>`).join('')
+    : '<div class="hint">Sem dados para exibir.</div>';
+}
+
+// ============================================================
+// BACKUP / RESTORE
+// ============================================================
+function baixar(conteudo, nomeArquivo, tipo) {
+  const blob = new Blob([conteudo], { type: tipo });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportarJSON() {
+  const db = getData();
+  if (!db.length) { alert('Nenhum dado para exportar.'); return; }
+  baixar(JSON.stringify(db, null, 2),
+    'cadastro_pessoas_' + new Date().toISOString().slice(0, 10) + '.json',
+    'application/json');
+}
+
+function exportarCSV() {
+  const db = getData();
+  if (!db.length) { alert('Nenhum dado para exportar.'); return; }
+  const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const linhas = ['Nome;Idade', ...db.map(p => [esc(p.nome), p.idade].join(';'))];
+  baixar('﻿' + linhas.join('\r\n'),
+    'cadastro_pessoas_' + new Date().toISOString().slice(0, 10) + '.csv',
+    'text/csv;charset=utf-8');
+}
+
+function importarJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error();
+      const validos = data
+        .filter(p => p && typeof p.nome === 'string' && Number.isInteger(Number(p.idade)))
+        .map(p => ({
+          id: p.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)),
+          nome: String(p.nome).trim(),
+          idade: Number(p.idade),
+          criadoEm: p.criadoEm || new Date().toISOString()
+        }));
+      if (!validos.length) throw new Error();
+      if (!confirm(`Importar ${validos.length} registro(s)?\n\nATENÇÃO: isto substituirá todos os dados atuais.`)) return;
+      setData(validos);
+      renderLista();
+      toast(`✓ ${validos.length} registro(s) importados`);
+    } catch {
+      alert('Erro: arquivo inválido ou corrompido.');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById('inp-idade').addEventListener('keydown', e => {
+  if (e.key === 'Enter') salvarPessoa();
+});
+document.getElementById('inp-nome').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('inp-idade').focus();
+});
+renderLista();
+</script>
+</body>
+</html>
