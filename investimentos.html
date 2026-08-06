@@ -923,6 +923,22 @@ const CLASSES = {
   rf:     { nome: 'Renda fixa',    cor: '#5a6b80' }
 };
 const CLASSES_B3 = ['acao', 'fii', 'etf', 'bdr'];
+// Nome por extenso é o que a pessoa digita; as APIs querem o símbolo
+const APELIDOS_CRIPTO = {
+  BITCOIN: 'BTC', ETHEREUM: 'ETH', SOLANA: 'SOL', CARDANO: 'ADA', RIPPLE: 'XRP', XRP: 'XRP',
+  LITECOIN: 'LTC', DOGECOIN: 'DOGE', POLKADOT: 'DOT', CHAINLINK: 'LINK', AVALANCHE: 'AVAX',
+  POLYGON: 'MATIC', TETHER: 'USDT', BNB: 'BNB', TRON: 'TRX', STELLAR: 'XLM', MONERO: 'XMR'
+};
+// Símbolo → identificador do CoinGecko, usado quando a brapi não devolve a moeda
+const COINGECKO = {
+  BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', ADA: 'cardano', XRP: 'ripple', LTC: 'litecoin',
+  DOGE: 'dogecoin', DOT: 'polkadot', LINK: 'chainlink', AVAX: 'avalanche-2', MATIC: 'matic-network',
+  USDT: 'tether', BNB: 'binancecoin', TRX: 'tron', XLM: 'stellar', XMR: 'monero'
+};
+function simboloCripto(ticker) {
+  const t = String(ticker || '').toUpperCase();
+  return APELIDOS_CRIPTO[t] || t;
+}
 const TIPOS_EVENTO = {
   compra: 'Compra', venda: 'Venda', subscricao: 'Subscrição', amortizacao: 'Amortização',
   desdobramento: 'Desdobramento', grupamento: 'Grupamento', bonificacao: 'Bonificação'
@@ -1613,6 +1629,9 @@ function baixarVencidos() {
   const baixados = [];
   db.rendafixa.forEach(r => {
     if (r.resgatado || !r.vencimento || r.vencimento > hoje) return;
+    // vencimento igual ou anterior à aplicação é erro de digitação: baixar aqui
+    // apagaria o título do patrimônio sem que ninguém percebesse
+    if (r.dataAplicacao && r.vencimento <= r.dataAplicacao) return;
     const c = calcRF(r, db, r.vencimento);
     r.resgatado = true;
     r.dataResgate = r.vencimento;
@@ -3324,17 +3343,40 @@ async function atualizarCotacoes(silencioso) {
   }
 
   for (const lote of emLotes(cripto, LOTE_COTACOES)) {
+    // o ticker que a pessoa cadastrou pode ser o nome por extenso
+    const porSimbolo = {};
+    lote.forEach(t => { porSimbolo[simboloCripto(t)] = t; });
+    const simbolos = Object.keys(porSimbolo);
     try {
-      const j = await buscarJSON('https://brapi.dev/api/v2/crypto?coin=' + lote.map(encodeURIComponent).join('%2C') + '&currency=BRL' + qs);
+      const j = await buscarJSON('https://brapi.dev/api/v2/crypto?coin=' + simbolos.map(encodeURIComponent).join('%2C') + '&currency=BRL' + qs);
       ((j && j.coins) || []).forEach(c => {
         if (c && c.regularMarketPrice != null) {
           const sym = String(c.coin || c.symbol || '').toUpperCase().replace('-BRL', '');
-          guardar(sym, c.regularMarketPrice, 'BRL', c.regularMarketChangePercent, c.regularMarketPreviousClose,
+          const alvo = porSimbolo[sym] || sym;
+          guardar(alvo, c.regularMarketPrice, 'BRL', c.regularMarketChangePercent, c.regularMarketPreviousClose,
             'Criptomoedas', c.coinName, c.coinImageUrl);
         }
       });
-      lote.forEach(t => { if (ok.indexOf(t) < 0) falhas.push(t); });
-    } catch (e) { lote.forEach(t => falhas.push(t)); console.warn('crypto:', e.message); }
+    } catch (e) { console.warn('crypto:', e.message); }
+
+    // o que a brapi não devolveu tenta pelo CoinGecko, que é aberto
+    const pendentes = lote.filter(t => ok.indexOf(t) < 0);
+    const ids = pendentes.map(t => COINGECKO[simboloCripto(t)]).filter(Boolean);
+    if (ids.length) {
+      try {
+        const j = await buscarJSON('https://api.coingecko.com/api/v3/simple/price?ids=' +
+          ids.join(',') + '&vs_currencies=brl&include_24hr_change=true');
+        pendentes.forEach(t => {
+          const id = COINGECKO[simboloCripto(t)];
+          const d = id && j && j[id];
+          if (d && isFinite(d.brl)) {
+            guardar(t, d.brl, 'BRL', d.brl_24h_change, null, 'Criptomoedas', null, null);
+            db.cotacoes[t].fonte = 'coingecko';
+          }
+        });
+      } catch (e) { console.warn('coingecko:', e.message); }
+    }
+    lote.forEach(t => { if (ok.indexOf(t) < 0) falhas.push(t); });
   }
 
   if (intl.length) {
@@ -3758,6 +3800,11 @@ function salvarRF() {
     return;
   }
   if (r.liquidez === 'carencia' && !r.carenciaAte) { alert('Informe a data de fim da carência.'); return; }
+  if (r.vencimento && r.vencimento <= r.dataAplicacao) {
+    alert('O vencimento (' + dataBR(r.vencimento) + ') está antes da aplicação (' + dataBR(r.dataAplicacao) + ').\n' +
+      'Confira o ano — um título com vencimento no passado sai da carteira automaticamente.');
+    return;
+  }
   const db = getDB();
   if (rfEditando) {
     const i = db.rendafixa.findIndex(x => x.id === rfEditando);
@@ -4054,11 +4101,38 @@ function renderRF() {
     }).join('') + '</tbody></table></div>';
 }
 
+// Problemas de cadastro que distorcem o patrimônio sem dar erro
+function inconsistenciasRF() {
+  const db = getDB();
+  const hoje = hojeISO();
+  const achados = [];
+  db.rendafixa.forEach(r => {
+    if (r.vencimento && r.dataAplicacao && r.vencimento <= r.dataAplicacao) {
+      achados.push({ id: r.id, nome: r.nome,
+        texto: 'vencimento em ' + dataBR(r.vencimento) + ', antes da aplicação em ' + dataBR(r.dataAplicacao) +
+          ' — provavelmente o ano está errado' });
+    }
+    if (r.resgatado && r.baixaAutomatica && r.vencimento && r.dataAplicacao && r.vencimento <= r.dataAplicacao) {
+      achados.push({ id: r.id, nome: r.nome,
+        texto: 'saiu da carteira por essa data invertida; corrija o vencimento e use “reativar”' });
+    }
+    if (!r.emissor && ['CDB', 'RDB', 'LCI', 'LCA', 'Conta remunerada'].indexOf(r.tipo) >= 0) {
+      achados.push({ id: r.id, nome: r.nome, texto: 'sem emissor — fica de fora do controle do FGC' });
+    }
+  });
+  return achados;
+}
+
 function renderEventosRF() {
   const el = document.getElementById('rf-eventos');
+  const problemas = inconsistenciasRF();
+  const aviso = problemas.length
+    ? '<div class="banner warn show">⚠️ <strong>Confira estes cadastros:</strong><ul style="margin:6px 0 0 18px">' +
+      problemas.map(x => '<li>' + esc(x.nome) + ' — ' + esc(x.texto) + '</li>').join('') + '</ul></div>'
+    : '';
   const ev = proximosEventosRF(90);
-  if (!ev.length) { el.innerHTML = '<div class="empty">Nada vencendo ou saindo de carência nos próximos 90 dias.</div>'; return; }
-  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Quando</th><th>Evento</th><th>Título</th>' +
+  if (!ev.length) { el.innerHTML = aviso + '<div class="empty">Nada vencendo ou saindo de carência nos próximos 90 dias.</div>'; return; }
+  el.innerHTML = aviso + '<div class="table-wrap"><table><thead><tr><th>Quando</th><th>Evento</th><th>Título</th>' +
     '<th class="num">Valor líquido estimado</th></tr></thead><tbody>' +
     ev.map(e => '<tr><td>' + dataBR(e.data) + ' <span class="tag ' + (e.dias <= 30 ? 'tag-aviso' : 'tag-rf') + '">em ' +
       e.dias + 'd</span></td><td>' + esc(e.tipo) + '</td><td><strong>' + esc(e.nome) + '</strong></td>' +

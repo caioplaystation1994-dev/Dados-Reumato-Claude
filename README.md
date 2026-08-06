@@ -33,7 +33,7 @@ usa (`localStorage`); nada é enviado para servidores além das consultas públi
 | O quê | Origem | Observações |
 |---|---|---|
 | Ações, FIIs, ETFs, BDRs, ativos internacionais | brapi.dev `/api/quote` | Consultado em lotes de até 12 tickers, com repetição em caso de limite ou falha de rede |
-| Criptomoedas | brapi.dev `/api/v2/crypto` | Sem série histórica: não entram na reconstrução |
+| Criptomoedas | brapi.dev `/api/v2/crypto`, com CoinGecko como alternativa | Nome por extenso é convertido no símbolo (BITCOIN → BTC). Sem série histórica: não entram na reconstrução |
 | Dólar (USD/BRL) | brapi.dev `/api/v2/currency` | Atualizado junto com as cotações |
 | CDI diário (série 12) e IPCA mensal (série 433) | API de dados abertos do Banco Central | Uma taxa por dia útil |
 | Ibovespa (`^BVSP`) e IFIX | brapi.dev, histórico de 1 ano | O IFIX é aproximado pelo ETF **XFIX11** |
@@ -99,7 +99,9 @@ a renda fixa cai para as taxas estimadas das Configurações.
   CDB, RDB, LCI, LCA e poupança. Tesouro, debêntures, CRI/CRA, fundos, previdência e COE ficam fora.
 - **Vencimento**: títulos vencidos são baixados automaticamente na data do vencimento, com o valor
   líquido calculado naquele dia. A baixa é reversível. Conta remunerada, poupança, fundos e
-  previdência não pedem vencimento.
+  previdência não pedem vencimento. Um vencimento anterior à aplicação é tratado como erro de
+  digitação: o cadastro é recusado, a baixa automática não roda e o título aparece na lista de
+  cadastros a conferir.
 - **Conta remunerada**: saldo que rende todo dia e pode ser sacado a qualquer momento. Entra como
   uma aplicação com liquidez diária a um percentual do CDI; depósitos e saques são lançados em
   *aportes*, e cada um passa a render (ou deixa de render) a partir do próprio dia. Conta na

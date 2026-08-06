@@ -34,6 +34,7 @@ Cada suíte imprime uma linha por verificação e sai com código diferente de z
 | `07-imposto-e-aportes.mjs` | Lotes e repetição nas cotações, subscrição, amortização de FII, aportes e resgates parciais, apuração mensal de IR com isenções, compensação e DARF |
 | `08-cobertura-e-conferencia.mjs` | Regressão do erro em que uma série curta do Banco Central encolhia o tempo decorrido, rebaixamento automático das séries e conferência de saldo com a taxa contratada preservada |
 | `09-catalogo-e-conta.mjs` | Seletor de novo investimento cobrindo todas as categorias, roteamento para o formulário certo e conta remunerada com depósitos, saques e rendimento diário |
+| `10-apelidos-e-datas.mjs` | Cripto cadastrada pelo nome por extenso, fonte alternativa de cotação e proteção contra vencimento anterior à aplicação |
 
 ## Escrevendo uma suíte nova
 
