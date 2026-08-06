@@ -104,6 +104,17 @@ tfoot td{font-weight:700;background:#f2f9f7}
 .price-input{width:96px;border:1px solid #cbd5e0;border-radius:5px;padding:3px 6px;font-size:12px;text-align:right;background:#fff}
 .price-input.manual{border-color:#d69e2e;background:#fffdf3}
 #chart-patrimonio,#chart-bench{width:100%;height:auto;display:block}
+nav button.btn-novo{background:#f3c969;color:#12403a;font-weight:700}
+nav button.btn-novo:hover{background:#f7d888}
+.escolha-titulo{font-size:12px;font-weight:700;color:#12403a;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
+.escolha-titulo:first-of-type{margin-top:4px}
+.escolha-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.escolha{display:flex;gap:9px;align-items:flex-start;text-align:left;background:#fff;border:1.5px solid #dde3ea;border-radius:9px;padding:10px 12px;cursor:pointer;font-family:inherit;transition:.15s}
+.escolha:hover{border-color:#12403a;background:#f2f9f7}
+.escolha .ic{font-size:19px;line-height:1.1;flex-shrink:0}
+.escolha .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.escolha .nm{font-size:13px;font-weight:600;color:#1a202c}
+.escolha .ex{font-size:11px;color:#718096}
 .ticker-link{background:none;border:none;padding:0;font:inherit;font-weight:700;color:#12403a;cursor:pointer;border-bottom:1px dashed #9fb8b2}
 .ticker-link:hover{color:#1c7a6c;border-bottom-style:solid}
 .setor-link{background:none;border:none;padding:0;font:inherit;font-size:11.5px;color:#4a5568;cursor:pointer;text-decoration:underline dotted}
@@ -137,6 +148,7 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
 <header>
   <h1>💰 Carteira de Investimentos<span class="cot-status" id="cot-status"></span></h1>
   <nav>
+    <button class="btn-novo" onclick="escolherInvestimento()">➕ Novo investimento</button>
     <button id="nav-dashboard" class="active" onclick="showPage('dashboard')">Painel</button>
     <button id="nav-carteira" onclick="showPage('carteira')">Carteira</button>
     <button id="nav-desempenho" onclick="showPage('desempenho')">Desempenho</button>
@@ -496,7 +508,8 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
         <select id="rf-tipo" onchange="onTipoRFChange()">
           <option>Tesouro Direto</option><option>CDB</option><option>RDB</option><option>LCI</option>
           <option>LCA</option><option>Debênture</option><option>CRI/CRA</option>
-          <option>Poupança</option><option>Fundo de investimento</option><option>Previdência privada</option>
+          <option>Conta remunerada</option><option>Poupança</option>
+          <option>Fundo de investimento</option><option>Previdência privada</option>
           <option>COE</option><option>Outro</option>
         </select>
       </div>
@@ -914,7 +927,7 @@ const TIPOS_EVENTO = {
   compra: 'Compra', venda: 'Venda', subscricao: 'Subscrição', amortizacao: 'Amortização',
   desdobramento: 'Desdobramento', grupamento: 'Grupamento', bonificacao: 'Bonificação'
 };
-const TIPOS_FGC = ['CDB', 'RDB', 'LCI', 'LCA', 'Poupança'];
+const TIPOS_FGC = ['CDB', 'RDB', 'LCI', 'LCA', 'Poupança', 'Conta remunerada'];
 const LIMITE_FGC = 250000;
 
 function nomeClasse(c) { return CLASSES[c] ? CLASSES[c].nome : c; }
@@ -2584,8 +2597,10 @@ function renderDashboard() {
   const semCot = abertas.filter(p => !p.temCot).length;
   const banner = document.getElementById('banner-dash');
   if (!abertas.length && !rf.itens.length) {
-    mostrarBanner(banner, 'info', '👋 <strong>Comece por aqui:</strong> cadastre suas compras na aba <em>Transações</em> ' +
-      'e seus títulos na aba <em>Renda Fixa</em>. Depois clique em <em>Atualizar cotações</em> na aba Carteira.');
+    mostrarBanner(banner, 'info', '👋 <strong>Comece por aqui:</strong> clique em ' +
+      '<button class="btn-ghost" onclick="escolherInvestimento()">➕ Novo investimento</button> ' +
+      'e escolha o que você tem — ações, ações americanas, cripto, fundo, previdência, conta remunerada ou renda fixa. ' +
+      'Depois use <em>Atualizar cotações</em> na aba Carteira.');
   } else if (semCot) {
     mostrarBanner(banner, 'warn', '⚠️ ' + semCot + ' ativo(s) sem cotação — avaliados pelo custo de aquisição. ' +
       'Atualize as cotações ou informe o preço na aba Carteira.');
@@ -3645,9 +3660,15 @@ function novoInvestimentoExistente() {
   document.getElementById('rf-nome').focus();
   window.scrollTo(0, 0);
 }
+const SEM_VENCIMENTO = ['Conta remunerada', 'Poupança', 'Fundo de investimento', 'Previdência privada'];
 function onTipoRFChange() {
-  const t = document.getElementById('rf-tipo').value === 'Tesouro Direto';
-  document.querySelectorAll('.tesouro-only').forEach(e => e.style.display = t ? 'flex' : 'none');
+  const tipo = document.getElementById('rf-tipo').value;
+  document.querySelectorAll('.tesouro-only').forEach(e => e.style.display = tipo === 'Tesouro Direto' ? 'flex' : 'none');
+  // aplicações sem prazo definido não pedem vencimento
+  const semVenc = SEM_VENCIMENTO.indexOf(tipo) >= 0;
+  const wrap = document.getElementById('rf-venc').parentElement;
+  wrap.style.display = semVenc ? 'none' : 'flex';
+  if (semVenc) document.getElementById('rf-venc').value = '';
   renderPreviewRF();
 }
 function onLiquidezChange() {
@@ -4400,6 +4421,84 @@ function exportCSV(qual) {
          p.lucro.toFixed(2), p.lucroPct.toFixed(2), p.ganhoAtivo.toFixed(2), p.ganhoCambio.toFixed(2),
          p.proventos12.toFixed(2), p.dy12.toFixed(2), p.realizado.toFixed(2)])));
   }
+}
+
+/* ============================================================
+   Seletor de novo investimento
+   ============================================================ */
+// Tudo o que o app aceita, em um lugar só: cada opção abre o formulário certo
+// já configurado, em vez de exigir que se descubra em qual aba a coisa mora.
+const CATALOGO = [
+  { grupo: 'Renda variável', itens: [
+    { ic: '📈', nome: 'Ações brasileiras', ex: 'PETR4, ITSA4, VALE3', acao: "novoAtivo('acao')" },
+    { ic: '🇺🇸', nome: 'Ações e ETFs americanos', ex: 'AAPL, MSFT, VOO', acao: "novoAtivo('stock')" },
+    { ic: '🏢', nome: 'Fundos imobiliários', ex: 'HGLG11, MXRF11', acao: "novoAtivo('fii')" },
+    { ic: '📊', nome: 'ETFs brasileiros', ex: 'BOVA11, IVVB11', acao: "novoAtivo('etf')" },
+    { ic: '🌎', nome: 'BDRs', ex: 'AAPL34, MSFT34', acao: "novoAtivo('bdr')" },
+    { ic: '₿', nome: 'Criptomoedas', ex: 'BTC, ETH, SOL', acao: "novoAtivo('cripto')" }
+  ]},
+  { grupo: 'Renda fixa, fundos e caixa', itens: [
+    { ic: '💰', nome: 'Conta remunerada', ex: 'saldo que rende todo dia', acao: "novaContaRemunerada()" },
+    { ic: '🏦', nome: 'CDB, RDB, LCI ou LCA', ex: 'com taxa contratada', acao: "novoRF('CDB')" },
+    { ic: '🏛️', nome: 'Tesouro Direto', ex: 'Selic, IPCA+, prefixado', acao: "novoRF('Tesouro Direto',{indexador:'SELIC'})" },
+    { ic: '💼', nome: 'Fundo de investimento', ex: 'multimercado, ações, RF', acao: "novoRF('Fundo de investimento',{informado:true})" },
+    { ic: '🛡️', nome: 'Previdência privada', ex: 'PGBL ou VGBL', acao: "novoRF('Previdência privada',{informado:true})" },
+    { ic: '🐷', nome: 'Poupança', ex: 'caderneta', acao: "novoRF('Poupança',{informado:true})" },
+    { ic: '📄', nome: 'Debênture, CRI, CRA ou COE', ex: 'crédito privado', acao: "novoRF('Debênture')" }
+  ]},
+  { grupo: 'Já tenho e só sei o saldo', itens: [
+    { ic: '📥', nome: 'Cadastrar pelo extrato', ex: 'valor aplicado e saldo de hoje', acao: "novoInvestimentoExistente()" }
+  ]}
+];
+
+function escolherInvestimento() {
+  abrirModal('<h3>O que você quer cadastrar?</h3>' +
+    CATALOGO.map(g => '<div class="escolha-titulo">' + esc(g.grupo) + '</div><div class="escolha-grid">' +
+      g.itens.map(i => '<button class="escolha" onclick="fecharModal();' + i.acao + '">' +
+        '<span class="ic">' + i.ic + '</span><span class="tx">' +
+        '<span class="nm">' + esc(i.nome) + '</span><span class="ex">' + esc(i.ex) + '</span></span></button>').join('') +
+      '</div>').join('') +
+    '<div class="foot-note">Ações, FIIs, ETFs, BDRs e cripto são lançados como <strong>operações</strong> — quantidade e ' +
+    'preço. O resto entra como <strong>aplicação</strong> — um valor em uma data. Se você já tinha o investimento antes ' +
+    'de usar o app, lance a posição inteira de uma vez, com o seu preço médio.</div>' +
+    '<div class="form-actions"><button class="btn-secondary" onclick="fecharModal()">Fechar</button></div>');
+}
+
+function novoAtivo(classe) {
+  showPage('transacoes');
+  limparTx();
+  document.getElementById('tx-classe').value = classe;
+  onClasseChange();
+  document.getElementById('tx-ticker').focus();
+}
+
+function novoRF(tipo, opcoes) {
+  const o = opcoes || {};
+  showPage('rendafixa');
+  limparRF();
+  document.getElementById('rf-tipo').value = tipo;
+  if (o.informado) {
+    document.getElementById('rf-indexador').value = 'INFORMADO';
+    document.getElementById('rf-data-informado').value = hojeISO();
+  } else if (o.indexador) {
+    document.getElementById('rf-indexador').value = o.indexador;
+  }
+  if (o.liquidez) document.getElementById('rf-liquidez').value = o.liquidez;
+  if (o.taxa != null) document.getElementById('rf-taxa').value = o.taxa;
+  onTipoRFChange(); onIndexadorChange(); onLiquidezChange();
+  document.getElementById('rf-nome').focus();
+}
+
+// Conta que rende todo dia e pode ser sacada a qualquer momento: o saldo entra
+// como aplicação e cada depósito ou saque vira uma movimentação.
+function novaContaRemunerada() {
+  novoRF('Conta remunerada', { indexador: 'CDI', taxa: 100, liquidez: 'diaria' });
+  document.getElementById('rf-nome').value = '';
+  document.getElementById('rf-nome').placeholder = 'Ex.: conta do Banco X';
+  const el = document.getElementById('rf-preview');
+  el.innerHTML = '💡 Informe o <strong>saldo de hoje</strong> como valor aplicado e a data de hoje. ' +
+    'Depois use <strong>aportes</strong> na lista abaixo para lançar depósitos e saques — o rendimento ' +
+    'acumula dia a dia pelo percentual do CDI, e o dinheiro fica disponível a qualquer momento.';
 }
 
 /* ============================================================

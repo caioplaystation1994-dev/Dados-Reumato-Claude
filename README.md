@@ -18,7 +18,10 @@ usa (`localStorage`); nada é enviado para servidores além das consultas públi
 ## Como usar
 
 1. Abra o arquivo no navegador (ou salve na tela inicial do celular).
-2. Cadastre suas compras em **Transações** e seus títulos em **Renda Fixa**.
+2. Clique em **➕ Novo investimento** e escolha o que você tem. O seletor cobre ações brasileiras e
+   americanas, FIIs, ETFs, BDRs, criptomoedas, CDB/LCI/LCA, Tesouro Direto, fundos, previdência,
+   poupança, crédito privado e **conta remunerada** — cada opção abre o formulário certo já
+   configurado.
 3. Em **Configurações**, cole um token gratuito do [brapi.dev](https://brapi.dev/dashboard) e clique
    em **Atualizar séries** para baixar CDI, IPCA, Ibovespa e IFIX.
 4. Em **Desempenho**, use **Reconstruir histórico com preços passados** para recompor a evolução do
@@ -95,7 +98,12 @@ a renda fixa cai para as taxas estimadas das Configurações.
 - **FGC**: R$ 250 mil por CPF em cada instituição e R$ 1 milhão a cada 4 anos no total, cobrindo
   CDB, RDB, LCI, LCA e poupança. Tesouro, debêntures, CRI/CRA, fundos, previdência e COE ficam fora.
 - **Vencimento**: títulos vencidos são baixados automaticamente na data do vencimento, com o valor
-  líquido calculado naquele dia. A baixa é reversível.
+  líquido calculado naquele dia. A baixa é reversível. Conta remunerada, poupança, fundos e
+  previdência não pedem vencimento.
+- **Conta remunerada**: saldo que rende todo dia e pode ser sacado a qualquer momento. Entra como
+  uma aplicação com liquidez diária a um percentual do CDI; depósitos e saques são lançados em
+  *aportes*, e cada um passa a render (ou deixa de render) a partir do próprio dia. Conta na
+  cobertura do FGC e segue a tabela regressiva de IR.
 
 ### Desempenho
 
