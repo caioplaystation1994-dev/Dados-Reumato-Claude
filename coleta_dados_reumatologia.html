@@ -801,8 +801,9 @@ const SEXO = ['Feminino','Masculino'];
 const ETNIA = ['Amarela','Branca','Parda','Preta'];
 const DOENCAS = [
   'Arterite de células gigantes','Arterite de Takayasu','Artrite idiopática juvenil',
-  'Artrite psorística','Artrite reumatoide','Dermatomiosite',
+  'Artrite psoriásica','Artrite reumatoide','Dermatomiosite',
   'Dermatomiosite clinicamente amiopática','Dermatomiosite juvenil','Espondiloartrite',
+  'Espondiloartrite associada à doença inflamatória intestinal','Espondiloartrite radiográfica',
   'GEPA','GPA','Lúpus eritematoso sistêmico','Lúpus juvenil',
   'Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','PAM','PAN',
   'Policondrite recidivante','Polimiosite','SAS-like','Síndrome antissintetase',
@@ -816,7 +817,7 @@ const TEMPO_REMISSAO = ['< 6 meses','6–12 meses','12–24 meses','24–48 mese
 // Doenças cujo índice auto-classifica o grau (DAS28/ASDAS/SLEDAI)
 const DOENCA_AUTOCLASSIFICA = new Set([
   'Artrite reumatoide','Artrite idiopática juvenil',
-  'Espondiloartrite','Artrite psorística',
+  'Espondiloartrite','Espondiloartrite associada à doença inflamatória intestinal','Espondiloartrite radiográfica','Artrite psoriásica',
   'Lúpus eritematoso sistêmico','Lúpus juvenil'
 ]);
 const DOENCA_MIOPATIA = new Set([
@@ -857,7 +858,7 @@ const MED_CONTINUAS = [
   'Cabergolina','Calcitriol','Canaglifozina','Candesartana','Captopril','Carbamazepina','Carbonato de cálcio','Carvedilol',
   'Ciclobenzaprina','Cinacalcet','Ciprofibrato','Citrato de cálcio','Clobazam','Clonazepam','Clonidina','Clopidogrel','Clorpromazina','Clortalidona',
   'Codeína','Coenzima Q10','Colchicina','Colecalciferol','Colírio','Complexo B','Condroitina','Creme',
-  'Dabigatrana','Dapaglifozina','Dapsona','Darunavir','Denosumabe','Desvenlafaxina','Dexlansoprazol','Diacereina','Difenidramina','Diltiazem','Diosmin','Dipirona',
+  'Dabigatrana','Dapaglifozina','Dapsona','Darunavir','Denosumabe','Desmopressina','Desvenlafaxina','Dexlansoprazol','Diacereina','Difenidramina','Diltiazem','Diosmin','Dipirona',
   'Dolutegravir','Domperidona','Donepezila','Doxazosina','Duloxetina',
   'Empaglifozina','Enalapril','Enoxaparina','Entecavir','Eritropoetina','Escitalopram','Espironolactona','Ezetimiba',
   'Fenitoína','Fenobarbital','Finasterida','Fitoterápico','Fluconazol','Fludrocortisona','Fluoxetina','Furosemida',
@@ -1261,7 +1262,9 @@ const DOENCA_METRICAS = {
   'Artrite reumatoide': ['das28'],
   'Artrite idiopática juvenil': ['das28','asdas'],
   'Espondiloartrite': ['asdas'],
-  'Artrite psorística': ['dapsa'],
+  'Espondiloartrite associada à doença inflamatória intestinal': ['asdas'],
+  'Espondiloartrite radiográfica': ['asdas'],
+  'Artrite psoriásica': ['dapsa'],
   'Lúpus eritematoso sistêmico': ['sledai'],
   'Lúpus juvenil': ['sledai'],
   'Dermatomiosite': ['myoact'],
@@ -1435,7 +1438,9 @@ let editingRghc = null;
 let editingIdx = null;
 
 function getData() {
-  return JSON.parse(localStorage.getItem('reumatologia_db') || '[]');
+  const arr = JSON.parse(localStorage.getItem('reumatologia_db') || '[]');
+  arr.forEach(p => { if (p.doenca === 'Artrite psorística') p.doenca = 'Artrite psoriásica'; });
+  return arr;
 }
 function setData(arr) {
   localStorage.setItem('reumatologia_db', JSON.stringify(arr));
@@ -3537,7 +3542,7 @@ function buildSheetValues() {
 const GRUPOS = {
   'Todos': null,
   'Vasculites': ['GPA','GEPA','PAM','PAN','Arterite de células gigantes','Arterite de Takayasu','Policondrite recidivante'],
-  'Artrites inflamatórias': ['Artrite psorística','Artrite reumatoide','Espondiloartrite'],
+  'Artrites inflamatórias': ['Artrite psoriásica','Artrite reumatoide','Espondiloartrite','Espondiloartrite associada à doença inflamatória intestinal','Espondiloartrite radiográfica'],
   'Miopatias': ['Dermatomiosite','Dermatomiosite clinicamente amiopática','Polimiosite','SAS-like','Síndrome antissintetase','Miopatia Necrotizante Imunomediada','Miosite por corpos de inclusão','Sobreposição miopatia + outra doença'],
   'Doenças juvenis': ['Lúpus juvenil','Artrite idiopática juvenil','Dermatomiosite juvenil'],
   'LES': ['Lúpus eritematoso sistêmico'],
