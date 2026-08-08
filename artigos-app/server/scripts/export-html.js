@@ -136,6 +136,23 @@ function nodeCategorizeHeading(heading) {
 const DOSE_RE_NODE = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|a)\s*\d+(?:[.,]\d+)?)?\s*(?:mg|g|mcg|µg|UI|ui)(?:\/kg)?(?:\/(?:dia|semana|m[eê]s|dose|m2|m²))?(?!\s*\/?\s*d[lL])/;
 
 const DRUG_DICT = {
+  // Terapia da gota — nenhum destes existia no dicionario ate a inclusao dos
+  // dois artigos de gota (NEJM Clinical Practice e Lancet Seminar).
+  'Alopurinol': { class: 'Inibidor de xantina oxidase', aliases: ['alopurinol', 'allopurinol'] },
+  'Febuxostate': { class: 'Inibidor de xantina oxidase', aliases: ['febuxostate', 'febuxostat', 'febuxostato'] },
+  'Probenecida': { class: 'Uricosúrico', aliases: ['probenecida', 'probenecid'] },
+  'Benzbromarona': { class: 'Uricosúrico', aliases: ['benzbromarona', 'benzbromarone'] },
+  'Sulfinpirazona': { class: 'Uricosúrico', aliases: ['sulfinpirazona', 'sulfinpyrazone'] },
+  'Lesinurade': { class: 'Uricosúrico (inibidor de URAT1)', aliases: ['lesinurade', 'lesinurad'] },
+  'Pegloticase': { class: 'Uricase recombinante peguilada', aliases: ['pegloticase'] },
+  'Canaquinumabe': { class: 'Inibidor de IL-1β', aliases: ['canaquinumabe', 'canakinumab', 'canakinumabe'] },
+  'Rilonacepte': { class: 'Inibidor de IL-1', aliases: ['rilonacepte', 'rilonacept'] },
+  'Naproxeno': { class: 'AINE', aliases: ['naproxeno', 'naproxen'] },
+  'Etoricoxibe': { class: 'AINE (COX-2 seletivo)', aliases: ['etoricoxibe', 'etoricoxib'] },
+  'Indometacina': { class: 'AINE', aliases: ['indometacina', 'indomethacin'] },
+  'Diclofenaco': { class: 'AINE', aliases: ['diclofenaco', 'diclofenac'] },
+  'Triancinolona': { class: 'Glicocorticoide intra-articular', aliases: ['triancinolona', 'triamcinolona'] },
+  'Corticotropina (ACTH)': { class: 'Análogo de ACTH', aliases: ['corticotropina', 'corticotropin'] },
   // Ausentes ate a inclusao da revisao de anemia hemolitica autoimune (NEJM).
   'Bortezomibe': { class: 'Inibidor de proteassoma', aliases: ['bortezomibe', 'bortezomib'] },
   'Bendamustina': { class: 'Quimioterápico alquilante', aliases: ['bendamustina', 'bendamustine'] },
@@ -234,7 +251,7 @@ const FINDING_DICT = {
   'Aneurisma de subclávia': { type: 'imagem', aliases: ['aneurisma de subclavia', 'aneurisma da subclavia', 'aneurisma subclavio'] },
   'Estenose arterial': { type: 'imagem', aliases: ['estenose arterial', 'estenose da arteria', 'estenose de arteria'] },
   'Espessamento de parede arterial': { type: 'imagem', aliases: ['espessamento da parede', 'espessamento circunferencial', 'espessamento mural'] },
-  'Crescentes (biópsia renal)': { type: 'anatomopatológico', aliases: ['crescentes', 'glomerulonefrite crescentica', 'proliferacao extracapilar'] },
+  'Crescentes (biópsia renal)': { type: 'anatomopatológico', aliases: ['crescentes', 'glomerulonefrite crescentica', 'proliferacao extracapilar'], context: /glom[eé]rul|renal|rim|rins|bi[oó]psia|nefrite|nefropat|c[aá]psula de bowman|mesangial|mest|iga[nN]?\b|anca|protein[uú]ria|hemat[uú]ria/i },
   'Realce da bainha do nervo óptico / leptomeníngeo': { type: 'imagem', aliases: ['realce da bainha', 'realce leptomeningeo', 'realce meningeo', 'realce do nervo optico'] },
   'Rash malar': { type: 'clínico', aliases: ['rash malar', 'eritema malar'] },
   'Livedo reticular': { type: 'clínico', aliases: ['livedo reticular', 'livedo racemoso'] },
@@ -418,6 +435,24 @@ const FINDING_DICT = {
   'Meningite': { type: 'clínico', aliases: ['meningite'] },
   'Citopenia autoimune': { type: 'laboratorial', aliases: ['citopenia autoimune'] },
   'Rabdomiólise': { type: 'clínico', aliases: ['rabdomiolise recorrente', 'rabdomiolise'] },
+  // Semiologia e imagem da gota.
+  'Podagra (1ª metatarsofalângica)': { type: 'clínico', aliases: ['podagra', 'primeira metatarsofalangica', 'primeira articulacao metatarsofalangica'] },
+  'Tofos': { type: 'clínico', aliases: ['tofo', 'tofos', 'tofaceo', 'tofacea'] },
+  'Cristais de urato monossódico': { type: 'anatomopatológico', aliases: ['cristais de urato monossodico', 'urato monossodico', 'birrefringencia negativa'] },
+  'Hiperuricemia': { type: 'laboratorial', aliases: ['hiperuricemia', 'urato serico elevado'] },
+  'Sinal do duplo contorno (US)': { type: 'imagem', aliases: ['sinal do duplo contorno', 'duplo contorno'] },
+  'Erosão em saca-bocado (borda pendente)': { type: 'imagem', aliases: ['erosao em saca-bocado', 'bordas pendentes', 'borda pendente'] },
+  'Condrocalcinose': { type: 'imagem', aliases: ['condrocalcinose'] },
+  'Artrite monoarticular': { type: 'clínico', aliases: ['artrite monoarticular', 'monoartrite'] },
+  // O Seminar da Lancet descreve semiologia e imagem da gota com mais
+  // granularidade que a revisao do NEJM — estas entradas cobrem o que faltava.
+  'Sinal da nevasca (US)': { type: 'imagem', aliases: ['sinal da nevasca', 'aspecto em nevasca'] },
+  'Tofo intra-articular/intrabursal (US)': { type: 'imagem', aliases: ['tofo intra-articular', 'tofos intra-articulares', 'tofo intrabursal', 'tofos intrabursais'] },
+  'Deposição de urato à TC de dupla energia': { type: 'imagem', aliases: ['tc de dupla energia', 'tomografia de dupla energia', 'dect'] },
+  'Artrite gotosa crônica (sinovite persistente)': { type: 'clínico', aliases: ['artrite gotosa cronica', 'sinovite gotosa cronica'] },
+  'Crise gotosa poliarticular': { type: 'clínico', aliases: ['crise poliarticular', 'crises poliarticulares', 'gota poliarticular'] },
+  'Ulceração de tofo com drenagem': { type: 'clínico', aliases: ['ulceracao de tofo', 'tofo ulcerado', 'drenagem de material esbranquicado'] },
+  'Gota avançada (tofos e dano articular)': { type: 'clínico', aliases: ['gota avancada', 'gota tofacea'] },
   'Trombose/tromboembolismo': { type: 'clínico', aliases: ['eventos tromboticos', 'evento trombotico', 'trombose venosa profunda', 'tromboembolismo'] },
   // Semiologia ocular: a revisao de uveite (JAMA) descreve estes sinais em
   // detalhe e nenhum tinha entrada — por isso a aba mostrava muito menos do
@@ -453,6 +488,7 @@ const DISEASE_MENTION_ALIASES = {
   // primaria do artigo. Aliases com ate 5 caracteres ja usam limite de
   // palavra, entao 'tak'/'pmr' nao casam dentro de outras palavras.
   'Anemia Hemolítica Autoimune': ['anemia hemolitica autoimune', 'aiha'],
+  'Gota': ['gota'],
   'Arterite de Takayasu': ['takayasu', 'tak'],
   'Polimialgia Reumática': ['polimialgia reumatica', 'pmr'],
   'Artrite Idiopática Juvenil Sistêmica': ['artrite idiopatica juvenil sistemica', 'still juvenil'],
@@ -744,7 +780,14 @@ function scanDictionary(chunkText, dict) {
       let idx = normText.indexOf(normAlias);
       while (idx !== -1) {
         const boundaryOk = !isWordChar(normText[idx - 1]) && !isWordChar(normText[idx + normAlias.length]);
-        if (boundaryOk) hits.push({ canonical, entry, index: idx, len: normAlias.length, matchedAlias: alias });
+        // Alguns aliases sao homonimos de palavras comuns do portugues —
+        // "crescentes" e o achado da biopsia renal, mas tambem o adjetivo de
+        // "taxas crescentes de sindrome metabolica". Quando a entrada declara
+        // `context`, o casamento so vale se a frase tambem trouxer o termo que
+        // desambigua (aqui, algo renal). Sem isso o achado aparece em artigos
+        // que nunca falaram de rim.
+        const ctxOk = !entry.context || entry.context.test(sentenceWindow(chunkText, idx, normAlias.length));
+        if (boundaryOk && ctxOk) hits.push({ canonical, entry, index: idx, len: normAlias.length, matchedAlias: alias });
         idx = normText.indexOf(normAlias, idx + normAlias.length);
       }
     });
@@ -917,6 +960,56 @@ function isRespectivelyAmbiguous(text, hitIndex, hitLen) {
   if (!RESPECTIVELY_RE.test(sentence)) return false;
   return (sentence.match(new RegExp(FREQ_PCT_RE.source, 'g')) || []).length > 1;
 }
+// "aproximadamente 25% DAS PESSOAS COM HIPERURICEMIA tem deposicao de
+// cristais de urato monossodico": o denominador do percentual e uma coorte
+// DIFERENTE da doenca do artigo (pessoas com hiperuricemia, nao pessoas com
+// gota). Nenhum achado daquela frase pode herdar o numero como se fosse sua
+// frequencia na doenca: nem a hiperuricemia (que na gota esta presente em
+// praticamente todos, e nao em 25%), nem os cristais. E a mesma familia do
+// CONDITIONED_ON_FINDING_RE, generalizada — la o teste so olhava os
+// caracteres imediatamente apos o numero e so a forma "dos"; aqui vale
+// para toda a frase e para "das/de os", e a decisao depende de o grupo
+// citado ser ou nao a propria doenca do artigo.
+const FOREIGN_COHORT_RE = /^\s*d[eoa]s\s+(?:pessoas|pacientes|casos|adultos|crian[cç]as|indiv[ií]duos|homens|mulheres)\s+com\s+([^.,;]{0,45})/i;
+function isForeignCohortPercentage(text, hitIndex, hitLen, matchedStr, ownDisease) {
+  if (!matchedStr) return false;
+  const sentence = sentenceWindow(text, hitIndex, hitLen);
+  const idx = sentence.indexOf(matchedStr);
+  if (idx === -1) return false;
+  const m = FOREIGN_COHORT_RE.exec(sentence.slice(idx + matchedStr.length));
+  if (!m) return false;
+  return !mentionsOwnDisease(m[1], ownDisease);
+}
+
+// "a hiperuricemia acomete mais de 20% dos homens ... NA POPULACAO GERAL":
+// o numero e a prevalencia do achado na populacao de referencia, nao a
+// frequencia dele em quem tem a doenca do artigo. Exibi-lo na coluna de
+// frequencia faria o leitor tomar um dado epidemiologico populacional pela
+// taxa dentro da coorte — e os dois costumam ser ordens de grandeza
+// diferentes.
+// "Deformidade articular e dano articular sao COMUNS EM PACIENTES COM gota
+// tofacea": o achado que vem logo depois de "em pacientes com" e a coorte
+// sendo descrita — o "comuns" fala da deformidade, nao da gota tofacea.
+// Como o casador de frequencia e posicional (pega o numero/palavra mais
+// proximo), sem esta checagem a qualificacao do grupo vira, por engano, a
+// frequencia do proprio grupo. Vale tanto para percentual quanto para
+// frequencia em palavras.
+// Mesma inversao, na forma sem "pacientes": "o dano articular estrutural ...
+// e achado COMUM DA GOTA AVANCADA" — o "comum" qualifica o dano articular, e
+// "gota avancada" e apenas o contexto em que ele e comum. Idem "frequente na
+// GPA", "tipico do lupus".
+const CONTEXT_AFTER_FREQ_RE = /\b(?:comum|comuns|frequente|frequentes|raro|raros|rara|raras|t[ií]pic[oa]s?|caracter[ií]stic[oa]s?|habituais?)\s+(?:d[aeo]s?|n[aeo]s?|em)\s+(?:a\s+|o\s+)?$/i;
+const COHORT_QUALIFIER_RE = /\b(?:em|entre|nos|nas)\s+(?:pacientes|pessoas|casos|adultos|indiv[ií]duos|crian[cç]as|homens|mulheres)\s+com\s+(?:a\s+|o\s+)?$/i;
+function isCohortQualifierBeforeFinding(text, hitIndex) {
+  const before = text.slice(Math.max(0, hitIndex - 45), hitIndex);
+  return COHORT_QUALIFIER_RE.test(before) || CONTEXT_AFTER_FREQ_RE.test(before);
+}
+
+const GENERAL_POPULATION_RE = /popula[cç][aã]o\s+(geral|saud[aá]vel|de\s+refer[eê]ncia)|na\s+popula[cç][aã]o\s+sem\b/i;
+function isGeneralPopulationRate(text, hitIndex, hitLen) {
+  return GENERAL_POPULATION_RE.test(sentenceWindow(text, hitIndex, hitLen));
+}
+
 function mentionsOwnDisease(afterText, ownDisease) {
   if (!ownDisease) return false;
   const norm = nodeNormalizeText(afterText);
@@ -976,6 +1069,46 @@ function isCommentaryHeading(heading) {
   return cat === 'limitacoes' || cat === 'relevancia';
 }
 
+// "colchicina diaria associada a FEBUXOSTATE 40 mg/dia": entre a colchicina e
+// a dose ha OUTRO farmaco, e a dose e dele. O casador e posicional e nao sabe
+// disso sozinho — sem esta checagem a colchicina ganhava "40 mg/dia", dose que
+// ela nunca tem. Regra geral: se algum outro farmaco do dicionario e citado no
+// trecho entre o farmaco e a dose, a dose nao e deste farmaco.
+function hasInterveningDrug(text, hitIndex, hitLen, matchedDose, ownCanonical) {
+  if (!matchedDose) return false;
+  const doseIdx = text.indexOf(matchedDose, Math.max(0, hitIndex - 70));
+  if (doseIdx === -1) return false;
+  const [from, to] = doseIdx > hitIndex
+    ? [hitIndex + hitLen, doseIdx]
+    : [doseIdx + matchedDose.length, hitIndex];
+  if (to <= from) return false;
+  const between = nodeNormalizeText(text.slice(from, to));
+  return Object.keys(DRUG_DICT).some((canonical) => canonical !== ownCanonical &&
+    DRUG_DICT[canonical].aliases.some((al) => between.includes(nodeNormalizeText(al))));
+}
+
+// "os inibidores de IL-1 sao RESERVADOS para pacientes com CONTRAINDICACOES a
+// terapia anti-inflamatoria DE PRIMEIRA LINHA": o rotulo "primeira linha" na
+// janela pertence a outra terapia — a frase diz justamente que este farmaco
+// NAO e de primeira linha. Rotular a anacinra de primeira linha inverte a
+// recomendacao do artigo.
+// Alem da negacao explicita, a COMPARACAO tambem transfere o rotulo: "a
+// anacinra ... tem perfil SEMELHANTE AO DAS terapias orais DE PRIMEIRA LINHA"
+// diz que a anacinra se parece com as de primeira linha, nao que ela e uma
+// delas — o proprio artigo a reserva para quem nao tolera as primeiras.
+const LINE_NEGATION_RE = /\b(reservad[oa]s?|contraindica|intoler[aâ]nci|intoleran|n[aã]o\s+respond|refrat[aá]ri|falha|ap[oó]s\s+falh|alternativ|em\s+vez\s+d|quando\s+n[aã]o|semelhante|compar[aá]vel|equivalente|compara[cç][aã]o|versus|\bvs\.?\s)/i;
+function isLineLabelOfOtherDrug(win, line) {
+  if (line !== 'primeira-linha') return false;
+  const m = win.match(/primeira[\s-]linha|1[ªa][\s-]linha|terapia inicial|tratamento inicial/i);
+  if (!m) return false;
+  // A negacao so conta se estiver na MESMA clausula do rotulo. Olhar a janela
+  // inteira pegava a palavra de uma frase anterior sem relacao ("pulsoterapia
+  // ... RESERVADA para risco de perfuracao escleral. csDMARDs ... sao PRIMEIRA
+  // LINHA quando ...") e apagava um rotulo correto.
+  const clausula = win.slice(Math.max(0, m.index - 60), m.index).split(/[.;]/).pop();
+  return LINE_NEGATION_RE.test(clausula);
+}
+
 function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
   const best = new Map();
   nodeGetArticleChunks(a).forEach((chunk) => {
@@ -983,8 +1116,10 @@ function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
     scanDictionary(chunk.text, DRUG_DICT).forEach((hit) => {
       let doseMatch = nearestMatch(chunk.text, hit.index, hit.len, DOSE_RE_NODE, 70, 30);
       if (isAmbiguousDose(chunk.text, hit.index, hit.len, doseMatch)) doseMatch = null;
+      if (hasInterveningDrug(chunk.text, hit.index, hit.len, doseMatch, hit.canonical)) doseMatch = null;
       const wideWin = windowAround(chunk.text, hit.index, hit.len, 160);
-      const line = detectLine(wideWin) || detectLine(chunk.heading || '');
+      let line = detectLine(wideWin) || detectLine(chunk.heading || '');
+      if (isLineLabelOfOtherDrug(wideWin, line)) line = null;
       const score = (doseMatch ? 2 : 0) + (line ? 1 : 0);
       // Chave por (farmaco + SECAO), nao so por farmaco: uma revisao costuma
       // tratar o mesmo farmaco em contextos diferentes dentro do mesmo artigo
@@ -1190,12 +1325,25 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct, a.disease)) pct = null;
       if (isSubgroupComparison(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isRespectivelyAmbiguous(chunk.text, hit.index, hit.len)) pct = null;
+      if (isForeignCohortPercentage(chunk.text, hit.index, hit.len, pct, a.disease)) pct = null;
+      if (isGeneralPopulationRate(chunk.text, hit.index, hit.len)) pct = null;
+      const isCohortQualifier = isCohortQualifierBeforeFinding(chunk.text, hit.index);
+      if (isCohortQualifier) pct = null;
       const isEtiologic = isEtiologicShareOfFinding(chunk.text, hit.index, hit.len);
       if (isEtiologic) pct = null;
       // Vale tambem para a frequencia em palavras: "causa mais COMUM de
       // panuveite" fala de quao comum a doenca e como CAUSA daquele achado,
       // nao de quao comum o achado e em quem tem a doenca.
-      let word = (pct || isEtiologic) ? null : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
+      // Numa secao de DIAGNOSTICO DIFERENCIAL, os adjetivos de frequencia
+      // quase sempre caracterizam a doenca COMPARADA, nao a do artigo
+      // ("a artrite psoriasica se apresenta como monoartrite ... comum na
+      // artrite psoriasica" virava "Artrite monoarticular: comum" sob Gota).
+      // Percentuais dessas secoes seguem valendo — eles vem acompanhados do
+      // sujeito explicito; a palavra solta, nao.
+      const isDifferentialSection = nodeCategorizeHeading(chunk.heading) === 'diferencial';
+      let word = (pct || isEtiologic || isCohortQualifier || isDifferentialSection)
+        ? null
+        : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
       if (isDiminishedFrequencyWord(chunk.text, hit.index, hit.len, word)) word = null;
       const spec = nearestMatch(chunk.text, hit.index, hit.len, SPECIFICITY_RE, 50, 25);
       const score = (pct ? 3 : 0) + (word ? 1 : 0) + (spec ? 1 : 0);
@@ -1258,6 +1406,9 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       if (isSuspectNumber(chunk.text, at, len, cand.pct, a.disease)) return;
       if (isSubgroupComparison(chunk.text, at, len, cand.pct)) return;
       if (isRespectivelyAmbiguous(chunk.text, at, len)) return;
+      if (isForeignCohortPercentage(chunk.text, at, len, cand.pct, a.disease)) return;
+      if (isGeneralPopulationRate(chunk.text, at, len)) return;
+      if (isCohortQualifierBeforeFinding(chunk.text, at)) return;
       if (isEtiologicShareOfFinding(chunk.text, at, len)) return;
 
       const display = cand.phrase.charAt(0).toUpperCase() + cand.phrase.slice(1);
