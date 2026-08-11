@@ -478,6 +478,8 @@ body{padding-bottom:64px}
       <input type="text" id="g-medico" placeholder="Dr(a). Nome" oninput="sincMedico()">
       <label>CRM</label>
       <input type="text" id="g-crm" placeholder="CRM/SP 000" oninput="sincMedico()">
+      <label>RQE</label>
+      <input type="text" id="g-rqe" placeholder="RQE 00000" oninput="sincMedico()" style="width:90px">
     </div>
     <nav>
       <button class="active" onclick="showPage('relatorio',this)">Relatório Médico</button>
@@ -2205,6 +2207,7 @@ function prepararImpressao(ids) {
   // específico (que não é mais impresso, ver CAMPOS_MEDICO_POR_PAGINA acima).
   const medicoGlobal = document.getElementById('g-medico')?.value.trim() || '';
   const crmGlobal = document.getElementById('g-crm')?.value.trim() || '';
+  const rqe = rqeAtual();
   const local = localAtual();
   const dataHoje = new Date().toLocaleDateString('pt-BR');
   const CAMPOS_MEDICO_POR_PAGINA = {
@@ -2219,7 +2222,7 @@ function prepararImpressao(ids) {
     const campos = CAMPOS_MEDICO_POR_PAGINA[el.closest('.page')?.id];
     const medico = (campos && document.getElementById(campos[0])?.value.trim()) || medicoGlobal;
     const crm = (campos && document.getElementById(campos[1])?.value.trim()) || crmGlobal;
-    el.innerHTML = `<strong>${medico}</strong>${crm ? ' | ' + crm : ''} | Especialidade: Reumatologia<br>${local} | ${dataHoje}`;
+    el.innerHTML = `<strong>${medico}</strong>${crm ? ' | ' + crm : ''}${rqe ? ' | RQE ' + rqe : ''} | Especialidade: Reumatologia<br>${local} | ${dataHoje}`;
   });
 
   document._tituloOriginal = document.title;
@@ -2648,7 +2651,7 @@ function makeDoc(paragraphs, rodape) {
 
   const sectionOpts = { children };
   if (rodape) {
-    const { medico, crm, local } = rodape;
+    const { medico, crm, rqe, local } = rodape;
     const hoje = new Date().toLocaleDateString('pt-BR');
     sectionOpts.footers = {
       default: new Footer({
@@ -2659,6 +2662,7 @@ function makeDoc(paragraphs, rodape) {
             children: [
               new TextRun({ text: medico || '', bold: true, size: 18, color: '4a5568' }),
               ...(crm ? [new TextRun({ text: ' | ' + crm, size: 18, color: '4a5568' })] : []),
+              ...(rqe ? [new TextRun({ text: ' | RQE ' + rqe, size: 18, color: '4a5568' })] : []),
               new TextRun({ text: ' | Especialidade: Reumatologia', size: 18, color: '4a5568' }),
             ]
           }),
@@ -2709,7 +2713,7 @@ async function gerarWordRelatorio() {
     ...(v('rel-obs') ? [{ type: 'heading', text: 'Observações' }, { type: 'multiline', value: v('rel-obs') }] : []),
   ];
   const nomeArq = `relatorio-${(v('rel-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
-  await downloadDocx(makeDoc(paras, { medico: v('rel-medico'), crm: v('rel-crm'), local: localAtual() }), nomeArq);
+  await downloadDocx(makeDoc(paras, { medico: v('rel-medico'), crm: v('rel-crm'), rqe: rqeAtual(), local: localAtual() }), nomeArq);
   salvarHistorico(); registrarLog('Relatório Word', v('rel-nome'), nomeArq);
 }
 
@@ -2729,7 +2733,7 @@ async function gerarWordReceita() {
     ...(v('rx-obs') ? [{ type: 'heading', text: 'Observações' }, { type: 'multiline', value: v('rx-obs') }] : []),
   ];
   const nomeArqRx = `receita-${(v('rx-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
-  await downloadDocx(makeDoc(paras, { medico: v('rx-medico'), crm: v('rx-crm'), local: localAtual() }), nomeArqRx);
+  await downloadDocx(makeDoc(paras, { medico: v('rx-medico'), crm: v('rx-crm'), rqe: rqeAtual(), local: localAtual() }), nomeArqRx);
   registrarLog('Receita Word', v('rx-nome'), nomeArqRx);
   salvarReceitaHistorico();
 }
@@ -2815,7 +2819,7 @@ async function gerarWordLab() {
       paras.push({ type: 'multiline', value: v('lab-indicacao') });
     }
     const nomeArqLab = `exames-lab-${nomePaciente.replace(/\s+/g,'-')}.docx`;
-    await downloadDocx(makeDoc(paras, { medico, crm, local: localAtual() }), nomeArqLab);
+    await downloadDocx(makeDoc(paras, { medico, crm, rqe: rqeAtual(), local: localAtual() }), nomeArqLab);
     registrarLog('Exames Lab Word', nomePaciente, nomeArqLab);
   }
 
@@ -2835,7 +2839,7 @@ async function gerarWordLab() {
       { type: 'heading', text: 'Indicação Clínica' },
       { type: 'multiline', value: justHla },
     ];
-    await downloadDocx(makeDoc(parasHla, { medico, crm, local: localAtual() }), `HLA-B27-${nomePaciente.replace(/\s+/g,'-')}.docx`);
+    await downloadDocx(makeDoc(parasHla, { medico, crm, rqe: rqeAtual(), local: localAtual() }), `HLA-B27-${nomePaciente.replace(/\s+/g,'-')}.docx`);
   }
 
   // Documento separado para IGRA (Quantiferon)
@@ -2855,7 +2859,7 @@ async function gerarWordLab() {
       { type: 'heading', text: 'Indicação Clínica' },
       { type: 'multiline', value: justIgra },
     ];
-    await downloadDocx(makeDoc(parasIgra, { medico, crm, local: localAtual() }), `IGRA-Quantiferon-${nomePaciente.replace(/\s+/g,'-')}.docx`);
+    await downloadDocx(makeDoc(parasIgra, { medico, crm, rqe: rqeAtual(), local: localAtual() }), `IGRA-Quantiferon-${nomePaciente.replace(/\s+/g,'-')}.docx`);
   }
 }
 
@@ -2889,7 +2893,7 @@ async function gerarWordImg() {
     paras.push({ type: 'multiline', value: v('img-indicacao') });
   }
   const nomeArqImg = `exames-imagem-${(v('img-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
-  await downloadDocx(makeDoc(paras, { medico: v('img-medico'), crm: v('img-crm'), local: localAtual() }), nomeArqImg);
+  await downloadDocx(makeDoc(paras, { medico: v('img-medico'), crm: v('img-crm'), rqe: rqeAtual(), local: localAtual() }), nomeArqImg);
   registrarLog('Exames Imagem Word', v('img-nome'), nomeArqImg);
   salvarImgExamesHistorico();
 }
@@ -3007,6 +3011,7 @@ const LOGOS = {
 function sincMedico() {
   const medico = document.getElementById('g-medico')?.value || '';
   const crm    = document.getElementById('g-crm')?.value    || '';
+  const rqe    = document.getElementById('g-rqe')?.value    || '';
   ['rel','rx','lab','img'].forEach(pfx => {
     const mEl = document.getElementById(pfx + '-medico');
     const cEl = document.getElementById(pfx + '-crm');
@@ -3016,8 +3021,16 @@ function sincMedico() {
   sincRecEsp();
   localStorage.setItem('g-medico', medico);
   localStorage.setItem('g-crm', crm);
+  localStorage.setItem('g-rqe', rqe);
   // Update print-rodape in all docs
   atualizarRodape();
+}
+
+// RQE (Registro de Qualificação de Especialista) é uma credencial única do
+// médico logado — ao contrário de médico/CRM, não tem campo por documento,
+// só o campo global do topo.
+function rqeAtual() {
+  return document.getElementById('g-rqe')?.value.trim() || '';
 }
 
 function atualizarRodape() {
@@ -3256,11 +3269,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initSecoesColapsaveis();
   construirBotoesExclusaoPermanentes();
   atualizarLocal();
-  // Restaurar médico/CRM do localStorage
+  // Restaurar médico/CRM/RQE do localStorage
   const savedMedico = localStorage.getItem('g-medico');
   const savedCrm    = localStorage.getItem('g-crm');
+  const savedRqe    = localStorage.getItem('g-rqe');
   if (savedMedico) { const el = document.getElementById('g-medico'); if (el) el.value = savedMedico; }
   if (savedCrm)    { const el = document.getElementById('g-crm');    if (el) el.value = savedCrm;    }
+  if (savedRqe)    { const el = document.getElementById('g-rqe');    if (el) el.value = savedRqe;    }
   sincMedico();
   // Renderizar perfis de paciente
   renderPerfis();
@@ -4004,11 +4019,13 @@ function importarDados(event) {
         localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
       });
       renderPerfis();
-      // Restaurar médico/CRM se presentes nos dados importados
+      // Restaurar médico/CRM/RQE se presentes nos dados importados
       const medImp = localStorage.getItem('g-medico');
       const crmImp = localStorage.getItem('g-crm');
+      const rqeImp = localStorage.getItem('g-rqe');
       if (medImp) { const el = document.getElementById('g-medico'); if (el) el.value = medImp; }
       if (crmImp) { const el = document.getElementById('g-crm');    if (el) el.value = crmImp; }
+      if (rqeImp) { const el = document.getElementById('g-rqe');    if (el) el.value = rqeImp; }
       sincMedico();
       alert('Dados importados com sucesso!');
       registrarLog('Importação de dados', '—', file.name);
