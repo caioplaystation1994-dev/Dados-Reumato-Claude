@@ -199,10 +199,33 @@ const DRUG_DICT = {
   'Belimumabe': { class: 'Inibidor de BAFF/BLyS', aliases: ['belimumabe'] },
   'Abatacepte': { class: 'Modulador de coestimulação (CTLA4-Ig)', aliases: ['abatacepte'] },
   'Anacinra': { class: 'Inibidor de IL-1', aliases: ['anacinra', 'anakinra'] },
-  'Canaquinumabe': { class: 'Inibidor de IL-1', aliases: ['canaquinumabe'] },
-  'Avacopan': { class: 'Inibidor do complemento (C5aR)', aliases: ['avacopan'] },
-  'Iptacopan': { class: 'Inibidor do complemento', aliases: ['iptacopan'] },
+  // (a entrada de Canaquinumabe fica junto com as demais terapias de IL-1 no
+  // bloco da gota, acima — havia uma chave duplicada aqui, silenciosamente
+  // sobrescrevendo a de cima e apagando os aliases 'canakinumab'/'canakinumabe')
+  'Avacopan': { class: 'Inibidor do complemento (C5aR)', aliases: ['avacopan', 'avacopana', 'ccx168'] },
+  'Iptacopan': { class: 'Inibidor do complemento (fator B)', aliases: ['iptacopan', 'iptacopana'] },
   'Eculizumabe': { class: 'Inibidor do complemento (C5)', aliases: ['eculizumabe'] },
+  'Ravulizumabe': { class: 'Inibidor do complemento (C5)', aliases: ['ravulizumabe'] },
+  'Vilobelimabe': { class: 'Anticorpo anti-C5a', aliases: ['vilobelimabe', 'ifx-1'] },
+  // Anti-CD20 de nova geracao e demais alvos de linfocito B avaliados na VAA.
+  'Obinutuzumabe': { class: 'Anti-CD20 (glicoengenheirado)', aliases: ['obinutuzumabe'] },
+  'Ofatumumabe': { class: 'Anti-CD20 (totalmente humano)', aliases: ['ofatumumabe'] },
+  'Daratumumabe': { class: 'Anti-CD38', aliases: ['daratumumabe'] },
+  'Alentuzumabe': { class: 'Anti-CD52', aliases: ['alentuzumabe', 'alemtuzumabe'] },
+  'Telitacicepte': { class: 'Proteína de fusão TACI-Fc (BAFF/APRIL)', aliases: ['telitacicepte'] },
+  'Povetacicepte': { class: 'Proteína de fusão TACI-Fc (BAFF/APRIL)', aliases: ['povetacicepte'] },
+  'Células CAR-T anti-CD19': { class: 'Terapia celular', aliases: ['car-t anti-cd19', 'celulas car-t', 'car t anti-cd19'] },
+  // Alvos da inflamacao induzida por ANCA e da fibrose (Tabela 5 da revisao).
+  'Imlifidase': { class: 'Protease de IgG (clivagem de ANCA)', aliases: ['imlifidase'] },
+  'Fostamatinibe': { class: 'Inibidor de SYK', aliases: ['fostamatinibe'] },
+  'Mitiperstate': { class: 'Inibidor de mieloperoxidase', aliases: ['mitiperstate', 'azm198'] },
+  'Niclosamida': { class: 'Anti-helmíntico (via IL-6/STAT3)', aliases: ['niclosamida'] },
+  'Lixudebart': { class: 'Anticorpo anti-claudina-1', aliases: ['lixudebart', 'ale.f02', 'ale f02'] },
+  'Pirfenidona': { class: 'Antifibrótico', aliases: ['pirfenidona'] },
+  // Orbitopatia de Graves.
+  'Teprotumumabe': { class: 'Anti-receptor de IGF-1', aliases: ['teprotumumabe', 'teprotumumab'] },
+  'Glicosídeos de Tripterygium': { class: 'Medicina tradicional chinesa', aliases: ['glicosideos de tripterygium', 'tripterygium'] },
+  'Radioterapia orbitária': { class: 'Radioterapia', aliases: ['radioterapia orbitaria', 'irradiacao orbitaria'] },
   'Atrasentana': { class: 'Antagonista do receptor de endotelina', aliases: ['atrasentana'] },
   'Sparsentana': { class: 'Antagonista dual endotelina/angiotensina', aliases: ['sparsentana'] },
   'Denosumabe': { class: 'Terapia óssea antirreabsortiva', aliases: ['denosumabe', 'denosumab'] },
@@ -469,7 +492,24 @@ const FINDING_DICT = {
   'Cicatriz macular': { type: 'imagem', aliases: ['cicatriz macular'] },
   'Isquemia retiniana': { type: 'imagem', aliases: ['isquemia retiniana'] },
   'Injeção ciliar/circum-corneana': { type: 'clínico', aliases: ['injecao ciliar', 'injecao circum-corneana'] },
-  'Atrofia de íris': { type: 'clínico', aliases: ['atrofia de iris'] },
+  // Semiologia da orbitopatia de Graves — a proptose e o edema palpebral ja
+  // existiam, mas os desfechos que a meta-analise em rede mede (diplopia,
+  // CAS, motilidade) e os sinais classicos nao tinham entrada.
+  'Diplopia': { type: 'clínico', aliases: ['diplopia', 'visao dupla'] },
+  'Retração palpebral': { type: 'clínico', aliases: ['retracao palpebral'] },
+  'Quemose (edema conjuntival)': { type: 'clínico', aliases: ['quemose', 'chemosis', 'edema conjuntival'] },
+  'Hiperemia conjuntival': { type: 'clínico', aliases: ['hiperemia conjuntival', 'injecao conjuntival'] },
+  'Restrição da motilidade ocular': { type: 'clínico', aliases: ['restricao da motilidade ocular', 'restricao do movimento ocular', 'motilidade ocular restrita'] },
+  'Neuropatia óptica distireoidiana': { type: 'clínico', aliases: ['neuropatia optica distireoidiana', 'neuropatia optica compressiva'] },
+  'Escore de Atividade Clínica (CAS) elevado': { type: 'clínico', aliases: ['escore de atividade clinica', 'clinical activity score'] },
+  // Desfechos e toxicidades recorrentes da vasculite associada a ANCA.
+  'Doença renal em estágio terminal (DRT)': { type: 'clínico', aliases: ['doenca renal em estagio terminal', 'doenca renal terminal', 'eskd'] },
+  'Hipogamaglobulinemia': { type: 'laboratorial', aliases: ['hipogamaglobulinemia'] },
+  'Neutropenia tardia': { type: 'laboratorial', aliases: ['neutropenia tardia'] },
+  'Leucoencefalopatia multifocal progressiva (LMP)': { type: 'clínico', aliases: ['leucoencefalopatia multifocal progressiva'] },
+  'Cistite hemorrágica': { type: 'clínico', aliases: ['cistite hemorragica', 'cistite'] },
+  'Tubulite por células T': { type: 'anatomopatológico', aliases: ['tubulite por celulas t', 'tubulite'] },
+  'Atrofia de íris':{ type: 'clínico', aliases: ['atrofia de iris'] },
 };
 
 // Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
@@ -489,6 +529,12 @@ const DISEASE_MENTION_ALIASES = {
   // palavra, entao 'tak'/'pmr' nao casam dentro de outras palavras.
   'Anemia Hemolítica Autoimune': ['anemia hemolitica autoimune', 'aiha'],
   'Gota': ['gota'],
+  'Vasculite Associada a ANCA (GPA/MPA)': ['vasculite associada a anca', 'vasculites associadas a anca', 'vaa', 'aav'],
+  'Poliangiite Microscópica': ['poliangiite microscopica', 'pam', 'mpa'],
+  'Granulomatose Eosinofílica com Poliangiite': ['granulomatose eosinofilica com poliangiite', 'egpa', 'gepa'],
+  // Sem a sigla "GO/OG": duas letras casariam ruido demais mesmo com limite de
+  // palavra. Nos resumos destes artigos a doenca vai escrita por extenso.
+  'Orbitopatia de Graves': ['orbitopatia de graves', 'oftalmopatia de graves', 'doenca ocular da tireoide', 'doenca ocular tireoidiana'],
   'Arterite de Takayasu': ['takayasu', 'tak'],
   'Polimialgia Reumática': ['polimialgia reumatica', 'pmr'],
   'Artrite Idiopática Juvenil Sistêmica': ['artrite idiopatica juvenil sistemica', 'still juvenil'],
@@ -723,7 +769,13 @@ const LINE_PATTERNS = [
 ];
 
 const FREQ_PCT_RE = /\d{1,3}(?:[.,]\d+)?\s*(?:[-–a]\s*\d{1,3}(?:[.,]\d+)?)?\s*%/;
-const FREQ_WORD_RE = /\b(muito raro|extremamente raro|raro|incomum|infrequente|ocasional|pouco comum|comum|frequente|muito frequente|na maioria dos casos|na maioria dos pacientes)\b/i;
+// As formas femininas e plurais faltavam: "a glomerulonefrite e RARA",
+// "manifestacoes COMUNS", "crises FREQUENTES" nao casavam com 'raro'/'comum'/
+// 'frequente' por causa do limite de palavra — o app simplesmente nao via a
+// frequencia declarada nessas frases (e, no caso da glomerulonefrite na
+// granulomatose eosinofilica, chegou a exibir um percentual de outra oracao
+// numa frase que dizia que o achado e raro).
+const FREQ_WORD_RE = /\b(muito rar[oa]s?|extremamente rar[oa]s?|rar[oa]s?|incomum|incomuns|infrequentes?|ocasionais?|ocasional|pouco comum|pouco comuns|comum|comuns|frequentes?|muito frequentes?|na maioria dos casos|na maioria dos pacientes)\b/i;
 const SPECIFICITY_RE = /\b(inespec[ií]fic[oa]|espec[ií]fic[oa]|sugestivo|sugere fortemente|sugere|patognom[oô]nic[oa]|achado incidental|at[ií]pic[oa])\b/i;
 
 // Achados vasculares em sítios não-mediais (subclávia, carótida, ilíaca etc.)
@@ -998,11 +1050,74 @@ function isForeignCohortPercentage(text, hitIndex, hitLen, matchedStr, ownDiseas
 // e achado COMUM DA GOTA AVANCADA" — o "comum" qualifica o dano articular, e
 // "gota avancada" e apenas o contexto em que ele e comum. Idem "frequente na
 // GPA", "tipico do lupus".
-const CONTEXT_AFTER_FREQ_RE = /\b(?:comum|comuns|frequente|frequentes|raro|raros|rara|raras|t[ií]pic[oa]s?|caracter[ií]stic[oa]s?|habituais?)\s+(?:d[aeo]s?|n[aeo]s?|em)\s+(?:a\s+|o\s+)?$/i;
+// O alias que casa costuma ser so parte do nome ("tofacea" dentro de "gota
+// tofacea"), entao o padrao precisa tolerar as poucas palavras entre a
+// preposicao e o ponto exato do casamento — sem isso "sao comuns NA GOTA
+// TOFACEA" escapava e o "comuns" (que e do dano articular) virava frequencia
+// dos tofos.
+const CONTEXT_AFTER_FREQ_RE = /\b(?:comum|comuns|frequente|frequentes|raro|raros|rara|raras|t[ií]pic[oa]s?|caracter[ií]stic[oa]s?|habituais?)\s+(?:d[aeo]s?|n[aeo]s?|em)\s+(?:[a-zà-ú]{1,12}\s+){0,2}$/i;
 const COHORT_QUALIFIER_RE = /\b(?:em|entre|nos|nas)\s+(?:pacientes|pessoas|casos|adultos|indiv[ií]duos|crian[cç]as|homens|mulheres)\s+com\s+(?:a\s+|o\s+)?$/i;
 function isCohortQualifierBeforeFinding(text, hitIndex) {
   const before = text.slice(Math.max(0, hitIndex - 45), hitIndex);
   return COHORT_QUALIFIER_RE.test(before) || CONTEXT_AFTER_FREQ_RE.test(before);
+}
+
+// "a glomerulonefrite e RARA E apenas 30 a 40% dos pacientes tem ANCA
+// positivo": o achado ja tem sua frequencia declarada em PALAVRA ("rara"), e
+// o percentual que vem depois pertence a outra oracao, sobre outro sujeito.
+// Sem isso o app afirmava "Glomerulonefrite: 30 a 40%" numa frase que diz
+// literalmente o contrario (que ela e rara). So dispara quando ha a palavra
+// de frequencia E uma conjuncao abrindo nova oracao entre ela e o numero —
+// assim "e comum, ocorrendo em 30% dos casos" (mesmo sujeito) segue valendo.
+const NEW_CLAUSE_RE = /\s(?:e|mas|por[eé]m|embora|enquanto|ao\s+passo\s+que|j[aá]\s+que)\s|;/i;
+function isFrequencyWordThenNewClause(text, hitIndex, hitLen, matchedPct) {
+  if (!matchedPct) return false;
+  const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
+  if (pctIdx <= hitIndex || pctIdx - (hitIndex + hitLen) > 90) return false;
+  const between = text.slice(hitIndex + hitLen, pctIdx);
+  const wm = between.match(FREQ_WORD_RE);
+  if (!wm) return false;
+  return NEW_CLAUSE_RE.test(between.slice(wm.index + wm[0].length));
+}
+
+// Localiza a ocorrencia de `needle` mais PROXIMA do termo — nao a primeira do
+// texto. Numa enumeracao ("raiz da aorta 7,1% ... arco aortico 7,1% ... aorta
+// descendente 7,1%") o mesmo numero se repete, e um indexOf simples devolvia
+// sempre a primeira ocorrencia: o trecho "entre o termo e o numero" ficava
+// enorme e varria meia lista de achados, fazendo os guards de termo
+// interveniente descartarem numeros corretos.
+function nearestOccurrenceIndex(text, hitIndex, hitLen, needle) {
+  const after = text.indexOf(needle, hitIndex + hitLen);
+  const before = text.lastIndexOf(needle, hitIndex);
+  if (after === -1) return before;
+  if (before === -1) return after;
+  return (after - (hitIndex + hitLen)) <= (hitIndex - before) ? after : before;
+}
+
+// Mesmo racional do hasInterveningDrug, do lado dos achados: se OUTRO achado
+// do dicionario e citado entre o achado e o percentual, o numero e do outro.
+function hasInterveningFinding(text, hitIndex, hitLen, matchedPct, ownCanonical) {
+  if (!matchedPct) return false;
+  const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
+  if (pctIdx === -1) return false;
+  const [from, to] = pctIdx > hitIndex
+    ? [hitIndex + hitLen, pctIdx]
+    : [pctIdx + matchedPct.length, hitIndex];
+  if (to <= from) return false;
+  const between = nodeNormalizeText(text.slice(from, to));
+  return Object.keys(FINDING_DICT).some((canonical) => canonical !== ownCanonical &&
+    FINDING_DICT[canonical].aliases.some((al) => between.includes(nodeNormalizeText(al))));
+}
+
+// "inibidores da catepsina C, que ja vem sendo avaliados PARA BRONQUIECTASIAS"
+// e "fostamatinibe, licenciado PARA TROMBOCITOPENIA imune": o achado citado e
+// a indicacao do farmaco em OUTRA doenca, nao uma manifestacao da doenca do
+// artigo. Padrao recorrente em toda revisao que discute reposicionamento de
+// farmaco — sem o guard, a aba da doenca ganha achados que o artigo nunca
+// atribuiu a ela.
+const OTHER_INDICATION_RE = /\b(?:licenciad[oa]s?|aprovad[oa]s?|indicad[oa]s?|avaliad[oa]s?|estudad[oa]s?|usad[oa]s?|utilizad[oa]s?|desenvolvid[oa]s?|testad[oa]s?)\s+(?:para|em|no|na)\s+(?:a\s+|o\s+)?$/i;
+function isOtherIndication(text, hitIndex) {
+  return OTHER_INDICATION_RE.test(text.slice(Math.max(0, hitIndex - 40), hitIndex));
 }
 
 const GENERAL_POPULATION_RE = /popula[cç][aã]o\s+(geral|saud[aá]vel|de\s+refer[eê]ncia)|na\s+popula[cç][aã]o\s+sem\b/i;
@@ -1076,7 +1191,7 @@ function isCommentaryHeading(heading) {
 // trecho entre o farmaco e a dose, a dose nao e deste farmaco.
 function hasInterveningDrug(text, hitIndex, hitLen, matchedDose, ownCanonical) {
   if (!matchedDose) return false;
-  const doseIdx = text.indexOf(matchedDose, Math.max(0, hitIndex - 70));
+  const doseIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedDose);
   if (doseIdx === -1) return false;
   const [from, to] = doseIdx > hitIndex
     ? [hitIndex + hitLen, doseIdx]
@@ -1085,6 +1200,27 @@ function hasInterveningDrug(text, hitIndex, hitLen, matchedDose, ownCanonical) {
   const between = nodeNormalizeText(text.slice(from, to));
   return Object.keys(DRUG_DICT).some((canonical) => canonical !== ownCanonical &&
     DRUG_DICT[canonical].aliases.some((al) => between.includes(nodeNormalizeText(al))));
+}
+
+// Um marcador de ACOMPANHAMENTO entre a dose e o farmaco ("junto ao",
+// "associado a", "em combinacao com", "mais") indica que o farmaco esta do
+// outro lado da conjuncao: a dose e de quem foi citado ANTES do marcador.
+// "prednisona iniciando a 0,5 ou a 1 mg/kg por dia JUNTO AO rituximabe"
+// virava "rituximabe 1 mg/kg", posologia que o rituximabe nunca tem — e o
+// hasInterveningDrug nao pega esse caso porque o glicocorticoide, dono da
+// dose, foi deliberadamente deixado fora do DRUG_DICT. Vale simetricamente:
+// em "avacopan 30 mg duas vezes ao dia EM COMBINACAO COM ciclofosfamida",
+// a dose fica com o avacopan e nao vaza para a ciclofosfamida.
+const COMPANION_MARKER_RE = /\b(?:junto\s+(?:a|ao|com)|associad[oa]s?\s+(?:a|ao|com)|em\s+combina[cç][aã]o\s+com|combinad[oa]s?\s+(?:a|ao|com)|acrescentad[oa]s?\s+(?:a|ao)|adicionad[oa]s?\s+(?:a|ao)|seguid[oa]s?\s+(?:de|por))\b/i;
+function companionMarkerBetween(text, hitIndex, hitLen, matchedDose) {
+  if (!matchedDose) return false;
+  const doseIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedDose);
+  if (doseIdx === -1) return false;
+  const [from, to] = doseIdx > hitIndex
+    ? [hitIndex + hitLen, doseIdx]
+    : [doseIdx + matchedDose.length, hitIndex];
+  if (to <= from) return false;
+  return COMPANION_MARKER_RE.test(text.slice(from, to));
 }
 
 // "os inibidores de IL-1 sao RESERVADOS para pacientes com CONTRAINDICACOES a
@@ -1117,6 +1253,7 @@ function extractMedicationsFromArticle(a, allDiseases, primaryDisease) {
       let doseMatch = nearestMatch(chunk.text, hit.index, hit.len, DOSE_RE_NODE, 70, 30);
       if (isAmbiguousDose(chunk.text, hit.index, hit.len, doseMatch)) doseMatch = null;
       if (hasInterveningDrug(chunk.text, hit.index, hit.len, doseMatch, hit.canonical)) doseMatch = null;
+      if (companionMarkerBetween(chunk.text, hit.index, hit.len, doseMatch)) doseMatch = null;
       const wideWin = windowAround(chunk.text, hit.index, hit.len, 160);
       let line = detectLine(wideWin) || detectLine(chunk.heading || '');
       if (isLineLabelOfOtherDrug(wideWin, line)) line = null;
@@ -1321,7 +1458,12 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       // ja tratamos para achados etiologicos — sem checar isso, a ausencia
       // do achado vira, por engano, a frequencia dele.
       if (isNegatedAt(normChunkText, hit.index)) return;
+      // Achado citado como indicacao de um farmaco em outra doenca nao e
+      // manifestacao da doenca deste artigo — nao entra de forma alguma.
+      if (isOtherIndication(chunk.text, hit.index)) return;
       let pct = nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
+      if (isFrequencyWordThenNewClause(chunk.text, hit.index, hit.len, pct)) pct = null;
+      if (hasInterveningFinding(chunk.text, hit.index, hit.len, pct, hit.canonical)) pct = null;
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct, a.disease)) pct = null;
       if (isSubgroupComparison(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isRespectivelyAmbiguous(chunk.text, hit.index, hit.len)) pct = null;
