@@ -817,7 +817,7 @@ body{padding-bottom:64px}
     </div>
 
     <div class="doc-tail-block">
-    <div class="field-row" style="margin-top:24px">
+    <div class="field-row no-print" style="margin-top:24px">
       <div class="field-group">
         <label>Médico(a) Responsável</label>
         <input type="text" id="rel-medico" placeholder="Nome do médico">
@@ -1026,7 +1026,7 @@ body{padding-bottom:64px}
     </div>
 
     <div class="doc-tail-block">
-    <div class="field-row" style="margin-top:24px">
+    <div class="field-row no-print" style="margin-top:24px">
       <div class="field-group">
         <label>Médico(a) Responsável</label>
         <input type="text" id="rx-medico" placeholder="Nome do médico">
@@ -1254,7 +1254,7 @@ body{padding-bottom:64px}
       <textarea id="lab-indicacao" class="short" placeholder="Justificativa clínica para os exames solicitados..."></textarea>
     </div>
 
-    <div class="field-row" style="margin-top:24px">
+    <div class="field-row no-print" style="margin-top:24px">
       <div class="field-group">
         <label>Médico(a) Responsável</label>
         <input type="text" id="lab-medico" placeholder="Nome do médico">
@@ -1294,7 +1294,7 @@ body{padding-bottom:64px}
     <div style="font-size:13px;padding:3px 0">• HLA-B27</div>
     <div style="margin-top:18px;font-weight:700;font-size:13px;color:#1a56a0;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">Indicação Clínica</div>
     <div id="ph-hla-just" style="font-size:13px;white-space:pre-line;line-height:1.6"></div>
-    <div class="field-row" style="margin-top:24px">
+    <div class="field-row no-print" style="margin-top:24px">
       <div class="field-group"><label>Médico(a) Responsável</label><div id="ph-hla-medico" class="print-field-val"></div></div>
       <div class="field-group" style="flex:0 0 200px"><label>CRM</label><div id="ph-hla-crm" class="print-field-val"></div></div>
     </div>
@@ -1321,7 +1321,7 @@ body{padding-bottom:64px}
     <div style="font-size:13px;padding:3px 0">• IGRA (Quantiferon)</div>
     <div style="margin-top:18px;font-weight:700;font-size:13px;color:#1a56a0;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">Indicação Clínica</div>
     <div id="ph-igra-just" style="font-size:13px;white-space:pre-line;line-height:1.6"></div>
-    <div class="field-row" style="margin-top:24px">
+    <div class="field-row no-print" style="margin-top:24px">
       <div class="field-group"><label>Médico(a) Responsável</label><div id="ph-igra-medico" class="print-field-val"></div></div>
       <div class="field-group" style="flex:0 0 200px"><label>CRM</label><div id="ph-igra-crm" class="print-field-val"></div></div>
     </div>
@@ -1384,7 +1384,7 @@ body{padding-bottom:64px}
       <textarea id="img-indicacao" class="short" placeholder="Justificativa clínica e quesitos específicos para o laudo..."></textarea>
     </div>
 
-    <div class="field-row" style="margin-top:24px">
+    <div class="field-row no-print" style="margin-top:24px">
       <div class="field-group">
         <label>Médico(a) Responsável</label>
         <input type="text" id="img-medico" placeholder="Nome do médico">
@@ -2198,13 +2198,29 @@ function prepararImpressao(ids) {
   }
 
   // ── Rodapé de impressão ──
-  const medico = document.getElementById('g-medico')?.value.trim() || '';
-  const crm = document.getElementById('g-crm')?.value.trim() || '';
+  // Cada rodapé usa o médico/CRM do próprio documento a que pertence — com
+  // fallback para o médico logado no cabeçalho global — em vez de depender
+  // só do campo global. Isso evita rodapé em branco quando o nome foi
+  // digitado apenas no campo "Médico(a) Responsável" de um documento
+  // específico (que não é mais impresso, ver CAMPOS_MEDICO_POR_PAGINA acima).
+  const medicoGlobal = document.getElementById('g-medico')?.value.trim() || '';
+  const crmGlobal = document.getElementById('g-crm')?.value.trim() || '';
   const local = localAtual();
-  const hoje = new Date();
-  const dataHoje = hoje.toLocaleDateString('pt-BR');
-  const rodapeHtml = `<strong>${medico}</strong>${crm ? ' | ' + crm : ''} | Especialidade: Reumatologia<br>${local} | ${dataHoje}`;
-  document.querySelectorAll('.print-rodape').forEach(el => { el.innerHTML = rodapeHtml; });
+  const dataHoje = new Date().toLocaleDateString('pt-BR');
+  const CAMPOS_MEDICO_POR_PAGINA = {
+    relatorio: ['rel-medico', 'rel-crm'],
+    receita: ['rx-medico', 'rx-crm'],
+    'exames-lab': ['lab-medico', 'lab-crm'],
+    'exames-img': ['img-medico', 'img-crm'],
+    'print-hlab27': ['lab-medico', 'lab-crm'],
+    'print-igra': ['lab-medico', 'lab-crm'],
+  };
+  document.querySelectorAll('.print-rodape').forEach(el => {
+    const campos = CAMPOS_MEDICO_POR_PAGINA[el.closest('.page')?.id];
+    const medico = (campos && document.getElementById(campos[0])?.value.trim()) || medicoGlobal;
+    const crm = (campos && document.getElementById(campos[1])?.value.trim()) || crmGlobal;
+    el.innerHTML = `<strong>${medico}</strong>${crm ? ' | ' + crm : ''} | Especialidade: Reumatologia<br>${local} | ${dataHoje}`;
+  });
 
   document._tituloOriginal = document.title;
   document.title = ' ';
