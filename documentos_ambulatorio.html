@@ -2570,8 +2570,12 @@ function base64ToUint8Array(base64) {
   return arr;
 }
 
-function makeDoc(paragraphs) {
-  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, ImageRun } = docx;
+// rodape opcional: { medico, crm, local } — quando informado, vira um
+// rodapé de página nativo do Word (repete em todas as páginas do
+// documento), em vez de um parágrafo comum que só aparece ao final do
+// texto (podendo cair em qualquer lugar da última página).
+function makeDoc(paragraphs, rodape) {
+  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, ImageRun, Footer } = docx;
   const children = paragraphs.map(p => {
     if (p.type === 'heading') return new Paragraph({
       spacing: { before: 240, after: 80 },
@@ -2625,7 +2629,31 @@ function makeDoc(paragraphs) {
     });
     return new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: p.text || '', size: 22 })] });
   });
-  return new Document({ sections: [{ children }] });
+
+  const sectionOpts = { children };
+  if (rodape) {
+    const { medico, crm, local } = rodape;
+    const hoje = new Date().toLocaleDateString('pt-BR');
+    sectionOpts.footers = {
+      default: new Footer({
+        children: [
+          new Paragraph({
+            border: { top: { style: BorderStyle.SINGLE, size: 6, color: '2d3748' } },
+            spacing: { before: 120, after: 20 },
+            children: [
+              new TextRun({ text: medico || '', bold: true, size: 18, color: '4a5568' }),
+              ...(crm ? [new TextRun({ text: ' | ' + crm, size: 18, color: '4a5568' })] : []),
+              new TextRun({ text: ' | Especialidade: Reumatologia', size: 18, color: '4a5568' }),
+            ]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `${local} | ${hoje}`, size: 18, color: '4a5568' })]
+          })
+        ]
+      })
+    };
+  }
+  return new Document({ sections: [sectionOpts] });
 }
 
 async function downloadDocx(doc, filename) {
@@ -2663,13 +2691,9 @@ async function gerarWordRelatorio() {
     { type: 'heading', text: 'Conduta / Plano Terapêutico' },
     { type: 'multiline', value: v('rel-conduta') },
     ...(v('rel-obs') ? [{ type: 'heading', text: 'Observações' }, { type: 'multiline', value: v('rel-obs') }] : []),
-    { type: 'separator' },
-    { type: 'label-value', label: 'Médico(a)', value: v('rel-medico') },
-    { type: 'label-value', label: 'CRM', value: v('rel-crm') },
-    { type: 'signature', text: v('rel-medico') + (v('rel-crm') ? ' — ' + v('rel-crm') : '') },
   ];
   const nomeArq = `relatorio-${(v('rel-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
-  await downloadDocx(makeDoc(paras), nomeArq);
+  await downloadDocx(makeDoc(paras, { medico: v('rel-medico'), crm: v('rel-crm'), local: localAtual() }), nomeArq);
   salvarHistorico(); registrarLog('Relatório Word', v('rel-nome'), nomeArq);
 }
 
@@ -2687,13 +2711,9 @@ async function gerarWordReceita() {
     { type: 'multiline', value: v('rx-prescricao') || '—' },
     ...(v('rx-orientacoes') ? [{ type: 'heading', text: 'Orientações ao Paciente' }, { type: 'multiline', value: v('rx-orientacoes') }] : []),
     ...(v('rx-obs') ? [{ type: 'heading', text: 'Observações' }, { type: 'multiline', value: v('rx-obs') }] : []),
-    { type: 'separator' },
-    { type: 'label-value', label: 'Médico(a)', value: v('rx-medico') },
-    { type: 'label-value', label: 'CRM', value: v('rx-crm') },
-    { type: 'signature', text: v('rx-medico') + (v('rx-crm') ? ' — ' + v('rx-crm') : '') },
   ];
   const nomeArqRx = `receita-${(v('rx-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
-  await downloadDocx(makeDoc(paras), nomeArqRx);
+  await downloadDocx(makeDoc(paras, { medico: v('rx-medico'), crm: v('rx-crm'), local: localAtual() }), nomeArqRx);
   registrarLog('Receita Word', v('rx-nome'), nomeArqRx);
   salvarReceitaHistorico();
 }
@@ -2743,7 +2763,6 @@ async function gerarWordLab() {
   const nomePaciente = v('lab-nome') || 'paciente';
   const medico = v('lab-medico');
   const crm = v('lab-crm');
-  const assinatura = medico + (crm ? ' — ' + crm : '');
 
   // Coletar todos os exames marcados (exceto especiais com doc próprio) em lista plana
   const especiais = new Set(['pkg-hlab27', 'pkg-igra']);
@@ -2779,12 +2798,8 @@ async function gerarWordLab() {
       paras.push({ type: 'heading', text: 'Indicação Clínica' });
       paras.push({ type: 'multiline', value: v('lab-indicacao') });
     }
-    paras.push({ type: 'separator' });
-    paras.push({ type: 'label-value', label: 'Médico(a)', value: medico });
-    paras.push({ type: 'label-value', label: 'CRM', value: crm });
-    paras.push({ type: 'signature', text: assinatura });
     const nomeArqLab = `exames-lab-${nomePaciente.replace(/\s+/g,'-')}.docx`;
-    await downloadDocx(makeDoc(paras), nomeArqLab);
+    await downloadDocx(makeDoc(paras, { medico, crm, local: localAtual() }), nomeArqLab);
     registrarLog('Exames Lab Word', nomePaciente, nomeArqLab);
   }
 
@@ -2803,12 +2818,8 @@ async function gerarWordLab() {
       { type: 'bullet', text: 'HLA-B27' },
       { type: 'heading', text: 'Indicação Clínica' },
       { type: 'multiline', value: justHla },
-      { type: 'separator' },
-      { type: 'label-value', label: 'Médico(a)', value: medico },
-      { type: 'label-value', label: 'CRM', value: crm },
-      { type: 'signature', text: assinatura },
     ];
-    await downloadDocx(makeDoc(parasHla), `HLA-B27-${nomePaciente.replace(/\s+/g,'-')}.docx`);
+    await downloadDocx(makeDoc(parasHla, { medico, crm, local: localAtual() }), `HLA-B27-${nomePaciente.replace(/\s+/g,'-')}.docx`);
   }
 
   // Documento separado para IGRA (Quantiferon)
@@ -2827,12 +2838,8 @@ async function gerarWordLab() {
       { type: 'bullet', text: 'IGRA (Quantiferon)' },
       { type: 'heading', text: 'Indicação Clínica' },
       { type: 'multiline', value: justIgra },
-      { type: 'separator' },
-      { type: 'label-value', label: 'Médico(a)', value: medico },
-      { type: 'label-value', label: 'CRM', value: crm },
-      { type: 'signature', text: assinatura },
     ];
-    await downloadDocx(makeDoc(parasIgra), `IGRA-Quantiferon-${nomePaciente.replace(/\s+/g,'-')}.docx`);
+    await downloadDocx(makeDoc(parasIgra, { medico, crm, local: localAtual() }), `IGRA-Quantiferon-${nomePaciente.replace(/\s+/g,'-')}.docx`);
   }
 }
 
@@ -2865,12 +2872,8 @@ async function gerarWordImg() {
     paras.push({ type: 'heading', text: 'Indicação Clínica / Quesitos' });
     paras.push({ type: 'multiline', value: v('img-indicacao') });
   }
-  paras.push({ type: 'separator' });
-  paras.push({ type: 'label-value', label: 'Médico(a)', value: v('img-medico') });
-  paras.push({ type: 'label-value', label: 'CRM', value: v('img-crm') });
-  paras.push({ type: 'signature', text: v('img-medico') + (v('img-crm') ? ' — ' + v('img-crm') : '') });
   const nomeArqImg = `exames-imagem-${(v('img-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
-  await downloadDocx(makeDoc(paras), nomeArqImg);
+  await downloadDocx(makeDoc(paras, { medico: v('img-medico'), crm: v('img-crm'), local: localAtual() }), nomeArqImg);
   registrarLog('Exames Imagem Word', v('img-nome'), nomeArqImg);
   salvarImgExamesHistorico();
 }
