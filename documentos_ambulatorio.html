@@ -268,6 +268,8 @@ body{padding-bottom:64px}
 .print-flat-list{display:none}
 .print-flat-item{font-size:13px;padding:3px 0;color:#1a202c;line-height:1.5}
 .print-flat-item::before{content:"• ";color:#1a56a0;font-weight:700}
+.print-categoria-titulo{font-size:11px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #d1dae8;padding:2px 0 3px;margin-top:12px}
+.print-categoria-titulo:first-child{margin-top:0}
 
 /* Ocultar cabeçalho da tabela de medicamentos */
 .med-table thead{display:none}
@@ -1495,6 +1497,78 @@ const PACOTES_LAB = [
   }
 ];
 
+// ─── Agrupamento por categoria na impressão de exames laboratoriais ──────────
+// Só afeta o documento impresso (a tela continua com os pacotes de seleção
+// de sempre) — reagrupa os exames marcados, não importa de qual pacote
+// vieram, nestas 6 categorias fixas (+ "Outros" para o que não se encaixa,
+// como itens de "Meus Exames" ou texto livre). Ordem também é a ordem de
+// impressão.
+const ORDEM_CATEGORIAS_LAB = ['Autoanticorpos', 'Função Renal e Eletrólitos', 'Enzimas Hepáticas', 'Metabólico Geral', 'Sorologias', 'Exames de Urina', 'Outros'];
+const CATEGORIA_EXAME_LAB = {
+  // Autoanticorpos
+  'FAN': 'Autoanticorpos', 'Anti-SSA/Ro': 'Autoanticorpos', 'Anti-SSB/La': 'Autoanticorpos',
+  'Anti-RNP': 'Autoanticorpos', 'Anti-dsDNA': 'Autoanticorpos', 'Anti-Sm': 'Autoanticorpos',
+  'Fator reumatoide': 'Autoanticorpos', 'Anti-CCP': 'Autoanticorpos', 'ANCA': 'Autoanticorpos',
+  'Anti-Mieloperoxidase (MPO)': 'Autoanticorpos', 'Anti-Proteinase 3 (PR3)': 'Autoanticorpos',
+  'Anti-beta2-glicoproteína IgG': 'Autoanticorpos', 'Anti-beta2-glicoproteína IgM': 'Autoanticorpos',
+  'Anticardiolipina IgG': 'Autoanticorpos', 'Anticardiolipina IgM': 'Autoanticorpos', 'Anticoagulante Lúpico': 'Autoanticorpos',
+  'Anti-SCL70': 'Autoanticorpos', 'Anticorpo antimúsculo liso': 'Autoanticorpos', 'Anti-LKM-1': 'Autoanticorpos',
+  'Anti-SLA/LP': 'Autoanticorpos', 'Antimitocôndria': 'Autoanticorpos',
+  'Anti-transglutaminase tecidual IgA': 'Autoanticorpos', 'Anti-endomísio IgA': 'Autoanticorpos',
+  'Anti-peptídeo de gliadina deamidado IgG/IgA': 'Autoanticorpos',
+  'C3': 'Autoanticorpos', 'C4': 'Autoanticorpos',
+  // Função Renal e Eletrólitos
+  'Creatinina': 'Função Renal e Eletrólitos', 'Ureia': 'Função Renal e Eletrólitos',
+  'Sódio': 'Função Renal e Eletrólitos', 'Potássio': 'Função Renal e Eletrólitos',
+  'Magnésio': 'Função Renal e Eletrólitos', 'Cálcio': 'Função Renal e Eletrólitos',
+  'Fósforo': 'Função Renal e Eletrólitos', 'Ácido úrico': 'Função Renal e Eletrólitos',
+  // Enzimas Hepáticas
+  'TGO': 'Enzimas Hepáticas', 'TGO (AST)': 'Enzimas Hepáticas',
+  'TGP': 'Enzimas Hepáticas', 'TGP (ALT)': 'Enzimas Hepáticas',
+  'Fosfatase Alcalina': 'Enzimas Hepáticas', 'Gama GT': 'Enzimas Hepáticas',
+  'Bilirrubina total e frações': 'Enzimas Hepáticas',
+  // Sorologias
+  'Anti-HBs': 'Sorologias', 'HBsAg': 'Sorologias', 'Anti-HBc total': 'Sorologias',
+  'Anti-HBc IgM': 'Sorologias', 'Anti-HCV': 'Sorologias', 'HIV 1 e 2': 'Sorologias', 'VDRL': 'Sorologias',
+  // Exames de Urina
+  'Urina 1': 'Exames de Urina', 'Urina tipo 1': 'Exames de Urina', 'Urocultura': 'Exames de Urina',
+  'Relação proteinúria/creatinúria': 'Exames de Urina', 'Dismorfismo eritrocitário': 'Exames de Urina',
+  // Metabólico Geral (parte geral + o que não tem categoria própria)
+  'Hemograma': 'Metabólico Geral', 'Hemograma completo': 'Metabólico Geral', 'VHS': 'Metabólico Geral',
+  'Proteina C Reativa': 'Metabólico Geral', 'Proteína C Reativa': 'Metabólico Geral',
+  'PTH': 'Metabólico Geral', 'TSH': 'Metabólico Geral', 'T4 livre': 'Metabólico Geral',
+  'Eletroforese de proteínas': 'Metabólico Geral',
+  '25-OH-Vitamina D': 'Metabólico Geral', 'Vitamina D (25-OH)': 'Metabólico Geral', 'Vitamina B12': 'Metabólico Geral',
+  'Ferro': 'Metabólico Geral', 'Ferritina': 'Metabólico Geral',
+  'Hemoglobina glicada': 'Metabólico Geral', 'Glicemia em jejum': 'Metabólico Geral',
+  'Colesterol total e frações': 'Metabólico Geral', 'Triglicérides': 'Metabólico Geral',
+  'Creatinoquinase (CK)': 'Metabólico Geral',
+  'Haptoglobina': 'Metabólico Geral', 'Reticulócitos': 'Metabólico Geral', 'DHL (LDH)': 'Metabólico Geral', 'Coombs Direto': 'Metabólico Geral',
+  'Imunoglobulina IgG': 'Metabólico Geral', 'Imunoglobulina IgM': 'Metabólico Geral',
+  'Imunoglobulina IgA': 'Metabólico Geral', 'Imunoglobulina IgE': 'Metabólico Geral',
+};
+
+// Agrupa uma lista de nomes de exames já marcados nas categorias acima,
+// ordenando alfabeticamente dentro de cada categoria, e devolve a
+// sequência pronta para paginarListaExames (strings + marcadores
+// {categoria} intercalados).
+function agruparExamesPorCategoria(exames) {
+  const grupos = {};
+  ORDEM_CATEGORIAS_LAB.forEach(c => { grupos[c] = []; });
+  exames.forEach(nome => {
+    const cat = CATEGORIA_EXAME_LAB[nome] || 'Outros';
+    grupos[cat].push(nome);
+  });
+  const entradas = [];
+  ORDEM_CATEGORIAS_LAB.forEach(cat => {
+    if (!grupos[cat].length) return;
+    grupos[cat].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    entradas.push({ categoria: cat });
+    grupos[cat].forEach(nome => entradas.push(nome));
+  });
+  return entradas;
+}
+
 // ─── Exames de imagem (grade simples) ─────────────────────────────────────────
 const PACOTES_IMG = [
   {
@@ -1862,12 +1936,22 @@ function copiarValoresClone(orig, clone) {
   origCampos.forEach((campo, i) => { if (cloneCampos[i]) cloneCampos[i].value = campo.value; });
 }
 
-// Divide uma lista de exames (já ordenada) em páginas cheias de
-// .doc-wrapper, cada uma com o mesmo cabeçalho (nome/data/CID) e o mesmo
-// rodapé (.print-rodape), para que nenhuma página impressa fique sem a
-// identificação do paciente ou o rodapé do médico/estabelecimento — problema
-// que ocorria quando a lista de exames excedia uma página e "vazava" para a
-// seguinte sem repetir cabeçalho/rodapé.
+// Cada item de "exames" é um texto simples (exame) ou, para listas
+// agrupadas por categoria (ex.: exames laboratoriais), um objeto
+// {categoria:'Autoanticorpos'} — marca o início de um novo grupo com
+// subtítulo. renderEntradaHtml()/alturaEntradaPx() tratam os dois casos.
+function renderEntradaHtml(entrada) {
+  if (typeof entrada === 'object') return `<div class="print-categoria-titulo">${entrada.categoria}</div>`;
+  return `<div class="print-flat-item">${entrada}</div>`;
+}
+
+// Divide uma lista de exames (já ordenada, com ou sem cabeçalhos de
+// categoria) em páginas cheias de .doc-wrapper, cada uma com o mesmo
+// cabeçalho (nome/data/CID) e o mesmo rodapé (.print-rodape), para que
+// nenhuma página impressa fique sem a identificação do paciente ou o
+// rodapé do médico/estabelecimento — problema que ocorria quando a lista
+// de exames excedia uma página e "vazava" para a seguinte sem repetir
+// cabeçalho/rodapé.
 function paginarListaExames(pageId, flatListId, exames) {
   const pageEl = document.getElementById(pageId);
   const flatListEl = document.getElementById(flatListId);
@@ -1885,38 +1969,41 @@ function paginarListaExames(pageId, flatListId, exames) {
     return;
   }
 
-  // Mede a altura real de cada item (a fonte/padding do .print-flat-item já
-  // valem fora do modo impressão, só o "display" muda por media query).
+  // Mede a altura real de cada item/categoria (a fonte/padding do
+  // .print-flat-item e .print-categoria-titulo já valem fora do modo
+  // impressão, só o "display" muda por media query).
   const medidor = document.createElement('div');
   medidor.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;width:605px';
   medidor.className = 'print-flat-list';
   medidor.style.display = 'block';
   document.body.appendChild(medidor);
-  const alturas = exames.map(texto => {
-    const item = document.createElement('div');
-    item.className = 'print-flat-item';
-    item.textContent = texto;
-    medidor.appendChild(item);
-    const h = item.getBoundingClientRect().height;
-    medidor.removeChild(item);
+  const alturas = exames.map(entrada => {
+    medidor.innerHTML = renderEntradaHtml(entrada);
+    const h = medidor.firstElementChild.getBoundingClientRect().height;
+    medidor.innerHTML = '';
     return h;
   });
   document.body.removeChild(medidor);
 
   const alturaDisponivel = ALTURA_PAGINA_PX - RESERVA_TOPO_BASE_PX - RESERVA_CABECALHO_RODAPE_PX;
 
-  // Agrupa os exames em blocos que cabem numa página cada
+  // Agrupa os exames em blocos que cabem numa página cada. Um cabeçalho de
+  // categoria nunca fica sozinho ao final de uma página: se ele e o
+  // próximo item não couberem juntos, os dois avançam para a página
+  // seguinte.
   const paginas = [];
   let atual = [];
   let alturaAtual = 0;
-  exames.forEach((texto, i) => {
+  exames.forEach((entrada, i) => {
     const h = alturas[i];
-    if (atual.length > 0 && alturaAtual + h > alturaDisponivel) {
+    const ehCategoria = typeof entrada === 'object';
+    const hCombinado = ehCategoria && i + 1 < exames.length ? h + alturas[i + 1] : h;
+    if (atual.length > 0 && alturaAtual + hCombinado > alturaDisponivel) {
       paginas.push(atual);
       atual = [];
       alturaAtual = 0;
     }
-    atual.push(texto);
+    atual.push(entrada);
     alturaAtual += h;
   });
   if (atual.length > 0) paginas.push(atual);
@@ -1926,7 +2013,7 @@ function paginarListaExames(pageId, flatListId, exames) {
 
   if (paginas.length <= 1) {
     // Cabe tudo numa página só: mantém o wrapper original como está.
-    flatListEl.innerHTML = paginas[0].map(e => `<div class="print-flat-item">${e}</div>`).join('');
+    flatListEl.innerHTML = paginas[0].map(renderEntradaHtml).join('');
     return;
   }
 
@@ -1947,7 +2034,7 @@ function paginarListaExames(pageId, flatListId, exames) {
     }
     const listaClone = document.createElement('div');
     listaClone.className = 'print-flat-list';
-    listaClone.innerHTML = fatia.map(e => `<div class="print-flat-item">${e}</div>`).join('');
+    listaClone.innerHTML = fatia.map(renderEntradaHtml).join('');
     clone.appendChild(listaClone);
     if (isUltima && tailBlock) {
       const tailClone = tailBlock.cloneNode(true);
@@ -2088,8 +2175,7 @@ function prepararImpressao(ids) {
     });
     const adicLab = (document.getElementById('lab-adicional')?.value || '').trim();
     if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
-    exames.sort((a, b) => a.localeCompare(b, 'pt-BR'));
-    paginarListaExames('exames-lab', 'lab-print-flat', exames);
+    paginarListaExames('exames-lab', 'lab-print-flat', agruparExamesPorCategoria(exames));
   }
 
   // ── Páginas especiais HLA-B27 e IGRA ──
