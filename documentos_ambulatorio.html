@@ -1435,33 +1435,28 @@ body{padding-bottom:64px}
 // ─── Pacotes de exames laboratoriais ──────────────────────────────────────────
 const PACOTES_LAB = [
   {
-    id: 'pkg-les', titulo: 'Autoanticorpos LES',
-    exames: ['FAN','Anti-SSA (Anti-Ro)','Anti-SSB (Anti-La)','Anti-Sm','Anti-dsDNA','Anti-RNP']
-  },
-  {
-    id: 'pkg-ar', titulo: 'Autoanticorpos Artrite Reumatoide',
-    exames: ['Fator Reumatoide','Anti-CCP']
-  },
-  {
-    id: 'pkg-vasc', titulo: 'Autoanticorpos Vasculites',
-    exames: ['ANCA','Anti-Proteinase 3 (PR3)','Anti-Mieloperoxidase (MPO)']
-  },
-  {
-    id: 'pkg-saf', titulo: 'Autoanticorpos SAF',
-    exames: ['Anticoagulante Lúpico','Anti-beta2-glicoproteína IgM','Anti-beta2-glicoproteína IgG','Anticardiolipina IgM','Anticardiolipina IgG']
+    id: 'pkg-autoanticorpos', titulo: 'Autoanticorpos',
+    exames: [
+      'FAN','Anti-SSA/Ro','Anti-SSB/La','Anti-RNP','Anti-dsDNA','Anti-Sm',
+      'Fator reumatoide','Anti-CCP','ANCA','Anti-Mieloperoxidase (MPO)','Anti-Proteinase 3 (PR3)',
+      'Anti-beta2-glicoproteína IgG','Anti-beta2-glicoproteína IgM','Anticardiolipina IgG','Anticardiolipina IgM','Anticoagulante Lúpico',
+      'Anti-SCL70','Anticorpo antimúsculo liso','Anti-LKM-1','Anti-SLA/LP','Antimitocôndria',
+      'Anti-transglutaminase tecidual IgA','Anti-endomísio IgA','Anti-peptídeo de gliadina deamidado IgG/IgA'
+    ]
   },
   {
     id: 'pkg-hemolise', titulo: 'Provas de Hemólise',
     exames: ['Haptoglobina','Reticulócitos','DHL (LDH)','Coombs Direto']
   },
   {
-    id: 'pkg-seg-ar', titulo: 'Seguimento AR',
+    id: 'pkg-metabolico', titulo: 'Metabólico Geral',
     exames: [
-      'Hemograma','Proteína C Reativa','VHS','Creatinina','Ureia',
-      'Sódio','Potássio','Cálcio','Magnésio','Fósforo',
-      'TGO (AST)','TGP (ALT)','Gama GT','Fosfatase Alcalina','Bilirrubina total e frações',
-      'Colesterol total e frações','Triglicérides','Hemoglobina glicada','Glicemia em jejum',
-      'Creatinoquinase (CK)','Vitamina D (25-OH)','Vitamina B12'
+      'Hemograma','VHS','Proteina C Reativa','Creatinina','Ureia',
+      'Sódio','Potássio','Magnésio','Cálcio','TGO','TGP',
+      'Fosfatase Alcalina','Gama GT','Bilirrubina total e frações','PTH',
+      'TSH','T4 livre','Eletroforese de proteínas','25-OH-Vitamina D','Vitamina B12',
+      'Ferro','Ferritina','Hemoglobina glicada','Glicemia em jejum',
+      'Colesterol total e frações','Triglicérides','Ácido úrico','Urina 1','Urocultura'
     ]
   },
   {
@@ -1482,16 +1477,6 @@ const PACOTES_LAB = [
     exames: ['Anti-HBs','HBsAg','Anti-HBc total','Anti-HBc IgM','Anti-HCV','HIV 1 e 2','VDRL']
   },
   {
-    id: 'pkg-osseo', titulo: 'Perfil Ósseo',
-    exames: [
-      'Hemograma','Creatinina','Ureia',
-      'Sódio','Potássio','Cálcio',
-      'Proteínas totais e frações','Fósforo','Fosfatase Alcalina',
-      'Gama GT','TGP (ALT)','TGO (AST)',
-      'PTH','TSH','T4 livre','Urina tipo 1'
-    ]
-  },
-  {
     id: 'pkg-imunoglobulinas', titulo: 'Imunoglobulinas',
     exames: ['Imunoglobulina IgG','Imunoglobulina IgM','Imunoglobulina IgA','Imunoglobulina IgE']
   },
@@ -1505,39 +1490,8 @@ const PACOTES_LAB = [
     exames: ['IGRA (Quantiferon)']
   },
   {
-    id: 'pkg-prebio', titulo: 'Pré-Biológico',
-    exames: [
-      'Hemograma completo','Creatinina','Ureia',
-      'TGO (AST)','TGP (ALT)','Gama GT','Fosfatase Alcalina',
-      'Anti-HBs','HBsAg','Anti-HBc total','Anti-HCV','HIV 1 e 2','VDRL',
-      'Glicemia em jejum','Colesterol total e frações','Triglicérides',
-      'Proteína C Reativa','VHS'
-    ]
-  },
-  {
-    id: 'pkg-mtx', titulo: 'Monitoramento MTX/LEF',
-    exames: [
-      'Hemograma completo','TGO (AST)','TGP (ALT)','Gama GT',
-      'Fosfatase Alcalina','Bilirrubina total e frações',
-      'Albumina','Creatinina','Ureia'
-    ]
-  },
-  {
     id: 'pkg-ativles', titulo: 'Atividade LES',
-    exames: [
-      'Anti-dsDNA','C3','C4','Hemograma completo','Creatinina',
-      'Relação proteinúria/creatinúria','Dismorfismo eritrocitário',
-      'Proteína C Reativa','VHS'
-    ]
-  },
-  {
-    id: 'pkg-ss', titulo: 'Triagem Síndrome de Sjögren',
-    exames: [
-      'FAN','Anti-SSA (Anti-Ro)','Anti-SSB (Anti-La)',
-      'Hemograma completo','Creatinina','TGO (AST)','TGP (ALT)',
-      'TSH','Eletroforese de proteínas','Imunoglobulina IgG',
-      'Proteína C Reativa','VHS'
-    ]
+    exames: ['C3','C4','Relação proteinúria/creatinúria','Dismorfismo eritrocitário']
   }
 ];
 
