@@ -182,6 +182,18 @@ body{padding-bottom:64px}
 .print-rodape{display:none}
 @media print{
   .print-rodape{display:block;margin-top:auto;padding-top:6px;border-top:1px solid #2d3748;font-size:11px;color:#4a5568;text-align:left}
+  /* Usado nas páginas geradas pela paginação em JS (paginarListaExames /
+     paginarBlocosLivres): "margin-top:auto" só é confiável quando o
+     Chromium sabe, de antemão, que o conteúdo inteiro cabe numa única
+     página física — quando uma página tem conteúdo raro/excepcionalmente
+     grande (ex.: uma indicação clínica muito longa) que ultrapassa um
+     pouco a margem de segurança já reservada, o rodapé "fixo no fim"
+     pode ficar mal posicionado e sobrepor o texto. Nas páginas geradas
+     pela paginação, o rodapé então fica em fluxo normal (sem
+     margin-top:auto) — sempre aparece, logo depois do conteúdo, mesmo
+     que não fique perfeitamente colado na margem inferior física.
+   */
+  .print-rodape.rodape-fluxo{margin-top:24px}
   .signature-line{display:none!important}
 }
 
@@ -198,6 +210,16 @@ body{padding-bottom:64px}
 
   /* ── Aparência limpa ── */
   .doc-wrapper{box-shadow:none;border:none;border-radius:0;padding:16px 0 3.5cm;margin:0;display:flex;flex-direction:column;min-height:25cm}
+  /* Sem isto, os filhos diretos do .doc-wrapper (flex-column) usam o
+     flex-shrink padrão (1): quando o conteúdo de um bloco (ex.: uma
+     anamnese longa em #rel-corpo-print, ou a lista de exames em
+     .print-flat-list) ultrapassa a altura de uma página, o Chromium pode
+     comprimir/cortar visualmente esse item em vez de deixá-lo fluir para
+     a página seguinte — texto simplesmente desaparecia no meio do
+     documento impresso. flex-shrink:0 garante que cada bloco sempre
+     ocupe sua altura real de conteúdo, permitindo a quebra de página.
+   */
+  .doc-wrapper > *{flex-shrink:0}
   .signature-line{margin-top:auto}
   .doc-header{border-bottom:none;margin-bottom:18px;display:flex;align-items:center;gap:14px;padding-bottom:14px;position:relative}
   .doc-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:#1a56a0;box-shadow:0 3px 0 0 #e8eef7}
@@ -241,6 +263,17 @@ body{padding-bottom:64px}
 
   /* Textareas vazias não imprimem */
   .field-group textarea:placeholder-shown{display:none!important}
+  /* Textareas com texto longo: um <textarea> é um widget com scroll
+     nativo — mesmo com overflow:visible no CSS, o navegador nunca mostra
+     o que passa da altura da caixa (ela só rola, não "vaza" como uma div
+     normal). Como a altura da caixa é calculada durante a digitação (com
+     a fonte/largura da tela, maiores que as de impressão), o texto podia
+     ficar cortado silenciosamente ao imprimir. converterTextareasParaPrintText()
+     troca cada textarea visível por um <div> equivalente antes de
+     imprimir — a caixa .print-textarea-valor abaixo nunca corta texto,
+     porque cresce livremente com o conteúdo, como qualquer texto normal.
+   */
+  .field-group textarea.print-substituido{display:none!important}
 
   /* Cabeçalhos condicionais */
   .no-print{display:none!important}
@@ -255,7 +288,16 @@ body{padding-bottom:64px}
 
   /* Quebra de página entre documentos */
   .page.print-selected .doc-wrapper{page-break-after:always}
-  .page.print-selected:last-of-type .doc-wrapper{page-break-after:avoid}
+  /* :last-of-type não funciona aqui: ".page" é só uma classe, e sempre
+     existem outras <div class="page"> depois no HTML (ex.: os templates
+     ocultos de HLA-B27/IGRA) — :last-of-type olha a posição entre TODAS
+     as divs irmãs, não entre as com a classe "page", então nunca
+     "encontrava" a página realmente selecionada por último, e sempre
+     sobrava uma página em branco extra no fim da impressão. A marcação
+     do .doc-wrapper realmente final é feita em JS (ver
+     marcarUltimoDocWrapper, chamado ao fim de prepararImpressao).
+   */
+  .ultimo-doc-wrapper{page-break-after:avoid!important}
 
   @page{size:A4;margin:2cm 2.5cm}
 }
@@ -268,6 +310,12 @@ body{padding-bottom:64px}
 .print-flat-list{display:none}
 .print-flat-item{font-size:13px;padding:3px 0;color:#1a202c;line-height:1.5}
 .print-flat-item::before{content:"• ";color:#1a56a0;font-weight:700}
+
+/* Valor de textarea substituído na impressão (ver converterTextareasParaPrintText) */
+.print-textarea-valor{display:none}
+@media print{
+  .print-textarea-valor{display:block;white-space:pre-wrap;font-size:13px;line-height:1.5;color:#1a202c;padding:2px 0}
+}
 .print-categoria-titulo{font-size:11px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #d1dae8;padding:2px 0 3px;margin-top:12px}
 .print-categoria-titulo:first-child{margin-top:0}
 
@@ -385,6 +433,7 @@ body{padding-bottom:64px}
   #receita-especial.page.print-selected .doc-wrapper{display:block!important}
   .rec-esp-wrapper{padding:0;box-shadow:none;border:none;background:transparent}
   .rec-via{padding:16px 0 3.5cm;border:none;border-radius:0;box-shadow:none;margin:0;display:flex;flex-direction:column;min-height:25cm}
+  .rec-via > *{flex-shrink:0}
   #rec-esp-via1{page-break-after:always}
   .rec-esp-atalhos{display:none!important}
   .rec-esp-campo input{border:none;border-bottom:1px solid #ccc;border-radius:0;background:transparent;padding:2px 0;font-size:12px}
@@ -1924,9 +1973,20 @@ const ESPECIAIS_PRINT = ['print-hlab27','print-igra'];
 // .doc-wrapper (16px topo + 3.5cm base) e uma folga conservadora para o
 // bloco de cabeçalho (paciente/CID) e para o rodapé — propositalmente
 // subestimada para nunca deixar o rodapé faltar por excesso de itens.
+//
+// 400px vem de medição real em modo impressão (Chromium, emulateMedia
+// 'print'): o cabeçalho impresso (logo/título + campos do paciente + CID)
+// sozinho já mede ~240px no Relatório e ~290px no Relatório Médico (mais
+// campos), e o rodapé compacto mais ~30px — deixando ~40-60px de folga de
+// segurança. Um valor menor (220px, usado antes) deixava a altura real do
+// cabeçalho + rodapé ULTRAPASSAR o que a conta previa, fazendo a página
+// (com min-height:25cm mas sem teto) crescer além da área útil de uma
+// folha A4 (~971px) e "vazar" para uma página extra sem repetir
+// cabeçalho/rodapé — exatamente o bug relatado (rodapé sumindo em
+// páginas alternadas de uma lista longa).
 const ALTURA_PAGINA_PX = 25 * 37.7953; // 25cm em px
 const RESERVA_TOPO_BASE_PX = 16 + (3.5 * 37.7953);
-const RESERVA_CABECALHO_RODAPE_PX = 220;
+const RESERVA_CABECALHO_RODAPE_PX = 400;
 
 // cloneNode não copia o valor digitado pelo usuário em inputs/textareas (só
 // o value inicial do HTML) — copia manualmente antes de descartar os ids.
@@ -2042,7 +2102,7 @@ function paginarListaExames(pageId, flatListId, exames) {
       clone.appendChild(tailClone);
     }
     const rodape = document.createElement('div');
-    rodape.className = 'print-rodape';
+    rodape.className = 'print-rodape rodape-fluxo';
     clone.appendChild(rodape);
     // Remove ids duplicados dos campos clonados (são só para exibição na impressão)
     clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
@@ -2130,7 +2190,7 @@ function paginarBlocosLivres(pageId, corpoId) {
       clone.appendChild(tailClone);
     }
     const rodape = document.createElement('div');
-    rodape.className = 'print-rodape';
+    rodape.className = 'print-rodape rodape-fluxo';
     clone.appendChild(rodape);
     clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
     anchor.insertAdjacentElement('afterend', clone);
@@ -2138,10 +2198,36 @@ function paginarBlocosLivres(pageId, corpoId) {
   });
 }
 
+// Um <textarea> tem rolagem nativa: texto além da altura da caixa nunca
+// aparece, mesmo com CSS "overflow:visible" — e a altura da caixa é
+// calculada durante a digitação, com a largura/fonte da tela (maiores que
+// as de impressão), então um texto longo podia ficar cortado silenciosamente
+// ao imprimir. Troca cada textarea visível (com conteúdo) por uma <div>
+// equivalente (que cresce livremente, sem cortar nada) antes de imprimir.
+// Roda antes da paginação, para que os clones de página (cloneNode) já
+// levem a div junto. Idempotente — pode ser chamada de novo sem duplicar.
+function converterTextareasParaPrintText() {
+  desfazerConversaoTextareasPrint();
+  document.querySelectorAll('.field-group textarea').forEach(ta => {
+    if (!ta.value.trim()) return;
+    const div = document.createElement('div');
+    div.className = 'print-textarea-valor';
+    div.textContent = ta.value;
+    ta.insertAdjacentElement('afterend', div);
+    ta.classList.add('print-substituido');
+  });
+}
+
+function desfazerConversaoTextareasPrint() {
+  document.querySelectorAll('.print-textarea-valor').forEach(el => el.remove());
+  document.querySelectorAll('textarea.print-substituido').forEach(el => el.classList.remove('print-substituido'));
+}
+
 function prepararImpressao(ids) {
   // Seções colapsadas na tela sempre imprimem por completo, independente do
   // estado de colapso — o colapso é só uma conveniência de visualização.
   document.body.classList.remove('secoes-colapsam');
+  converterTextareasParaPrintText();
 
   document.querySelectorAll('.page').forEach(el => el.classList.remove('print-selected'));
   ids.forEach(id => document.getElementById(id)?.classList.add('print-selected'));
@@ -2265,8 +2351,23 @@ function prepararImpressao(ids) {
     el.innerHTML = `<strong>${medico}</strong>${crm ? ' | ' + crm : ''}${rqe ? ' | RQE ' + rqe : ''} | Especialidade: Reumatologia<br>${local} | ${dataHoje}`;
   });
 
+  marcarUltimoDocWrapper();
+
   document._tituloOriginal = document.title;
   document.title = ' ';
+}
+
+// Marca o .doc-wrapper visível realmente final entre todos os documentos
+// selecionados para impressão (considerando as páginas extras geradas
+// pela paginação), para que só ele receba page-break-after:avoid — evita
+// uma página em branco sobrando no fim da impressão.
+function marcarUltimoDocWrapper() {
+  document.querySelectorAll('.ultimo-doc-wrapper').forEach(el => el.classList.remove('ultimo-doc-wrapper'));
+  let ultimo = null;
+  document.querySelectorAll('.page.print-selected .doc-wrapper').forEach(w => {
+    if (w.style.display !== 'none') ultimo = w;
+  });
+  if (ultimo) ultimo.classList.add('ultimo-doc-wrapper');
 }
 
 function limparImpressao() {
@@ -2278,6 +2379,8 @@ function limparImpressao() {
   // precisou de mais de uma página).
   document.querySelectorAll('.doc-wrapper[data-print-clone]').forEach(el => el.remove());
   document.querySelectorAll('#exames-lab .doc-wrapper, #exames-img .doc-wrapper, #relatorio .doc-wrapper, #receita .doc-wrapper').forEach(el => { el.style.display = ''; });
+  document.querySelectorAll('.ultimo-doc-wrapper').forEach(el => el.classList.remove('ultimo-doc-wrapper'));
+  desfazerConversaoTextareasPrint();
   document.body.classList.add('secoes-colapsam');
   if (document._tituloOriginal !== undefined) {
     document.title = document._tituloOriginal;
