@@ -552,6 +552,27 @@ const FINDING_DICT = {
   'Alopecia não cicatricial': { type: 'clínico', aliases: ['alopecia nao cicatricial', 'alopecia difusa nao cicatricial'] },
   'Síndrome DRESS': { type: 'clínico', aliases: ['sindrome dress', 'dress'] },
   'Crise (flare) de doença': { type: 'clínico', aliases: ['crise de doenca', 'flare de doenca', 'crises da doenca'] },
+  // Semiologia da febre familiar do Mediterrâneo. A doença é definida por
+  // serosite recorrente, e a biblioteca tinha 'Acometimento pleural' mas
+  // nenhuma das três serosas nomeadas, nem o eritema erisipeloide (sua
+  // manifestação cutânea clássica), nem a amiloidose AA — que é a
+  // complicação que o tratamento existe para prevenir.
+  'Peritonite': { type: 'clínico', aliases: ['peritonite'] },
+  'Pleurite': { type: 'clínico', aliases: ['pleurite'] },
+  'Pericardite': { type: 'clínico', aliases: ['pericardite'] },
+  'Dor abdominal': { type: 'clínico', aliases: ['dor abdominal'] },
+  'Dor torácica': { type: 'clínico', aliases: ['dor toracica'] },
+  'Eritema erisipeloide': { type: 'clínico', aliases: ['eritema erisipeloide', 'eritema tipo erisipela', 'eritema erisipela-like'] },
+  'Amiloidose': { type: 'clínico', aliases: ['amiloidose aa', 'amiloidose secundaria', 'amiloidose'] },
+  'Proteína amiloide A sérica (SAA) elevada': { type: 'laboratorial', aliases: ['proteina amiloide a serica', 'amiloide a serica', 'saa serica'] },
+  'Aftose oral': { type: 'clínico', aliases: ['aftose oral', 'aftas orais', 'estomatite aftosa'] },
+  'Faringite': { type: 'clínico', aliases: ['faringite'] },
+  'Rash urticariforme': { type: 'clínico', aliases: ['rash urticariforme', 'exantema urticariforme', 'erupcao urticariforme'] },
+  'Rash maculopapular': { type: 'clínico', aliases: ['rash maculopapular', 'exantema maculopapular'] },
+  'Sacroileíte': { type: 'imagem', aliases: ['sacroileite'] },
+  'Mialgia': { type: 'clínico', aliases: ['mialgia', 'mialgias'] },
+  'Dermatose neutrofílica': { type: 'clínico', aliases: ['dermatose neutrofilica', 'dermatoses neutrofilicas'] },
+  'Osteomielite não bacteriana crônica': { type: 'clínico', aliases: ['osteomielite nao bacteriana cronica', 'osteomielite cronica nao infecciosa'] },
   'Atrofia de íris':{ type: 'clínico', aliases: ['atrofia de iris'] },
 };
 
@@ -604,6 +625,12 @@ const DISEASE_MENTION_ALIASES = {
   // desfechos distintos — o alias precisa ser o nome completo da sistemica.
   'Lúpus Eritematoso Sistêmico': ['lupus eritematoso sistemico', 'les'],
   'Lúpus Eritematoso Cutâneo': ['lupus eritematoso cutaneo', 'lupus cutaneo', 'cle'],
+  'Febre Familiar do Mediterrâneo': ['febre familiar do mediterraneo', 'fmf'],
+  'Doença Autoinflamatória Associada à Pirina (PAAD)': ['doenca autoinflamatoria associada a pirina', 'paad'],
+  'Síndrome PFAPA': ['sindrome pfapa', 'pfapa'],
+  'Deficiência de Mevalonato Quinase': ['deficiencia de mevalonato quinase', 'mkd'],
+  'TRAPS': ['sindrome periodica associada ao receptor de tnf', 'traps'],
+  'Doença de Behçet': ['doenca de behcet', 'behcet'],
   'Miopatias': ['miopatia inflamatoria', 'miosite'],
   'Nefropatia por IgA': ['nefropatia por iga'],
   'Osteoartrite': ['osteoartrite'],
@@ -1197,6 +1224,28 @@ function isPerArmEnumeration(text, hitIndex, hitLen, matchedPct) {
 // FECHOU antes do numero — o 10% pertence a outra clausula (aqui, a contagem
 // de eventos adversos graves do braco placebo). Reconhecivel por aparecer um
 // ')' antes de qualquer '(' no trecho entre o achado e o percentual.
+// "Envolvimento cardiaco em 6-30% dos pacientes: PERICARDITE, efusao
+// pericardica, pancardite..." e "Estatinas causam miopatia em 10-29% dos
+// pacientes (MIALGIA e dor a palpacao...)": o numero e da CATEGORIA que vem
+// antes, e o achado e um dos itens do detalhamento que a segue. Os dois
+// pontos e o abre-parenteses sao as marcas de que ali comeca o detalhamento.
+// So vale quando o percentual esta ANTES do achado — quando vem depois, ele
+// e do proprio achado ("bronquiectasia (28%), linfadenopatia (27%)").
+function categoryDetailBetween(text, hitIndex, hitLen, matchedPct) {
+  if (!matchedPct) return false;
+  const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
+  if (pctIdx === -1 || pctIdx >= hitIndex) return false;
+  // "Achados mais comuns (40-70% dos pacientes): nodulos e massas pulmonares"
+  // tem a mesma pontuacao, mas ali o percentual esta DENTRO de um parenteses
+  // e o que vem depois dos dois pontos e o proprio achado, nao o
+  // detalhamento de uma categoria. O que separa os dois casos e o caractere
+  // imediatamente antes do numero: um '(' indica que o percentual e um
+  // aposto do rotulo, e nao a medida de uma categoria nomeada.
+  if (/\(\s*$/.test(text.slice(Math.max(0, pctIdx - 3), pctIdx))) return false;
+  const gap = text.slice(pctIdx + matchedPct.length, hitIndex);
+  return /[:(]/.test(gap);
+}
+
 function closedParenthesisBetween(text, hitIndex, hitLen, matchedPct) {
   if (!matchedPct) return false;
   const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
@@ -1237,6 +1286,29 @@ function hasInterveningFinding(text, hitIndex, hitLen, matchedPct, ownCanonical)
 const OTHER_INDICATION_RE = /\b(?:licenciad[oa]s?|aprovad[oa]s?|indicad[oa]s?|avaliad[oa]s?|estudad[oa]s?|usad[oa]s?|utilizad[oa]s?|desenvolvid[oa]s?|testad[oa]s?)\s+(?:para|em|no|na)\s+(?:a\s+|o\s+)?$/i;
 function isOtherIndication(text, hitIndex) {
   return OTHER_INDICATION_RE.test(text.slice(Math.max(0, hitIndex - 40), hitIndex));
+}
+
+// "a amiloidose ... e complicacao relativamente RARA ENTRE HETEROZIGOTOS" e
+// "ENTRE PACIENTES JAPONESES, ... queixas de cefaleia sao muito mais comuns":
+// a frequencia vale para um SUBGRUPO, nao para a doenca. No primeiro caso a
+// leitura sem o qualificador inverte a mensagem central da febre familiar do
+// Mediterraneo — a amiloidose e justamente a complicacao devastadora que o
+// tratamento existe para prevenir; ela e rara apenas nos heterozigotos.
+// Duas formas cobertas: o qualificador logo APOS a palavra de frequencia, e
+// a frase que ABRE com "Entre <subgrupo>,". Nao dispara quando o grupo
+// citado e a propria doenca do artigo ("comum em pacientes com gota").
+const SUBGROUP_AFTER_FREQ_RE = /^\s*(?:entre|em|nos|nas|no|na)\s+([^.,;]{0,40})/i;
+const SENTENCE_OPENS_WITH_SUBGROUP_RE = /^\s*(?:entre|em)\s+([^,]{0,45}),/i;
+function isFrequencyConditionedOnSubgroup(text, hitIndex, hitLen, word, ownDisease) {
+  if (!word) return false;
+  const sentence = sentenceWindow(text, hitIndex, hitLen);
+  const wIdx = sentence.indexOf(word);
+  if (wIdx !== -1) {
+    const m = SUBGROUP_AFTER_FREQ_RE.exec(sentence.slice(wIdx + word.length, wIdx + word.length + 45));
+    if (m && !mentionsOwnDisease(m[1], ownDisease)) return true;
+  }
+  const open = SENTENCE_OPENS_WITH_SUBGROUP_RE.exec(sentence);
+  return !!open && !mentionsOwnDisease(open[1], ownDisease);
 }
 
 const GENERAL_POPULATION_RE = /popula[cç][aã]o\s+(geral|saud[aá]vel|de\s+refer[eê]ncia)|na\s+popula[cç][aã]o\s+sem\b/i;
@@ -1585,6 +1657,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       if (hasInterveningFinding(chunk.text, hit.index, hit.len, pct, hit.canonical)) pct = null;
       if (isPerArmEnumeration(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (closedParenthesisBetween(chunk.text, hit.index, hit.len, pct)) pct = null;
+      if (categoryDetailBetween(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct, a.disease)) pct = null;
       if (isSubgroupComparison(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isRespectivelyAmbiguous(chunk.text, hit.index, hit.len)) pct = null;
@@ -1608,6 +1681,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
         ? null
         : nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_WORD_RE, 90, 40);
       if (isDiminishedFrequencyWord(chunk.text, hit.index, hit.len, word)) word = null;
+      if (isFrequencyConditionedOnSubgroup(chunk.text, hit.index, hit.len, word, a.disease)) word = null;
       const spec = nearestMatch(chunk.text, hit.index, hit.len, SPECIFICITY_RE, 50, 25);
       const score = (pct ? 3 : 0) + (word ? 1 : 0) + (spec ? 1 : 0);
       const lateralQualifier = LATERALIZABLE_FINDINGS.has(hit.canonical)
