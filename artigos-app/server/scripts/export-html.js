@@ -191,7 +191,10 @@ const DRUG_DICT = {
   'Deucravacitinibe': { class: 'Inibidor de TYK2', aliases: ['deucravacitinibe'] },
   'Secukinumabe': { class: 'Inibidor de IL-17', aliases: ['secukinumabe'] },
   'Ixekizumabe': { class: 'Inibidor de IL-17', aliases: ['ixekizumabe'] },
-  'Ustekinumabe': { class: 'Inibidor de IL-12/23', aliases: ['ustekinumabe'] },
+  // 'ustequinumabe' (grafia aportuguesada, a da DCB) faltava: o ensaio de
+  // fase 2 no lupus usa essa forma o tempo todo e o farmaco principal do
+  // artigo simplesmente nao era indexado.
+  'Ustequinumabe': { class: 'Inibidor de IL-12/23', aliases: ['ustequinumabe', 'ustekinumabe', 'ustekinumab'] },
   'Guselkumabe': { class: 'Inibidor de IL-23', aliases: ['guselkumabe'] },
   'Dupilumabe': { class: 'Inibidor de IL-4/13', aliases: ['dupilumabe'] },
   'Mepolizumabe': { class: 'Inibidor de IL-5', aliases: ['mepolizumabe'] },
@@ -224,6 +227,29 @@ const DRUG_DICT = {
   'Pirfenidona': { class: 'Antifibrótico', aliases: ['pirfenidona'] },
   // Orbitopatia de Graves.
   'Teprotumumabe': { class: 'Anti-receptor de IGF-1', aliases: ['teprotumumabe', 'teprotumumab'] },
+  // Arsenal do lúpus eritematoso sistêmico: as quatro publicações incluídas
+  // (duas metanálises em rede, um ensaio de fase 2 de JAK/BTK e o ensaio de
+  // ustequinumabe) cobrem 21 intervenções, e a maioria não existia aqui.
+  'Anifrolumabe': { class: 'Anti-receptor de interferon tipo I (IFNAR1)', aliases: ['anifrolumabe', 'anifrolumab'] },
+  'Sifalimumabe': { class: 'Anti-interferon alfa', aliases: ['sifalimumabe', 'sifalimumab'] },
+  'Voclosporina': { class: 'Inibidor de calcineurina', aliases: ['voclosporina', 'voclosporin'] },
+  'Elsubrutinibe': { class: 'Inibidor de BTK', aliases: ['elsubrutinibe', 'elsubrutinib'] },
+  'Evobrutinibe': { class: 'Inibidor de BTK', aliases: ['evobrutinibe', 'evobrutinib'] },
+  'ABBV-599 (elsubrutinibe + upadacitinibe)': { class: 'Combinação BTK + JAK', aliases: ['abbv-599'] },
+  'Filgotinibe': { class: 'Inibidor de JAK1', aliases: ['filgotinibe', 'filgotinib'] },
+  'Lanraplenibe': { class: 'Inibidor de SYK', aliases: ['lanraplenibe', 'lanraplenib'] },
+  'Delgocitinibe': { class: 'Inibidor pan-JAK (tópico)', aliases: ['delgocitinibe', 'delgocitinib'] },
+  'Tabalumabe': { class: 'Anti-BAFF/BLyS', aliases: ['tabalumabe', 'tabalumab'] },
+  'Blisibimode': { class: 'Antagonista de BAFF/BLyS', aliases: ['blisibimode', 'blisibimod'] },
+  'Atacicepte': { class: 'Proteína de fusão TACI-Fc (BAFF/APRIL)', aliases: ['atacicepte', 'atacicept'] },
+  'Epratuzumabe': { class: 'Anti-CD22', aliases: ['epratuzumabe', 'epratuzumab'] },
+  'Dapirolizumabe pegol': { class: 'Anti-CD40L (peguilado)', aliases: ['dapirolizumabe pegol', 'dapirolizumabe', 'dapirolizumab'] },
+  'Iberdomida': { class: 'Modulador de cereblon (degradador de Ikaros/Aiolos)', aliases: ['iberdomida', 'iberdomide'] },
+  'Cenerimode': { class: 'Modulador do receptor S1P1', aliases: ['cenerimode', 'cenerimod'] },
+  'IL-2 em baixa dose': { class: 'Expansão de células T reguladoras', aliases: ['il-2 em baixa dose', 'il-2 de baixa dose', 'ilt-101'] },
+  'PF-04236921': { class: 'Anti-IL-6', aliases: ['pf-04236921'] },
+  'GSK2586184': { class: 'Inibidor seletivo de JAK1', aliases: ['gsk2586184'] },
+  'E6742': { class: 'Antagonista dual de TLR7/TLR8', aliases: ['e6742'] },
   'Glicosídeos de Tripterygium': { class: 'Medicina tradicional chinesa', aliases: ['glicosideos de tripterygium', 'tripterygium'] },
   'Radioterapia orbitária': { class: 'Radioterapia', aliases: ['radioterapia orbitaria', 'irradiacao orbitaria'] },
   'Atrasentana': { class: 'Antagonista do receptor de endotelina', aliases: ['atrasentana'] },
@@ -509,6 +535,23 @@ const FINDING_DICT = {
   'Leucoencefalopatia multifocal progressiva (LMP)': { type: 'clínico', aliases: ['leucoencefalopatia multifocal progressiva'] },
   'Cistite hemorrágica': { type: 'clínico', aliases: ['cistite hemorragica', 'cistite'] },
   'Tubulite por células T': { type: 'anatomopatológico', aliases: ['tubulite por celulas t', 'tubulite'] },
+  // Semiologia e desfechos do lúpus. A biblioteca tinha anti-dsDNA, C3/C4 e
+  // rash malar, mas nada do que os ensaios de lúpus efetivamente medem.
+  'Nefrite lúpica': { type: 'clínico', aliases: ['nefrite lupica', 'glomerulonefrite lupica'] },
+  'Acometimento mucocutâneo': { type: 'clínico', aliases: ['acometimento mucocutaneo', 'envolvimento mucocutaneo', 'manifestacoes mucocutaneas', 'dominio mucocutaneo'] },
+  'Acometimento musculoesquelético': { type: 'clínico', aliases: ['acometimento musculoesqueletico', 'envolvimento musculoesqueletico', 'dominio musculoesqueletico'] },
+  'Serosite': { type: 'clínico', aliases: ['serosite'] },
+  'Assinatura de interferon tipo I': { type: 'laboratorial', aliases: ['assinatura de interferon tipo i', 'assinatura de interferon', 'assinatura genica de interferon'] },
+  'Linfopenia': { type: 'laboratorial', aliases: ['linfopenia'] },
+  'Herpes-zóster': { type: 'clínico', aliases: ['herpes-zoster', 'herpes zoster'] },
+  'Artropatia de Jaccoud': { type: 'clínico', aliases: ['artropatia de jaccoud', 'artropatia de jaccoud'] },
+  'Lúpus cutâneo discoide': { type: 'clínico', aliases: ['lupus cutaneo discoide', 'lupus discoide'] },
+  'Lúpus cutâneo subagudo': { type: 'clínico', aliases: ['lupus cutaneo subagudo', 'lupus eritematoso cutaneo subagudo'] },
+  'Lúpus pérnio/chilblain': { type: 'clínico', aliases: ['lupus pernio', 'chilblain', 'lupus chilblain'] },
+  'Lúpus bolhoso': { type: 'clínico', aliases: ['lupus bolhoso', 'lupus eritematoso bolhoso'] },
+  'Alopecia não cicatricial': { type: 'clínico', aliases: ['alopecia nao cicatricial', 'alopecia difusa nao cicatricial'] },
+  'Síndrome DRESS': { type: 'clínico', aliases: ['sindrome dress', 'dress'] },
+  'Crise (flare) de doença': { type: 'clínico', aliases: ['crise de doenca', 'flare de doenca', 'crises da doenca'] },
   'Atrofia de íris':{ type: 'clínico', aliases: ['atrofia de iris'] },
 };
 
@@ -556,7 +599,11 @@ const DISEASE_MENTION_ALIASES = {
   'Granulomatose com Poliangiite': ['granulomatose com poliangiite', 'wegener', 'gpa'],
   'Hipertensão Arterial Pulmonar': ['hipertensao arterial pulmonar'],
   'Imunodeficiência Comum Variável': ['imunodeficiencia comum variavel'],
-  'Lúpus Eritematoso Sistêmico': ['lupus eritematoso', 'les'],
+  // 'lupus eritematoso' casaria tambem dentro de "lupus eritematoso CUTANEO",
+  // e a revisao de inibidores de JAK trata as duas doencas lado a lado, com
+  // desfechos distintos — o alias precisa ser o nome completo da sistemica.
+  'Lúpus Eritematoso Sistêmico': ['lupus eritematoso sistemico', 'les'],
+  'Lúpus Eritematoso Cutâneo': ['lupus eritematoso cutaneo', 'lupus cutaneo', 'cle'],
   'Miopatias': ['miopatia inflamatoria', 'miosite'],
   'Nefropatia por IgA': ['nefropatia por iga'],
   'Osteoartrite': ['osteoartrite'],
@@ -660,9 +707,13 @@ function findDiseaseAliasHits(normText) {
 // substring, mas o sentido e o OPOSTO da categoria "Causa infecciosa" — sem
 // essa checagem de negacao, o percentual das causas NAO-infecciosas seria
 // atribuido erradamente a "Causa infecciosa".
+// "Infeccoes oportunistas EXCLUINDO tuberculose E HERPES-ZOSTER ocorreram em
+// 0%, 1,6% e 1,3%": o achado citado depois de "excluindo" esta fora do que o
+// numero mede — e uma exclusao, funcionalmente uma negacao.
 function isNegatedAt(normText, hitIndex) {
-  const before = normText.slice(Math.max(0, hitIndex - 20), hitIndex);
-  return /\b(na[oõ][\s-]+|sem\s+)$/.test(before);
+  const before = normText.slice(Math.max(0, hitIndex - 40), hitIndex);
+  if (/\b(na[oõ][\s-]+|sem\s+)$/.test(before)) return true;
+  return /\b(excluindo|excluid[oa]s?|exceto|salvo|a excecao de|fora)\s+(?:[a-z-]+\s+e\s+)?$/.test(before);
 }
 
 // Nem toda causa citada e uma doenca isolada rastreada nesta biblioteca —
@@ -1056,7 +1107,11 @@ function isForeignCohortPercentage(text, hitIndex, hitLen, matchedStr, ownDiseas
 // TOFACEA" escapava e o "comuns" (que e do dano articular) virava frequencia
 // dos tofos.
 const CONTEXT_AFTER_FREQ_RE = /\b(?:comum|comuns|frequente|frequentes|raro|raros|rara|raras|t[ií]pic[oa]s?|caracter[ií]stic[oa]s?|habituais?)\s+(?:d[aeo]s?|n[aeo]s?|em)\s+(?:[a-zà-ú]{1,12}\s+){0,2}$/i;
-const COHORT_QUALIFIER_RE = /\b(?:em|entre|nos|nas)\s+(?:pacientes|pessoas|casos|adultos|indiv[ií]duos|crian[cç]as|homens|mulheres)\s+com\s+(?:a\s+|o\s+)?$/i;
+// "no SUBGRUPO COM assinatura de interferon baixa — 18 (82%) de 22 pacientes":
+// o 82% e a taxa de resposta DENTRO do subgrupo, nao a frequencia da
+// assinatura. Mesma forma do qualificador de coorte, com os coletivos que os
+// ensaios usam (subgrupo, grupo, braco, coorte).
+const COHORT_QUALIFIER_RE = /\b(?:em|entre|nos|nas|n[oa])\s+(?:pacientes|pessoas|casos|adultos|indiv[ií]duos|crian[cç]as|homens|mulheres|subgrupos?|grupos?|bra[cç]os?|coortes?)\s+com\s+(?:a\s+|o\s+)?$/i;
 function isCohortQualifierBeforeFinding(text, hitIndex) {
   const before = text.slice(Math.max(0, hitIndex - 45), hitIndex);
   return COHORT_QUALIFIER_RE.test(before) || CONTEXT_AFTER_FREQ_RE.test(before);
@@ -1092,6 +1147,70 @@ function nearestOccurrenceIndex(text, hitIndex, hitLen, needle) {
   if (after === -1) return before;
   if (before === -1) return after;
   return (after - (hitIndex + hitLen)) <= (hitIndex - before) ? after : before;
+}
+
+// Em ENSAIO CLINICO quase todo percentual vem por BRACO — "linfopenia em 0%,
+// 3,2% e 0%", "anti-Smith em 20% e 24%", "acometimento renal em 2,9%, 0% e
+// 5,3%". Nenhum desses numeros e a frequencia do achado NA DOENCA: sao
+// caracteristicas de um braco de um ensaio com criterios de inclusao
+// restritivos (o de lupus, por exemplo, excluiu nefrite grave — e mesmo assim
+// o app exibia "Acometimento renal: 2,9%"). O sinal e o percentual capturado
+// vir colado a outro percentual.
+// Cuidado necessario: uma LISTA DE ACHADOS distintos tambem tem percentuais
+// em sequencia ("bronquiectasia (28%), linfadenopatia (27%), esplenomegalia
+// (13%)"), e ali cada numero e do seu proprio achado e deve ser preservado. O
+// que separa os dois casos e o que ha ENTRE os percentuais: na enumeracao por
+// braco praticamente so pontuacao e conectivo, ou o nome do braco/farmaco; na
+// lista de achados, o nome do achado seguinte.
+// 'coorte' NAO entra aqui: "67,5% em uma coorte de 80 pacientes (Keino), 95%
+// em outra coorte" sao duas estimativas do MESMO achado em estudos
+// diferentes, e o primeiro numero e legitimo — o aplicativo ja sabe exibir
+// achados com percentuais divergentes entre estudos.
+const BRANCH_LABEL_RE = /\bplacebo|grupo|bra[cç]o/i;
+function isPerArmEnumeration(text, hitIndex, hitLen, matchedPct) {
+  if (!matchedPct) return false;
+  const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
+  if (pctIdx === -1) return false;
+  const after = text.slice(pctIdx + matchedPct.length, pctIdx + matchedPct.length + 40);
+  const next = after.match(/\d{1,3}(?:[.,]\d+)?\s*%/);
+  if (!next) return false;
+  const gap = after.slice(0, next.index);
+  if (/\b(?:a|at[eé]|entre)\s*$/i.test(gap)) return false; // "20 a 24%" e intervalo, nao comparacao
+  // "destruicao ossea em 45% (VS. 9,1% na EGPA)": comparacao explicita — o
+  // PRIMEIRO numero e do sujeito da frase e deve ser mantido; o segundo ja e
+  // descartado pelo isSubgroupComparison.
+  if (/\b(?:vs\.?|versus|contra)\b/i.test(gap)) return false;
+  // "cefaleia 82%, MENINGISMO 55%, febre 18%": ha o nome de outro achado
+  // entre os numeros — e lista de achados distintos, cada um com o seu
+  // percentual, e nao a mesma medida repetida por braco.
+  const normGap = nodeNormalizeText(gap);
+  const findingInGap = Object.keys(FINDING_DICT).some((c) =>
+    FINDING_DICT[c].aliases.some((al) => normGap.includes(nodeNormalizeText(al))));
+  if (findingInGap) return false;
+  const drugInGap = Object.keys(DRUG_DICT).some((c) =>
+    DRUG_DICT[c].aliases.some((al) => normGap.includes(nodeNormalizeText(al))));
+  return gap.length <= 8 || drugInGap || BRANCH_LABEL_RE.test(gap);
+}
+
+// "...reacao anafilatica e acidente vascular cerebral isquemico) E QUATRO
+// (10%) de 42 no placebo": o achado estava dentro de um parenteses que ja
+// FECHOU antes do numero — o 10% pertence a outra clausula (aqui, a contagem
+// de eventos adversos graves do braco placebo). Reconhecivel por aparecer um
+// ')' antes de qualquer '(' no trecho entre o achado e o percentual.
+function closedParenthesisBetween(text, hitIndex, hitLen, matchedPct) {
+  if (!matchedPct) return false;
+  const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
+  if (pctIdx <= hitIndex) return false;
+  const gap = text.slice(hitIndex + hitLen, pctIdx);
+  const close = gap.indexOf(')');
+  const open = gap.indexOf('(');
+  if (close === -1 || (open !== -1 && open < close)) return false;
+  // O parenteses pode ter fechado apenas um APELIDO do proprio achado —
+  // "'fundo em por do sol' ('sunset glow fundus'): 67,5%", em que o numero
+  // ainda e do achado. So conta como troca de clausula se houver texto de
+  // verdade entre o fecha-parenteses e o numero ("...isquemico) E QUATRO
+  // (10%) de 42 no placebo").
+  return /[a-zà-ú]/i.test(gap.slice(close + 1));
 }
 
 // Mesmo racional do hasInterveningDrug, do lado dos achados: se OUTRO achado
@@ -1464,6 +1583,8 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       let pct = nearestOccurrenceMatch(chunk.text, hit.index, hit.len, FREQ_PCT_RE, 90, 40);
       if (isFrequencyWordThenNewClause(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (hasInterveningFinding(chunk.text, hit.index, hit.len, pct, hit.canonical)) pct = null;
+      if (isPerArmEnumeration(chunk.text, hit.index, hit.len, pct)) pct = null;
+      if (closedParenthesisBetween(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct, a.disease)) pct = null;
       if (isSubgroupComparison(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isRespectivelyAmbiguous(chunk.text, hit.index, hit.len)) pct = null;
