@@ -1507,7 +1507,8 @@ const PACOTES_LAB = [
       'Fosfatase Alcalina','Gama GT','Bilirrubina total e frações','PTH',
       'TSH','T4 livre','Eletroforese de proteínas','25-OH-Vitamina D','Vitamina B12',
       'Ferro','Ferritina','Hemoglobina glicada','Glicemia em jejum',
-      'Colesterol total e frações','Triglicérides','Ácido úrico','Urina 1','Urocultura'
+      'Colesterol total e frações','Triglicérides','Ácido úrico','Urina 1','Urocultura',
+      'CPK','Ácido Fólico'
     ]
   },
   {
@@ -1543,6 +1544,10 @@ const PACOTES_LAB = [
   {
     id: 'pkg-ativles', titulo: 'Atividade LES',
     exames: ['C3','C4','Relação proteinúria/creatinúria','Dismorfismo eritrocitário']
+  },
+  {
+    id: 'pkg-trombofilias', titulo: 'Trombofilias',
+    exames: ['Anti-trombina III','Mutação Fator V de Leiden','Proteina C','Proteina S','Mutação do gene de protrombina','Homocisteína']
   }
 ];
 
@@ -1552,7 +1557,7 @@ const PACOTES_LAB = [
 // vieram, nestas 6 categorias fixas (+ "Outros" para o que não se encaixa,
 // como itens de "Meus Exames" ou texto livre). Ordem também é a ordem de
 // impressão.
-const ORDEM_CATEGORIAS_LAB = ['Autoanticorpos', 'Função Renal e Eletrólitos', 'Enzimas Hepáticas', 'Metabólico Geral', 'Sorologias', 'Exames de Urina', 'Outros'];
+const ORDEM_CATEGORIAS_LAB = ['Autoanticorpos', 'Função Renal e Eletrólitos', 'Enzimas Hepáticas', 'Metabólico Geral', 'Sorologias', 'Imunoglobulinas', 'Trombofilias', 'Exames de Urina', 'Outros'];
 const CATEGORIA_EXAME_LAB = {
   // Autoanticorpos
   'FAN': 'Autoanticorpos', 'Anti-SSA/Ro': 'Autoanticorpos', 'Anti-SSB/La': 'Autoanticorpos',
@@ -1591,10 +1596,15 @@ const CATEGORIA_EXAME_LAB = {
   'Ferro': 'Metabólico Geral', 'Ferritina': 'Metabólico Geral',
   'Hemoglobina glicada': 'Metabólico Geral', 'Glicemia em jejum': 'Metabólico Geral',
   'Colesterol total e frações': 'Metabólico Geral', 'Triglicérides': 'Metabólico Geral',
-  'Creatinoquinase (CK)': 'Metabólico Geral',
+  'Creatinoquinase (CK)': 'Metabólico Geral', 'CPK': 'Metabólico Geral', 'Ácido Fólico': 'Metabólico Geral',
   'Haptoglobina': 'Metabólico Geral', 'Reticulócitos': 'Metabólico Geral', 'DHL (LDH)': 'Metabólico Geral', 'Coombs Direto': 'Metabólico Geral',
-  'Imunoglobulina IgG': 'Metabólico Geral', 'Imunoglobulina IgM': 'Metabólico Geral',
-  'Imunoglobulina IgA': 'Metabólico Geral', 'Imunoglobulina IgE': 'Metabólico Geral',
+  // Imunoglobulinas
+  'Imunoglobulina IgG': 'Imunoglobulinas', 'Imunoglobulina IgM': 'Imunoglobulinas',
+  'Imunoglobulina IgA': 'Imunoglobulinas', 'Imunoglobulina IgE': 'Imunoglobulinas',
+  // Trombofilias
+  'Anti-trombina III': 'Trombofilias', 'Mutação Fator V de Leiden': 'Trombofilias',
+  'Proteina C': 'Trombofilias', 'Proteina S': 'Trombofilias',
+  'Mutação do gene de protrombina': 'Trombofilias', 'Homocisteína': 'Trombofilias',
 };
 
 // Agrupa uma lista de nomes de exames já marcados nas categorias acima,
@@ -1974,19 +1984,21 @@ const ESPECIAIS_PRINT = ['print-hlab27','print-igra'];
 // bloco de cabeçalho (paciente/CID) e para o rodapé — propositalmente
 // subestimada para nunca deixar o rodapé faltar por excesso de itens.
 //
-// 400px vem de medição real em modo impressão (Chromium, emulateMedia
+// 360px vem de medição real em modo impressão (Chromium, emulateMedia
 // 'print'): o cabeçalho impresso (logo/título + campos do paciente + CID)
-// sozinho já mede ~240px no Relatório e ~290px no Relatório Médico (mais
-// campos), e o rodapé compacto mais ~30px — deixando ~40-60px de folga de
-// segurança. Um valor menor (220px, usado antes) deixava a altura real do
-// cabeçalho + rodapé ULTRAPASSAR o que a conta previa, fazendo a página
-// (com min-height:25cm mas sem teto) crescer além da área útil de uma
-// folha A4 (~971px) e "vazar" para uma página extra sem repetir
-// cabeçalho/rodapé — exatamente o bug relatado (rodapé sumindo em
-// páginas alternadas de uma lista longa).
+// sozinho mede ~214px em Exames Laboratoriais/Imagem e ~283px no
+// Relatório Médico (mais campos), e o rodapé compacto mais ~31px — dando
+// uma folga de segurança de ~45-75px sobre o maior caso real. Um valor
+// menor (220px, usado antes) deixava a altura real do cabeçalho + rodapé
+// ULTRAPASSAR o que a conta previa, fazendo a página (com
+// min-height:25cm mas sem teto) crescer além da área útil de uma folha
+// A4 (~971px) e "vazar" para uma página extra sem repetir
+// cabeçalho/rodapé. Um valor exageradamente maior (400px, usado
+// brevemente) resolvia isso mas desperdiçava espaço — poucos itens por
+// página, com o rodapé sobrando "alto" e muito espaço em branco abaixo.
 const ALTURA_PAGINA_PX = 25 * 37.7953; // 25cm em px
 const RESERVA_TOPO_BASE_PX = 16 + (3.5 * 37.7953);
-const RESERVA_CABECALHO_RODAPE_PX = 400;
+const RESERVA_CABECALHO_RODAPE_PX = 360;
 
 // cloneNode não copia o valor digitado pelo usuário em inputs/textareas (só
 // o value inicial do HTML) — copia manualmente antes de descartar os ids.
@@ -2047,33 +2059,73 @@ function paginarListaExames(pageId, flatListId, exames) {
 
   const alturaDisponivel = ALTURA_PAGINA_PX - RESERVA_TOPO_BASE_PX - RESERVA_CABECALHO_RODAPE_PX;
 
-  // Agrupa os exames em blocos que cabem numa página cada. Um cabeçalho de
-  // categoria nunca fica sozinho ao final de uma página: se ele e o
-  // próximo item não couberem juntos, os dois avançam para a página
-  // seguinte.
-  const paginas = [];
-  let atual = [];
-  let alturaAtual = 0;
+  // Agrupa os índices em "blocos indivisíveis": cada categoria + todos os
+  // seus itens (até o próximo cabeçalho de categoria) formam um bloco só,
+  // para que um grupo (ex.: "Enzimas Hepáticas") nunca seja partido entre
+  // páginas se puder evitar — todo o grupo pula para a página seguinte
+  // junto, em vez de deixar um item órfão sozinho lá. Listas sem
+  // cabeçalho de categoria (exames de imagem) tratam cada item como um
+  // bloco de 1, mantendo o comportamento antigo.
+  const blocos = [];
+  let blocoAtual = null;
   exames.forEach((entrada, i) => {
-    const h = alturas[i];
-    const ehCategoria = typeof entrada === 'object';
-    const hCombinado = ehCategoria && i + 1 < exames.length ? h + alturas[i + 1] : h;
-    if (atual.length > 0 && alturaAtual + hCombinado > alturaDisponivel) {
-      paginas.push(atual);
-      atual = [];
-      alturaAtual = 0;
+    if (typeof entrada === 'object') {
+      blocoAtual = { inicio: i, fim: i };
+      blocos.push(blocoAtual);
+    } else if (blocoAtual) {
+      blocoAtual.fim = i;
+    } else {
+      blocos.push({ inicio: i, fim: i });
     }
-    atual.push(entrada);
-    alturaAtual += h;
   });
-  if (atual.length > 0) paginas.push(atual);
+  const alturaBloco = b => {
+    let s = 0;
+    for (let i = b.inicio; i <= b.fim; i++) s += alturas[i];
+    return s;
+  };
+
+  // paginas[]: cada item é { idxs: [...índices], forcado: bool } — "forcado"
+  // marca uma página cujo conteúdo teve de ser dividido no meio de um
+  // bloco (porque o bloco sozinho já é maior que uma página inteira) —
+  // caso raro em que a margem de segurança padrão pode não bastar, então
+  // o rodapé dessa página específica usa fluxo normal em vez de fixado
+  // no fim (ver uso de "forcado" mais abaixo).
+  const paginas = [];
+  let atualIdxs = [];
+  let alturaAtual = 0;
+  let atualForcado = false;
+  const fecharPagina = () => {
+    if (atualIdxs.length > 0) paginas.push({ idxs: atualIdxs, forcado: atualForcado });
+    atualIdxs = [];
+    alturaAtual = 0;
+    atualForcado = false;
+  };
+  blocos.forEach(bloco => {
+    const hBloco = alturaBloco(bloco);
+    if (atualIdxs.length > 0 && alturaAtual + hBloco > alturaDisponivel) fecharPagina();
+    if (hBloco > alturaDisponivel) {
+      // Bloco maior que uma página inteira sozinho: não tem como manter
+      // junto, divide item a item (mesmo algoritmo de antes).
+      for (let i = bloco.inicio; i <= bloco.fim; i++) {
+        const h = alturas[i];
+        if (atualIdxs.length > 0 && alturaAtual + h > alturaDisponivel) fecharPagina();
+        atualIdxs.push(i);
+        alturaAtual += h;
+        atualForcado = true;
+      }
+    } else {
+      for (let i = bloco.inicio; i <= bloco.fim; i++) atualIdxs.push(i);
+      alturaAtual += hBloco;
+    }
+  });
+  fecharPagina();
 
   const headBlock = origWrapper.querySelector('.doc-head-block');
   const tailBlock = origWrapper.querySelector('.doc-tail-block');
 
   if (paginas.length <= 1) {
     // Cabe tudo numa página só: mantém o wrapper original como está.
-    flatListEl.innerHTML = paginas[0].map(renderEntradaHtml).join('');
+    flatListEl.innerHTML = paginas[0].idxs.map(i => renderEntradaHtml(exames[i])).join('');
     return;
   }
 
@@ -2082,7 +2134,7 @@ function paginarListaExames(pageId, flatListId, exames) {
   // com cabeçalho + fatia da lista + rodapé.
   origWrapper.style.display = 'none';
   let anchor = origWrapper;
-  paginas.forEach((fatia, idx) => {
+  paginas.forEach((pagina, idx) => {
     const isUltima = idx === paginas.length - 1;
     const clone = document.createElement('div');
     clone.className = 'doc-wrapper';
@@ -2094,7 +2146,7 @@ function paginarListaExames(pageId, flatListId, exames) {
     }
     const listaClone = document.createElement('div');
     listaClone.className = 'print-flat-list';
-    listaClone.innerHTML = fatia.map(renderEntradaHtml).join('');
+    listaClone.innerHTML = pagina.idxs.map(i => renderEntradaHtml(exames[i])).join('');
     clone.appendChild(listaClone);
     if (isUltima && tailBlock) {
       const tailClone = tailBlock.cloneNode(true);
@@ -2102,7 +2154,7 @@ function paginarListaExames(pageId, flatListId, exames) {
       clone.appendChild(tailClone);
     }
     const rodape = document.createElement('div');
-    rodape.className = 'print-rodape rodape-fluxo';
+    rodape.className = 'print-rodape' + (pagina.forcado ? ' rodape-fluxo' : '');
     clone.appendChild(rodape);
     // Remove ids duplicados dos campos clonados (são só para exibição na impressão)
     clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
@@ -2151,23 +2203,27 @@ function paginarBlocosLivres(pageId, corpoId) {
   const paginas = [];
   let atual = [];
   let alturaAtual = 0;
+  let atualForcado = false;
   blocos.forEach(b => {
     const h = b.getBoundingClientRect().height;
     if (atual.length > 0 && alturaAtual + h > alturaDisponivel) {
-      paginas.push(atual);
+      paginas.push({ blocos: atual, forcado: atualForcado });
       atual = [];
       alturaAtual = 0;
+      atualForcado = false;
     }
     atual.push(b);
     alturaAtual += h;
+    if (h > alturaDisponivel) atualForcado = true;
   });
-  if (atual.length > 0) paginas.push(atual);
+  if (atual.length > 0) paginas.push({ blocos: atual, forcado: atualForcado });
 
   if (paginas.length <= 1) return; // cabe tudo numa página só: nada a fazer
 
   origWrapper.style.display = 'none';
   let anchor = origWrapper;
-  paginas.forEach((fatiaBlocos, idx) => {
+  paginas.forEach((pagina, idx) => {
+    const fatiaBlocos = pagina.blocos;
     const isUltima = idx === paginas.length - 1;
     const clone = document.createElement('div');
     clone.className = 'doc-wrapper';
@@ -2190,7 +2246,7 @@ function paginarBlocosLivres(pageId, corpoId) {
       clone.appendChild(tailClone);
     }
     const rodape = document.createElement('div');
-    rodape.className = 'print-rodape rodape-fluxo';
+    rodape.className = 'print-rodape' + (pagina.forcado ? ' rodape-fluxo' : '');
     clone.appendChild(rodape);
     clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
     anchor.insertAdjacentElement('afterend', clone);
