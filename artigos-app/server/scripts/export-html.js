@@ -117,7 +117,12 @@ function nodeGetArticleChunks(a) {
 function nodeCategorizeHeading(heading) {
   const h = nodeNormalizeText(heading);
   if (!h) return null;
-  if (h.includes('diferencial')) return 'diferencial';
+  // Raiz 'diferencia' e nao 'diferencial': uma secao intitulada
+  // "Caracteristicas DIFERENCIAIS das Demais Febres Periodicas" e de
+  // diagnostico diferencial tanto quanto uma chamada "Diagnostico Diferencial",
+  // mas o plural nao casava e a secao inteira era tratada como se descrevesse
+  // a doenca do artigo.
+  if (h.includes('diferencia')) return 'diferencial';
   if (h.includes('criterio') && (h.includes('diagnostic') || h.includes('classificacao'))) return 'criterios';
   if (h.includes('epidemiol') || h.includes('prevalenc') || h.includes('incidenc')) return 'epidemiologia';
   if (h.includes('mecanismo de acao')) return 'moa';
@@ -230,6 +235,12 @@ const DRUG_DICT = {
   // Arsenal do lúpus eritematoso sistêmico: as quatro publicações incluídas
   // (duas metanálises em rede, um ensaio de fase 2 de JAK/BTK e o ensaio de
   // ustequinumabe) cobrem 21 intervenções, e a maioria não existia aqui.
+  // Terapias avaliadas na PFAPA fora dos glicocorticoides (deliberadamente
+  // ausentes do dicionário) e da colchicina e anacinra, que já existiam.
+  'Cimetidina': { class: 'Antagonista H2 (imunomodulador)', aliases: ['cimetidina'] },
+  'Talidomida': { class: 'Imunomodulador', aliases: ['talidomida'] },
+  'Vitamina D': { class: 'Suplementação', aliases: ['vitamina d', 'colecalciferol'] },
+  'Amigdalectomia': { class: 'Tratamento cirúrgico', aliases: ['amigdalectomia', 'tonsilectomia', 'adenotonsilectomia'] },
   'Anifrolumabe': { class: 'Anti-receptor de interferon tipo I (IFNAR1)', aliases: ['anifrolumabe', 'anifrolumab'] },
   'Sifalimumabe': { class: 'Anti-interferon alfa', aliases: ['sifalimumabe', 'sifalimumab'] },
   'Voclosporina': { class: 'Inibidor de calcineurina', aliases: ['voclosporina', 'voclosporin'] },
@@ -573,6 +584,24 @@ const FINDING_DICT = {
   'Mialgia': { type: 'clínico', aliases: ['mialgia', 'mialgias'] },
   'Dermatose neutrofílica': { type: 'clínico', aliases: ['dermatose neutrofilica', 'dermatoses neutrofilicas'] },
   'Osteomielite não bacteriana crônica': { type: 'clínico', aliases: ['osteomielite nao bacteriana cronica', 'osteomielite cronica nao infecciosa'] },
+  // Semiologia e laboratório das febres periódicas. A tríade da PFAPA
+  // (aftose, faringite e adenite cervical) já estava coberta em parte, mas
+  // faltavam a linfadenite cervical nomeada, os marcadores que fazem o
+  // diferencial com infecção (procalcitonina, CD64) e com as demais febres
+  // periódicas (IgD, neutropenia cíclica), e os achados das criopirinopatias.
+  'Linfadenite cervical': { type: 'clínico', aliases: ['linfadenite cervical', 'adenite cervical', 'linfadenopatia cervical'] },
+  'Neutropenia cíclica': { type: 'laboratorial', aliases: ['neutropenia ciclica'] },
+  'Leucocitose com neutrofilia': { type: 'laboratorial', aliases: ['leucocitose com neutrofilia', 'leucocitose com predominio de neutrofilos'] },
+  'Trombocitose': { type: 'laboratorial', aliases: ['trombocitose'] },
+  'Procalcitonina elevada': { type: 'laboratorial', aliases: ['procalcitonina elevada', 'aumento de procalcitonina'] },
+  'IgD sérica elevada': { type: 'laboratorial', aliases: ['igd serica elevada', 'imunoglobulina d elevada', 'igd elevada'] },
+  'Expressão aumentada de CD64': { type: 'laboratorial', aliases: ['expressao de cd64', 'cd64 aumentado'] },
+  'Diarreia': { type: 'clínico', aliases: ['diarreia'] },
+  'Vômitos': { type: 'clínico', aliases: ['vomitos', 'vomito'] },
+  'Calafrios': { type: 'clínico', aliases: ['calafrios'] },
+  'Surdez neurossensorial': { type: 'clínico', aliases: ['surdez neurossensorial', 'perda auditiva neurossensorial'] },
+  'Papiledema': { type: 'clínico', aliases: ['papiledema'] },
+  'Hidrocefalia': { type: 'imagem', aliases: ['hidrocefalia'] },
   'Atrofia de íris':{ type: 'clínico', aliases: ['atrofia de iris'] },
 };
 
@@ -630,6 +659,7 @@ const DISEASE_MENTION_ALIASES = {
   'Síndrome PFAPA': ['sindrome pfapa', 'pfapa'],
   'Deficiência de Mevalonato Quinase': ['deficiencia de mevalonato quinase', 'mkd'],
   'TRAPS': ['sindrome periodica associada ao receptor de tnf', 'traps'],
+  'Síndrome Periódica Associada à Criopirina (CAPS)': ['sindrome periodica associada a criopirina', 'caps', 'muckle-wells', 'cinca', 'fcas'],
   'Doença de Behçet': ['doenca de behcet', 'behcet'],
   'Miopatias': ['miopatia inflamatoria', 'miosite'],
   'Nefropatia por IgA': ['nefropatia por iga'],
@@ -699,6 +729,50 @@ function localizeDiseases(allDiseases, primaryDisease, windowText) {
   const normWindow = nodeNormalizeText(windowText);
   const confirmed = allDiseases.filter((d) => d === primaryDisease || diseaseMentionedNearby(normWindow, d));
   return confirmed.length > 0 ? confirmed : (primaryDisease ? [primaryDisease] : allDiseases);
+}
+
+// Numa secao de DIAGNOSTICO DIFERENCIAL o texto descreve, em blocos, as
+// OUTRAS doencas — e a doenca do artigo nao pode ser incluida por padrao. Em
+// "Alem da febre, caracteristicas clinicas comuns sao edema periorbitario,
+// conjuntivite..." a frase nem nomeia a TRAPS (a sigla abre o bloco, frases
+// antes), e conjuntivite e edema periorbitario acabavam catalogados sob a
+// sindrome PFAPA. A regra aqui e posicional: vale a ULTIMA doenca nomeada
+// ANTES do achado dentro do mesmo trecho — que e como esses blocos se
+// organizam. So recai na doenca do artigo quando nenhuma outra foi nomeada.
+// "Achados que apoiam o diagnostico de GPA (NAO EGPA): destruicao ossea em
+// 45%" — a mencao mais proxima esta NEGADA e nao pode reger o bloco.
+// "A dactilite exige DIFERENCIAR DE artrite reativa (... sacroileite,
+// conjuntivite ...)" — entre a ultima doenca catalogada e o achado ha uma
+// troca explicita de sujeito para uma doenca que nao esta na lista do
+// artigo; nesse caso e mais honesto ficar com a doenca do artigo do que
+// pendurar o achado numa doenca errada.
+const SUBJECT_SWITCH_RE = /\b(?:diferenciar\s+de|diferencial\s+de|em\s+contraste\s+com|ao\s+contrario\s+de|versus|distinguir\s+de|mimetiza)\b/;
+function localizeDiseasesInDifferential(allDiseases, primaryDisease, chunkText, hitIndex) {
+  if (allDiseases.length <= 1) return allDiseases;
+  const before = nodeNormalizeText(chunkText.slice(0, hitIndex));
+  let best = null; let bestIdx = -1;
+  allDiseases.forEach((disease) => {
+    (DISEASE_MENTION_ALIASES[disease] || [nodeNormalizeText(disease)]).forEach((alias) => {
+      const norm = nodeNormalizeText(alias);
+      const positions = norm.length <= 5
+        ? [...before.matchAll(new RegExp('\\b' + escapeAliasRe(norm) + '\\b', 'g'))].map((m) => m.index)
+        : (() => { const out = []; let i = before.indexOf(norm); while (i !== -1) { out.push(i); i = before.indexOf(norm, i + norm.length); } return out; })();
+      positions.forEach((idx) => {
+        // "destruicao ossea em 45% (VS. 9,1% NA EGPA, p=0,006)": a doenca
+        // citada logo depois de um "vs." e o COMPARADOR da frase, nunca o
+        // sujeito que rege o bloco — os 45% e os 52% sao da GPA.
+        if (/\b(?:vs\.?|versus|contra)\s+[^.;]{0,25}$/i.test(before.slice(Math.max(0, idx - 40), idx))) return;
+        if (idx > bestIdx && !isNegatedAt(before, idx)) { bestIdx = idx; best = disease; }
+      });
+    });
+  });
+  // "...sindrome de Felty). A DACTILITE exige diferenciar de artrite
+  // reativa": quando o achado ABRE a frase, ele e o sujeito dela e nao herda
+  // a doenca da frase anterior — a dactilite ali e da artrite reativa, que
+  // nem sequer esta entre as doencas do artigo.
+  if (/[.;]\s+(?:[ao]s?\s+|um[a]?\s+)?$/.test(before)) return primaryDisease ? [primaryDisease] : allDiseases;
+  if (best && SUBJECT_SWITCH_RE.test(before.slice(bestIdx))) return primaryDisease ? [primaryDisease] : allDiseases;
+  return best ? [best] : (primaryDisease ? [primaryDisease] : allDiseases);
 }
 
 // Artigos que revisam um achado/apresentação (ex.: "Aortite", "Esclerite",
@@ -1711,7 +1785,9 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
           // categoria. Guardando o termo realmente casado, a interface
           // mostra a que exatamente aquele numero se refere.
           matchedTerm: informativeMatchedTerm(hit.canonical, hit.matchedAlias),
-          diseases: localizeDiseases(allDiseases, primaryDisease, (chunk.heading || '') + ' ' + sentenceWindow(chunk.text, hit.index, hit.len)),
+          diseases: isDifferentialSection
+            ? localizeDiseasesInDifferential(allDiseases, primaryDisease, chunk.text, hit.index)
+            : localizeDiseases(allDiseases, primaryDisease, (chunk.heading || '') + ' ' + sentenceWindow(chunk.text, hit.index, hit.len)),
           snippet: windowAround(chunk.text, hit.index, hit.len, 120).trim(),
         });
       }
@@ -2980,7 +3056,12 @@ const DV_CATEGORIES = [
 function categorizeHeading(heading) {
   const h = normalizeText(heading);
   if (!h) return null;
-  if (h.includes('diferencial')) return 'diferencial';
+  // Raiz 'diferencia' e nao 'diferencial': uma secao intitulada
+  // "Caracteristicas DIFERENCIAIS das Demais Febres Periodicas" e de
+  // diagnostico diferencial tanto quanto uma chamada "Diagnostico Diferencial",
+  // mas o plural nao casava e a secao inteira era tratada como se descrevesse
+  // a doenca do artigo.
+  if (h.includes('diferencia')) return 'diferencial';
   if (h.includes('criterio') && (h.includes('diagnostic') || h.includes('classificacao'))) return 'criterios';
   if (h.includes('epidemiol') || h.includes('prevalenc') || h.includes('incidenc')) return 'epidemiologia';
   if (h.includes('mecanismo de acao')) return 'moa';
