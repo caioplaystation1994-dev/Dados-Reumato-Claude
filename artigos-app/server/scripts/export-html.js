@@ -237,6 +237,20 @@ const DRUG_DICT = {
   // ustequinumabe) cobrem 21 intervenções, e a maioria não existia aqui.
   // Terapias avaliadas na PFAPA fora dos glicocorticoides (deliberadamente
   // ausentes do dicionário) e da colchicina e anacinra, que já existiam.
+  // Arsenal das microangiopatias trombóticas e da síndrome antifosfolípide.
+  // Os antitrombóticos faltavam por inteiro na biblioteca — e são a base do
+  // tratamento da SAF.
+  'Caplacizumabe': { class: 'Nanocorpo anti-fator de von Willebrand', aliases: ['caplacizumabe', 'caplacizumab'] },
+  'Varfarina': { class: 'Antagonista da vitamina K', aliases: ['varfarina', 'warfarina'] },
+  'Heparina não fracionada': { class: 'Anticoagulante', aliases: ['heparina nao fracionada'] },
+  'Heparina de baixo peso molecular': { class: 'Anticoagulante', aliases: ['heparina de baixo peso molecular', 'enoxaparina'] },
+  'Anticoagulantes orais diretos': { class: 'Anticoagulante', aliases: ['anticoagulantes orais diretos', 'anticoagulante oral direto', 'rivaroxabana', 'apixabana'] },
+  'Aspirina em baixa dose': { class: 'Antiagregante plaquetário', aliases: ['aspirina em baixa dose', 'aspirina', 'acido acetilsalicilico'] },
+  'Estatinas': { class: 'Inibidor da HMG-CoA redutase', aliases: ['estatina', 'estatinas', 'sinvastatina', 'atorvastatina'] },
+  'Sirolimo': { class: 'Inibidor de mTOR', aliases: ['sirolimo', 'sirolimus', 'rapamicina'] },
+  'Defibrotida': { class: 'Agonista de receptor de adenosina', aliases: ['defibrotida', 'defibrotide'] },
+  'Vincristina': { class: 'Alcaloide da vinca', aliases: ['vincristina'] },
+  'Hidroxicobalamina': { class: 'Vitamina B12 (defeito de cobalamina C)', aliases: ['hidroxicobalamina'] },
   'Cimetidina': { class: 'Antagonista H2 (imunomodulador)', aliases: ['cimetidina'] },
   'Talidomida': { class: 'Imunomodulador', aliases: ['talidomida'] },
   'Vitamina D': { class: 'Suplementação', aliases: ['vitamina d', 'colecalciferol'] },
@@ -538,7 +552,7 @@ const FINDING_DICT = {
   'Hiperemia conjuntival': { type: 'clínico', aliases: ['hiperemia conjuntival', 'injecao conjuntival'] },
   'Restrição da motilidade ocular': { type: 'clínico', aliases: ['restricao da motilidade ocular', 'restricao do movimento ocular', 'motilidade ocular restrita'] },
   'Neuropatia óptica distireoidiana': { type: 'clínico', aliases: ['neuropatia optica distireoidiana', 'neuropatia optica compressiva'] },
-  'Escore de Atividade Clínica (CAS) elevado': { type: 'clínico', aliases: ['escore de atividade clinica', 'clinical activity score'] },
+  'Escore de Atividade Clínica (CAS) elevado': { type: 'clínico', valueNotFrequency: true, aliases: ['escore de atividade clinica', 'clinical activity score'] },
   // Desfechos e toxicidades recorrentes da vasculite associada a ANCA.
   'Doença renal em estágio terminal (DRT)': { type: 'clínico', aliases: ['doenca renal em estagio terminal', 'doenca renal terminal', 'eskd'] },
   'Hipogamaglobulinemia': { type: 'laboratorial', aliases: ['hipogamaglobulinemia'] },
@@ -602,6 +616,38 @@ const FINDING_DICT = {
   'Surdez neurossensorial': { type: 'clínico', aliases: ['surdez neurossensorial', 'perda auditiva neurossensorial'] },
   'Papiledema': { type: 'clínico', aliases: ['papiledema'] },
   'Hidrocefalia': { type: 'imagem', aliases: ['hidrocefalia'] },
+  // Semiologia e laboratório das microangiopatias trombóticas e da síndrome
+  // antifosfolípide. A biblioteca tinha anticardiolipina e anti-beta2-GPI,
+  // mas nada da tríade que define uma microangiopatia (anemia hemolítica
+  // microangiopática, esquizócitos, plaquetopenia) nem dos marcadores que
+  // separam PTT de SHU de SAF catastrófica.
+  'Anemia hemolítica microangiopática': { type: 'laboratorial', aliases: ['anemia hemolitica microangiopatica', 'anemia hemolitica mecanica'] },
+  'Esquizócitos': { type: 'laboratorial', aliases: ['esquizocitos', 'esquizocito'] },
+  'LDH elevada': { type: 'laboratorial', aliases: ['ldh elevada', 'desidrogenase latica elevada', 'lactato desidrogenase elevada'] },
+  'Haptoglobina reduzida': { type: 'laboratorial', aliases: ['haptoglobina reduzida', 'haptoglobina baixa', 'haptoglobina indetectavel'] },
+  'Coombs direto negativo': { type: 'laboratorial', aliases: ['coombs direto negativo', 'teste de coombs negativo'] },
+  // valueNotFrequency: para exames assim, todo numero citado por perto e o
+  // RESULTADO ("atividade de 10 a 20%"), nunca a proporcao de pacientes —
+  // exibir o limiar que define a doenca como se fosse prevalencia inverte o
+  // sentido do dado.
+  'Atividade de ADAMTS13 reduzida': { type: 'laboratorial', valueNotFrequency: true, aliases: ['atividade de adamts13', 'deficiencia de adamts13', 'adamts13 reduzida'] },
+  'Anticorpo anti-ADAMTS13': { type: 'laboratorial', aliases: ['anticorpo anti-adamts13', 'autoanticorpo anti-adamts13', 'anti-adamts13'] },
+  'Anticoagulante lúpico': { type: 'laboratorial', aliases: ['anticoagulante lupico'] },
+  'Lesão renal aguda': { type: 'clínico', aliases: ['lesao renal aguda', 'injuria renal aguda', 'insuficiencia renal aguda'] },
+  'Necrose cortical renal': { type: 'anatomopatológico', aliases: ['necrose cortical renal'] },
+  'Nefropatia por anticorpos antifosfolípides': { type: 'anatomopatológico', aliases: ['nefropatia por anticorpos antifosfolipides', 'nefropatia associada a antifosfolipides'] },
+  'Doença valvar (vegetações/espessamento)': { type: 'imagem', aliases: ['doenca valvar', 'vegetacoes valvares', 'espessamento valvar'] },
+  'Vasculopatia livedoide': { type: 'clínico', aliases: ['vasculopatia livedoide'] },
+  'Livedo racemosa': { type: 'clínico', aliases: ['livedo racemosa'] },
+  'Diarreia sanguinolenta': { type: 'clínico', aliases: ['diarreia sanguinolenta', 'diarreia prodromica sanguinolenta'] },
+  'Convulsões': { type: 'clínico', aliases: ['convulsoes', 'convulsao', 'crises convulsivas'] },
+  'Confusão mental': { type: 'clínico', aliases: ['confusao mental', 'confusao'] },
+  'Disfunção cognitiva': { type: 'clínico', aliases: ['disfuncao cognitiva', 'comprometimento cognitivo'] },
+  'Alterações de substância branca subcortical': { type: 'imagem', aliases: ['alteracoes de substancia branca subcortical', 'lesoes de substancia branca'] },
+  'Hemorragia adrenal': { type: 'clínico', aliases: ['hemorragia adrenal', 'hemorragia suprarrenal'] },
+  'Hipertensão maligna': { type: 'clínico', aliases: ['hipertensao maligna'] },
+  'Infarto de órgão (esplênico/renal)': { type: 'imagem', aliases: ['infarto esplenico', 'infarto renal', 'infartos esplenicos', 'infartos renais'] },
+  'Infarto do miocárdio': { type: 'clínico', aliases: ['infarto do miocardio', 'infarto agudo do miocardio'] },
   'Atrofia de íris':{ type: 'clínico', aliases: ['atrofia de iris'] },
 };
 
@@ -661,6 +707,15 @@ const DISEASE_MENTION_ALIASES = {
   'TRAPS': ['sindrome periodica associada ao receptor de tnf', 'traps'],
   'Síndrome Periódica Associada à Criopirina (CAPS)': ['sindrome periodica associada a criopirina', 'caps', 'muckle-wells', 'cinca', 'fcas'],
   'Doença de Behçet': ['doenca de behcet', 'behcet'],
+  'Síndrome do Anticorpo Antifosfolípide': ['sindrome do anticorpo antifosfolipide', 'sindrome antifosfolipide', 'saf'],
+  // A sigla 'CAPS' e ambigua em reumatologia — designa tanto as sindromes
+  // periodicas associadas a criopirina quanto a sindrome antifosfolipide
+  // catastrofica. Fica reservada a criopirinopatia (onde ja estava), e a SAF
+  // catastrofica e referida por extenso nos resumos.
+  'Síndrome Antifosfolípide Catastrófica': ['sindrome antifosfolipide catastrofica', 'saf catastrofica'],
+  'Púrpura Trombocitopênica Trombótica': ['purpura trombocitopenica trombotica', 'ptt'],
+  'Síndrome Hemolítico-Urêmica': ['sindrome hemolitico-uremica', 'sindrome hemolitico uremica', 'shu'],
+  'Microangiopatia Trombótica': ['microangiopatia trombotica', 'mat'],
   'Miopatias': ['miopatia inflamatoria', 'miosite'],
   'Nefropatia por IgA': ['nefropatia por iga'],
   'Osteoartrite': ['osteoartrite'],
@@ -1134,11 +1189,16 @@ function isEtiologicShareOfFinding(text, hitIndex, hitLen) {
 // "frequencia relatada" faz o leitor tomar a taxa de um braco especifico
 // como se fosse a taxa geral. Detectavel pelo "vs" logo apos o numero.
 const SUBGROUP_COMPARISON_RE = /^\s*(?:[±]\s*\d+(?:[.,]\d+)?%?\s*)?(?:vs\.?|versus)\b/i;
+// "52% alcancaram doenca renal terminal ... CONTRA 57% nas mulheres com a
+// forma nao relacionada a gestacao": o numero logo apos "contra"/"versus" e o
+// braco de comparacao, nao o sujeito da frase.
+const COMPARATOR_PREFIX_RE = /\b(?:contra|versus|vs\.?)\s*$/i;
 function isSubgroupComparison(text, hitIndex, hitLen, matchedStr) {
   if (!matchedStr) return false;
   const win = windowAround(text, hitIndex, hitLen, 120);
   const idx = win.indexOf(matchedStr);
   if (idx === -1) return false;
+  if (COMPARATOR_PREFIX_RE.test(win.slice(Math.max(0, idx - 12), idx))) return true;
   return SUBGROUP_COMPARISON_RE.test(win.slice(idx + matchedStr.length, idx + matchedStr.length + 20));
 }
 
@@ -1336,6 +1396,60 @@ function closedParenthesisBetween(text, hitIndex, hitLen, matchedPct) {
   return /[a-zà-ú]/i.test(gap.slice(close + 1));
 }
 
+// "a trombocitopenia ... esta AUSENTE a apresentacao em 15 a 20% dos
+// pacientes": o numero mede a AUSENCIA do achado. Exibir "Trombocitopenia:
+// 15 a 20%" diz exatamente o contrario do que a frase afirma.
+const ABSENCE_RE = /\b(?:ausente|aus[êe]ncia|indetect[aá]vel|negativ[oa]|normal|preservad[oa])\b/i;
+function measuresAbsence(text, hitIndex, hitLen, matchedPct) {
+  if (!matchedPct) return false;
+  const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
+  if (pctIdx === -1) return false;
+  const [from, to] = pctIdx > hitIndex ? [hitIndex + hitLen, pctIdx] : [pctIdx + matchedPct.length, hitIndex];
+  return to > from && ABSENCE_RE.test(text.slice(from, to));
+}
+
+// "atividade de ADAMTS13 ABAIXO DE 10%", "reticulocitos ACIMA DE 2,5%": o
+// numero e um VALOR DE CORTE do exame, nao a frequencia de pacientes. Sem
+// isso o app exibia "Atividade de ADAMTS13 reduzida: 10%" (o limiar que
+// define a doenca virando prevalencia) e dava a haptoglobina o 2,5% que era
+// dos reticulocitos. Note que "mais de" e "menos de" ficam FORA da lista: em
+// portugues clinico eles introduzem proporcao de pacientes ("mais de 80% dos
+// casos"), e nao valor de exame.
+const THRESHOLD_PREFIX_RE = /\b(?:abaixo\s+de|acima\s+de|inferior(?:es)?\s+a|superior(?:es)?\s+a|menor\s+que|maior\s+que)\s*$/i;
+function isThresholdValue(text, matchedPct, hitIndex, hitLen) {
+  if (!matchedPct) return false;
+  const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
+  if (pctIdx === -1) return false;
+  return THRESHOLD_PREFIX_RE.test(text.slice(Math.max(0, pctIdx - 20), pctIdx));
+}
+
+// "positivos para anticorpos ANTICARDIOLIPINA E 1% e positivo para
+// ANTICOAGULANTE LUPICO": a conjuncao coordenativa entre o achado e o numero
+// indica que o numero pertence ao proximo item da enumeracao, nao a este.
+// Mesma familia do isFrequencyWordThenNewClause, sem exigir a palavra de
+// frequencia.
+// Cuidado necessario: o "ou" pode estar DENTRO do proprio nome do achado
+// ("faringite eritematosa OU exsudativa, presente em ate 70 a 90%"), e ali o
+// numero e do achado mesmo. Por isso o guard exige tambem que exista OUTRO
+// achado do dicionario logo depois do numero, na MESMA clausula — que e a
+// forma da enumeracao ("anticardiolipina E 1% e positivo para anticoagulante
+// lupico").
+const COORDINATING_CONJ_RE = /\s(?:e|ou)\s/;
+function coordinatingConjunctionBetween(text, hitIndex, hitLen, matchedPct, ownCanonical) {
+  if (!matchedPct) return false;
+  const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
+  if (pctIdx <= hitIndex) return false;
+  const between = text.slice(hitIndex + hitLen, pctIdx);
+  if (!COORDINATING_CONJ_RE.test(between)) return false;
+  // A virgula tambem fecha a clausula: em "dor abdominal ou nausea em 35 a
+  // 39%, e febre em 10 a 35%" o numero E da dor abdominal, e a 'febre' que
+  // vem depois da virgula pertence ao proximo item da lista.
+  const after = text.slice(pctIdx + matchedPct.length, pctIdx + matchedPct.length + 60).split(/[.;:,]/)[0];
+  const normAfter = nodeNormalizeText(after);
+  return Object.keys(FINDING_DICT).some((c) => c !== ownCanonical &&
+    FINDING_DICT[c].aliases.some((al) => normAfter.includes(nodeNormalizeText(al))));
+}
+
 // Mesmo racional do hasInterveningDrug, do lado dos achados: se OUTRO achado
 // do dicionario e citado entre o achado e o percentual, o numero e do outro.
 function hasInterveningFinding(text, hitIndex, hitLen, matchedPct, ownCanonical) {
@@ -1385,7 +1499,7 @@ function isFrequencyConditionedOnSubgroup(text, hitIndex, hitLen, word, ownDisea
   return !!open && !mentionsOwnDisease(open[1], ownDisease);
 }
 
-const GENERAL_POPULATION_RE = /popula[cç][aã]o\s+(geral|saud[aá]vel|de\s+refer[eê]ncia)|na\s+popula[cç][aã]o\s+sem\b/i;
+const GENERAL_POPULATION_RE = /popula[cç][aã]o\s+(geral|saud[aá]vel|de\s+refer[eê]ncia)|na\s+popula[cç][aã]o\s+sem\b|doador(?:es)?\s+(?:de\s+sangue\s+)?saud[aá]ve(?:l|is)|(?:indiv[ií]duos|pessoas|controles|volunt[aá]rios)\s+saud[aá]ve(?:l|is)/i;
 function isGeneralPopulationRate(text, hitIndex, hitLen) {
   return GENERAL_POPULATION_RE.test(sentenceWindow(text, hitIndex, hitLen));
 }
@@ -1730,6 +1844,10 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       if (isFrequencyWordThenNewClause(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (hasInterveningFinding(chunk.text, hit.index, hit.len, pct, hit.canonical)) pct = null;
       if (isPerArmEnumeration(chunk.text, hit.index, hit.len, pct)) pct = null;
+      if (hit.entry.valueNotFrequency) pct = null;
+      if (measuresAbsence(chunk.text, hit.index, hit.len, pct)) pct = null;
+      if (isThresholdValue(chunk.text, pct, hit.index, hit.len)) pct = null;
+      if (coordinatingConjunctionBetween(chunk.text, hit.index, hit.len, pct, hit.canonical)) pct = null;
       if (closedParenthesisBetween(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (categoryDetailBetween(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct, a.disease)) pct = null;
