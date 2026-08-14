@@ -2384,6 +2384,16 @@ function prepararImpressao(ids) {
     const adicLab = (document.getElementById('lab-adicional')?.value || '').trim();
     if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
     paginarListaExames('exames-lab', 'lab-print-flat', agruparExamesPorCategoria(exames), true);
+
+    // Se só HLA-B27 e/ou IGRA foram marcados (nenhum outro exame, nem
+    // indicação clínica escrita), a página principal de "Solicitação de
+    // Exames Laboratoriais" ficaria praticamente em branco (só
+    // cabeçalho/paciente) — nesse caso não imprime essa página, só os
+    // documentos separados de HLA-B27/IGRA.
+    const semOutroConteudo = exames.length === 0 && !(document.getElementById('lab-indicacao')?.value || '').trim();
+    if (semOutroConteudo) {
+      document.getElementById('exames-lab')?.classList.remove('print-selected');
+    }
   }
 
   // ── Páginas especiais HLA-B27 e IGRA ──
