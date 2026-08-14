@@ -549,6 +549,7 @@ body{padding-bottom:64px}
       <button onclick="showPage('receita-especial',this)">Rec. Especial</button>
       <button onclick="showPage('exames-lab',this)">Exames Laboratoriais</button>
       <button onclick="showPage('exames-img',this)">Exames de Imagem</button>
+      <button onclick="showPage('vacinas',this)">Vacinas</button>
       <button onclick="abrirModal('modal-retornos')" style="position:relative" title="Ver retornos agendados">
         🔔 Retornos<span class="badge-retorno" id="badge-retorno" style="display:none">0</span>
       </button>
@@ -649,6 +650,10 @@ body{padding-bottom:64px}
     <div class="sel-item" id="sel-exames-img" onclick="toggleSel('exames-img')">
       <input type="checkbox" id="chk-exames-img" onclick="event.stopPropagation();toggleSel('exames-img')">
       <label for="chk-exames-img" onclick="event.stopPropagation();toggleSel('exames-img')">Exames de Imagem</label>
+    </div>
+    <div class="sel-item" id="sel-vacinas" onclick="toggleSel('vacinas')">
+      <input type="checkbox" id="chk-vacinas" onclick="event.stopPropagation();toggleSel('vacinas')">
+      <label for="chk-vacinas" onclick="event.stopPropagation();toggleSel('vacinas')">Vacinas</label>
     </div>
   </div>
   <div class="barra-acoes">
@@ -1491,7 +1496,80 @@ body{padding-bottom:64px}
 .btn-salvar-perfil{background:#ebf8f0;border:1.5px solid #68d391;color:#276749;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s}
 .btn-salvar-perfil:hover{background:#276749;color:#fff}
 .perfil-empty{font-size:12px;color:#a0aec0;font-style:italic}
+
+/* Pacote de vacinas de vírus vivo — aviso visual (mesmo padrão do
+   hlab27-aviso) para não passar despercebido durante o preenchimento */
+.pacote-aviso{border-color:#f6ad55;background:#fffbeb}
+.pacote-aviso .pacote-titulo{color:#92400e}
+.vac-nota-print{display:none}
+@media print{
+  .vac-nota-print{display:block;font-size:11px;color:#718096;font-style:italic;line-height:1.5;margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0}
+}
 </style>
+
+<!-- ======================== SOLICITAÇÃO DE VACINAS ======================== -->
+<div id="vacinas" class="page">
+  <div class="doc-wrapper">
+    <div class="doc-head-block">
+    <div class="doc-header">
+      <div class="doc-header-logo" id="dhl-vac"><img class="doc-logo" src="" alt=""></div>
+      <div class="doc-header-text">
+        <div class="doc-title">SOLICITAÇÃO DE VACINAÇÃO</div>
+        <div class="doc-subtitle local-nome">Hospital Bartira</div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label>Nome do Paciente</label>
+        <input type="text" id="vac-nome" placeholder="Nome completo" oninput="sincPaciente('nome',this.value)">
+      </div>
+      <div class="field-group w-auto" style="flex:0 0 160px">
+        <label>Data</label>
+        <input type="date" id="vac-data">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label>Diagnóstico / Terapia Imunossupressora em Uso</label>
+        <input type="text" id="vac-diagnostico" placeholder="Ex: Artrite Reumatoide em uso de Metotrexato + Prednisona">
+      </div>
+    </div>
+
+    <div class="section-label">Vacinas</div>
+    </div>
+    <div class="pacotes-grid" id="pacotes-vac"></div>
+    <div id="vac-print-flat" class="print-flat-list"></div>
+
+    <div class="doc-tail-block">
+    <div class="vac-nota-print">Esquema vacinal deve ser individualizado conforme o grau de imunossupressão e o tipo de terapia em uso. Vacinas de vírus vivo atenuado são geralmente contraindicadas sob imunossupressão significativa — avaliar necessidade de intervalo de suspensão da medicação antes da administração, quando aplicável.</div>
+
+    <div class="section-label print-se-preenchido" data-textarea="vac-obs">Observações</div>
+    <div class="field-group">
+      <textarea id="vac-obs" class="short" placeholder="Observações adicionais sobre o esquema vacinal..."></textarea>
+    </div>
+
+    <div class="field-row no-print" style="margin-top:24px">
+      <div class="field-group">
+        <label>Médico(a) Responsável</label>
+        <input type="text" id="vac-medico" placeholder="Nome do médico">
+      </div>
+      <div class="field-group" style="flex:0 0 200px">
+        <label>CRM</label>
+        <input type="text" id="vac-crm" placeholder="CRM/UF 00000">
+      </div>
+    </div>
+    <div class="signature-line">Assinatura e Carimbo</div>
+    </div>
+    <div class="print-rodape"></div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-clear" onclick="clearForm('vacinas')">Limpar</button>
+    <button class="btn-print" onclick="printDoc('vacinas')">🖨️ Imprimir</button>
+    <button class="btn-word" onclick="gerarWordVacinas()">⬇️ Baixar Word (.docx)</button>
+  </div>
+</div>
 
 <script>
 // ─── Pacotes de exames laboratoriais ──────────────────────────────────────────
@@ -1660,6 +1738,46 @@ const PACOTES_IMG = [
   {
     id: 'ipkg-outros', titulo: 'Densitometria e Outros',
     exames: ['Densitometria óssea (coluna e fêmur)','Densitometria óssea de corpo total','Cintilografia óssea','PET-CT','Capilaroscopia periungueal','Manometria esofágica']
+  }
+];
+
+// ─── Vacinas — recomendações para pacientes imunossuprimidos ──────────────────
+// Baseado nas recomendações da Sociedade Brasileira de Imunizações (SBIm) e da
+// Sociedade Brasileira de Reumatologia para pacientes em uso de terapia
+// imunossupressora/imunobiológica, restrito às vacinas disponíveis no Brasil
+// (rede pública e/ou clínicas privadas). Serve como checklist de apoio — o
+// esquema deve sempre ser individualizado pelo médico conforme o grau de
+// imunossupressão e a terapia em uso (ver nota impressa no documento).
+const PACOTES_VAC = [
+  {
+    id: 'pkg-vac-inativadas', titulo: 'Vacinas Inativadas / Recombinantes — Recomendadas',
+    exames: [
+      'Influenza (dose anual)',
+      'Pneumocócica conjugada 13-valente (VPC13) ou 15-valente (VPC15)',
+      'Pneumocócica polissacarídica 23-valente (VPP23)',
+      'Hepatite B',
+      'Hepatite A',
+      'dTpa (difteria, tétano e coqueluche acelular)',
+      'Meningocócica ACWY (conjugada)',
+      'Meningocócica B',
+      'HPV (papilomavírus humano)',
+      'COVID-19',
+      'Herpes-zóster recombinante adjuvada (2 doses)',
+      'Haemophilus influenzae tipo b (Hib) — situações especiais'
+    ]
+  },
+  {
+    id: 'pkg-vac-vivas', titulo: 'Vacinas de Vírus Vivo Atenuado — Contraindicadas / Avaliar com Cautela',
+    aviso: true,
+    exames: [
+      'Febre amarela',
+      'Tríplice viral (sarampo, caxumba e rubéola)',
+      'Tetraviral (tríplice viral + varicela)',
+      'Varicela',
+      'Febre tifoide (via oral)',
+      'BCG',
+      'Herpes-zóster de vírus vivo atenuado'
+    ]
   }
 ];
 
@@ -1891,6 +2009,27 @@ function renderPacotesImg() {
     </div>`).join('');
 }
 
+function renderPacotesVac() {
+  const container = document.getElementById('pacotes-vac');
+  if (!container) return;
+  container.innerHTML = PACOTES_VAC.map(pkg => `
+    <div class="pacote${pkg.aviso ? ' pacote-aviso' : ''}" id="${pkg.id}">
+      <div class="pacote-header" onclick="togglePacote('${pkg.id}')">
+        <input type="checkbox" class="pacote-check" id="${pkg.id}-cb"
+          onclick="event.stopPropagation(); togglePacoteCb('${pkg.id}')">
+        <span class="pacote-titulo">${pkg.titulo}</span>
+        <span class="pacote-toggle" onclick="event.stopPropagation(); expandPacote('${pkg.id}')">▼</span>
+      </div>
+      <div class="pacote-items" id="${pkg.id}-items">
+        ${pkg.exames.map((e, i) => `
+          <div class="exam-item" id="${pkg.id}-exam-${i}" onclick="toggleExamItem('${pkg.id}',${i})">
+            <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${pkg.id}',${i})">
+            <label>${e}</label>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
 function setLat(pkgId, idx, lat, btn) {
   const key = pkgId + '-' + idx;
   _lateralidade[key] = _lateralidade[key] === lat ? null : lat;
@@ -1948,6 +2087,16 @@ function clearForm(pageId) {
   // pacotes de imagem
   if (pageId === 'exames-img') {
     PACOTES_IMG.forEach(pkg => {
+      const pkgEl = document.getElementById(pkg.id);
+      if (!pkgEl) return;
+      pkgEl.classList.remove('selected');
+      const pkgCb = document.getElementById(pkg.id + '-cb');
+      if (pkgCb) { pkgCb.checked = false; pkgCb.indeterminate = false; }
+    });
+  }
+  // pacotes de vacinas
+  if (pageId === 'vacinas') {
+    PACOTES_VAC.forEach(pkg => {
       const pkgEl = document.getElementById(pkg.id);
       if (!pkgEl) return;
       pkgEl.classList.remove('selected');
@@ -2457,6 +2606,25 @@ function prepararImpressao(ids) {
     paginarListaExames('exames-img', 'img-print-flat', exames);
   }
 
+  // ── Lista de vacinas ──
+  const vacFlat = document.getElementById('vac-print-flat');
+  if (vacFlat) {
+    const entradasVac = [];
+    PACOTES_VAC.forEach(pkg => {
+      const itens = [];
+      pkg.exames.forEach((nome, i) => {
+        const el = document.getElementById(pkg.id + '-exam-' + i);
+        if (el && el.classList.contains('checked')) itens.push(nome);
+      });
+      if (itens.length) {
+        itens.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        entradasVac.push({ categoria: pkg.titulo });
+        itens.forEach(i => entradasVac.push(i));
+      }
+    });
+    paginarListaExames('vacinas', 'vac-print-flat', entradasVac);
+  }
+
   // ── Rodapé de impressão ──
   // Cada rodapé usa o médico/CRM do próprio documento a que pertence — com
   // fallback para o médico logado no cabeçalho global — em vez de depender
@@ -2475,6 +2643,7 @@ function prepararImpressao(ids) {
     'exames-img': ['img-medico', 'img-crm'],
     'print-hlab27': ['lab-medico', 'lab-crm'],
     'print-igra': ['lab-medico', 'lab-crm'],
+    vacinas: ['vac-medico', 'vac-crm'],
   };
   document.querySelectorAll('.print-rodape').forEach(el => {
     const campos = CAMPOS_MEDICO_POR_PAGINA[el.closest('.page')?.id];
@@ -2553,11 +2722,11 @@ function construirBotoesExclusaoPermanentes() {
 
 // ─── Impressão individual ──────────────────────────────────────────────────────
 function printDoc(pageId) {
-  const nomes = {'relatorio':'Relatório Médico','receita':'Receita Médica','exames-lab':'Exames Laboratoriais','exames-img':'Exames de Imagem'};
+  const nomes = {'relatorio':'Relatório Médico','receita':'Receita Médica','exames-lab':'Exames Laboratoriais','exames-img':'Exames de Imagem','vacinas':'Solicitação de Vacinação'};
   prepararImpressao([pageId]);
   try {
     window.print();
-    const pac = v('rel-nome') || v('rx-nome') || v('lab-nome') || v('img-nome') || '—';
+    const pac = v('rel-nome') || v('rx-nome') || v('lab-nome') || v('img-nome') || v('vac-nome') || '—';
     registrarLog('Impressão: ' + (nomes[pageId]||pageId), pac, '');
     if (pageId === 'relatorio') salvarHistorico();
     if (pageId === 'receita') salvarReceitaHistorico();
@@ -3173,6 +3342,38 @@ async function gerarWordImg() {
   salvarImgExamesHistorico();
 }
 
+async function gerarWordVacinas() {
+  const paras = [
+    ...logoDocPara(),
+    { type: 'title', text: 'SOLICITAÇÃO DE VACINAÇÃO' },
+    { type: 'subtitle', text: localAtual() },
+    { type: 'label-value', label: 'Paciente', value: v('vac-nome') },
+    { type: 'label-value', label: 'Data', value: fmtDataBR(v('vac-data')) },
+    { type: 'label-value', label: 'Diagnóstico / Terapia Imunossupressora em Uso', value: v('vac-diagnostico') },
+    { type: 'separator' },
+  ];
+  PACOTES_VAC.forEach(pkg => {
+    const itens = [];
+    pkg.exames.forEach((nome, i) => {
+      const el = document.getElementById(pkg.id + '-exam-' + i);
+      if (el && el.classList.contains('checked')) itens.push(nome);
+    });
+    if (itens.length) {
+      itens.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      paras.push({ type: 'heading', text: pkg.titulo });
+      itens.forEach(i => paras.push({ type: 'bullet', text: i }));
+    }
+  });
+  paras.push({ type: 'multiline', value: 'Esquema vacinal deve ser individualizado conforme o grau de imunossupressão e o tipo de terapia em uso. Vacinas de vírus vivo atenuado são geralmente contraindicadas sob imunossupressão significativa — avaliar necessidade de intervalo de suspensão da medicação antes da administração, quando aplicável.' });
+  if (v('vac-obs')) {
+    paras.push({ type: 'heading', text: 'Observações' });
+    paras.push({ type: 'multiline', value: v('vac-obs') });
+  }
+  const nomeArqVac = `vacinas-${(v('vac-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
+  await downloadDocx(makeDoc(paras, { medico: v('vac-medico'), crm: v('vac-crm'), rqe: rqeAtual(), local: localAtual() }), nomeArqVac);
+  registrarLog('Vacinas Word', v('vac-nome'), nomeArqVac);
+}
+
 // ─── Histórico de exames de imagem por paciente ───────────────────────────────
 function chaveImgHist(nome) { return 'imghist-' + nome.trim().toLowerCase().replace(/\s+/g,'-'); }
 
@@ -3221,7 +3422,7 @@ function renderImgExamesAnteriores(nome) {
 
 // ─── Sincronização de dados do paciente entre abas ───────────────────────────
 const SINC_MAP = {
-  nome:        ['rel-nome','rx-nome','lab-nome','img-nome'],
+  nome:        ['rel-nome','rx-nome','lab-nome','img-nome','vac-nome'],
   nascimento:  ['rel-nascimento'],
   idade:       ['rel-idade','rx-idade'],
   endereco:    ['rx-endereco'],
@@ -3237,7 +3438,7 @@ function sincPaciente(campo, valor) {
 }
 
 // ─── Seleção combinada ────────────────────────────────────────────────────────
-const DOCS = ['relatorio','receita','exames-lab','exames-img'];
+const DOCS = ['relatorio','receita','exames-lab','exames-img','vacinas'];
 
 function toggleSel(id) {
   const chk = document.getElementById('chk-' + id);
@@ -3272,6 +3473,7 @@ async function baixarWordSelecionados() {
     else if (id === 'receita') await gerarWordReceita();
     else if (id === 'exames-lab') await gerarWordLab();
     else if (id === 'exames-img') await gerarWordImg();
+    else if (id === 'vacinas') await gerarWordVacinas();
   }
 }
 
@@ -3287,7 +3489,7 @@ function sincMedico() {
   const medico = document.getElementById('g-medico')?.value || '';
   const crm    = document.getElementById('g-crm')?.value    || '';
   const rqe    = document.getElementById('g-rqe')?.value    || '';
-  ['rel','rx','lab','img'].forEach(pfx => {
+  ['rel','rx','lab','img','vac'].forEach(pfx => {
     const mEl = document.getElementById(pfx + '-medico');
     const cEl = document.getElementById(pfx + '-crm');
     if (mEl && mEl !== document.activeElement) mEl.value = medico;
@@ -3538,6 +3740,7 @@ function initSecoesColapsaveis() {
 document.addEventListener('DOMContentLoaded', () => {
   renderPacotes();
   renderPacotesImg();
+  renderPacotesVac();
   renderItemsPacoteCustomLab();
   renderItemsPacoteCustomImg();
   renderMedCustomGrupo();
