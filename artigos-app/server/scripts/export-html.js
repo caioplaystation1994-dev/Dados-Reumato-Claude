@@ -407,7 +407,7 @@ const FINDING_DICT = {
   'Leucopenia': { type: 'laboratorial', aliases: ['leucopenia'] },
   'Opacidade em vidro fosco': { type: 'imagem', aliases: ['opacidade em vidro fosco', 'opacidades em vidro fosco'] },
   'Cavitação pulmonar': { type: 'imagem', aliases: ['cavitacao', 'lesao cavitaria', 'lesoes cavitarias'] },
-  'Hemorragia alveolar': { type: 'clínico', aliases: ['hemorragia alveolar'] },
+  'Hemorragia alveolar': { type: 'clínico', aliases: ['hemorragia alveolar', 'hemorragia pulmonar'] },
   'Sinovite': { type: 'clínico', aliases: ['sinovite'] },
   'Entesite': { type: 'clínico', aliases: ['entesite'] },
   'Dactilite': { type: 'clínico', aliases: ['dactilite'] },
@@ -648,6 +648,35 @@ const FINDING_DICT = {
   'Hipertensão maligna': { type: 'clínico', aliases: ['hipertensao maligna'] },
   'Infarto de órgão (esplênico/renal)': { type: 'imagem', aliases: ['infarto esplenico', 'infarto renal', 'infartos esplenicos', 'infartos renais'] },
   'Infarto do miocárdio': { type: 'clínico', aliases: ['infarto do miocardio', 'infarto agudo do miocardio'] },
+  // Painel de autoanticorpos ANA-específicos (imunoblot/ENA estendido). Anti-
+  // Ro/SSA, anti-La/SSB, anti-Sm, anti-Scl-70, anti-Jo-1 e anticentrômero já
+  // existiam isolados; faltavam os demais alvos comuns do painel e o próprio
+  // ANA como achado laboratorial genérico.
+  'FAN (anticorpo antinuclear) positivo': { type: 'laboratorial', aliases: ['ana positivo', 'fan positivo', 'anticorpo antinuclear positivo'] },
+  'Anti-Sm/RNP': { type: 'laboratorial', aliases: ['anti-sm/rnp', 'anti-rnp', 'anti-u1-rnp'] },
+  'Anti-Ro52': { type: 'laboratorial', aliases: ['anti-ro52', 'anti-ro 52', 'anti-ro-52'] },
+  'Anti-histonas': { type: 'laboratorial', aliases: ['anti-histonas', 'anti-histona'] },
+  'Anti-nucleossomo': { type: 'laboratorial', aliases: ['anti-nucleossomo', 'anti-nucleosome'] },
+  'Anti-Ku': { type: 'laboratorial', aliases: ['anti-ku'] },
+  'Anti-proteína P ribossomal': { type: 'laboratorial', aliases: ['anti-proteina p ribossomal', 'anti-rib-p', 'anti-ribossomal p'] },
+  'Anti-PCNA': { type: 'laboratorial', aliases: ['anti-pcna'] },
+  'Anti-Pm-Scl': { type: 'laboratorial', aliases: ['anti-pm-scl', 'anti-pm/scl'] },
+  'Anti-Mi-2': { type: 'laboratorial', aliases: ['anti-mi-2', 'anti-mi2'] },
+  'Fator reumatoide positivo': { type: 'laboratorial', aliases: ['fator reumatoide positivo'] },
+  // Semiologia extrarrenal da SHU/glomerulonefrite aguda que ainda faltava.
+  'Endocardite': { type: 'clínico', aliases: ['endocardite'] },
+  'Hepatite': { type: 'clínico', aliases: ['hepatite', 'disfuncao hepatica'] },
+  'Hiperbilirrubinemia': { type: 'laboratorial', aliases: ['hiperbilirrubinemia', 'bilirrubina elevada'] },
+  'Trombose venosa profunda': { type: 'clínico', aliases: ['trombose venosa profunda', 'tvp'] },
+  'Embolia pulmonar': { type: 'clínico', aliases: ['embolia pulmonar', 'tromboembolismo pulmonar'] },
+  'Diabetes mellitus secundário': { type: 'clínico', aliases: ['diabetes mellitus insulino-dependente secundario', 'diabetes secundario'] },
+  'Empiema pleural': { type: 'clínico', aliases: ['empiema pleural', 'empiema'] },
+  'Colite hemorrágica': { type: 'clínico', aliases: ['colite hemorragica'] },
+  'Isquemia/necrose intestinal': { type: 'clínico', aliases: ['isquemia intestinal', 'necrose intestinal', 'necrose de alcas intestinais'] },
+  'Perfuração intestinal': { type: 'clínico', aliases: ['perfuracao intestinal'] },
+  'Pancreatite': { type: 'clínico', aliases: ['pancreatite'] },
+  'Hemoglobinúria': { type: 'laboratorial', aliases: ['hemoglobinuria'] },
+  'Falência de múltiplos órgãos': { type: 'clínico', aliases: ['falencia de multiplos orgaos', 'disfuncao de multiplos orgaos'] },
   'Atrofia de íris':{ type: 'clínico', aliases: ['atrofia de iris'] },
 };
 
@@ -1399,7 +1428,9 @@ function closedParenthesisBetween(text, hitIndex, hitLen, matchedPct) {
 // "a trombocitopenia ... esta AUSENTE a apresentacao em 15 a 20% dos
 // pacientes": o numero mede a AUSENCIA do achado. Exibir "Trombocitopenia:
 // 15 a 20%" diz exatamente o contrario do que a frase afirma.
-const ABSENCE_RE = /\b(?:ausente|aus[êe]ncia|indetect[aá]vel|negativ[oa]|normal|preservad[oa])\b/i;
+// "a diarreia sanguinolenta ... de fato, NAO OCORRE em 30 a 40% dos
+// pacientes": mesma classe, com verbo de ausencia em vez de adjetivo.
+const ABSENCE_RE = /\b(?:ausente|aus[êe]ncia|indetect[aá]vel|negativ[oa]|normal|preservad[oa]|n[aã]o\s+ocorre|n[aã]o\s+esteve\s+presente|n[aã]o\s+foi\s+observad[oa]|n[aã]o\s+se\s+apresenta)\b/i;
 function measuresAbsence(text, hitIndex, hitLen, matchedPct) {
   if (!matchedPct) return false;
   const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
@@ -1435,6 +1466,18 @@ function isThresholdValue(text, matchedPct, hitIndex, hitLen) {
 // forma da enumeracao ("anticardiolipina E 1% e positivo para anticoagulante
 // lupico").
 const COORDINATING_CONJ_RE = /\s(?:e|ou)\s/;
+// "variando de quase 60% em casos associados a HIPERTENSAO MALIGNA A MENOS
+// DE 10% em SHU induzida por droga": e faixa com dois extremos para DUAS
+// condicoes diferentes ("de X% em ... a Y% em ..."); o achado citado logo
+// antes do "a menos de/a mais de" e o sujeito do extremo ANTERIOR (60%), e o
+// numero que vem depois do "a" pertence ao outro extremo. Restrito a "a
+// menos de"/"a mais de" com o "a" imediatamente colado — "mais de"/"menos
+// de" soltos no meio da frase continuam validos como proporcao de pacientes.
+const RANGE_OTHER_ENDPOINT_RE = /^\s*a\s+(?:menos|mais)\s+de\s+\d/i;
+function isOtherRangeEndpoint(text, hitIndex, hitLen) {
+  return RANGE_OTHER_ENDPOINT_RE.test(text.slice(hitIndex + hitLen, hitIndex + hitLen + 20));
+}
+
 function coordinatingConjunctionBetween(text, hitIndex, hitLen, matchedPct, ownCanonical) {
   if (!matchedPct) return false;
   const pctIdx = nearestOccurrenceIndex(text, hitIndex, hitLen, matchedPct);
@@ -1446,8 +1489,19 @@ function coordinatingConjunctionBetween(text, hitIndex, hitLen, matchedPct, ownC
   // vem depois da virgula pertence ao proximo item da lista.
   const after = text.slice(pctIdx + matchedPct.length, pctIdx + matchedPct.length + 60).split(/[.;:,]/)[0];
   const normAfter = nodeNormalizeText(after);
-  return Object.keys(FINDING_DICT).some((c) => c !== ownCanonical &&
-    FINDING_DICT[c].aliases.some((al) => normAfter.includes(nodeNormalizeText(al))));
+  if (Object.keys(FINDING_DICT).some((c) => c !== ownCanonical &&
+    FINDING_DICT[c].aliases.some((al) => normAfter.includes(nodeNormalizeText(al))))) return true;
+  // "positivo em 95% dos pacientes com faringite E 80% dos COM infecção de
+  // pele" / "variou entre 2 e 87% para anticardiolipina E entre 14 e 100%
+  // PARA anti-beta-2-glicoproteína": o item seguinte pode nao estar no
+  // dicionario, mas a construcao "dos (pacientes|casos) COM" ou "para
+  // <substantivo>" logo apos o numero ja denuncia que ali comeca outro item
+  // da enumeracao — o numero certo fica ANTES do achado, nao depois.
+  // Cuidado: o "com" e obrigatorio aqui. "75% DOS CASOS DE GPA" ou "70%
+  // DOS PACIENTES," so fecham a clausula do PROPRIO achado (denominador),
+  // nao introduzem um novo — sem exigir "com" essas formas comuns eram
+  // apagadas por engano.
+  return /^\s*(?:d[ao]s?\s+(?:pacientes|casos|indiv[ií]duos\s+)?com\b|para\s+[a-zà-ú])/i.test(after);
 }
 
 // Mesmo racional do hasInterveningDrug, do lado dos achados: se OUTRO achado
@@ -1848,6 +1902,7 @@ function extractFindingsFromArticle(a, allDiseases, primaryDisease) {
       if (measuresAbsence(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isThresholdValue(chunk.text, pct, hit.index, hit.len)) pct = null;
       if (coordinatingConjunctionBetween(chunk.text, hit.index, hit.len, pct, hit.canonical)) pct = null;
+      if (isOtherRangeEndpoint(chunk.text, hit.index, hit.len)) pct = null;
       if (closedParenthesisBetween(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (categoryDetailBetween(chunk.text, hit.index, hit.len, pct)) pct = null;
       if (isSuspectNumber(chunk.text, hit.index, hit.len, pct, a.disease)) pct = null;
