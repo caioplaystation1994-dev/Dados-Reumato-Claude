@@ -318,6 +318,17 @@ body{padding-bottom:64px}
 }
 .print-categoria-titulo{font-size:11px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #d1dae8;padding:2px 0 3px;margin-top:12px}
 .print-categoria-titulo:first-child{margin-top:0}
+/* Duas colunas na lista impressa de exames laboratoriais (ver
+   paginarListaExames, parâmetro duasColunas). A divisão de quais exames
+   vão em qual coluna já é decidida em JS (cada grupo inteiro numa coluna
+   só sempre que possível, sem depender do navegador para balancear) —
+   aqui só é preciso posicioná-las lado a lado.
+ */
+.print-flat-cols{display:none}
+.print-flat-col{flex:1;min-width:0}
+@media print{
+  .print-flat-cols{display:flex!important;gap:24px}
+}
 
 /* Ocultar cabeçalho da tabela de medicamentos */
 .med-table thead{display:none}
@@ -2024,7 +2035,16 @@ function renderEntradaHtml(entrada) {
 // rodapé do médico/estabelecimento — problema que ocorria quando a lista
 // de exames excedia uma página e "vazava" para a seguinte sem repetir
 // cabeçalho/rodapé.
-function paginarListaExames(pageId, flatListId, exames) {
+//
+// duasColunas: quando true (Exames Laboratoriais), a lista impressa vira
+// duas colunas por página (ver CSS #exames-lab .print-flat-list) — a
+// largura usada para medir a altura de cada item passa a ser a largura
+// de UMA coluna (não a página inteira), pois um texto mais estreito quebra
+// em mais linhas; e a capacidade de cada página dobra (2 colunas de
+// mesma altura), embora a decisão de "cabe nesta página" continue no
+// nível de página — a distribuição entre as duas colunas é feita pelo
+// próprio CSS (column-fill:auto), não pelo JS.
+function paginarListaExames(pageId, flatListId, exames, duasColunas = false) {
   const pageEl = document.getElementById(pageId);
   const flatListEl = document.getElementById(flatListId);
   if (!pageEl || !flatListEl) return;
@@ -2041,11 +2061,14 @@ function paginarListaExames(pageId, flatListId, exames) {
     return;
   }
 
+  const GAP_COLUNA_PX = 24;
+  const larguraMedicao = duasColunas ? (605 - GAP_COLUNA_PX) / 2 : 605;
+
   // Mede a altura real de cada item/categoria (a fonte/padding do
   // .print-flat-item e .print-categoria-titulo já valem fora do modo
   // impressão, só o "display" muda por media query).
   const medidor = document.createElement('div');
-  medidor.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;width:605px';
+  medidor.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${larguraMedicao}px`;
   medidor.className = 'print-flat-list';
   medidor.style.display = 'block';
   document.body.appendChild(medidor);
@@ -2062,10 +2085,10 @@ function paginarListaExames(pageId, flatListId, exames) {
   // Agrupa os índices em "blocos indivisíveis": cada categoria + todos os
   // seus itens (até o próximo cabeçalho de categoria) formam um bloco só,
   // para que um grupo (ex.: "Enzimas Hepáticas") nunca seja partido entre
-  // páginas se puder evitar — todo o grupo pula para a página seguinte
-  // junto, em vez de deixar um item órfão sozinho lá. Listas sem
-  // cabeçalho de categoria (exames de imagem) tratam cada item como um
-  // bloco de 1, mantendo o comportamento antigo.
+  // colunas/páginas se puder evitar — todo o grupo pula para a
+  // coluna/página seguinte junto, em vez de deixar um item órfão sozinho
+  // lá. Listas sem cabeçalho de categoria (exames de imagem) tratam cada
+  // item como um bloco de 1, mantendo o comportamento antigo.
   const blocos = [];
   let blocoAtual = null;
   exames.forEach((entrada, i) => {
@@ -2084,32 +2107,40 @@ function paginarListaExames(pageId, flatListId, exames) {
     return s;
   };
 
-  // paginas[]: cada item é { idxs: [...índices], forcado: bool } — "forcado"
-  // marca uma página cujo conteúdo teve de ser dividido no meio de um
-  // bloco (porque o bloco sozinho já é maior que uma página inteira) —
-  // caso raro em que a margem de segurança padrão pode não bastar, então
-  // o rodapé dessa página específica usa fluxo normal em vez de fixado
-  // no fim (ver uso de "forcado" mais abaixo).
-  const paginas = [];
+  // Primeiro empacota os blocos em "colunas" (capacidade = altura de uma
+  // página) — no modo de uma coluna, cada coluna já É uma página; no modo
+  // de duas colunas, duas colunas seguidas formam uma página (feito logo
+  // abaixo). Empacotar nesse nível — em vez de calcular "cabe numa página
+  // (2 colunas)" e deixar o CSS decidir onde quebrar — garante que nunca
+  // seja preciso mais que duas colunas por página, e que um grupo só
+  // continue sem repetir o título quando ele mesmo for maior que uma
+  // coluna inteira sozinho (caso raro).
+  // colunas[]: cada item é { idxs: [...índices], forcado: bool } —
+  // "forcado" marca uma coluna cujo conteúdo teve de ser dividido no meio
+  // de um bloco (porque o bloco sozinho já é maior que uma coluna
+  // inteira) — caso raro em que a margem de segurança padrão pode não
+  // bastar, então o rodapé da página correspondente usa fluxo normal em
+  // vez de fixado no fim.
+  const colunas = [];
   let atualIdxs = [];
   let alturaAtual = 0;
   let atualForcado = false;
-  const fecharPagina = () => {
-    if (atualIdxs.length > 0) paginas.push({ idxs: atualIdxs, forcado: atualForcado });
+  const fecharColuna = () => {
+    if (atualIdxs.length > 0) colunas.push({ idxs: atualIdxs, forcado: atualForcado });
     atualIdxs = [];
     alturaAtual = 0;
     atualForcado = false;
   };
   blocos.forEach(bloco => {
     const hBloco = alturaBloco(bloco);
-    if (atualIdxs.length > 0 && alturaAtual + hBloco > alturaDisponivel) fecharPagina();
+    if (atualIdxs.length > 0 && alturaAtual + hBloco > alturaDisponivel) fecharColuna();
     if (hBloco > alturaDisponivel) {
-      // Bloco maior que uma página inteira sozinho: não tem como manter
+      // Bloco maior que uma coluna inteira sozinho: não tem como manter
       // junto, divide item a item (mesmo algoritmo de antes).
       for (let i = bloco.inicio; i <= bloco.fim; i++) {
         const h = alturas[i];
-        if (atualIdxs.length > 0 && alturaAtual + h > alturaDisponivel) fecharPagina();
-        atualIdxs.push(i);
+        if (atualIdxs.length > 0 && alturaAtual + h > alturaDisponivel) fecharColuna();
+  atualIdxs.push(i);
         alturaAtual += h;
         atualForcado = true;
       }
@@ -2118,14 +2149,52 @@ function paginarListaExames(pageId, flatListId, exames) {
       alturaAtual += hBloco;
     }
   });
-  fecharPagina();
+  fecharColuna();
+
+  // Agrupa as colunas em páginas: 2 colunas por página quando duasColunas,
+  // senão 1 coluna = 1 página (comportamento antigo). Uma página é
+  // "forcado" se qualquer uma de suas colunas precisou dividir um bloco.
+  const paginas = [];
+  const colunasPorPagina = duasColunas ? 2 : 1;
+  for (let i = 0; i < colunas.length; i += colunasPorPagina) {
+    const grupo = colunas.slice(i, i + colunasPorPagina);
+    paginas.push({
+      colunas: grupo.map(c => c.idxs),
+      forcado: grupo.some(c => c.forcado),
+    });
+  }
 
   const headBlock = origWrapper.querySelector('.doc-head-block');
   const tailBlock = origWrapper.querySelector('.doc-tail-block');
 
+  // Monta o HTML da lista de uma página: uma única .print-flat-list (modo
+  // normal) ou, com duas colunas, um wrapper flex com uma .print-flat-list
+  // por coluna já pronta (cada bloco inteiro numa coluna só — a divisão
+  // já foi decidida acima, então aqui é só render, sem depender do CSS
+  // multi-coluna do navegador para balancear).
+  const renderListaPagina = pagina => {
+    if (pagina.colunas.length <= 1) {
+      const div = document.createElement('div');
+      div.className = 'print-flat-list';
+      div.innerHTML = pagina.colunas[0].map(i => renderEntradaHtml(exames[i])).join('');
+      return div;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'print-flat-cols';
+    pagina.colunas.forEach(idxs => {
+      const col = document.createElement('div');
+      col.className = 'print-flat-list print-flat-col';
+      col.innerHTML = idxs.map(i => renderEntradaHtml(exames[i])).join('');
+      wrap.appendChild(col);
+    });
+    return wrap;
+  };
+
   if (paginas.length <= 1) {
     // Cabe tudo numa página só: mantém o wrapper original como está.
-    flatListEl.innerHTML = paginas[0].idxs.map(i => renderEntradaHtml(exames[i])).join('');
+    const listaPronta = renderListaPagina(paginas[0]);
+    flatListEl.replaceWith(listaPronta);
+    listaPronta.id = flatListId;
     return;
   }
 
@@ -2144,10 +2213,7 @@ function paginarListaExames(pageId, flatListId, exames) {
       copiarValoresClone(headBlock, headClone);
       clone.appendChild(headClone);
     }
-    const listaClone = document.createElement('div');
-    listaClone.className = 'print-flat-list';
-    listaClone.innerHTML = pagina.idxs.map(i => renderEntradaHtml(exames[i])).join('');
-    clone.appendChild(listaClone);
+    clone.appendChild(renderListaPagina(pagina));
     if (isUltima && tailBlock) {
       const tailClone = tailBlock.cloneNode(true);
       copiarValoresClone(tailBlock, tailClone);
@@ -2317,7 +2383,7 @@ function prepararImpressao(ids) {
     });
     const adicLab = (document.getElementById('lab-adicional')?.value || '').trim();
     if (adicLab) adicLab.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
-    paginarListaExames('exames-lab', 'lab-print-flat', agruparExamesPorCategoria(exames));
+    paginarListaExames('exames-lab', 'lab-print-flat', agruparExamesPorCategoria(exames), true);
   }
 
   // ── Páginas especiais HLA-B27 e IGRA ──
