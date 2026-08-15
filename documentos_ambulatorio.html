@@ -277,8 +277,24 @@ body{padding-bottom:64px}
 
   /* Cabeçalhos condicionais */
   .no-print{display:none!important}
+  /* .section-label é escondido por padrão (regra acima, "Estrutura: só
+     páginas marcadas aparecem") por ser, na maioria dos casos, só um rótulo
+     de edição em tela. Os rótulos marcados "print-se-preenchido" (ex.:
+     Exame Físico, Conduta/Plano Terapêutico, Indicação Clínica) são a
+     exceção: devem imprimir como cabeçalho de seção sempre que o campo
+     correspondente tiver conteúdo — sem esta regra, esses títulos nunca
+     apareciam na impressão de nenhum documento (bug pré-existente).
+     .oculto-impressao (campo vazio) vem depois para vencer o empate de
+     especificidade quando as duas classes coexistem. */
+  .section-label.print-se-preenchido{display:block!important}
+  .section-label.secao-colapsavel::after{display:none!important}
   .section-label.oculto-impressao{display:none!important}
   .section-label{border-left:none;background:none;border-bottom:1px solid #d1dae8;padding:2px 0 3px;letter-spacing:.5px;color:#1a56a0;font-size:10px}
+  /* Separa visualmente a indicação clínica/justificativa da lista de
+     exames acima dela — uma linha fina com mais respiro, no mesmo espírito
+     discreto do traço sob o cabeçalho do documento (.doc-header::after),
+     em vez de uma caixa colorida (reservada para avisos). */
+  .section-label.divisor-indicacao{margin-top:26px;padding-top:14px;border-top:1px solid #b9c6dc}
   .med-atalhos{display:none!important}
   .med-table thead{display:none!important}
 
@@ -1318,7 +1334,7 @@ body{padding-bottom:64px}
       <textarea id="lab-adicional" class="short" placeholder="Outros exames não listados acima... (um por linha)"></textarea>
     </div>
 
-    <div class="section-label">Indicação Clínica / Observações</div>
+    <div class="section-label print-se-preenchido divisor-indicacao" data-textarea="lab-indicacao">Indicação Clínica / Observações</div>
     <div class="field-group">
       <textarea id="lab-indicacao" class="short" placeholder="Justificativa clínica para os exames solicitados..."></textarea>
     </div>
@@ -1448,7 +1464,7 @@ body{padding-bottom:64px}
       <textarea id="img-adicional" class="short" placeholder="Outros exames de imagem, com especificação do segmento/lado... (um por linha)"></textarea>
     </div>
 
-    <div class="section-label print-se-preenchido" data-textarea="img-indicacao">Indicação Clínica / Quesitos</div>
+    <div class="section-label print-se-preenchido divisor-indicacao" data-textarea="img-indicacao">Indicação Clínica / Quesitos</div>
     <div class="field-group">
       <textarea id="img-indicacao" class="short" placeholder="Justificativa clínica e quesitos específicos para o laudo..."></textarea>
     </div>
