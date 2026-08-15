@@ -2176,6 +2176,19 @@ const ALTURA_PAGINA_PX = 25 * 37.7953; // 25cm em px
 const RESERVA_TOPO_BASE_PX = 16 + (3.5 * 37.7953);
 const RESERVA_CABECALHO_RODAPE_PX = 360;
 
+// Reserva equivalente à de cima, mas usada só na checagem de "a cauda
+// (indicação clínica) cabe junto da última página de itens?" dentro de
+// paginarListaExames — que só imprime cabeçalhos compactos (Exames Lab/
+// Img/Vacinas, ~214px), nunca o cabeçalho maior do Relatório (~283px) que
+// obriga a folga de 360px acima a ser tão generosa. Reusar a mesma
+// margem de segurança ali fazia essa checagem "sobrar" ~115px de conta
+// não utilizada, disparando uma página extra para a cauda com frequência
+// bem maior que o necessário — a lista de itens já parava bem antes do
+// fim real da página, deixando metade da folha em branco antes do rodapé
+// ir para a página seguinte. 300px cobre o cabeçalho real (~214px) + o
+// rodapé (~31px) com ~55px de folga.
+const RESERVA_CABECALHO_RODAPE_CAUDA_PX = 300;
+
 // cloneNode não copia o valor digitado pelo usuário em inputs/textareas (só
 // o value inicial do HTML) — copia manualmente antes de descartar os ids.
 function copiarValoresClone(orig, clone) {
@@ -2319,26 +2332,42 @@ function paginarListaExames(pageId, flatListId, exames, duasColunas = false) {
   const headBlock = origWrapper.querySelector('.doc-head-block');
   const tailBlock = origWrapper.querySelector('.doc-tail-block');
 
-  // A "cauda" (indicação clínica/justificativa, campos de médico/CRM etc.)
-  // só é anexada à última página — mas o empacotamento de colunas acima
-  // não sabia disso e considerou a página inteira disponível para os
-  // itens de exame, ignorando o espaço que a cauda vai ocupar depois
-  // deles. Resultado: quando uma justificativa longa era digitada, a
-  // última coluna de itens ficava "cheia" (ocupando toda a página) e a
-  // cauda + rodapé transbordavam sozinhos para uma página seguinte, sem
-  // cabeçalho — o rodapé "sumia" visualmente da página em que o usuário
-  // esperava vê-lo. Mede-se aqui a altura real da cauda (excluindo o que
-  // não imprime: campos .no-print, textareas vazias/substituídas etc.) e,
-  // se ela não couber junto da última coluna, reserva-se uma página extra
-  // só para a cauda — que sempre vem com cabeçalho e rodapé completos.
+  // A "cauda" (indicação clínica/justificativa) só é anexada à última
+  // página — mas o empacotamento de colunas acima não sabia disso e
+  // considerou a página inteira disponível para os itens de exame,
+  // ignorando o espaço que a cauda vai ocupar depois deles. Resultado:
+  // quando uma justificativa longa era digitada, a última coluna de itens
+  // ficava "cheia" e a cauda + rodapé transbordavam sozinhos para uma
+  // página seguinte, sem cabeçalho.
+  //
+  // A altura da cauda é medida com a mesma técnica usada acima para os
+  // itens de exame (fonte/line-height idênticos aos de impressão: 13px /
+  // 1.5, ver .print-textarea-valor) — clonar o <div class="doc-tail-block">
+  // inteiro e medir fora do modo impressão não funciona: o texto da
+  // indicação só vira visível através de uma classe (.print-textarea-valor)
+  // condicionada a @media print, então media a 0px fora dele, e o rótulo
+  // "Indicação Clínica" mede o dobro do tamanho real (estilo de tela, bem
+  // mais espaçoso que o de impressão) — a combinação gerava reserva de
+  // espaço incorreta e páginas extras desnecessárias. Só a indicação
+  // clínica entra na conta: os demais campos da cauda (médico/CRM,
+  // assinatura) não imprimem (.no-print).
   let tailHeight = 0;
   if (tailBlock) {
-    const tailClone = tailBlock.cloneNode(true);
-    tailClone.querySelectorAll('.no-print, .print-adicional-group, .oculto-impressao, .signature-line, textarea').forEach(el => el.remove());
-    tailClone.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${larguraMedicao}px;display:block`;
-    document.body.appendChild(tailClone);
-    tailHeight = tailClone.getBoundingClientRect().height;
-    document.body.removeChild(tailClone);
+    const labelIndicacao = tailBlock.querySelector('.section-label.print-se-preenchido');
+    const textareaIndicacao = labelIndicacao ? document.getElementById(labelIndicacao.dataset.textarea) : null;
+    const textoIndicacao = (textareaIndicacao?.value || '').trim();
+    if (textoIndicacao) {
+      // Altura do título de seção no layout de impressão (linha + paddings
+      // do .section-label, mais o divisor visual quando presente) —
+      // valores fixos que batem com as regras de @media print.
+      tailHeight += labelIndicacao.classList.contains('divisor-indicacao') ? 60 : 20;
+      const medidorTexto = document.createElement('div');
+      medidorTexto.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;width:605px;white-space:pre-wrap;font-size:13px;line-height:1.5;padding:2px 0';
+      medidorTexto.textContent = textoIndicacao;
+      document.body.appendChild(medidorTexto);
+      tailHeight += medidorTexto.getBoundingClientRect().height;
+      document.body.removeChild(medidorTexto);
+    }
   }
 
   // Agrupa as colunas em páginas: 2 colunas por página quando duasColunas,
@@ -2360,10 +2389,11 @@ function paginarListaExames(pageId, flatListId, exames, duasColunas = false) {
   // página anterior (isso não moveria a cauda para outra página, já que
   // ela é anexada abaixo das colunas, não dentro de uma delas).
   if (tailHeight > 0 && paginas.length > 0) {
+    const alturaDisponivelCauda = ALTURA_PAGINA_PX - RESERVA_TOPO_BASE_PX - RESERVA_CABECALHO_RODAPE_CAUDA_PX;
     const ultimaPagina = paginas[paginas.length - 1];
     const alturaUltimaPagina = Math.max(...ultimaPagina.colunas.map(idxs => idxs.reduce((s, i) => s + alturas[i], 0)));
-    if (alturaUltimaPagina + tailHeight > alturaDisponivel) {
-      paginas.push({ colunas: [[]], forcado: tailHeight > alturaDisponivel });
+    if (alturaUltimaPagina + tailHeight > alturaDisponivelCauda) {
+      paginas.push({ colunas: [[]], forcado: tailHeight > alturaDisponivelCauda });
     }
   }
 
