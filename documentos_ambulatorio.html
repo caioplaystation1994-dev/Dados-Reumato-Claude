@@ -2275,7 +2275,7 @@ function paginarListaExames(pageId, flatListId, exames, duasColunas = false) {
   let alturaAtual = 0;
   let atualForcado = false;
   const fecharColuna = () => {
-    if (atualIdxs.length > 0) colunas.push({ idxs: atualIdxs, forcado: atualForcado });
+    if (atualIdxs.length > 0) colunas.push({ idxs: atualIdxs, forcado: atualForcado, altura: alturaAtual });
     atualIdxs = [];
     alturaAtual = 0;
     atualForcado = false;
@@ -2300,6 +2300,31 @@ function paginarListaExames(pageId, flatListId, exames, duasColunas = false) {
   });
   fecharColuna();
 
+  const headBlock = origWrapper.querySelector('.doc-head-block');
+  const tailBlock = origWrapper.querySelector('.doc-tail-block');
+
+  // A "cauda" (indicação clínica/justificativa, campos de médico/CRM etc.)
+  // só é anexada à última página — mas o empacotamento de colunas acima
+  // não sabia disso e considerou a página inteira disponível para os
+  // itens de exame, ignorando o espaço que a cauda vai ocupar depois
+  // deles. Resultado: quando uma justificativa longa era digitada, a
+  // última coluna de itens ficava "cheia" (ocupando toda a página) e a
+  // cauda + rodapé transbordavam sozinhos para uma página seguinte, sem
+  // cabeçalho — o rodapé "sumia" visualmente da página em que o usuário
+  // esperava vê-lo. Mede-se aqui a altura real da cauda (excluindo o que
+  // não imprime: campos .no-print, textareas vazias/substituídas etc.) e,
+  // se ela não couber junto da última coluna, reserva-se uma página extra
+  // só para a cauda — que sempre vem com cabeçalho e rodapé completos.
+  let tailHeight = 0;
+  if (tailBlock) {
+    const tailClone = tailBlock.cloneNode(true);
+    tailClone.querySelectorAll('.no-print, .print-adicional-group, .oculto-impressao, .signature-line, textarea').forEach(el => el.remove());
+    tailClone.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${larguraMedicao}px;display:block`;
+    document.body.appendChild(tailClone);
+    tailHeight = tailClone.getBoundingClientRect().height;
+    document.body.removeChild(tailClone);
+  }
+
   // Agrupa as colunas em páginas: 2 colunas por página quando duasColunas,
   // senão 1 coluna = 1 página (comportamento antigo). Uma página é
   // "forcado" se qualquer uma de suas colunas precisou dividir um bloco.
@@ -2313,8 +2338,18 @@ function paginarListaExames(pageId, flatListId, exames, duasColunas = false) {
     });
   }
 
-  const headBlock = origWrapper.querySelector('.doc-head-block');
-  const tailBlock = origWrapper.querySelector('.doc-tail-block');
+  // Se a cauda não couber junto da última página construída (a coluna mais
+  // alta dela + a cauda ultrapassam a altura disponível), reserva-se uma
+  // página extra só para a cauda — nunca mistura como "segunda coluna" da
+  // página anterior (isso não moveria a cauda para outra página, já que
+  // ela é anexada abaixo das colunas, não dentro de uma delas).
+  if (tailHeight > 0 && paginas.length > 0) {
+    const ultimaPagina = paginas[paginas.length - 1];
+    const alturaUltimaPagina = Math.max(...ultimaPagina.colunas.map(idxs => idxs.reduce((s, i) => s + alturas[i], 0)));
+    if (alturaUltimaPagina + tailHeight > alturaDisponivel) {
+      paginas.push({ colunas: [[]], forcado: tailHeight > alturaDisponivel });
+    }
+  }
 
   // Monta o HTML da lista de uma página: uma única .print-flat-list (modo
   // normal) ou, com duas colunas, um wrapper flex com uma .print-flat-list
