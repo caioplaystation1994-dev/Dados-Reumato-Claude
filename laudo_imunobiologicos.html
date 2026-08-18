@@ -2561,13 +2561,80 @@ function updOP() {
 }
 
 // ─── TABELA DE TRATAMENTO ────────────────────────────────────────────────────
+// Dose padrão sugerida ao selecionar cada medicamento — só um ponto de
+// partida (dose/posologia mais comum na prática) que preenche o campo
+// automaticamente; o campo continua um textarea livre, então o médico pode
+// editar/ajustar a qualquer momento (por peso, função renal, resposta
+// clínica etc.) sem nenhuma restrição.
 const DMARD_DEFAULT_DOSE = {
+  // Corticosteroide
+  'Prednisona': '20mg/dia VO (ajustar conforme atividade)',
+  'Metilprednisolona': '4mg/dia VO (ajustar conforme atividade)',
+  'Dexametasona': '0,5mg/dia VO (ajustar conforme atividade)',
+  'Betametasona': '0,5mg/dia VO (ajustar conforme atividade)',
+  // csDMARD
   'Metotrexato (MTX)': '15mg/semana via oral',
-  'Leflunomida': '20mg/dia',
-  'Azatioprina': '150mg/dia',
+  'Hidroxicloroquina': '400mg/dia VO (máx. 5mg/kg/dia)',
   'Sulfassalazina': '2g/dia',
+  'Leflunomida': '20mg/dia',
+  'Azatioprina': '150mg/dia (2-3mg/kg/dia)',
+  'Micofenolato de mofetila': '1g de 12/12h VO (2g/dia)',
+  'Ciclofosfamida': '15mg/kg EV a cada 3-4 semanas (pulsos)',
+  'Ciclosporina': '3-5mg/kg/dia VO, dividido em 2 tomadas',
+  'Tacrolimo': '0,05-0,1mg/kg/dia VO, dividido em 2 tomadas',
+  // AINE
   'Naproxeno': '550mg de 12/12h por 6 semanas',
+  'Ibuprofeno': '600mg de 8/8h por 6 semanas',
+  'Diclofenaco': '50mg de 8/8h por 6 semanas',
+  'Indometacina': '25-50mg de 8/8h por 6 semanas',
+  'Celecoxibe': '200mg de 12/12h por 6 semanas',
+  'Etoricoxibe': '90mg/dia por 6 semanas',
   'Meloxicam': '15mg/dia por 6 semanas',
+  // Anti-TNF
+  'Adalimumabe': '40mg SC a cada 2 semanas',
+  'Etanercepte': '50mg SC 1x/semana',
+  'Infliximabe': '3-5mg/kg EV nas semanas 0, 2 e 6, depois a cada 8 semanas',
+  'Certolizumabe pegol': '400mg SC nas semanas 0, 2 e 4, depois 200mg a cada 2 semanas',
+  'Golimumabe': '50mg SC 1x/mês',
+  // IL-6 / Co-estimulação
+  'Tocilizumabe': '162mg SC 1x/semana (ou 8mg/kg EV a cada 4 semanas)',
+  'Sarilumabe': '200mg SC a cada 2 semanas',
+  'Abatacepte': '125mg SC 1x/semana',
+  // Anti-CD20
+  'Rituximabe': '1g EV nos dias 0 e 15, repetido a cada 6 meses',
+  // Anti-BLyS / IFN
+  'Belimumabe': '200mg SC 1x/semana',
+  'Anifrolumabe': '300mg EV a cada 4 semanas',
+  // IL-17 / IL-23
+  'Secuquinumabe': '300mg SC nas semanas 0, 1, 2, 3 e 4, depois a cada 4 semanas',
+  'Ixequizumabe': '160mg SC na semana 0, depois 80mg a cada 4 semanas',
+  'Bimekizumabe': '160mg SC a cada 4 semanas',
+  'Ustequinumabe': '45mg SC nas semanas 0 e 4, depois a cada 12 semanas',
+  'Guselcumabe': '100mg SC nas semanas 0 e 4, depois a cada 8 semanas',
+  'Risanquizumabe': '150mg SC nas semanas 0 e 4, depois a cada 12 semanas',
+  // iJAK
+  'Baricitinibe': '4mg/dia VO',
+  'Tofacitinibe': '5mg de 12/12h VO',
+  'Upadacitinibe': '15mg/dia VO',
+  'Filgotinibe': '200mg/dia VO',
+  // PDE4 / Outros bDMARDs
+  'Apremilaste': '30mg de 12/12h VO',
+  'Mepolizumabe': '100mg SC a cada 4 semanas',
+  'Imunoglobulina Humana IV (IVIG)': '2g/kg EV, dividido em 2-5 dias, ciclo mensal',
+  // Osteoporose
+  'Alendronato': '70mg VO 1x/semana',
+  'Risedronato': '35mg VO 1x/semana',
+  'Ibandronato': '150mg VO 1x/mês',
+  'Ácido zoledrônico': '5mg EV 1x/ano',
+  'Denosumabe': '60mg SC a cada 6 meses',
+  'Teriparatida': '20mcg SC 1x/dia',
+  'Romosozumabe': '210mg SC 1x/mês por 12 meses',
+  'Cálcio + Vitamina D': '500-600mg + 400UI VO 1-2x/dia',
+  // Suporte
+  'Ácido fólico': '5mg/semana VO (dia diferente do MTX)',
+  'Omeprazol': '20mg/dia VO',
+  'Pantoprazol': '40mg/dia VO',
+  'Cotrimoxazol (SMX/TMP)': '400/80mg VO 3x/semana (profilaxia PCP)',
 };
 
 function buildMedOpts(selectedVal) {
