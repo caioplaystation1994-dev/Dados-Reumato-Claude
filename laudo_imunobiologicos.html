@@ -1069,6 +1069,10 @@ header h1{font-size:15px;font-weight:700}
     <div class="section-card" style="margin-top:16px">
       <div class="section-title">Uso prévio / suspensos</div>
       <div style="font-size:12px;color:#718096;margin-bottom:12px">Documente todos os medicamentos utilizados anteriormente e suspensos. A DUT 65 exige comprovação de falha ao tratamento convencional.</div>
+      <div class="ref-box" id="preencher-datas-dut-box" style="margin-bottom:12px;display:none">
+        <strong>🗓️ Preenchimento automático de datas</strong> — calcula início/suspensão dos medicamentos da classe exigida pela DUT (já lançados nas tabelas acima), encadeando-os para trás a partir da data do laudo até completar o tempo mínimo de cada um.
+        <div style="margin-top:8px"><button type="button" class="btn-secondary" style="font-size:12px;padding:6px 14px" onclick="preencherDatasDUT()">Calcular datas automaticamente</button></div>
+      </div>
       <table class="dmard-table">
         <thead>
           <tr>
@@ -2714,6 +2718,73 @@ function updDutMsg() {
     op:'📋 DUT 56 / RN 465/2021: Documente T-score ≤ −2,5 ou fratura por fragilidade. Para terapias avançadas (denosumabe, teriparatida, romosozumabe), exige falha ou contraindicação a bifosfonato oral.'
   };
   el.textContent=msgs[disease]||'';
+  const box=document.getElementById('preencher-datas-dut-box');
+  if(box) box.style.display = REGRAS_DUT_DATAS[disease] ? '' : 'none';
+}
+
+// ─── PREENCHIMENTO AUTOMÁTICO DE DATAS (DUT) ──────────────────────────────────
+// Para as doenças cuja DUT exige um tempo mínimo contínuo de uso de uma
+// classe de medicamento (AINE na EA, Metotrexato/csDMARD na AR e APS), monta
+// automaticamente a cronologia de início/suspensão dos medicamentos já
+// lançados nas tabelas, contando para trás a partir da data do laudo (ou
+// hoje, se não preenchida) — o medicamento em "uso atual" completa o tempo
+// mínimo exigido exatamente na data do laudo, e cada medicamento "prévio" da
+// mesma classe é encadeado logo antes do anterior, também pelo tempo mínimo.
+// Só datas são preenchidas: dose e motivo de suspensão continuam sendo
+// julgamento clínico do médico.
+const REGRAS_DUT_DATAS = {
+  ea: { duracaoDias: 28,  minPrevios: 2, regexMed: /naproxeno|ibuprofeno|diclofenaco|meloxicam|celecoxibe|etoricoxibe|indometacina/i,
+        label: 'AINEs (DUT 65.3 exige ≥2, cada um por ≥4 semanas)' },
+  ar:  { duracaoDias: 90, minPrevios: 0, regexMed: /metotrexato/i,
+        label: 'Metotrexato (DUT 65.1 exige ≥3 meses)' },
+  aps: { duracaoDias: 90, minPrevios: 0, regexMed: /metotrexato/i,
+        label: 'Metotrexato (DUT 65.4 — dose e tempo adequados)' },
+};
+
+function preencherDatasDUT() {
+  const regra = REGRAS_DUT_DATAS[disease];
+  if(!regra) return;
+
+  const idxAtuais = dmardAtuais.filter(d => regra.regexMed.test(d.med||''));
+  if(idxAtuais.length===0) {
+    alert('Nenhum medicamento de "'+regra.label+'" encontrado em Medicações em uso atual. Adicione-o na tabela antes de calcular as datas.');
+    return;
+  }
+  const idxPrevios = dmards.filter(d => regra.regexMed.test(d.med||''));
+  if(regra.minPrevios>0 && idxPrevios.length===0) {
+    alert('Nenhum medicamento de "'+regra.label+'" encontrado em Uso prévio / suspensos. Adicione-o na tabela antes de calcular as datas.');
+    return;
+  }
+
+  const refStr = (fd.data_laudo) || new Date().toISOString().split('T')[0];
+  let cursor = new Date(refStr+'T00:00:00');
+  const addDias = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
+  const toISO = (d) => d.toISOString().split('T')[0];
+
+  // Medicamento(s) em uso atual: ainda em curso, então a data de início é a
+  // referência menos a duração mínima — completam o requisito hoje.
+  idxAtuais.forEach(d => {
+    const inicio = addDias(cursor, -regra.duracaoDias);
+    d.dataInicio = toISO(inicio);
+    d.dataInicioMes = false;
+    cursor = inicio;
+  });
+
+  // Medicamento(s) prévios da mesma classe: cada um foi suspenso quando o
+  // seguinte começou, e havia sido iniciado a duração mínima antes disso.
+  idxPrevios.forEach(d => {
+    const suspensao = new Date(cursor);
+    const inicio = addDias(suspensao, -regra.duracaoDias);
+    d.dataSuspensao = toISO(suspensao);
+    d.dataSuspensaoMes = false;
+    d.dataInicio = toISO(inicio);
+    d.dataInicioMes = false;
+    cursor = inicio;
+  });
+
+  const tmpA=[...dmardAtuais]; dmardAtuais=[]; document.getElementById('dmard-atual-tbody').innerHTML=''; tmpA.forEach(d=>addDmardAtual(d));
+  const tmpP=[...dmards]; dmards=[]; document.getElementById('dmard-tbody').innerHTML=''; tmpP.forEach(d=>addDmard(d));
+  updDutMsg();
 }
 
 // ─── EXAMES ───────────────────────────────────────────────────────────────────
