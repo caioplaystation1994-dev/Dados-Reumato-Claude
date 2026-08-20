@@ -1464,9 +1464,9 @@ body{padding-bottom:64px}
       <textarea id="img-adicional" class="short" placeholder="Outros exames de imagem, com especificação do segmento/lado... (um por linha)"></textarea>
     </div>
 
-    <div class="section-label print-se-preenchido divisor-indicacao" data-textarea="img-indicacao">Indicação Clínica / Quesitos</div>
+    <div class="section-label print-se-preenchido divisor-indicacao" data-textarea="img-indicacao">Justificativa</div>
     <div class="field-group">
-      <textarea id="img-indicacao" class="short" placeholder="Justificativa clínica e quesitos específicos para o laudo..."></textarea>
+      <textarea id="img-indicacao" class="short" placeholder="Justificativa clínica para o exame solicitado..."></textarea>
     </div>
 
     <div class="field-row no-print" style="margin-top:24px">
@@ -3414,7 +3414,7 @@ async function gerarWordImg() {
     todosExames.forEach(e => paras.push({ type: 'bullet', text: e }));
   }
   if (v('img-indicacao')) {
-    paras.push({ type: 'heading', text: 'Indicação Clínica / Quesitos' });
+    paras.push({ type: 'heading', text: 'Justificativa' });
     paras.push({ type: 'multiline', value: v('img-indicacao') });
   }
   const nomeArqImg = `exames-imagem-${(v('img-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
