@@ -866,37 +866,8 @@ body{padding-bottom:64px}
 
     <div id="rel-corpo-print">
     <div class="print-bloco">
-    <div class="section-label no-print">Anamnese / Histórico Atual</div>
     <div class="field-group">
-      <textarea id="rel-anamnese" class="tall" placeholder="Queixa principal, evolução da doença, sintomas atuais..."></textarea>
-    </div>
-    </div>
-
-    <div class="print-bloco">
-    <div class="section-label print-se-preenchido" data-textarea="rel-exfisico">Exame Físico</div>
-    <div class="field-group">
-      <textarea id="rel-exfisico" class="tall" placeholder="PA: ___x___ mmHg  |  FC: ___ bpm  |  FR: ___ irpm  |  T: ___°C  |  Peso: ___ kg&#10;&#10;Articular: &#10;Extra-articular: "></textarea>
-    </div>
-    </div>
-
-    <div class="print-bloco">
-    <div class="section-label print-se-preenchido" data-textarea="rel-exames">Exames Complementares Relevantes</div>
-    <div class="field-group">
-      <textarea id="rel-exames" class="tall" placeholder="Resultados laboratoriais e de imagem recentes..."></textarea>
-    </div>
-    </div>
-
-    <div class="print-bloco">
-    <div class="section-label print-se-preenchido" data-textarea="rel-conduta">Conduta / Plano Terapêutico</div>
-    <div class="field-group">
-      <textarea id="rel-conduta" class="tall" placeholder="Medicações prescritas, orientações, encaminhamentos, próxima consulta..."></textarea>
-    </div>
-    </div>
-
-    <div class="print-bloco">
-    <div class="section-label print-se-preenchido" data-textarea="rel-obs">Observações</div>
-    <div class="field-group">
-      <textarea id="rel-obs" class="short" placeholder="Informações adicionais relevantes..."></textarea>
+      <textarea id="rel-texto" class="tall" placeholder="Anamnese / histórico atual, exame físico, exames complementares relevantes, conduta / plano terapêutico, observações..."></textarea>
     </div>
     </div>
     </div>
@@ -2478,6 +2449,13 @@ function paginarBlocosLivres(pageId, corpoId) {
   if (!origWrapper) return;
   origWrapper.style.display = '';
 
+  // Mesma referência usada em paginarListaExames — a folga de
+  // RESERVA_CABECALHO_RODAPE_PX já cobre o cabeçalho impresso (bem mais
+  // compacto do que sua altura na tela) mais o rodapé. Medir o cabeçalho
+  // pela altura da TELA (fontes/paddings maiores que os de impressão)
+  // inflaria a reserva e geraria páginas extras desnecessárias.
+  const alturaDisponivel = ALTURA_PAGINA_PX - RESERVA_TOPO_BASE_PX - RESERVA_CABECALHO_RODAPE_PX;
+
   // Só entram na paginação os blocos com conteúdo (o mesmo critério que a
   // impressão normal usa para ocultar textareas vazias: .placeholder-shown).
   const blocos = Array.from(corpoEl.querySelectorAll(':scope > .print-bloco')).filter(b => {
@@ -2487,39 +2465,74 @@ function paginarBlocosLivres(pageId, corpoId) {
   });
   if (blocos.length === 0) return;
 
-  const headBlock = origWrapper.querySelector('.doc-head-block');
-  const tailBlock = origWrapper.querySelector('.doc-tail-block');
-  // Mesma referência usada em paginarListaExames — a folga de
-  // RESERVA_CABECALHO_RODAPE_PX já cobre o cabeçalho impresso (bem mais
-  // compacto do que sua altura na tela) mais o rodapé. Medir o cabeçalho
-  // pela altura da TELA (fontes/paddings maiores que os de impressão)
-  // inflaria a reserva e geraria páginas extras desnecessárias.
-  const alturaDisponivel = ALTURA_PAGINA_PX - RESERVA_TOPO_BASE_PX - RESERVA_CABECALHO_RODAPE_PX;
+  // O empacotamento abaixo decide ONDE quebrar ENTRE blocos — mas nunca
+  // dentro de um. Isso é normalmente inofensivo (um documento com vários
+  // campos curtos raramente tem um único campo maior que uma página
+  // inteira), mas o Relatório Médico tem hoje um único campo de texto
+  // livre — um texto muito longo nele ficaria numa única página gigante,
+  // sem cabeçalho/rodapé repetidos nas páginas seguintes (a mesma falha
+  // que a paginação de exames já resolve para listas longas). Por isso,
+  // todo bloco vira uma ou mais "unidades" de empacotamento: se ele sozinho
+  // já ultrapassa a altura disponível, é dividido por parágrafo (linha em
+  // branco), cada um virando sua própria unidade. A altura de cada
+  // parágrafo é medida num <div> invisível fora da tela, com a mesma
+  // fonte/line-height da impressão (.print-textarea-valor: 13px/1.5) — não
+  // no <textarea> ao vivo na tela, que mediria a altura de EDIÇÃO (maior,
+  // e possivelmente ainda ajustada ao texto INTEIRO por auto-resize) em
+  // vez da altura real de cada parágrafo isolado. A divisão só materializa
+  // nós DOM (clonando o bloco original) para as unidades que realmente vão
+  // para uma página — o corpo ao vivo nunca é alterado.
+  const medidorTexto = document.createElement('div');
+  medidorTexto.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;width:605px;white-space:pre-wrap;font-size:13px;line-height:1.5;padding:2px 0';
+  document.body.appendChild(medidorTexto);
+  const medirTexto = t => { medidorTexto.textContent = t; return medidorTexto.getBoundingClientRect().height; };
+
+  const criarFragmentoBloco = (origEl, texto) => {
+    const novoBloco = origEl.cloneNode(true);
+    novoBloco.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    const valorEl = novoBloco.querySelector('.print-textarea-valor');
+    if (valorEl) valorEl.textContent = texto;
+    return novoBloco;
+  };
+
+  const unidades = [];
+  blocos.forEach(b => {
+    const alturaTotal = b.getBoundingClientRect().height;
+    const valorEl = alturaTotal > alturaDisponivel ? b.querySelector('.print-textarea-valor') : null;
+    const paragrafos = valorEl ? (valorEl.textContent || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean) : [];
+    if (paragrafos.length > 1) {
+      paragrafos.forEach(p => unidades.push({ altura: medirTexto(p), render: () => criarFragmentoBloco(b, p) }));
+    } else {
+      unidades.push({ altura: alturaTotal, render: () => { const c = b.cloneNode(true); copiarValoresClone(b, c); return c; } });
+    }
+  });
+  document.body.removeChild(medidorTexto);
 
   const paginas = [];
   let atual = [];
   let alturaAtual = 0;
   let atualForcado = false;
-  blocos.forEach(b => {
-    const h = b.getBoundingClientRect().height;
-    if (atual.length > 0 && alturaAtual + h > alturaDisponivel) {
-      paginas.push({ blocos: atual, forcado: atualForcado });
+  unidades.forEach(u => {
+    if (atual.length > 0 && alturaAtual + u.altura > alturaDisponivel) {
+      paginas.push({ unidades: atual, forcado: atualForcado });
       atual = [];
       alturaAtual = 0;
       atualForcado = false;
     }
-    atual.push(b);
-    alturaAtual += h;
-    if (h > alturaDisponivel) atualForcado = true;
+    atual.push(u);
+    alturaAtual += u.altura;
+    if (u.altura > alturaDisponivel) atualForcado = true;
   });
-  if (atual.length > 0) paginas.push({ blocos: atual, forcado: atualForcado });
+  if (atual.length > 0) paginas.push({ unidades: atual, forcado: atualForcado });
 
   if (paginas.length <= 1) return; // cabe tudo numa página só: nada a fazer
+
+  const headBlock = origWrapper.querySelector('.doc-head-block');
+  const tailBlock = origWrapper.querySelector('.doc-tail-block');
 
   origWrapper.style.display = 'none';
   let anchor = origWrapper;
   paginas.forEach((pagina, idx) => {
-    const fatiaBlocos = pagina.blocos;
     const isUltima = idx === paginas.length - 1;
     const clone = document.createElement('div');
     clone.className = 'doc-wrapper';
@@ -2530,11 +2543,7 @@ function paginarBlocosLivres(pageId, corpoId) {
       clone.appendChild(headClone);
     }
     const corpoClone = document.createElement('div');
-    fatiaBlocos.forEach(b => {
-      const blocoClone = b.cloneNode(true);
-      copiarValoresClone(b, blocoClone);
-      corpoClone.appendChild(blocoClone);
-    });
+    pagina.unidades.forEach(u => corpoClone.appendChild(u.render()));
     clone.appendChild(corpoClone);
     if (isUltima && tailBlock) {
       const tailClone = tailBlock.cloneNode(true);
@@ -3227,15 +3236,8 @@ async function gerarWordRelatorio() {
     { type: 'separator' },
     { type: 'heading', text: 'Diagnóstico / CID-10' },
     { type: 'label-value', label: 'Diagnóstico Principal', value: v('rel-diagnostico') },
-    { type: 'heading', text: 'Anamnese / Histórico Atual' },
-    { type: 'multiline', value: v('rel-anamnese') },
-    { type: 'heading', text: 'Exame Físico' },
-    { type: 'multiline', value: v('rel-exfisico') },
-    { type: 'heading', text: 'Exames Complementares Relevantes' },
-    { type: 'multiline', value: v('rel-exames') },
-    { type: 'heading', text: 'Conduta / Plano Terapêutico' },
-    { type: 'multiline', value: v('rel-conduta') },
-    ...(v('rel-obs') ? [{ type: 'heading', text: 'Observações' }, { type: 'multiline', value: v('rel-obs') }] : []),
+    { type: 'separator' },
+    { type: 'multiline', value: v('rel-texto') },
   ];
   const nomeArq = `relatorio-${(v('rel-nome')||'paciente').replace(/\s+/g,'-')}.docx`;
   await downloadDocx(makeDoc(paras, { medico: v('rel-medico'), crm: v('rel-crm'), rqe: rqeAtual(), local: localAtual() }), nomeArq);
@@ -3674,8 +3676,8 @@ function novoPaciente() {
   ['relatorio','receita','exames-lab','exames-img'].forEach(id => clearForm(id));
   // Clear synced fields
   ['rel-nome','rx-nome','lab-nome','img-nome','rel-nascimento','rel-idade','rx-idade','rx-endereco',
-   'rel-diagnostico','lab-cid','img-cid','rel-anamnese','rel-exfisico','rel-exames','rel-conduta',
-   'rel-obs','rx-prescricao','rx-orientacoes','rx-obs','lab-adicional','lab-indicacao',
+   'rel-diagnostico','lab-cid','img-cid','rel-texto',
+   'rx-prescricao','rx-orientacoes','rx-obs','lab-adicional','lab-indicacao',
    'img-adicional','img-indicacao'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -4219,7 +4221,7 @@ const TEMPLATES_DOENCA = {
 function aplicarTemplate() {
   const sel = document.getElementById('select-template')?.value;
   if (!sel || !TEMPLATES_DOENCA[sel]) { alert('Selecione uma doença.'); return; }
-  if (document.getElementById('rel-anamnese')?.value.trim()) {
+  if (document.getElementById('rel-texto')?.value.trim()) {
     if (!confirm('Substituir o conteúdo atual do relatório pelo template?')) return;
   }
   const t = TEMPLATES_DOENCA[sel];
@@ -4229,10 +4231,13 @@ function aplicarTemplate() {
     set('lab-cid', t.diagnostico);
     set('img-cid', t.diagnostico);
   }
-  set('rel-anamnese', t.anamnese);
-  set('rel-exfisico', t.exfisico);
-  if (t.exames) set('rel-exames', t.exames);
-  set('rel-conduta', t.conduta);
+  const blocos = [
+    'ANAMNESE / HISTÓRICO ATUAL\n' + t.anamnese,
+    'EXAME FÍSICO\n' + t.exfisico,
+    t.exames ? 'EXAMES COMPLEMENTARES RELEVANTES\n' + t.exames : '',
+    'CONDUTA / PLANO TERAPÊUTICO\n' + t.conduta,
+  ].filter(Boolean);
+  set('rel-texto', blocos.join('\n\n'));
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
 
@@ -4302,7 +4307,7 @@ function inserirScoreNoRelatorio(tipo) {
   const mapa = { das28: document._das28, basdai: document._basdai, sledai: document._sledai, dapsa: document._dapsa, essdai: document._essdai };
   const val = mapa[tipo];
   if (!val) { alert('Calcule o score antes de inserir.'); return; }
-  const ta = document.getElementById('rel-anamnese');
+  const ta = document.getElementById('rel-texto');
   if (!ta) return;
   ta.value = (ta.value.trim() ? ta.value.trimEnd() + '\n' : '') + val;
   autoResizeTA(ta);
@@ -4487,11 +4492,7 @@ function salvarHistorico() {
     nome: v('rel-nome'),
     data: v('rel-data'),
     diag: v('rel-diagnostico'),
-    conduta: v('rel-conduta'),
-    anamnese: v('rel-anamnese'),
-    exfisico: v('rel-exfisico'),
-    exames: v('rel-exames'),
-    obs: v('rel-obs'),
+    texto: v('rel-texto'),
     das28: document._das28 || '',
     basdai: document._basdai || '',
     sledai: document._sledai || '',
@@ -4523,7 +4524,7 @@ function abrirHistorico() {
       <div class="hist-item" onclick="carregarConsulta(${JSON.stringify(chaveHistorico(nome))},${i})">
         <div class="hist-data">${h.data ? new Date(h.data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
         <div class="hist-diag">${h.diag || '—'}</div>
-        <div class="hist-cond">${h.conduta || '—'}</div>
+        <div class="hist-cond">${(h.texto || h.conduta || '—').slice(0, 100)}</div>
         ${h.das28 || h.basdai ? `<div style="font-size:11px;color:#718096;margin-top:2px">${[h.das28,h.basdai,h.sledai].filter(Boolean).join(' | ')}</div>` : ''}
       </div>`).join('');
   }
@@ -4542,8 +4543,18 @@ function carregarConsulta(chave, idx) {
   }
   set('rel-data', h.data); set('rx-data', h.data); set('lab-data', h.data); set('img-data', h.data);
   set('rel-diagnostico', h.diag); set('lab-cid', h.diag); set('img-cid', h.diag);
-  set('rel-anamnese', h.anamnese); set('rel-exfisico', h.exfisico);
-  set('rel-exames', h.exames); set('rel-conduta', h.conduta); set('rel-obs', h.obs);
+  // h.texto é o formato atual (caixa única); h.anamnese/exfisico/exames/
+  // conduta/obs é o formato antigo (consultas salvas antes da unificação
+  // dos campos do relatório numa única caixa de texto livre) — reconstrói
+  // o texto combinado para não perder o histórico já salvo.
+  const textoCombinado = h.texto || [
+    h.anamnese ? 'ANAMNESE / HISTÓRICO ATUAL\n' + h.anamnese : '',
+    h.exfisico ? 'EXAME FÍSICO\n' + h.exfisico : '',
+    h.exames ? 'EXAMES COMPLEMENTARES RELEVANTES\n' + h.exames : '',
+    h.conduta ? 'CONDUTA / PLANO TERAPÊUTICO\n' + h.conduta : '',
+    h.obs ? 'OBSERVAÇÕES\n' + h.obs : '',
+  ].filter(Boolean).join('\n\n');
+  set('rel-texto', textoCombinado);
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
   fecharModal('modal-historico');
 }
@@ -4916,7 +4927,7 @@ function fecharModal(id) { document.getElementById(id)?.classList.remove('aberto
 
 // ─── Modo preenchimento rápido (Tab otimizado) ────────────────────────────────
 const CAMPOS_RAPIDOS = {
-  relatorio: ['rel-nome','rel-nascimento','rel-data','rel-retorno','rel-diagnostico','rel-anamnese','rel-exfisico','rel-exames','rel-conduta','rel-obs'],
+  relatorio: ['rel-nome','rel-nascimento','rel-data','rel-retorno','rel-diagnostico','rel-texto'],
   receita: ['rx-nome','rx-idade','rx-endereco','rx-data','rx-prescricao','rx-orientacoes','rx-obs'],
   'receita-especial': ['re-pac-nome','re-data','re-endereco','re-cpf','re-prescricao'],
   'exames-lab': ['lab-nome','lab-data','lab-cid','lab-adicional','lab-indicacao'],
