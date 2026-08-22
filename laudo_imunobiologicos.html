@@ -3712,10 +3712,18 @@ function buildPreview() {
   const conclusao = buildConclusao();
   const prescricao = buildPrescricao();
 
-  // Build exam images section
+  // Build exam images section. Cada exame vira dois <p> IRMÃOS (não
+  // envolvidos por um <div> extra) — genPDF(), ao gerar o PDF a partir do
+  // corpo editado manualmente, varre o corpo com
+  // querySelectorAll('p, div, pre') e extrai o texto de CADA elemento
+  // encontrado; um <div> envolvendo esses <p> seria capturado tanto pelo
+  // próprio <div> (cujo innerText já concatena o texto de todos os <p>
+  // filhos) quanto por cada <p> individualmente — duplicando o texto dos
+  // exames de imagem no PDF sempre que o laudo fosse editado antes de
+  // gerar o arquivo. Sem o <div> essa duplicação não ocorre.
   let imgSection = '';
-  imagensParaListagem().forEach(img => {
-    imgSection += `<p style="margin:12px 0 2px"><strong>${img.tipo}${img.data?' — '+fmtDate(img.data):''}</strong></p>`;
+  imagensParaListagem().forEach((img, i) => {
+    imgSection += `<p style="margin:${i===0?'14px':'12px'} 0 2px"><strong>${img.tipo}${img.data?' — '+fmtDate(img.data):''}</strong></p>`;
     if(img.laudo) imgSection += `<p style="margin:0 0 4px;line-height:1.6;white-space:pre-wrap">${escHtml(img.laudo).replace(/\n/g,'<br>')}</p>`;
   });
 
@@ -3760,7 +3768,7 @@ function buildPreview() {
         ${labLines.rxTorax ? `<p style="margin-top:10px;font-size:13px">${labLines.rxTorax}</p>` : ''}
         ${labLines.outros ? `<p style="margin-top:10px;font-size:13px;white-space:pre-wrap">${escHtml(labLines.outros).replace(/\n/g,'<br>')}</p>` : ''}
 
-        ${imgSection ? `<div style="margin-top:14px">${imgSection}</div>` : ''}
+        ${imgSection}
 
         <p style="margin-top:32px;font-family:Arial,sans-serif;font-size:13px;line-height:1.8;color:#1a202c">${conclusao}</p>
 
