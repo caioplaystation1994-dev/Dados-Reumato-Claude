@@ -3714,7 +3714,7 @@ function buildPreview() {
 
   // Build exam images section
   let imgSection = '';
-  imagens.filter(i=>i.tipo).forEach(img => {
+  imagensParaListagem().forEach(img => {
     imgSection += `<p style="margin:12px 0 2px"><strong>${img.tipo}${img.data?' — '+fmtDate(img.data):''}</strong></p>`;
     if(img.laudo) imgSection += `<p style="margin:0 0 4px;line-height:1.6;white-space:pre-wrap">${escHtml(img.laudo).replace(/\n/g,'<br>')}</p>`;
   });
@@ -3922,7 +3922,7 @@ function genPDF() {
   if(labLines.outros){checkPage(10);txt(labLines.outros,10,false);nl(2);}
 
   // ── Imagens ──────────────────────────────────────────────────────────────────
-  imagens.filter(i=>i.tipo).forEach(img=>{
+  imagensParaListagem().forEach(img=>{
     txt(`${img.tipo}${img.data?' — '+fmtDate(img.data):''}`,10,false);nl(1);
     if(img.laudo){txt(img.laudo,10,false);}nl(3);
   });
@@ -4010,7 +4010,7 @@ function genDOCX() {
   if(eRows.length>0) children.push(tbl(['Exame','Resultado','Data'],eRows));
   else children.push(p('Nenhum exame laboratorial registrado.'));
   if(fd.lab_outros_texto && fd.lab_outros_texto.trim()) children.push(p('Outros exames: '+fd.lab_outros_texto.trim().replace(/\n+/g,'; ')));
-  const imgRowsW=imagens.filter(i=>i.tipo).map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
+  const imgRowsW=imagensParaListagem().map(i=>[i.tipo,i.laudo||'—',fmtDate(i.data)||'—']);
   if(imgRowsW.length>0){children.push(p('Exames de Imagem:'));children.push(tbl(['Exame','Laudo','Data'],imgRowsW));}
   children.push(h2('5. CRITÉRIOS ANS/DUT ATENDIDOS'));
   crit.forEach(c=>children.push(p((c.pass?'✓  ':'⚠  ')+c.l)));
@@ -4442,6 +4442,20 @@ function updDeltaDXA() {
 // ─── ANÁLISE CLÍNICA OP ──────────────────────────────────────────────────────
 const BIFS_KEYS = ['alendronato','risedronato','ibandronato','zoledrônico','zoledronico','bifosfonato','clodronato','pamidronato'];
 const FRATURA_KEYS = ['fratura','frature','compressão vertebral','colapso vertebral','wedge','deformidade vertebral','perda de altura vertebral','acunhamento','osteoporótica','osteoporotica','fratura por fragilidade','fratura de baixo impacto'];
+
+// Exames de imagem a listar na seção "Outros Exames de Imagem" do laudo
+// (preview, PDF e Word). Em Osteoporose, um exame com achado de fratura já
+// aparece descrito por completo (tipo + data + laudo) na análise clínica —
+// ver buildOPAnalysis()/narrative() — então é excluído aqui para não
+// repetir o mesmo texto duas vezes no mesmo laudo.
+function imagensParaListagem() {
+  const base = imagens.filter(i=>i.tipo);
+  if(disease !== 'op') return base;
+  return base.filter(i => {
+    const texto = ((i.tipo||'') + ' ' + (i.laudo||'')).toLowerCase();
+    return !FRATURA_KEYS.some(k => texto.includes(k));
+  });
+}
 
 function buildOPAnalysis() {
   const result = { bifs:[], dutOK:null, dutMeses:null, dutBifNome:null, fraturasImagem:[], deltaDXA:null, achados:[] };
