@@ -215,7 +215,15 @@ body{padding-bottom:64px}
   .page.print-selected{display:block!important}
 
   /* ── Aparência limpa ── */
-  .doc-wrapper{box-shadow:none;border:none;border-radius:0;padding:16px 0 3.5cm;margin:0;display:flex;flex-direction:column;min-height:25cm}
+  /* min-height = altura ÚTIL real da folha (A4 29,7cm − 2cm × 2 de margem
+     do @page = 25,7cm), para que o "margin-top:auto" do .print-rodape
+     empurre o rodapé até o fim REAL da página. Antes eram 25cm de altura
+     com 3,5cm de padding embaixo: o rodapé parava a ~21,5cm e sobrava uma
+     faixa morta de ~4,2cm, dando a impressão de rodapé "no meio da folha".
+     O padding de baixo agora é só um respiro para o rodapé não encostar na
+     margem inferior. Ao mexer nestes valores, atualizar também
+     ALTURA_PAGINA_PX e RESERVA_TOPO_BASE_PX no JS de paginação. */
+  .doc-wrapper{box-shadow:none;border:none;border-radius:0;padding:16px 0 0.5cm;margin:0;display:flex;flex-direction:column;min-height:25.7cm}
   /* Sem isto, os filhos diretos do .doc-wrapper (flex-column) usam o
      flex-shrink padrão (1): quando o conteúdo de um bloco (ex.: uma
      anamnese longa em #rel-corpo-print, ou a lista de exames em
@@ -465,7 +473,8 @@ body{padding-bottom:64px}
      inteira própria, com a assinatura empurrada para o fim da página. */
   #receita-especial.page.print-selected .doc-wrapper{display:block!important}
   .rec-esp-wrapper{padding:0;box-shadow:none;border:none;background:transparent}
-  .rec-via{padding:16px 0 3.5cm;border:none;border-radius:0;box-shadow:none;margin:0;display:flex;flex-direction:column;min-height:25cm}
+  /* Mesma geometria do .doc-wrapper (ver comentário lá) */
+  .rec-via{padding:16px 0 0.5cm;border:none;border-radius:0;box-shadow:none;margin:0;display:flex;flex-direction:column;min-height:25.7cm}
   .rec-via > *{flex-shrink:0}
   #rec-esp-via1{page-break-after:always}
   .rec-esp-atalhos{display:none!important}
@@ -2248,8 +2257,10 @@ const ESPECIAIS_PRINT = ['print-hlab27','print-igra'];
 // cabeçalho/rodapé. Um valor exageradamente maior (400px, usado
 // brevemente) resolvia isso mas desperdiçava espaço — poucos itens por
 // página, com o rodapé sobrando "alto" e muito espaço em branco abaixo.
-const ALTURA_PAGINA_PX = 25 * 37.7953; // 25cm em px
-const RESERVA_TOPO_BASE_PX = 16 + (3.5 * 37.7953);
+// Espelham a geometria de .doc-wrapper / .rec-via no @media print — ao
+// mudar o min-height ou o padding lá, atualizar aqui também.
+const ALTURA_PAGINA_PX = 25.7 * 37.7953; // altura útil da folha A4 (29,7cm − margens de 2cm do @page)
+const RESERVA_TOPO_BASE_PX = 16 + (0.5 * 37.7953); // padding do topo + respiro da base
 const RESERVA_CABECALHO_RODAPE_PX = 360;
 
 // Reserva equivalente à de cima, mas usada só na checagem de "a cauda
@@ -2396,7 +2407,15 @@ function paginarListaExames(pageId, flatListId, exames, duasColunas = false) {
         if (atualIdxs.length > 0 && alturaAtual + h > alturaDisponivel) fecharColuna();
   atualIdxs.push(i);
         alturaAtual += h;
-        atualForcado = true;
+        // Só conta como "forçado" (rodapé solto no fluxo, em vez de fixo no
+        // fim da folha) quando um ITEM SOZINHO não cabe numa coluna — aí a
+        // coluna realmente estoura e o rodapé fixo poderia se sobrepor ao
+        // texto. Dividir um GRUPO grande entre colunas é normal: cada
+        // coluna resultante continua respeitando a altura disponível
+        // (o fecharColuna() acima garante isso). Marcar essas páginas como
+        // forçadas deixava o rodapé "no meio da folha" sem necessidade —
+        // era o que acontecia em toda solicitação com muitos exames.
+        if (h > alturaDisponivel) atualForcado = true;
       }
     } else {
       for (let i = bloco.inicio; i <= bloco.fim; i++) atualIdxs.push(i);
@@ -2592,6 +2611,31 @@ function paginarBlocosLivres(pageId, corpoId) {
   document.body.appendChild(medidorTexto);
   const medirTexto = t => { medidorTexto.textContent = t; return medidorTexto.getBoundingClientRect().height; };
 
+  // Mede a altura que um bloco terá NA IMPRESSÃO. Não dá para usar
+  // getBoundingClientRect() do bloco ao vivo por dois motivos: (a) se a aba
+  // daquele documento não estiver aberta, a página inteira está
+  // display:none e TUDO mede 0 — o bloco nunca era fatiado e estourava a
+  // folha; (b) mesmo com a aba aberta, o que está visível é o <textarea> de
+  // edição, cuja altura não tem relação com a do texto impresso (que sai
+  // pelo .print-textarea-valor, visível só em @media print). Por isso o
+  // bloco é clonado num container fora da tela, com a largura da folha e a
+  // tipografia de impressão, removendo o que não imprime.
+  const medidorBloco = document.createElement('div');
+  medidorBloco.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0;width:605px';
+  document.body.appendChild(medidorBloco);
+  const medirBloco = (el) => {
+    const c = el.cloneNode(true);
+    c.querySelectorAll('textarea, .no-print, .print-adicional-group, .oculto-impressao, .signature-line').forEach(x => x.remove());
+    c.querySelectorAll('.section-label:not(.print-se-preenchido)').forEach(x => x.remove());
+    c.querySelectorAll('.print-textarea-valor').forEach(v => {
+      v.style.display = 'block'; v.style.whiteSpace = 'pre-wrap';
+      v.style.fontSize = '13px'; v.style.lineHeight = '1.5'; v.style.padding = '2px 0';
+    });
+    medidorBloco.innerHTML = '';
+    medidorBloco.appendChild(c);
+    return medidorBloco.getBoundingClientRect().height;
+  };
+
   const criarFragmentoBloco = (origEl, texto) => {
     const novoBloco = origEl.cloneNode(true);
     novoBloco.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
@@ -2600,18 +2644,43 @@ function paginarBlocosLivres(pageId, corpoId) {
     return novoBloco;
   };
 
+  // Divide o texto de um bloco em pedaços que caibam numa página. Tenta
+  // primeiro por parágrafo (linha em branco), preservando os blocos lógicos
+  // que o médico escreveu; se um parágrafo ainda for maior que a página,
+  // refina dividindo linha a linha. Esse refinamento é essencial para a
+  // Receita: uma prescrição é escrita com quebra simples entre os itens
+  // ("1. ...\n2. ...\n3. ..."), ou seja, é UM parágrafo só — sem ele, uma
+  // receita longa virava um bloco indivisível que estourava a folha e
+  // vazava para as páginas seguintes sem repetir cabeçalho/rodapé.
+  const cabeNaPagina = t => medirTexto(t) <= alturaDisponivel;
+  const fatiarTexto = (texto) => {
+    const pedacos = [];
+    (texto || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).forEach(paragrafo => {
+      if (cabeNaPagina(paragrafo)) { pedacos.push(paragrafo); return; }
+      let atual = '';
+      paragrafo.split('\n').forEach(linha => {
+        const tentativa = atual ? atual + '\n' + linha : linha;
+        if (atual && !cabeNaPagina(tentativa)) { pedacos.push(atual); atual = linha; }
+        else atual = tentativa;
+      });
+      if (atual) pedacos.push(atual);
+    });
+    return pedacos;
+  };
+
   const unidades = [];
   blocos.forEach(b => {
-    const alturaTotal = b.getBoundingClientRect().height;
+    const alturaTotal = medirBloco(b);
     const valorEl = alturaTotal > alturaDisponivel ? b.querySelector('.print-textarea-valor') : null;
-    const paragrafos = valorEl ? (valorEl.textContent || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean) : [];
-    if (paragrafos.length > 1) {
-      paragrafos.forEach(p => unidades.push({ altura: medirTexto(p), render: () => criarFragmentoBloco(b, p) }));
+    const pedacos = valorEl ? fatiarTexto(valorEl.textContent) : [];
+    if (pedacos.length > 1) {
+      pedacos.forEach(t => unidades.push({ altura: medirTexto(t), render: () => criarFragmentoBloco(b, t) }));
     } else {
       unidades.push({ altura: alturaTotal, render: () => { const c = b.cloneNode(true); copiarValoresClone(b, c); return c; } });
     }
   });
   document.body.removeChild(medidorTexto);
+  document.body.removeChild(medidorBloco);
 
   const paginas = [];
   let atual = [];
