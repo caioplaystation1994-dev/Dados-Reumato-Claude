@@ -714,7 +714,7 @@ body{padding-bottom:64px}
       </div>
       <div class="field-group w-auto" style="flex:0 0 140px">
         <label>Data de Nascimento</label>
-        <input type="date" id="rel-nascimento" oninput="sincPaciente('nascimento',this.value)">
+        <input type="date" id="rel-nascimento" oninput="sincPaciente('nascimento',this.value);calcularIdade(this.value)">
       </div>
       <div class="field-group w-auto" style="flex:0 0 80px">
         <label>Idade</label>
@@ -3600,7 +3600,10 @@ function gerarTextoAtestado(forcar) {
   const dataAtestado = fmtDataBR(v('atestado-data')) || fmtDataBR(new Date().toISOString().slice(0, 10));
   const retorno = document.getElementById('atestado-cb-retorno')?.checked;
   const afastamento = document.getElementById('atestado-cb-afastamento')?.checked;
-  const dias = v('atestado-dias');
+  // Só aceita número inteiro de dias >= 1 — zero, negativo ou fracionado
+  // vira "___" (lacuna a preencher) em vez de sair impresso no atestado.
+  const diasNum = parseInt(v('atestado-dias'), 10);
+  const dias = Number.isInteger(diasNum) && diasNum >= 1 ? String(diasNum) : '';
 
   let texto = `Atesto para os devidos fins que o(a) paciente ${nome} esteve sob meus cuidados médicos nesta data (${dataAtestado}).`;
   if (retorno) {
@@ -3678,12 +3681,30 @@ function renderImgExamesAnteriores(nome) {
 
 // ─── Sincronização de dados do paciente entre abas ───────────────────────────
 const SINC_MAP = {
-  nome:        ['rel-nome','rx-nome','lab-nome','img-nome','vac-nome','atestado-nome'],
+  nome:        ['rel-nome','rx-nome','lab-nome','img-nome','vac-nome','atestado-nome','re-pac-nome'],
   nascimento:  ['rel-nascimento'],
   idade:       ['rel-idade','rx-idade'],
   endereco:    ['rx-endereco'],
   diagnostico: ['rel-diagnostico','lab-cid','img-cid'],
 };
+
+// Preenche a idade automaticamente a partir da data de nascimento (a idade
+// deriva do nascimento, então é recalculada sempre que a data muda). Datas
+// futuras ou inválidas não preenchem nada — o campo continua editável, para
+// os casos em que o médico só sabe a idade aproximada e não a data exata.
+function calcularIdade(dataNasc) {
+  const campoIdade = document.getElementById('rel-idade');
+  if (!campoIdade || !dataNasc) return;
+  const nasc = new Date(dataNasc + 'T00:00:00');
+  if (isNaN(nasc.getTime())) return;
+  const hoje = new Date();
+  let anos = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
+  if (anos < 0 || anos > 130) return;
+  campoIdade.value = String(anos);
+  sincPaciente('idade', campoIdade.value);
+}
 
 function sincPaciente(campo, valor) {
   const ids = SINC_MAP[campo] || [];
@@ -3691,10 +3712,26 @@ function sincPaciente(campo, valor) {
     const el = document.getElementById(id);
     if (el && el !== document.activeElement && el.value !== valor) el.value = valor;
   });
+  // A Receita Especial espelha os dados do paciente na 2ª via através de
+  // sincRecEsp() — sem esta chamada, o nome sincronizado apareceria só no
+  // campo de edição da 1ª via e a 2ª via ficaria em branco.
+  if (ids.some(id => id.startsWith('re-'))) sincRecEsp();
 }
 
 // ─── Seleção combinada ────────────────────────────────────────────────────────
+// DOCS = documentos que aparecem na barra de seleção combinada.
 const DOCS = ['relatorio','receita','exames-lab','exames-img','vacinas','atestado'];
+
+// Todas as páginas de documento do paciente — inclui a Receita Especial, que
+// não entra na seleção combinada (é impressa sozinha, em 2 vias) mas precisa
+// ser limpa junto ao trocar de paciente. Usada por novoPaciente().
+const PAGINAS_DOCUMENTO = [...DOCS, 'receita-especial'];
+
+// Campos de "data do documento" que devem começar preenchidos com a data de
+// hoje (não inclui data de nascimento nem data de retorno, que são do
+// paciente). Centralizado aqui para não repetir a lista em vários pontos —
+// era a causa de Vacinas e Atestado ficarem sem data preenchida.
+const CAMPOS_DATA_DOCUMENTO = ['rel-data','rx-data','re-data','lab-data','img-data','vac-data','atestado-data'];
 
 function toggleSel(id) {
   const chk = document.getElementById('chk-' + id);
@@ -3855,16 +3892,12 @@ function novoPaciente() {
   if (!confirm('Limpar todos os campos do paciente atual?')) return;
   // Fechar qualquer modal aberto
   document.querySelectorAll('.modal-overlay.aberto').forEach(m => m.classList.remove('aberto'));
-  ['relatorio','receita','exames-lab','exames-img'].forEach(id => clearForm(id));
-  // Clear synced fields
-  ['rel-nome','rx-nome','lab-nome','img-nome','rel-nascimento','rel-idade','rx-idade','rx-endereco',
-   'rel-diagnostico','lab-cid','img-cid','rel-texto',
-   'rx-prescricao','rx-orientacoes','rx-obs','lab-adicional','lab-indicacao',
-   'img-adicional','img-indicacao'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  ['rel-data','rx-data','lab-data','img-data'].forEach(id => {
+  // Limpa TODAS as páginas de documento — derivado de PAGINAS_DOCUMENTO para
+  // que uma aba nova nunca fique de fora por esquecimento (era exatamente o
+  // que acontecia com Vacinas, Atestado e Receita Especial: os dados do
+  // paciente anterior continuavam preenchidos ao trocar de paciente).
+  PAGINAS_DOCUMENTO.forEach(id => clearForm(id));
+  CAMPOS_DATA_DOCUMENTO.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = new Date().toISOString().split('T')[0];
   });
@@ -3903,6 +3936,11 @@ function aplicarLocalEndereco(root, nome) {
 
 function atualizarLocal() {
   const nome = document.getElementById('select-local').value;
+  // Guarda o local escolhido, como já é feito com médico/CRM/RQE — sem isso,
+  // ao recarregar a página o seletor voltava para o primeiro da lista e os
+  // documentos podiam sair com o cabeçalho/endereço de outro local sem que
+  // o médico percebesse.
+  try { localStorage.setItem('g-local', nome); } catch (e) {}
   document.querySelectorAll('.local-nome').forEach(el => el.textContent = nome);
   aplicarLocalEndereco(document, nome);
   const logoEl = document.getElementById('logo-hospital');
@@ -4023,6 +4061,14 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMedCustomGrupo();
   initSecoesColapsaveis();
   construirBotoesExclusaoPermanentes();
+  // Restaura o último local usado ANTES de atualizarLocal() — ela grava o
+  // local atual no localStorage, então chamá-la antes da restauração
+  // sobrescreveria o valor salvo com o primeiro item da lista.
+  const savedLocal = localStorage.getItem('g-local');
+  if (savedLocal) {
+    const selLocal = document.getElementById('select-local');
+    if (selLocal && [...selLocal.options].some(o => o.value === savedLocal)) selLocal.value = savedLocal;
+  }
   atualizarLocal();
   // Restaurar médico/CRM/RQE do localStorage
   const savedMedico = localStorage.getItem('g-medico');
@@ -4042,7 +4088,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Busca global — listener no input
   document.getElementById('search-input')?.addEventListener('input', function() { buscarGlobal(this.value); });
   const hoje = new Date().toISOString().split('T')[0];
-  ['rel-data','rx-data','lab-data','img-data'].forEach(id => {
+  CAMPOS_DATA_DOCUMENTO.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = hoje;
   });
