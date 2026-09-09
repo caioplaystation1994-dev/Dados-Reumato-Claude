@@ -289,6 +289,69 @@ strong{font-weight:600;color:var(--tinta)}
 .rodape__base{padding-top:28px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;font-family:var(--sans);font-size:.76rem;letter-spacing:.08em;color:var(--tinta-suave)}
 .aviso{font-size:.82rem;color:var(--tinta-suave);line-height:1.75;margin-top:26px;padding-top:22px;border-top:1px solid var(--linha)}
 
+/* ---------- Ornamento (filete duplo com losango) ---------- */
+.ornamento{display:block;width:78px;height:9px;margin:0 auto 34px;position:relative}
+.ornamento::before{content:"";position:absolute;left:0;right:0;top:4px;height:1px;background:var(--ouro-claro)}
+.ornamento::after{
+  content:"";position:absolute;left:50%;top:0;width:9px;height:9px;margin-left:-4.5px;
+  background:var(--areia);border:1px solid var(--ouro);transform:rotate(45deg);
+}
+
+/* ---------- Manifesto ---------- */
+.manifesto{background:var(--tinta);color:var(--areia);padding:96px 0;position:relative;overflow:hidden}
+.manifesto::before{
+  content:"W";position:absolute;right:-3%;top:50%;transform:translateY(-50%);
+  font-family:var(--serif);font-size:26rem;font-weight:500;line-height:1;
+  color:rgba(239,201,142,.045);pointer-events:none;user-select:none;
+}
+.manifesto__interno{max-width:800px;margin:0 auto;text-align:center;position:relative}
+.manifesto .ornamento::after{background:var(--tinta)}
+.manifesto .ornamento::before{background:rgba(239,201,142,.4)}
+.manifesto blockquote{
+  margin:0 0 26px;font-family:var(--serif);font-style:italic;font-weight:400;
+  font-size:clamp(1.5rem,3vw,2.15rem);line-height:1.42;color:var(--areia);
+}
+.manifesto cite{
+  font-family:var(--sans);font-style:normal;font-size:.72rem;font-weight:400;
+  letter-spacing:.26em;text-transform:uppercase;color:var(--ouro-claro);
+}
+
+/* ---------- Monograma de fundo no herói ---------- */
+.heroi__monograma{
+  position:absolute;left:-4%;bottom:-16%;font-family:var(--serif);font-size:32rem;
+  font-weight:500;line-height:1;color:rgba(150,112,42,.038);
+  pointer-events:none;user-select:none;z-index:0;
+}
+.heroi .container{position:relative;z-index:1}
+
+/* ---------- Sinais de alerta ---------- */
+.sinais{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:52px 46px;counter-reset:sinal}
+.sinais li{position:relative;padding-top:26px;border-top:1px solid var(--ouro-claro)}
+.sinais li::before{
+  counter-increment:sinal;content:counter(sinal,decimal-leading-zero);
+  position:absolute;top:-11px;left:0;background:var(--branco);padding-right:14px;
+  font-family:var(--sans);font-size:.7rem;letter-spacing:.2em;color:var(--ouro);
+}
+.sinais h3{font-size:1.24rem;margin-bottom:10px}
+.sinais p{font-size:.94rem;color:var(--tinta-suave);margin-bottom:0;line-height:1.65}
+
+/* ---------- O que levar ---------- */
+.levar{
+  margin-top:80px;display:grid;grid-template-columns:.85fr 1.15fr;gap:60px;
+  align-items:start;border:1px solid var(--ouro-claro);padding:52px 56px;background:var(--branco);
+}
+.levar__titulo h3{font-size:1.7rem;font-family:var(--serif);font-weight:500;margin-bottom:12px}
+.levar__titulo p{font-size:.95rem;color:var(--tinta-suave);margin:0}
+.levar__lista{list-style:none;padding:0;margin:0;columns:2;column-gap:44px}
+.levar__lista li{
+  position:relative;padding:0 0 16px 26px;font-size:.97rem;color:var(--tinta-media);
+  break-inside:avoid;line-height:1.55;
+}
+.levar__lista li::before{
+  content:"";position:absolute;left:0;top:9px;width:7px;height:7px;
+  border:1px solid var(--ouro);transform:rotate(45deg);
+}
+
 /* ---------- WhatsApp flutuante ---------- */
 .zap{
   position:fixed;right:26px;bottom:26px;z-index:70;width:58px;height:58px;
@@ -315,6 +378,9 @@ strong{font-weight:600;color:var(--tinta)}
 
 /* ---------- Responsivo ---------- */
 @media (max-width:1000px){
+  .sinais{grid-template-columns:repeat(2,1fr);gap:44px 38px}
+  .levar{grid-template-columns:1fr;gap:34px;padding:42px 40px}
+  .heroi__monograma,.manifesto::before{font-size:20rem}
   .heroi__grade,.sobre,.contato{grid-template-columns:1fr;gap:52px}
   .heroi__retrato{max-width:420px}
   .cartao-flutuante{left:auto;right:-16px}
@@ -352,6 +418,10 @@ strong{font-weight:600;color:var(--tinta)}
   .faq .faq__corpo{padding-right:0}
 }
 @media (max-width:560px){
+  .sinais{grid-template-columns:1fr;gap:36px}
+  .levar__lista{columns:1}
+  .levar{padding:34px 26px}
+  .heroi__monograma,.manifesto::before{display:none}
   .grade--2,.grade--3,.grade--4,.etapas,.condicoes,.rodape__grade{grid-template-columns:1fr}
   .heroi__acoes .btn{width:100%}
   .selos li{border-right:0;padding-right:0;margin-right:0;width:100%}
