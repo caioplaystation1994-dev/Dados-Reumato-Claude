@@ -1,11 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#14456e"/>
-      <stop offset="1" stop-color="#2a9d8f"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="url(#g)"/>
-  <text x="32" y="43" font-family="Georgia,serif" font-size="30" font-weight="700"
-        fill="#ffffff" text-anchor="middle">CW</text>
+  <rect width="64" height="64" fill="#f7f3f1"/>
+  <rect x="9" y="6" width="46" height="52" fill="#fffdfc" stroke="#96702a" stroke-width="2.5"/>
+  <rect x="14" y="11" width="36" height="42" fill="none" stroke="#efc98e" stroke-width="1.5"/>
+  <text x="32" y="45" font-family="Cormorant Garamond,Garamond,Georgia,serif" font-size="30"
+        font-weight="500" fill="#1f1d1b" text-anchor="middle">W</text>
 </svg>

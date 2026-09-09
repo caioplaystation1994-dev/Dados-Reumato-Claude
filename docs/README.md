@@ -117,13 +117,19 @@ dig +short caiowandenkolk.com.br
 
 ## 4. Personalização visual
 
-Cores e tipografia ficam concentradas no bloco `:root` de `assets/css/style.css`:
+Cores e tipografia ficam concentradas no bloco `:root` de `assets/css/style.css`,
+derivadas do material impresso (cartão, timbrado e receituário):
 
 ```css
---azul-800:#14456e;   /* cor principal: cabeçalho, botões, títulos */
---verde:#2a9d8f;      /* cor de destaque: CTAs, ícones, marcadores */
---areia:#fbfaf8;      /* fundo geral */
+--areia:#f7f3f1;      /* fundo, do papel timbrado */
+--tinta:#1f1d1b;      /* títulos e texto forte */
+--ouro:#96702a;       /* moldura externa da marca, rótulos */
+--ouro-claro:#efc98e; /* moldura interna, filetes */
 ```
+
+Tipografia: **Cormorant Garamond** nos títulos e na marca (a serifa de alto
+contraste do impresso) e **Jost** no texto corrido e nos rótulos em versalete
+espaçado, no espírito dos campos "PACIENTE" e "EMITENTE" do receituário.
 
 Alterar essas variáveis muda o site inteiro de forma consistente.
 
