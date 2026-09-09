@@ -32,15 +32,14 @@ Substitua, em `index.html` e `404.html`:
 
 | Marcador atual | Substituir por |
 |---|---|
-| `Dr. Nome Sobrenome` | Seu nome completo |
-| `NS` (em `marca__sigla` e no favicon) | Suas iniciais |
+| `CW` (em `marca__sigla` e no favicon) | Iniciais, caso queira outras |
 | `CRM-UF 000000` / `RQE 0000` | Registro profissional real |
 | `Cidade/UF` | Cidade e estado de atendimento |
 | `5500000000000` | WhatsApp: 55 + DDD + número, só dígitos (ex.: `5511998765432`) |
 | `+550000000000` / `(00) 0000-0000` | Telefone do consultório |
 | `contato@caiowandenkolk.com.br` | E-mail real, caso seja outro |
 | `Rua Exemplo, 000` | Endereço completo do consultório |
-| Bloco `.retrato__vazio` | `<img src="assets/img/retrato.jpg" alt="Retrato do Dr. Nome Sobrenome">` |
+| Bloco `.retrato__vazio` | `<img src="assets/img/retrato.jpg" alt="Retrato do Dr. Caio Wandenkolk">` |
 | Bloco `.mapa__vazio` | `<iframe>` do Google Maps (Compartilhar → Incorporar um mapa) |
 | Lista `.formacao` | Sua formação real |
 | Cartão `00 anos` | Tempo de atuação, ou remova o bloco `.cartao-flutuante` |
@@ -49,7 +48,7 @@ Uma substituição rápida em massa (revise antes de rodar):
 
 ```bash
 cd docs
-sed -i 's/Dr\. Nome Sobrenome/Dr. Fulano de Tal/g; s/5500000000000/5511998765432/g' index.html 404.html
+sed -i 's/5500000000000/5511998765432/g; s/+550000000000/+5511998765432/g' index.html
 ```
 
 ### Imagens a adicionar em `assets/img/`
