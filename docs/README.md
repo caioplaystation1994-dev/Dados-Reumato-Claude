@@ -154,12 +154,30 @@ Em caso de dúvida sobre um conteúdo específico, consulte o CRM do seu estado 
 
 ---
 
+## 6. Sair do modo "em construção"
+
+O site está com a indexação **bloqueada**. Enquanto isso vale:
+
+- ele continua acessível por link direto — o bloqueio impede a indexação, não o acesso;
+- não aparece em nenhuma busca do Google, Bing ou similares.
+
+Para lançar, faça as duas alterações juntas:
+
+1. Em `index.html`, troque `<meta name="robots" content="noindex, nofollow">`
+   por `<meta name="robots" content="index, follow">` e remova o comentário acima dela.
+2. Em `robots.txt`, substitua `Disallow: /` pelo conteúdo indicado no próprio arquivo.
+
+Só depois disso envie o sitemap ao Google Search Console.
+
+---
+
 ## 6. Checklist antes de divulgar o site
 
 - [ ] Todos os `<!-- SUBSTITUIR -->` resolvidos (`grep -n SUBSTITUIR docs/index.html` sem resultados)
 - [ ] Links de WhatsApp, telefone e e-mail testados em um celular
 - [ ] Foto e mapa inseridos
 - [ ] DNS do `caiowandenkolk.com.br` propagado e HTTPS ativo (*Enforce HTTPS* marcado)
+- [ ] Bloqueio de indexação removido (seção 6 acima)
 - [ ] Site cadastrado no [Google Search Console](https://search.google.com/search-console) e sitemap enviado
 - [ ] Perfil no [Google Meu Negócio](https://business.google.com) criado, com o mesmo endereço e telefone do site
 - [ ] Verificado em celular, tablet e desktop

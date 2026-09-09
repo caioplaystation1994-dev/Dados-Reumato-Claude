@@ -1,4 +1,13 @@
-User-agent: *
-Allow: /
+# ============================================================
+# SITE EM CONSTRUÇÃO — REVERTER ANTES DE DIVULGAR
+# Enquanto este bloqueio estiver ativo, o site não é indexado.
+# Ao lançar, substitua todo o conteúdo deste arquivo por:
+#
+#   User-agent: *
+#   Allow: /
+#
+#   Sitemap: https://caiowandenkolk.com.br/sitemap.xml
+# ============================================================
 
-Sitemap: https://caiowandenkolk.com.br/sitemap.xml
+User-agent: *
+Disallow: /
