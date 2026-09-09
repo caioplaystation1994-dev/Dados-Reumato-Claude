@@ -33,8 +33,7 @@ Substitua, em `index.html` e `404.html`:
 | Marcador atual | Substituir por |
 |---|---|
 | `CW` (em `marca__sigla` e no favicon) | Iniciais, caso queira outras |
-| `CRM-UF 000000` / `RQE 0000` | Registro profissional real |
-| `Cidade/UF` | Cidade e estado de atendimento |
+| `Cidade/UF` (só na lista de formação) | Cidade da instituição de ensino |
 | `5500000000000` | WhatsApp: 55 + DDD + número, só dígitos (ex.: `5511998765432`) |
 | `+550000000000` / `(00) 0000-0000` | Telefone do consultório |
 | `contato@caiowandenkolk.com.br` | E-mail real, caso seja outro |
