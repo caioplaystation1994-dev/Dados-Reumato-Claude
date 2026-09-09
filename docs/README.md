@@ -9,6 +9,7 @@ docs/
 ├── 404.html                Página de erro
 ├── robots.txt              Instruções para buscadores
 ├── sitemap.xml             Mapa do site
+├── CNAME                   Domínio próprio (caiowandenkolk.com.br)
 ├── .nojekyll               Impede o processamento Jekyll no GitHub Pages
 └── assets/
     ├── css/style.css       Estilos (paleta e tipografia no topo, em :root)
@@ -37,8 +38,7 @@ Substitua, em `index.html` e `404.html`:
 | `Cidade/UF` | Cidade e estado de atendimento |
 | `5500000000000` | WhatsApp: 55 + DDD + número, só dígitos (ex.: `5511998765432`) |
 | `+550000000000` / `(00) 0000-0000` | Telefone do consultório |
-| `contato@seudominio.com.br` | E-mail real |
-| `www.seudominio.com.br` | Seu domínio (aparece nas meta tags, no JSON-LD, no `robots.txt` e no `sitemap.xml`) |
+| `contato@caiowandenkolk.com.br` | E-mail real, caso seja outro |
 | `Rua Exemplo, 000` | Endereço completo do consultório |
 | Bloco `.retrato__vazio` | `<img src="assets/img/retrato.jpg" alt="Retrato do Dr. Nome Sobrenome">` |
 | Bloco `.mapa__vazio` | `<iframe>` do Google Maps (Compartilhar → Incorporar um mapa) |
@@ -49,7 +49,7 @@ Uma substituição rápida em massa (revise antes de rodar):
 
 ```bash
 cd docs
-sed -i 's/Dr\. Nome Sobrenome/Dr. Fulano de Tal/g; s/5500000000000/5511998765432/g; s/seudominio\.com\.br/meudominio.com.br/g' index.html 404.html robots.txt sitemap.xml
+sed -i 's/Dr\. Nome Sobrenome/Dr. Fulano de Tal/g; s/5500000000000/5511998765432/g' index.html 404.html
 ```
 
 ### Imagens a adicionar em `assets/img/`
@@ -71,29 +71,40 @@ Comprima as imagens antes de subir (o site inteiro deve carregar em menos de 1 s
 3. Branch: a branch em que este código está · Pasta: **`/docs`** · **Save**.
 4. Aguarde alguns minutos: o site fica no ar em `https://<usuário>.github.io/<repositório>/`.
 
-### Apontar o domínio próprio
+### Apontar o domínio próprio — `caiowandenkolk.com.br`
 
-1. Crie o arquivo `docs/CNAME` com **uma única linha** contendo o domínio, sem `https://`:
+O arquivo `docs/CNAME` já está criado com o domínio raiz. Falta a parte do DNS.
 
-   ```
-   www.meudominio.com.br
-   ```
-
-2. No painel DNS do registrador (Registro.br, GoDaddy, Cloudflare…), configure:
+1. No **Registro.br**, entre no domínio → aba **DNS** → *Editar zona* e crie:
 
    | Tipo | Nome | Valor |
    |---|---|---|
-   | CNAME | `www` | `<usuário>.github.io` |
    | A | `@` | `185.199.108.153` |
    | A | `@` | `185.199.109.153` |
    | A | `@` | `185.199.110.153` |
    | A | `@` | `185.199.111.153` |
+   | CNAME | `www` | `<usuário>.github.io.` |
 
-3. Em **Settings → Pages → Custom domain**, informe `www.meudominio.com.br` e salve.
-4. Após a validação do DNS (de minutos a algumas horas), marque **Enforce HTTPS**.
+   Os quatro registros `A` são obrigatórios — o GitHub usa os quatro para redundância.
+   Troque `<usuário>` pelo seu usuário do GitHub (no Registro.br, o ponto final é exigido).
+   O `CNAME` de `www` é opcional, mas garante que `www.caiowandenkolk.com.br`
+   redirecione para o domínio raiz em vez de dar erro.
 
-> Se o domínio for `.com.br` registrado no Registro.br, os registros A e CNAME são
-> configurados na aba *DNS* do painel do domínio.
+2. Em **Settings → Pages → Custom domain**, informe `caiowandenkolk.com.br` e salve.
+3. Aguarde o *DNS check* passar (de minutos a algumas horas) e marque **Enforce HTTPS**.
+   O certificado TLS é emitido automaticamente pelo GitHub, sem custo.
+
+Para verificar a propagação:
+
+```bash
+dig +short caiowandenkolk.com.br
+# deve responder os quatro IPs 185.199.10x.153
+```
+
+> **Atenção:** se você trocar o domínio raiz por `www` mais tarde, atualize também o
+> `CNAME`, a `<link rel="canonical">` e a `og:url` do `index.html`, o `robots.txt`
+> e o `sitemap.xml` — os quatro precisam apontar para o mesmo endereço, senão o
+> Google indexa versões duplicadas do site.
 
 ---
 
@@ -144,7 +155,7 @@ Em caso de dúvida sobre um conteúdo específico, consulte o CRM do seu estado 
 - [ ] Todos os `<!-- SUBSTITUIR -->` resolvidos (`grep -n SUBSTITUIR docs/index.html` sem resultados)
 - [ ] Links de WhatsApp, telefone e e-mail testados em um celular
 - [ ] Foto e mapa inseridos
-- [ ] Domínio propagado e HTTPS ativo
+- [ ] DNS do `caiowandenkolk.com.br` propagado e HTTPS ativo (*Enforce HTTPS* marcado)
 - [ ] Site cadastrado no [Google Search Console](https://search.google.com/search-console) e sitemap enviado
 - [ ] Perfil no [Google Meu Negócio](https://business.google.com) criado, com o mesmo endereço e telefone do site
 - [ ] Verificado em celular, tablet e desktop
