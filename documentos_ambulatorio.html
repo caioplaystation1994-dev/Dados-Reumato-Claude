@@ -467,6 +467,22 @@ body{padding-bottom:64px}
 .rec-esp-via2-texto{font-size:14px;line-height:1.9;min-height:80px;padding:8px 0;white-space:pre-wrap;color:#1a202c;border-bottom:1px solid #fbd38d}
 .rec-esp-assinatura{margin-top:36px}
 .rec-esp-ass-linha{border-top:1px solid #4a5568;padding-top:6px;width:260px;font-size:11px;text-align:center;color:#4a5568;margin:0 auto}
+/* ── Janelas exigidas pela Portaria SVS/MS nº 344/98 ── */
+.rec-esp-janela{border:1px solid #d6a548;border-radius:8px;padding:8px 12px 10px;position:relative;margin-bottom:12px}
+.rec-esp-janela-titulo{font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.rec-esp-topo{display:flex;gap:12px;align-items:stretch;margin-bottom:12px}
+.rec-esp-topo .rec-esp-janela{flex:1;margin-bottom:0}
+.rec-esp-emitente-linha{font-size:11px;color:#2d3748;line-height:1.5}
+.rec-esp-emitente-nome{font-weight:700;font-size:12px;color:#1a202c}
+.rec-esp-via-marca{width:150px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;text-align:center;border:1px solid #d6a548;border-radius:8px;padding:8px 6px}
+.rec-esp-via-num{font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:700;color:#92400e}
+.rec-esp-via-desc{font-size:9px;color:#b7791f;margin-top:3px;line-height:1.35}
+.rec-esp-rodape-janelas{display:flex;gap:12px;margin-top:14px}
+.rec-esp-rodape-janelas .rec-esp-janela{flex:1;margin-bottom:0}
+.rec-esp-linha-vazia{border-bottom:1px solid #cbd5e0;height:17px;margin-top:9px;font-size:9px;color:#718096;position:relative}
+.rec-esp-linha-vazia span{position:absolute;bottom:1px;left:0}
+.rec-esp-linha-dupla{display:flex;gap:10px}
+.rec-esp-linha-dupla .rec-esp-linha-vazia{flex:1}
 
 @media print{
   /* Rec. especial: cada via (1ª farmácia / 2ª paciente) ocupa uma folha A4
@@ -485,6 +501,10 @@ body{padding-bottom:64px}
   .rec-esp-subtitulo{font-size:9px}
   .rec-esp-header::after{box-shadow:none}
   .rec-esp-assinatura{margin-top:auto}
+  .rec-esp-janela,.rec-esp-via-marca{border-color:#999}
+  .rec-esp-janela{padding:6px 10px 8px}
+  .rec-esp-rodape-janelas{margin-top:12px}
+  .rec-esp-linha-vazia{border-color:#999}
   .action-bar{display:none!important}
 }
 
@@ -1142,31 +1162,55 @@ body{padding-bottom:64px}
         </div>
       </div>
 
-      <div class="rec-esp-dados-medico" id="rec-esp-dados-medico-1">
-        <span id="re-med-nome-1"></span>
-        <span id="re-med-crm-1"></span>
-        <span>Especialidade: Reumatologia</span>
-      </div>
-
-      <div class="rec-esp-paciente">
-        <div class="rec-esp-campo-row">
-          <div class="rec-esp-campo flex3">
-            <label>Paciente</label>
-            <input type="text" id="re-pac-nome" oninput="sincRecEsp()" placeholder="Nome completo">
-          </div>
-          <div class="rec-esp-campo flex1">
-            <label>Data</label>
-            <input type="date" id="re-data" oninput="sincRecEsp()">
+      <div class="rec-esp-topo">
+        <div class="rec-esp-janela">
+          <div class="rec-esp-janela-titulo">Identificação do Emitente</div>
+          <div class="rec-esp-emitente-linha rec-esp-emitente-nome re-emit-nome"></div>
+          <div class="rec-esp-emitente-linha re-emit-endereco"></div>
+          <div class="rec-esp-emitente-linha re-emit-cidade"></div>
+          <div class="rec-esp-emitente-linha re-emit-telefone"></div>
+          <div class="rec-esp-emitente-linha" style="margin-top:4px">
+            <span id="re-med-nome-1"></span> · <span id="re-med-crm-1"></span><span id="re-med-rqe-1"></span> · Reumatologia
           </div>
         </div>
-        <div class="rec-esp-campo-row">
-          <div class="rec-esp-campo flex2">
-            <label>Endereço</label>
-            <input type="text" id="re-endereco" oninput="sincRecEsp()" placeholder="Rua, número, bairro, cidade">
+        <div class="rec-esp-via-marca">
+          <div class="rec-esp-via-num">1ª VIA</div>
+          <div class="rec-esp-via-desc">Retenção da Farmácia ou Drogaria</div>
+        </div>
+      </div>
+
+      <div class="rec-esp-janela">
+        <div class="rec-esp-janela-titulo">Identificação do Paciente</div>
+        <div class="rec-esp-paciente">
+          <div class="rec-esp-campo-row">
+            <div class="rec-esp-campo flex3">
+              <label>Paciente</label>
+              <input type="text" id="re-pac-nome" oninput="sincRecEsp()" placeholder="Nome completo">
+            </div>
+            <div class="rec-esp-campo flex1">
+              <label>Data</label>
+              <input type="date" id="re-data" oninput="sincRecEsp()">
+            </div>
           </div>
-          <div class="rec-esp-campo flex1">
-            <label>CPF / RG</label>
-            <input type="text" id="re-cpf" oninput="sincRecEsp()" placeholder="000.000.000-00">
+          <div class="rec-esp-campo-row">
+            <div class="rec-esp-campo flex3">
+              <label>Endereço</label>
+              <input type="text" id="re-endereco" oninput="sincRecEsp()" placeholder="Rua, número, bairro">
+            </div>
+            <div class="rec-esp-campo flex2">
+              <label>Cidade / UF</label>
+              <input type="text" id="re-cidade" oninput="sincRecEsp()" placeholder="São Paulo - SP">
+            </div>
+          </div>
+          <div class="rec-esp-campo-row" style="margin-bottom:0">
+            <div class="rec-esp-campo flex1">
+              <label>CPF / RG</label>
+              <input type="text" id="re-cpf" oninput="sincRecEsp()" placeholder="000.000.000-00">
+            </div>
+            <div class="rec-esp-campo flex1">
+              <label>Telefone</label>
+              <input type="text" id="re-telefone" oninput="sincRecEsp()" placeholder="(11) 00000-0000">
+            </div>
           </div>
         </div>
       </div>
@@ -1203,6 +1247,32 @@ body{padding-bottom:64px}
           <span id="re-ass-crm-1"></span>
         </div>
       </div>
+
+      <div class="rec-esp-rodape-janelas">
+        <div class="rec-esp-janela">
+          <div class="rec-esp-janela-titulo">Identificação do Comprador</div>
+          <div class="rec-esp-linha-vazia"><span>Nome</span></div>
+          <div class="rec-esp-linha-dupla">
+            <div class="rec-esp-linha-vazia"><span>Identidade nº</span></div>
+            <div class="rec-esp-linha-vazia"><span>Órgão emissor</span></div>
+          </div>
+          <div class="rec-esp-linha-vazia"><span>Endereço</span></div>
+          <div class="rec-esp-linha-dupla">
+            <div class="rec-esp-linha-vazia"><span>Cidade / UF</span></div>
+            <div class="rec-esp-linha-vazia"><span>Telefone</span></div>
+          </div>
+        </div>
+        <div class="rec-esp-janela">
+          <div class="rec-esp-janela-titulo">Identificação do Fornecedor</div>
+          <div class="rec-esp-linha-vazia"><span>Farmácia / Drogaria</span></div>
+          <div class="rec-esp-linha-vazia"><span>Assinatura do farmacêutico</span></div>
+          <div class="rec-esp-linha-dupla">
+            <div class="rec-esp-linha-vazia"><span>CRF nº</span></div>
+            <div class="rec-esp-linha-vazia"><span>Data &nbsp;&nbsp;___/___/______</span></div>
+          </div>
+          <div class="rec-esp-linha-vazia"><span>Carimbo do estabelecimento</span></div>
+        </div>
+      </div>
     </div>
 
     <!-- VIA 2 (espelho — preenchida automaticamente) -->
@@ -1215,31 +1285,55 @@ body{padding-bottom:64px}
         </div>
       </div>
 
-      <div class="rec-esp-dados-medico">
-        <span id="re-med-nome-2"></span>
-        <span id="re-med-crm-2"></span>
-        <span>Especialidade: Reumatologia</span>
-      </div>
-
-      <div class="rec-esp-paciente">
-        <div class="rec-esp-campo-row">
-          <div class="rec-esp-campo flex3">
-            <label>Paciente</label>
-            <div class="rec-esp-val" id="re-pac-nome-2"></div>
-          </div>
-          <div class="rec-esp-campo flex1">
-            <label>Data</label>
-            <div class="rec-esp-val" id="re-data-2"></div>
+      <div class="rec-esp-topo">
+        <div class="rec-esp-janela">
+          <div class="rec-esp-janela-titulo">Identificação do Emitente</div>
+          <div class="rec-esp-emitente-linha rec-esp-emitente-nome re-emit-nome"></div>
+          <div class="rec-esp-emitente-linha re-emit-endereco"></div>
+          <div class="rec-esp-emitente-linha re-emit-cidade"></div>
+          <div class="rec-esp-emitente-linha re-emit-telefone"></div>
+          <div class="rec-esp-emitente-linha" style="margin-top:4px">
+            <span id="re-med-nome-2"></span> · <span id="re-med-crm-2"></span><span id="re-med-rqe-2"></span> · Reumatologia
           </div>
         </div>
-        <div class="rec-esp-campo-row">
-          <div class="rec-esp-campo flex2">
-            <label>Endereço</label>
-            <div class="rec-esp-val" id="re-endereco-2"></div>
+        <div class="rec-esp-via-marca">
+          <div class="rec-esp-via-num">2ª VIA</div>
+          <div class="rec-esp-via-desc">Orientação ao Paciente</div>
+        </div>
+      </div>
+
+      <div class="rec-esp-janela">
+        <div class="rec-esp-janela-titulo">Identificação do Paciente</div>
+        <div class="rec-esp-paciente">
+          <div class="rec-esp-campo-row">
+            <div class="rec-esp-campo flex3">
+              <label>Paciente</label>
+              <div class="rec-esp-val" id="re-pac-nome-2"></div>
+            </div>
+            <div class="rec-esp-campo flex1">
+              <label>Data</label>
+              <div class="rec-esp-val" id="re-data-2"></div>
+            </div>
           </div>
-          <div class="rec-esp-campo flex1">
-            <label>CPF / RG</label>
-            <div class="rec-esp-val" id="re-cpf-2"></div>
+          <div class="rec-esp-campo-row">
+            <div class="rec-esp-campo flex3">
+              <label>Endereço</label>
+              <div class="rec-esp-val" id="re-endereco-2"></div>
+            </div>
+            <div class="rec-esp-campo flex2">
+              <label>Cidade / UF</label>
+              <div class="rec-esp-val" id="re-cidade-2"></div>
+            </div>
+          </div>
+          <div class="rec-esp-campo-row" style="margin-bottom:0">
+            <div class="rec-esp-campo flex1">
+              <label>CPF / RG</label>
+              <div class="rec-esp-val" id="re-cpf-2"></div>
+            </div>
+            <div class="rec-esp-campo flex1">
+              <label>Telefone</label>
+              <div class="rec-esp-val" id="re-telefone-2"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1251,6 +1345,32 @@ body{padding-bottom:64px}
         <div class="rec-esp-ass-linha">
           <span id="re-ass-nome-2"></span><br>
           <span id="re-ass-crm-2"></span>
+        </div>
+      </div>
+
+      <div class="rec-esp-rodape-janelas">
+        <div class="rec-esp-janela">
+          <div class="rec-esp-janela-titulo">Identificação do Comprador</div>
+          <div class="rec-esp-linha-vazia"><span>Nome</span></div>
+          <div class="rec-esp-linha-dupla">
+            <div class="rec-esp-linha-vazia"><span>Identidade nº</span></div>
+            <div class="rec-esp-linha-vazia"><span>Órgão emissor</span></div>
+          </div>
+          <div class="rec-esp-linha-vazia"><span>Endereço</span></div>
+          <div class="rec-esp-linha-dupla">
+            <div class="rec-esp-linha-vazia"><span>Cidade / UF</span></div>
+            <div class="rec-esp-linha-vazia"><span>Telefone</span></div>
+          </div>
+        </div>
+        <div class="rec-esp-janela">
+          <div class="rec-esp-janela-titulo">Identificação do Fornecedor</div>
+          <div class="rec-esp-linha-vazia"><span>Farmácia / Drogaria</span></div>
+          <div class="rec-esp-linha-vazia"><span>Assinatura do farmacêutico</span></div>
+          <div class="rec-esp-linha-dupla">
+            <div class="rec-esp-linha-vazia"><span>CRF nº</span></div>
+            <div class="rec-esp-linha-vazia"><span>Data &nbsp;&nbsp;___/___/______</span></div>
+          </div>
+          <div class="rec-esp-linha-vazia"><span>Carimbo do estabelecimento</span></div>
         </div>
       </div>
     </div>
@@ -3219,9 +3339,24 @@ function addMedEsp(nome) {
 function sincRecEsp() {
   const medico = (document.getElementById('g-medico')?.value || '').trim();
   const crm    = (document.getElementById('g-crm')?.value    || '').trim();
-  const crmTxt = crm ? 'CRM ' + crm : '';
+  const rqe    = (document.getElementById('g-rqe')?.value    || '').trim();
+  // O campo global já costuma vir como "CRM/SP 197.983" — não repetir o prefixo.
+  const crmTxt = crm ? (/^crm/i.test(crm) ? crm : 'CRM ' + crm) : '';
+
+  // Identificação do emitente (janela exigida pela Portaria 344/98)
+  const local = document.getElementById('select-local')?.value || '';
+  const emit  = EMITENTES[local] || {};
+  const preencher = (cls, txt) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = txt || '');
+  preencher('re-emit-nome',     local);
+  preencher('re-emit-endereco', emit.endereco);
+  preencher('re-emit-cidade',   emit.cidade);
+  preencher('re-emit-telefone', emit.telefone ? 'Tel.: ' + emit.telefone : '');
 
   // Dados médico
+  ['1','2'].forEach(v => {
+    const r = document.getElementById('re-med-rqe-' + v);
+    if (r) r.textContent = rqe ? ' · RQE ' + rqe : '';
+  });
   ['1','2'].forEach(v => {
     const n = document.getElementById('re-med-nome-' + v);
     const c = document.getElementById('re-med-crm-'  + v);
@@ -3237,6 +3372,8 @@ function sincRecEsp() {
   const nomePac   = document.getElementById('re-pac-nome')?.value  || '';
   const data      = document.getElementById('re-data')?.value      || '';
   const endereco  = document.getElementById('re-endereco')?.value  || '';
+  const cidade    = document.getElementById('re-cidade')?.value    || '';
+  const telefone  = document.getElementById('re-telefone')?.value  || '';
   const cpf       = document.getElementById('re-cpf')?.value       || '';
   const prescr    = document.getElementById('re-prescricao')?.value || '';
 
@@ -3246,6 +3383,8 @@ function sincRecEsp() {
   set('re-pac-nome-2', nomePac);
   set('re-data-2',     fmtD(data));
   set('re-endereco-2', endereco);
+  set('re-cidade-2',   cidade);
+  set('re-telefone-2', telefone);
   set('re-cpf-2',      cpf);
   set('re-prescricao-2', prescr);
 
@@ -3256,7 +3395,7 @@ function sincRecEsp() {
 }
 
 function limparRecEsp() {
-  ['re-pac-nome','re-data','re-endereco','re-cpf','re-prescricao'].forEach(id => {
+  ['re-pac-nome','re-data','re-endereco','re-cidade','re-telefone','re-cpf','re-prescricao'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; autoResizeTA(el); }
   });
@@ -3265,6 +3404,14 @@ function limparRecEsp() {
 
 function imprimirRecEsp() {
   sincRecEsp();
+  // A receita de controle especial não pode ser paginada (cada via tem de ser
+  // uma folha única, assinada e com as janelas de comprador/fornecedor no pé).
+  // Se a prescrição não couber, avisa antes de imprimir em vez de deixar o
+  // texto vazar em silêncio para fora da área útil.
+  const via2 = document.getElementById('rec-esp-via2');
+  if (via2 && via2.scrollHeight > 25.7 * 37.7953 + 4) {
+    if (!confirm('A prescrição é longa demais para caber em uma folha.\n\nParte do texto pode não ser impressa. Recomenda-se dividir em mais de uma receita.\n\nImprimir mesmo assim?')) return;
+  }
   prepararImpressao(['receita-especial']);
   try {
     window.print();
@@ -3855,6 +4002,38 @@ const CONTATOS_LOCAL = {
   "Dr Caio Wandenkolk": "Av. Paulista, 1048 - 18º Andar - Bela Vista, São Paulo - SP, 01310-100 | (11) 99455-8543 / (11) 3382-1525 | caiowandenkolk.com.br",
 };
 
+// Identificação do emitente exigida pela Portaria SVS/MS nº 344/98 (art. 35)
+// na 1ª parte do Receituário de Controle Especial: nome/endereço completo
+// do estabelecimento, cidade-UF e telefone. Diferente de CONTATOS_LOCAL,
+// aqui TODOS os locais precisam ter endereço — a receita não é válida sem ele.
+const EMITENTES = {
+  "Hospital Bartira": {
+    endereco: "Rua Vereador João Batista Fitipaldi, 155 - Vila Bocaina",
+    cidade: "Santo André - SP, 09190-610",
+    telefone: "(11) 4433-8000",
+  },
+  "Hospital Samaritano Higienópolis": {
+    endereco: "R. Conselheiro Brotero, 1486 - Higienópolis",
+    cidade: "São Paulo - SP, 01232-010",
+    telefone: "(11) 3821-5300",
+  },
+  "Clínica EVCITI": {
+    endereco: "Av. Nove de Julho, 3755 - Jardim Paulista",
+    cidade: "São Paulo - SP, 01407-100",
+    telefone: "(11) 3051-2333",
+  },
+  "Clínica Croma Oncologia": {
+    endereco: "Rua Pio XI, 48 - Alto da Lapa",
+    cidade: "São Paulo - SP, 05060-000",
+    telefone: "(11) 94891-1255",
+  },
+  "Dr Caio Wandenkolk": {
+    endereco: "Av. Paulista, 1048 - 18º Andar - Bela Vista",
+    cidade: "São Paulo - SP, 01310-100",
+    telefone: "(11) 99455-8543 / (11) 3382-1525",
+  },
+};
+
 // ─── Sincronizar médico/CRM global ────────────────────────────────────────────
 function sincMedico() {
   const medico = document.getElementById('g-medico')?.value || '';
@@ -4032,6 +4211,9 @@ function atualizarLocal() {
   document.querySelectorAll('.doc-header-logo').forEach(el => {
     el.classList.toggle('sem-logo', !LOGOS[nome]);
   });
+  // A receita especial traz a identificação completa do emitente — precisa
+  // ser refeita sempre que o local muda.
+  if (typeof sincRecEsp === 'function') sincRecEsp();
 }
 
 function localAtual() {
