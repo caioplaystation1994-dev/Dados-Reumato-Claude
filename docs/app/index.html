@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ferramentas clínicas — Dr. Caio Wandenkolk</title>
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+<script src="gate.js"></script>
+<style>
+:root{
+  --areia:#f7f3f1; --branco:#fffdfc; --tinta:#1f1d1b; --tinta-suave:#6e6862;
+  --ouro:#96702a; --ouro-claro:#efc98e; --linha:#e4ddd8; --linha-forte:#d5ccc5;
+  --serif:'Cormorant Garamond',Garamond,Georgia,'Times New Roman',serif;
+  --sans:'Jost',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  --sombra:0 1px 2px rgba(31,29,27,.03),0 10px 30px rgba(31,29,27,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--areia);color:var(--tinta);font-family:var(--sans);
+  min-height:100vh;display:flex;flex-direction:column;padding:40px 24px}
+.wrap{width:100%;max-width:860px;margin:0 auto;flex:1}
+
+header{text-align:center;margin-bottom:44px}
+.marca{width:58px;height:58px;margin:0 auto 18px;border:1px solid var(--ouro);
+  display:flex;align-items:center;justify-content:center;position:relative}
+.marca:after{content:'';position:absolute;inset:4px;border:1px solid var(--ouro-claro)}
+.marca span{font-family:var(--serif);font-size:28px}
+h1{font-family:var(--serif);font-size:32px;font-weight:500;letter-spacing:.2px}
+.sub{font-size:13px;color:var(--tinta-suave);margin-top:6px;
+  text-transform:uppercase;letter-spacing:1.6px}
+
+.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+.card{background:var(--branco);border:1px solid var(--linha);border-radius:12px;
+  padding:26px 24px;text-decoration:none;color:inherit;display:block;
+  box-shadow:var(--sombra);transition:border-color .18s,transform .18s,box-shadow .18s}
+.card:hover{border-color:var(--ouro-claro);transform:translateY(-2px);
+  box-shadow:0 18px 48px rgba(31,29,27,.11)}
+.card h2{font-family:var(--serif);font-size:20px;font-weight:500;margin-bottom:7px}
+.card p{font-size:13.5px;color:var(--tinta-suave);line-height:1.55}
+.card .seta{margin-top:14px;font-size:12px;color:var(--ouro);letter-spacing:1.2px;
+  text-transform:uppercase}
+
+.ferramenta-senha{margin-top:48px;border-top:1px solid var(--linha);padding-top:26px}
+.ferramenta-senha summary{font-size:13px;color:var(--tinta-suave);cursor:pointer;
+  list-style:none;display:flex;align-items:center;gap:7px}
+.ferramenta-senha summary::-webkit-details-marker{display:none}
+.ferramenta-senha summary:before{content:'⚙';color:var(--ouro)}
+.ferramenta-senha .corpo{margin-top:16px;background:var(--branco);border:1px solid var(--linha);
+  border-radius:10px;padding:20px}
+.ferramenta-senha p{font-size:13px;color:var(--tinta-suave);line-height:1.6;margin-bottom:12px}
+.ferramenta-senha input{width:100%;padding:10px 13px;border:1px solid var(--linha-forte);
+  border-radius:7px;font-size:14px;font-family:inherit;background:#fff}
+.ferramenta-senha input:focus{outline:none;border-color:var(--ouro)}
+.ferramenta-senha button{margin-top:10px;padding:9px 18px;border:none;border-radius:7px;
+  background:var(--ouro);color:var(--branco);font-size:13px;font-family:inherit;cursor:pointer}
+.ferramenta-senha button:hover{background:#7d5d23}
+#hash-saida{margin-top:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:11.5px;word-break:break-all;background:var(--areia);border:1px solid var(--linha);
+  border-radius:7px;padding:12px;display:none;line-height:1.6}
+
+footer{text-align:center;margin-top:44px;font-size:12px;color:var(--tinta-suave)}
+footer a{color:var(--ouro);text-decoration:none}
+@media(max-width:600px){body{padding:28px 18px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="marca"><span>W</span></div>
+    <h1>Ferramentas clínicas</h1>
+    <div class="sub">Uso interno</div>
+  </header>
+
+  <div class="grade">
+    <a class="card" href="documentos_ambulatorio.html">
+      <h2>Documentos ambulatoriais</h2>
+      <p>Relatório médico, receitas (comum e especial), solicitação de exames laboratoriais e de imagem, vacinas e atestado.</p>
+      <div class="seta">Abrir →</div>
+    </a>
+    <a class="card" href="laudo_imunobiologicos.html">
+      <h2>Laudo de imunobiológicos</h2>
+      <p>Laudo de solicitação conforme a DUT 65/ANS, com validação dos critérios, escores de atividade e geração de PDF e Word.</p>
+      <div class="seta">Abrir →</div>
+    </a>
+    <a class="card" href="laudo_convenio_imunobio.html">
+      <h2>Laudo para convênio</h2>
+      <p>Versão do laudo de imunobiológicos voltada à solicitação junto às operadoras.</p>
+      <div class="seta">Abrir →</div>
+    </a>
+  </div>
+
+  <details class="ferramenta-senha">
+    <summary>Gerar hash de uma nova senha</summary>
+    <div class="corpo">
+      <p>Digite a senha desejada para obter o hash correspondente. Depois substitua o valor de
+        <strong>HASH_SENHA</strong> no arquivo <strong>docs/app/gate.js</strong> e publique.
+        A senha em si não é guardada em lugar nenhum.</p>
+      <input type="text" id="nova-senha" placeholder="Nova senha" autocomplete="off">
+      <button type="button" id="btn-hash">Gerar hash</button>
+      <div id="hash-saida"></div>
+    </div>
+  </details>
+
+  <footer>
+    <a href="../">← Voltar ao site</a>
+  </footer>
+</div>
+
+<script>
+document.getElementById('btn-hash').addEventListener('click', async function () {
+  var valor = document.getElementById('nova-senha').value;
+  var saida = document.getElementById('hash-saida');
+  if (!valor) { saida.style.display = 'none'; return; }
+  var bytes = new TextEncoder().encode(valor);
+  var buf = await crypto.subtle.digest('SHA-256', bytes);
+  var hash = Array.from(new Uint8Array(buf)).map(function (b) {
+    return b.toString(16).padStart(2, '0');
+  }).join('');
+  saida.style.display = 'block';
+  saida.textContent = "var HASH_SENHA = '" + hash + "';";
+});
+</script>
+</body>
+</html>

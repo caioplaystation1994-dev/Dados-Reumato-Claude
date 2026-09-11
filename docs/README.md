@@ -181,3 +181,43 @@ Só depois disso envie o sitemap ao Google Search Console.
 - [ ] Site cadastrado no [Google Search Console](https://search.google.com/search-console) e sitemap enviado
 - [ ] Perfil no [Google Meu Negócio](https://business.google.com) criado, com o mesmo endereço e telefone do site
 - [ ] Verificado em celular, tablet e desktop
+
+---
+
+## Ferramentas clínicas (`docs/app/`)
+
+Uso interno, publicadas junto ao site em `caiowandenkolk.com.br/app/`:
+
+| Endereço | Ferramenta |
+|---|---|
+| `/app/` | Portal com o menu das três ferramentas |
+| `/app/documentos_ambulatorio.html` | Relatório, receitas, exames, vacinas, atestado |
+| `/app/laudo_imunobiologicos.html` | Laudo de imunobiológicos (DUT 65/ANS) |
+| `/app/laudo_convenio_imunobio.html` | Laudo para convênio |
+
+Não são indexadas: cada arquivo tem `noindex` e o `robots.txt` bloqueia `/app/`.
+
+### Acesso por senha
+
+Todas passam por uma tela de senha (`docs/app/gate.js`), que guarda apenas o
+hash SHA-256 — nunca a senha. O acesso vale 12 horas por navegador.
+
+Para trocar a senha: entre em `/app/`, use **"Gerar hash de uma nova senha"** no
+rodapé, cole o valor em `HASH_SENHA` dentro de `docs/app/gate.js` e publique.
+
+É uma porta, não um cofre: como o site é estático, quem abrir o código-fonte vê
+o conteúdo sem digitar a senha. Ela impede o uso casual por quem esbarre no
+endereço. Isso é proporcional ao risco, porque **nenhum dado de paciente é
+publicado** — o que você preenche fica só no seu navegador (localStorage) e
+nunca é enviado ao servidor. Para proteção real seria preciso trocar de
+hospedagem (Cloudflare Access, Netlify com senha).
+
+### Atualizar as ferramentas
+
+As ferramentas são desenvolvidas na branch `main`, na raiz do repositório. Para
+trazer a versão mais recente para o site:
+
+```bash
+node scripts/publicar-apps.js   # copia de main e injeta noindex + gate.js
+git add docs/app && git commit && git push
+```

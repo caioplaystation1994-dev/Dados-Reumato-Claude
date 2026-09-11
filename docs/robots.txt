@@ -4,9 +4,12 @@
 # Ao lançar, substitua todo o conteúdo deste arquivo por:
 #
 #   User-agent: *
-#   Allow: /
+#   Disallow: /app/
 #
 #   Sitemap: https://caiowandenkolk.com.br/sitemap.xml
+#
+# Mantenha o "Disallow: /app/" também depois do lançamento: são as
+# ferramentas clínicas de uso interno, que não devem aparecer em buscas.
 # ============================================================
 
 User-agent: *
