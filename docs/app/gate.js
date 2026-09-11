@@ -31,7 +31,7 @@
 (function () {
   'use strict';
 
-  var HASH_SENHA = '56c0877611f56435041716890d5fbd6d0b60cc829a75897fa90a316afc9f6557';
+  var HASH_SENHA = 'df602c37d50018c021117da7cb1290af7f4b3c4e48b7ae723fb4154cb99a8797';
   var CHAVE = 'app-acesso';
   var VALIDADE_HORAS = 12; // depois disso pede a senha de novo
 
