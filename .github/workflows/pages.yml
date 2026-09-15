@@ -1,0 +1,68 @@
+name: Deploy GitHub Pages
+
+# O site publicado é sempre a pasta docs/ da branch do site
+# (claude/happy-ride-mp97bp): na raiz do domínio fica o site pessoal e em
+# /app/ ficam as ferramentas clínicas, protegidas por senha (docs/app/gate.js).
+#
+# As ferramentas são desenvolvidas na branch main, na raiz do repositório —
+# por isso o job também busca main e roda scripts/publicar-apps.js, que copia
+# os arquivos de lá para docs/app/ injetando noindex + gate. Assim um push em
+# main atualiza as ferramentas sem republicar a raiz do repositório (o que já
+# aconteceu uma vez e derrubou o site pessoal, colocando o portal de
+# documentos, sem senha, no endereço principal).
+
+on:
+  push:
+    branches: [main, claude/happy-ride-mp97bp]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout da branch do site
+        uses: actions/checkout@v4
+        with:
+          ref: claude/happy-ride-mp97bp
+          fetch-depth: 0
+
+      - name: Buscar as ferramentas em main
+        run: git fetch --force origin main:main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Gerar docs/app/ a partir de main
+        run: node scripts/publicar-apps.js
+
+      - name: Conferir que o gate foi aplicado em todas as ferramentas
+        run: |
+          for f in docs/app/documentos_ambulatorio.html \
+                   docs/app/laudo_imunobiologicos.html \
+                   docs/app/laudo_convenio_imunobio.html; do
+            grep -q 'src="gate.js"' "$f" || { echo "::error::$f sem a tela de senha"; exit 1; }
+          done
+          if grep -q 'Sistema de Documentos' docs/index.html; then
+            echo "::error::a raiz do site não é o site pessoal"; exit 1
+          fi
+          echo "ok: raiz = site pessoal, /app/ protegido por senha"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - uses: actions/deploy-pages@v4
+        id: deployment
