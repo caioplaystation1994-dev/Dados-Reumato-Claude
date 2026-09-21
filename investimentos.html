@@ -1065,14 +1065,21 @@ async function atualizarSeries(silencioso) {
     ['ibov', () => buscarHistorico('^BVSP', db.config.token)],
     ['ifix', () => buscarHistorico('XFIX11', db.config.token)]
   ];
+  const novas = {};
   for (const [chave, fn] of tarefas) {
     try {
       const dados = await fn();
-      if (dados.length) db.series[chave] = { atualizado: hojeISO(), inicio: dados[0][0], dados: dados };
+      if (dados.length) novas[chave] = { atualizado: hojeISO(), inicio: dados[0][0], dados: dados };
       else falhas.push(chave);
     } catch (e) { falhas.push(chave); console.warn('série ' + chave + ':', e.message); }
   }
-  setDB(db);
+  // Baixar quatro séries leva segundos, e nesse intervalo a pessoa pode ter
+  // importado um backup ou cadastrado um título. Gravar o `db` capturado lá em
+  // cima devolveria o estado anterior e apagaria isso sem aviso nenhum — some
+  // a carteira inteira recém-importada. Relemos e mesclamos só as séries.
+  const atual = getDB();
+  Object.assign(atual.series, novas);
+  setDB(atual);
   if (!silencioso) {
     renderStatusSeries();
     alert(falhas.length
@@ -3396,6 +3403,7 @@ async function atualizarCotacoes(silencioso) {
   const token = (db.config.token || '').trim();
   const qs = token ? '&token=' + encodeURIComponent(token) : '';
   const ok = [], falhas = [];
+  let usdbrl = null;
 
   function guardar(sym, preco, moeda, variacao, fechamento, setor, nome, logo, momento) {
     db.cotacoes[sym] = {
@@ -3471,12 +3479,22 @@ async function atualizarCotacoes(silencioso) {
       const j = await buscarJSON('https://brapi.dev/api/v2/currency?currency=USD-BRL' + qs);
       const c = j && j.currency && j.currency[0];
       const bid = c && (c.bidPrice || c.askPrice);
-      if (bid && isFinite(parseFloat(bid))) db.config.usdbrl = parseFloat(bid);
+      if (bid && isFinite(parseFloat(bid))) usdbrl = parseFloat(bid);
     } catch (e) { console.warn('currency:', e.message); }
   }
 
-  db.config.ultimaAtualizacao = Date.now();
-  setDB(db);
+  // Mesma precaução das séries: entre o começo da busca e agora a pessoa pode
+  // ter mexido na carteira, então relemos e trazemos só o que esta função
+  // apurou — as cotações e os ativos que voltaram com preço, e o câmbio se ele
+  // de fato veio.
+  const atual = getDB();
+  ok.forEach(sym => {
+    if (db.cotacoes[sym]) atual.cotacoes[sym] = db.cotacoes[sym];
+    if (db.ativos[sym]) atual.ativos[sym] = db.ativos[sym];
+  });
+  if (usdbrl != null) atual.config.usdbrl = usdbrl;
+  atual.config.ultimaAtualizacao = Date.now();
+  setDB(atual);
   registrarSnapshot(true);
   statusCotacoes();
   if (document.getElementById('page-carteira').classList.contains('active')) { renderCarteira(); renderCarteiraRF(); }
@@ -4511,6 +4529,18 @@ function importJSON(input) {
       setDB(getDB());   // aplica a migração de schema
       alert('Backup importado com sucesso.');
       showPage('dashboard');
+      // Um backup costuma chegar sem as séries do Banco Central, ou com séries
+      // velhas: quem o gerou pode nunca tê-las baixado. Sem isto elas só viriam
+      // na próxima abertura da página, e até lá toda a renda fixa apareceria
+      // pelas taxas estimadas das Configurações em vez do CDI e do IPCA reais —
+      // com a pessoa olhando para números errados sem nada na tela dizendo isso.
+      // Não passa pelo autoAtualizar porque ele respeita o intervalo da última
+      // atualização de cotações, que um backup recém-exportado traz preenchido.
+      if (seriesPrecisamAtualizar()) {
+        atualizarSeries(true)
+          .then(() => { renderDashboard(); renderRF(); renderEventosRF(); renderFGC(); })
+          .catch(err2 => console.warn('séries após importar:', err2.message));
+      }
     } catch (err) { alert('Arquivo inválido: ' + err.message); }
     input.value = '';
   };
