@@ -1358,11 +1358,23 @@ function fatorRemuneracao(indexador, taxaPct, ini, fim, cfg) {
     // divulgação, que sai com cerca de 45 dias de atraso)
     const mesesPeriodo = dias / 30.44;
     const mesesFaltando = Math.max(0, mesesPeriodo - ip.meses);
+    // Para estimar o trecho sem dado oficial vale o total que falta (o pedaço
+    // antes do primeiro mês fechado somado ao que ainda não foi divulgado).
+    // Para *avisar*, não: o pedaço inicial é só granularidade do IPCA, que
+    // existe mês fechado a mês fechado, e aparece em qualquer aplicação feita
+    // no meio do mês. Somar os dois fazia a data da aplicação, sozinha,
+    // carimbar de "parcial" um título com a série em dia. O que merece aviso é
+    // a série estar velha — mesmo critério que o CDI usa acima.
+    const mesesDefasagem = ip.ultimo
+      ? Math.max(0, diasEntre(somaMeses(ip.ultimo, 1), fim) / 30.44)
+      : Infinity;
     const fInflacao = (ip.temSerie && ip.meses > 0)
       ? ip.fator * Math.pow(1 + mensalEstimado, mesesFaltando)
       : Math.pow(1 + mensalEstimado, mesesPeriodo);
     fator = fInflacao * Math.pow(1 + taxa, du / 252);
-    parcial = !(ip.temSerie && ip.meses > 0 && cob.cobreInicio && mesesFaltando < 2);
+    // O IPCA sai com cerca de 45 dias de atraso; 2,5 meses ainda é defasagem
+    // normal, acima disso a série parou de ser atualizada.
+    parcial = !(ip.temSerie && ip.meses > 0 && cob.cobreInicio && mesesDefasagem < 2.5);
     metodo = !ip.temSerie ? 'IPCA estimado + spread'
       : ip.meses === 0 ? 'IPCA estimado + spread (série não cobre o período)'
       : mesesFaltando >= 0.5
