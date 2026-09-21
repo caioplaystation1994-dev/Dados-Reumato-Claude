@@ -2,3 +2,7 @@ testes/node_modules/
 testes/capturas/
 testes/package-lock.json
 *.png
+
+# Backups da carteira: dados financeiros pessoais, nunca versionados.
+# O app exporta com este nome (Configurações → Exportar backup).
+carteira_backup*.json
