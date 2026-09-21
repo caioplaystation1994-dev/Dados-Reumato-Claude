@@ -2,7 +2,9 @@ name: Deploy GitHub Pages
 
 # O site publicado é sempre a pasta docs/ da branch do site
 # (claude/happy-ride-mp97bp): na raiz do domínio fica o site pessoal e em
-# /app/ ficam as ferramentas clínicas, protegidas por senha (docs/app/gate.js).
+# /app/ ficam as ferramentas, protegidas por senha (docs/app/gate.js) — as
+# clínicas e a carteira de investimentos, que não é linkada no portal e só se
+# alcança pelo endereço direto.
 #
 # As ferramentas são desenvolvidas na branch main, na raiz do repositório —
 # por isso o job também busca main e roda scripts/publicar-apps.js, que copia
@@ -52,7 +54,8 @@ jobs:
         run: |
           for f in docs/app/documentos_ambulatorio.html \
                    docs/app/laudo_imunobiologicos.html \
-                   docs/app/laudo_convenio_imunobio.html; do
+                   docs/app/laudo_convenio_imunobio.html \
+                   docs/app/investimentos.html; do
             grep -q 'src="gate.js"' "$f" || { echo "::error::$f sem a tela de senha"; exit 1; }
           done
           if grep -q 'Sistema de Documentos' docs/index.html; then
