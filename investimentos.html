@@ -793,6 +793,10 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
         ⬆ Importar backup
         <input type="file" accept="application/json" style="display:none" onchange="importJSON(this)">
       </label>
+      <label class="btn-secondary" style="display:inline-block">
+        📈 Importar só cotações
+        <input type="file" accept="application/json" style="display:none" onchange="importCotacoes(this)">
+      </label>
       <button class="btn-ghost" onclick="exportCSV('historico')">Exportar histórico de patrimônio</button>
       <button class="btn-danger btn-sm" onclick="apagarTudo()">Apagar todos os dados</button>
     </div>
@@ -4542,6 +4546,60 @@ function importJSON(input) {
           .catch(err2 => console.warn('séries após importar:', err2.message));
       }
     } catch (err) { alert('Arquivo inválido: ' + err.message); }
+    input.value = '';
+  };
+  rd.readAsText(f);
+}
+
+// Importar um backup inteiro substitui tudo, o que é certo para restaurar uma
+// carteira mas perigoso como rotina: quem recebe um arquivo de fora de tempos
+// em tempos perderia, a cada importação, os lançamentos feitos desde a última.
+// Este caminho aceita um arquivo com apenas { cotacoes: {...} } e mescla só
+// isso — preços por ticker e, se vier, o dólar. Transações, renda fixa,
+// proventos e histórico não são tocados.
+function importCotacoes(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      const novas = d && d.cotacoes;
+      if (!novas || typeof novas !== 'object' || Array.isArray(novas)) {
+        throw new Error('o arquivo não tem um bloco "cotacoes"');
+      }
+      const validas = Object.keys(novas).filter(k => novas[k] && isFinite(+novas[k].preco) && +novas[k].preco > 0);
+      if (!validas.length) throw new Error('nenhuma cotação com preço válido');
+
+      const db = getDB();
+      const conhecidos = new Set(Object.keys(consolidar().lista.reduce((m, p) => (m[p.ticker] = 1, m), {})));
+      const aplicadas = [], estranhos = [];
+      validas.forEach(k => {
+        const c = novas[k];
+        db.cotacoes[k] = {
+          preco: +c.preco,
+          moeda: c.moeda === 'USD' ? 'USD' : 'BRL',
+          variacao: isFinite(+c.variacao) ? +c.variacao : null,
+          fechamentoAnterior: isFinite(+c.fechamentoAnterior) ? +c.fechamentoAnterior : null,
+          fonte: c.fonte || 'importada',
+          data: c.data || hojeISO(),
+          hora: c.hora || agoraHora()
+        };
+        (conhecidos.has(k) ? aplicadas : estranhos).push(k);
+      });
+      const usd = d.usdbrl != null ? +d.usdbrl : (d.config && +d.config.usdbrl);
+      if (isFinite(usd) && usd > 0) db.config.usdbrl = usd;
+
+      setDB(db);
+      registrarSnapshot(true);
+      statusCotacoes();
+      renderDashboard(); renderCarteira(); renderCarteiraRF();
+      alert(aplicadas.length + ' cotação(ões) atualizada(s)' +
+        (isFinite(usd) && usd > 0 ? ', dólar a ' + usd.toFixed(4) : '') + '.' +
+        (estranhos.length ? '\n\nSem posição em aberto (guardadas mesmo assim): ' + estranhos.join(', ') : '') +
+        '\n\nA carteira não foi alterada: só os preços.');
+      showPage('carteira');
+    } catch (err) { alert('Arquivo de cotações inválido: ' + err.message); }
     input.value = '';
   };
   rd.readAsText(f);
