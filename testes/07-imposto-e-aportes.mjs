@@ -50,7 +50,10 @@ async function novaPagina(dados, opts) {
 const vazio = {
   versao: 4, transacoes: [], proventos: [], rendafixa: [], ativos: {}, cotacoes: {}, snapshots: [],
   precosHist: {}, series: {}, metas: {},
-  config: { token: 't', cdi: 10.65, ipca: 4.5, usdbrl: 5.5, autoUpdate: false, intervaloMin: 15, intradayMin: 0, ultimaAtualizacao: Date.now() }
+  // lote: 12 explícito — o padrão do app é 1, que é o que o plano gratuito da
+  // brapi aceita (suíte 14 cobre isso). Aqui o assunto é o agrupamento e a
+  // repetição com espera, que só aparecem com lote maior que um.
+  config: { token: 't', cdi: 10.65, ipca: 4.5, usdbrl: 5.5, autoUpdate: false, intervaloMin: 15, intradayMin: 0, lote: 12, ultimaAtualizacao: Date.now() }
 };
 
 // ======================================================================
@@ -67,7 +70,7 @@ console.log('\n[1] Cotações em lotes e repetição com espera');
   }
   const { p, erros } = await novaPagina(dados);
   await p.evaluate(() => atualizarCotacoes(true));
-  ok('30 tickers viram 3 lotes de até 12', requisicoes.length === 3 && requisicoes[0].length === 12,
+  ok('com lote 12, 30 tickers viram 3 requisições', requisicoes.length === 3 && requisicoes[0].length === 12,
     requisicoes.map(r => r.length), [12, 12, 6]);
   const cot = await p.evaluate(() => Object.keys(getDB().cotacoes).length);
   ok('todas as cotações chegam', cot === 30, cot, 30);

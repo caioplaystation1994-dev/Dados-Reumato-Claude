@@ -739,7 +739,13 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
       <div class="field-group">
         <label>Token da API brapi.dev</label>
         <input type="text" id="cfg-token" placeholder="cole aqui seu token">
-        <span class="hint">Crie um token gratuito em brapi.dev/dashboard.</span>
+        <span class="hint">Crie um token gratuito em brapi.dev/dashboard, em “Chaves de API”.</span>
+      </div>
+      <div class="field-group">
+        <label>Tickers por requisição</label>
+        <input type="number" id="cfg-lote" step="1" min="1" max="20" placeholder="1">
+        <span class="hint">O plano gratuito da brapi aceita <strong>1</strong>. Startup aceita 10 e Pro, 20.
+          Pedir mais do que o plano permite faz a consulta falhar e os ativos ficarem sem cotação.</span>
       </div>
       <div class="field-group">
         <label>Dólar (USD/BRL)</label>
@@ -817,6 +823,16 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
 </div>
 
 <script>
+// Tickers por requisição. O plano gratuito da brapi aceita 1; os pagos, mais.
+// Pedir acima do que o plano permite derruba a consulta inteira, então o padrão
+// é o valor que funciona em qualquer plano.
+const LOTE_PADRAO = 1;
+const LOTE_MAX = 20;
+function loteCotacoes(cfg) {
+  const n = Math.floor(+(cfg && cfg.lote));
+  return isFinite(n) && n >= 1 ? Math.min(n, LOTE_MAX) : LOTE_PADRAO;
+}
+
 /* ============================================================
    Persistência e migração de schema
    ============================================================ */
@@ -827,7 +843,7 @@ const DB_PADRAO = {
   transacoes: [], proventos: [], rendafixa: [], cotacoes: {}, ativos: {}, snapshots: [],
   precosHist: {}, metas: { alocacao: {}, banda: 5, patrimonioMeta: 0, dataMeta: '', aporteMensal: 0 },
   series: { cdi: null, ipca: null, ibov: null, ifix: null },
-  config: { token: '', cdi: 10.65, ipca: 4.5, usdbrl: 5.4, autoUpdate: true, intervaloMin: 15, intradayMin: 0, ultimaAtualizacao: null }
+  config: { token: '', cdi: 10.65, ipca: 4.5, usdbrl: 5.4, autoUpdate: true, intervaloMin: 15, intradayMin: 0, lote: LOTE_PADRAO, ultimaAtualizacao: null }
 };
 
 function getDB() {
@@ -1015,7 +1031,6 @@ function emLotes(itens, tamanho) {
   for (let i = 0; i < itens.length; i += tamanho) out.push(itens.slice(i, i + tamanho));
   return out;
 }
-const LOTE_COTACOES = 12;
 
 // Série diária do CDI (% ao dia, um registro por dia útil)
 async function buscarSGS(codigo, iniISO) {
@@ -3425,7 +3440,7 @@ async function atualizarCotacoes(silencioso) {
   }
 
   for (const grupo of [b3, intl]) {
-    for (const lote of emLotes(grupo, LOTE_COTACOES)) {
+    for (const lote of emLotes(grupo, loteCotacoes(db.config))) {
       try {
         const j = await buscarJSON('https://brapi.dev/api/quote/' + lote.map(encodeURIComponent).join('%2C') + '?range=1d&interval=1d' + qs);
         ((j && j.results) || []).forEach(q => {
@@ -3441,7 +3456,7 @@ async function atualizarCotacoes(silencioso) {
     }
   }
 
-  for (const lote of emLotes(cripto, LOTE_COTACOES)) {
+  for (const lote of emLotes(cripto, loteCotacoes(db.config))) {
     // o ticker que a pessoa cadastrou pode ser o nome por extenso
     const porSimbolo = {};
     lote.forEach(t => { porSimbolo[simboloCripto(t)] = t; });
@@ -4471,6 +4486,7 @@ function atualizarDatalists() {
 function carregarConfig() {
   const c = getDB().config;
   document.getElementById('cfg-token').value = c.token || '';
+  document.getElementById('cfg-lote').value = loteCotacoes(c);
   document.getElementById('cfg-cdi').value = c.cdi;
   document.getElementById('cfg-ipca').value = c.ipca;
   document.getElementById('cfg-usdbrl').value = c.usdbrl;
@@ -4486,6 +4502,7 @@ function carregarConfig() {
 function salvarConfig() {
   const db = getDB();
   db.config.token = document.getElementById('cfg-token').value.trim();
+  db.config.lote = loteCotacoes({ lote: document.getElementById('cfg-lote').value });
   db.config.cdi = parseFloat(document.getElementById('cfg-cdi').value) || 0;
   db.config.ipca = parseFloat(document.getElementById('cfg-ipca').value) || 0;
   db.config.usdbrl = parseFloat(document.getElementById('cfg-usdbrl').value) || 1;
