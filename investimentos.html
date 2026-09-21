@@ -120,6 +120,18 @@ nav button.btn-novo:hover{background:#f7d888}
 .setor-link{background:none;border:none;padding:0;font:inherit;font-size:11.5px;color:#4a5568;cursor:pointer;text-decoration:underline dotted}
 
 .banner{padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:14px;display:none}
+/* Primeiros passos: ocupa o lugar do painel enquanto não há nada cadastrado */
+.onboarding{background:#fff;border-radius:10px;padding:26px 28px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px}
+.onboarding h2{font-size:19px;color:#12403a;margin-bottom:4px}
+.ob-sub{font-size:13px;color:#718096;margin-bottom:8px;line-height:1.6}
+.ob-passo{display:flex;gap:16px;padding:18px 0 4px;border-top:1px solid #e8ecf0;margin-top:14px}
+.ob-num{flex:0 0 30px;height:30px;border-radius:50%;background:#12403a;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.ob-corpo{flex:1;min-width:0}
+.ob-titulo{font-size:14.5px;font-weight:700;color:#1a202c;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ob-texto{font-size:12.5px;color:#4a5568;line-height:1.65}
+.ob-texto strong{color:#2d3748}
+.ob-acoes{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+@media(max-width:640px){.onboarding{padding:20px 16px}.ob-passo{gap:11px}.ob-acoes .btn-secondary{width:100%}}
 .banner.show{display:block}
 .banner.info{background:#e6f0ff;color:#1a4480;border:1px solid #b7d0f7}
 .banner.warn{background:#fffaf0;color:#975a16;border:1px solid #f6d98a}
@@ -163,6 +175,11 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
 <!-- ==================== PAINEL ==================== -->
 <div id="page-dashboard" class="page active">
   <div id="banner-dash" class="banner info"></div>
+
+  <!-- Só aparece enquanto não há nada cadastrado; troca de lugar com #dash-conteudo -->
+  <div id="primeiros-passos" class="onboarding" style="display:none"></div>
+
+  <div id="dash-conteudo">
   <div class="stat-grid" id="stat-grid"></div>
 
   <div class="grid-2">
@@ -196,6 +213,7 @@ code{background:#edf2f7;padding:1px 5px;border-radius:4px;font-size:11.5px}
       <div id="chart-resultado"></div>
     </div>
   </div>
+  </div><!-- /#dash-conteudo -->
 </div>
 
 <!-- ==================== CARTEIRA ==================== -->
@@ -2605,6 +2623,62 @@ function renderProjecao() {
 /* ============================================================
    Painel
    ============================================================ */
+// Com a carteira vazia o painel é uma parede de sete zeros e quatro gráficos
+// sem nada dentro: ele mostra o que o app faria, mas não o que a pessoa
+// precisa fazer. Enquanto não há um lançamento sequer, o lugar é dos primeiros
+// passos — inclusive o do token, que não aparece em canto nenhum da tela
+// inicial hoje e é o que faz as cotações pararem de pé.
+function mostrarPrimeirosPassos(vazio) {
+  const ob = document.getElementById('primeiros-passos');
+  const conteudo = document.getElementById('dash-conteudo');
+  if (!ob || !conteudo) return;
+  if (!vazio) { ob.style.display = 'none'; conteudo.style.display = ''; return; }
+  conteudo.style.display = 'none';
+  ob.style.display = 'block';
+
+  const temToken = !!(getDB().config.token || '').trim();
+  const selo = temToken
+    ? '<span class="tag tag-ok">token configurado</span>'
+    : '<span class="tag tag-aviso">falta configurar</span>';
+
+  const passo = (n, titulo, texto, acoes) =>
+    '<div class="ob-passo"><div class="ob-num">' + n + '</div><div class="ob-corpo">' +
+    '<div class="ob-titulo">' + titulo + '</div>' +
+    '<div class="ob-texto">' + texto + '</div>' +
+    (acoes ? '<div class="ob-acoes">' + acoes + '</div>' : '') +
+    '</div></div>';
+
+  ob.innerHTML =
+    '<h2>👋 Primeiros passos</h2>' +
+    '<div class="ob-sub">Três coisas e a carteira começa a andar sozinha. ' +
+    'Leva uns minutos e só precisa ser feito uma vez.</div>' +
+
+    passo(1, 'Cadastre o que você já tem',
+      'Não é preciso ter as notas de corretagem nem o histórico completo. Se você só sabe ' +
+      'quanto tem hoje, use <strong>Cadastrar pelo extrato</strong> e lance a posição inteira de ' +
+      'uma vez, com o preço médio que a corretora mostra. Dá para refinar depois — o app aceita ' +
+      'lançamentos antigos a qualquer momento e recalcula tudo.',
+      '<button class="btn-secondary" onclick="escolherInvestimento()">➕ Novo investimento</button>') +
+
+    passo(2, 'Ligue as cotações ' + selo,
+      'Preços de ações, FIIs, ETFs, BDRs e cripto vêm do <strong>brapi.dev</strong>, que é gratuito ' +
+      'mas exige um cadastro para liberar um token. <strong>Sem o token esses ativos ficam parados ' +
+      'no custo de compra</strong>, e o patrimônio não se mexe — é o motivo mais comum de o app ' +
+      'parecer quebrado.<br>Renda fixa não depende disso: CDI e IPCA vêm direto do Banco Central, ' +
+      'sem cadastro nenhum.',
+      '<button class="btn-secondary" onclick="showPage(\'config\')">Abrir Configurações</button>' +
+      '<a class="btn-ghost" href="https://brapi.dev/dashboard" target="_blank" rel="noopener" ' +
+      'style="text-decoration:none">Criar token no brapi.dev ↗</a>') +
+
+    passo(3, 'Saiba onde os seus dados ficam',
+      'Tudo é gravado <strong>só neste navegador</strong>; nada é enviado para servidor algum. ' +
+      'Duas consequências práticas: abra o app sempre pelo <strong>mesmo endereço</strong> (cada ' +
+      'endereço tem a sua própria cópia, e o que você cadastrar num não aparece no outro), e ' +
+      '<strong>limpar os dados de navegação apaga a carteira</strong>. Exporte um backup de vez ' +
+      'em quando — e, se você já tem um de outro aparelho, comece importando.',
+      '<button class="btn-secondary" onclick="showPage(\'config\')">Backup e dados</button>');
+}
+
 function renderDashboard() {
   const { lista, db } = consolidar();
   const abertas = lista.filter(p => p.qtd > 0);
@@ -2627,11 +2701,12 @@ function renderDashboard() {
 
   const semCot = abertas.filter(p => !p.temCot).length;
   const banner = document.getElementById('banner-dash');
-  if (!abertas.length && !rf.itens.length) {
-    mostrarBanner(banner, 'info', '👋 <strong>Comece por aqui:</strong> clique em ' +
-      '<button class="btn-ghost" onclick="escolherInvestimento()">➕ Novo investimento</button> ' +
-      'e escolha o que você tem — ações, ações americanas, cripto, fundo, previdência, conta remunerada ou renda fixa. ' +
-      'Depois use <em>Atualizar cotações</em> na aba Carteira.');
+  const carteiraVazia = !abertas.length && !rf.itens.length;
+  mostrarPrimeirosPassos(carteiraVazia);
+  if (carteiraVazia) {
+    // Os primeiros passos já ocupam a tela e dizem o que fazer; repetir o
+    // recado numa tarja em cima deles só faria barulho.
+    esconderBanner(banner);
   } else if (semCot) {
     mostrarBanner(banner, 'warn', '⚠️ ' + semCot + ' ativo(s) sem cotação — avaliados pelo custo de aquisição. ' +
       'Atualize as cotações ou informe o preço na aba Carteira.');
