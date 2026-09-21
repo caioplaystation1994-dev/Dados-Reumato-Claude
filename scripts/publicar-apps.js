@@ -30,6 +30,10 @@ const APPS = [
   'documentos_ambulatorio.html',
   'laudo_imunobiologicos.html',
   'laudo_convenio_imunobio.html',
+  // Carteira de investimentos: publicada atrás da mesma senha, mas de
+  // propósito fora do portal em docs/app/index.html — só se chega nela pelo
+  // endereço direto.
+  'investimentos.html',
 ];
 
 const INJECAO = [
