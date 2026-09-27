@@ -678,6 +678,22 @@ const FINDING_DICT = {
   'Hemoglobinúria': { type: 'laboratorial', aliases: ['hemoglobinuria'] },
   'Falência de múltiplos órgãos': { type: 'clínico', aliases: ['falencia de multiplos orgaos', 'disfuncao de multiplos orgaos'] },
   'Atrofia de íris':{ type: 'clínico', aliases: ['atrofia de iris'] },
+  // Pênfigo foliáceo endêmico (fogo selvagem) — primeiro artigo de dermatologia
+  // autoimune na biblioteca; nenhum termo do domínio existia antes.
+  'Lesão no Couro Cabeludo': { type: 'clínico', aliases: ['lesao no couro cabeludo', 'lesoes no couro cabeludo'] },
+  'Apresentação Localizada (Pênfigo)': { type: 'clínico', aliases: ['apresentacao localizada', 'forma localizada'] },
+  'Apresentação Generalizada (Pênfigo)': { type: 'clínico', aliases: ['apresentacao generalizada', 'forma generalizada'] },
+  // "doença recidivante"/"cronicamente ativa" são frases genéricas de curso
+  // de doença usadas também em vasculite/PMR (ids 72, 77, 91) — sem o
+  // `context` abaixo, a entrada contaminaria esses artigos com um achado que
+  // não tem nada a ver com pênfigo.
+  'Evolução Recidivante': { type: 'clínico', aliases: ['doenca recidivante', 'evolucao recidivante'], context: /penfigo|fogo selvagem/i },
+  'Evolução Cronicamente Ativa': { type: 'clínico', aliases: ['cronicamente ativos', 'cronicamente ativa', 'forma cronicamente ativa'], context: /penfigo|fogo selvagem/i },
+  'Remissão Prolongada (>1 ano)': { type: 'clínico', aliases: ['remissao por mais de um ano'] },
+  'Cura (Pênfigo)': { type: 'clínico', aliases: ['considerados curados', 'percentual de cura'] },
+  'Bolhas Intraepidérmicas com Acantólise': { type: 'anatomopatológico', aliases: ['bolhas intraepidermicas', 'celulas acantoliticas', 'acantolise'] },
+  'Autoanticorpos Anti-Desmogleína 1': { type: 'laboratorial', aliases: ['anti-desmogleina 1', 'desmogleina 1'] },
+  'Autoanticorpos IgG4 (Pênfigo)': { type: 'laboratorial', aliases: ['subclasse igg4', 'predominantemente da subclasse igg4'] },
 };
 
 // Apelidos/siglas usadas no corpo do texto para reconhecer quando uma doença
