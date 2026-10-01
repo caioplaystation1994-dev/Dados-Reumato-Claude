@@ -314,42 +314,33 @@ strong{font-weight:600;color:var(--tinta)}
 .chamada__acoes{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
 
 /* ---------- Rodapé ---------- */
-.rodape{background:var(--areia-escura);color:var(--tinta-suave);padding:80px 0 36px;font-size:.94rem;border-top:1px solid var(--linha)}
-.rodape__grade{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:60px;padding-bottom:48px;border-bottom:1px solid var(--linha-forte)}
-.rodape h4{font-family:var(--sans);font-size:.68rem;font-weight:400;letter-spacing:.24em;text-transform:uppercase;color:var(--ouro);margin-bottom:20px}
-.rodape p{margin-bottom:.8em}
+.rodape{background:var(--areia-escura);color:var(--tinta-suave);padding:72px 0 30px;font-size:.92rem;border-top:1px solid var(--linha)}
+.rodape__grade{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:56px;padding-bottom:40px}
+.rodape h4{
+  font-family:var(--sans);font-size:.68rem;font-weight:400;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--ouro);margin:0 0 20px;
+}
 .rodape ul{list-style:none;padding:0;margin:0}
-.rodape li{margin-bottom:11px}
+.rodape li{margin-bottom:9px;line-height:1.6}
 .rodape a{color:var(--tinta-suave);text-decoration:none;transition:var(--transicao)}
 .rodape a:hover{color:var(--ouro)}
-.rodape .marca{margin-bottom:22px}
-.rodape__base{padding-top:28px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;font-family:var(--sans);font-size:.76rem;letter-spacing:.08em;color:var(--tinta-suave)}
-.aviso{font-size:.82rem;color:var(--tinta-suave);line-height:1.75;margin-top:26px;padding-top:22px;border-top:1px solid var(--linha)}
-
-/* ---------- Monograma de fundo no herói ---------- */
-.heroi__monograma{
-  position:absolute;left:-4%;bottom:-16%;font-family:var(--serif);font-size:32rem;
-  font-weight:500;line-height:1;color:rgba(150,112,42,.038);
-  pointer-events:none;user-select:none;z-index:0;
+.rodape .marca{margin-bottom:18px}
+.rodape__registro{
+  font-family:var(--sans);font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--tinta-suave);margin:0;
 }
-.heroi .container{position:relative;z-index:1}
-
-/* ---------- O que levar ---------- */
-.levar{
-  margin-top:80px;display:grid;grid-template-columns:.85fr 1.15fr;gap:60px;
-  align-items:start;border:1px solid var(--ouro-claro);padding:52px 56px;background:var(--branco);
+.rodape__obs{font-size:.84rem;color:var(--tinta-suave);opacity:.85;margin-top:14px!important;line-height:1.55}
+.rodape__link{
+  display:inline-block;margin-top:18px;font-family:var(--sans);font-size:.82rem;
+  letter-spacing:.06em;color:var(--ouro)!important;text-decoration:none;
 }
-.levar__titulo h3{font-size:1.7rem;font-family:var(--serif);font-weight:500;margin-bottom:12px}
-.levar__titulo p{font-size:.95rem;color:var(--tinta-suave);margin:0}
-.levar__lista{list-style:none;padding:0;margin:0;columns:2;column-gap:44px}
-.levar__lista li{
-  position:relative;padding:0 0 16px 26px;font-size:.97rem;color:var(--tinta-media);
-  break-inside:avoid;line-height:1.55;
+.rodape__link:hover{text-decoration:underline;text-underline-offset:4px}
+.rodape__base{
+  display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start;
+  padding-top:26px;border-top:1px solid var(--linha-forte);
+  font-family:var(--sans);font-size:.78rem;line-height:1.6;color:var(--tinta-suave);
 }
-.levar__lista li::before{
-  content:"";position:absolute;left:0;top:9px;width:7px;height:7px;
-  border:1px solid var(--ouro);transform:rotate(45deg);
-}
+.rodape__aviso{text-align:right;opacity:.9}
 
 /* ---------- WhatsApp flutuante ---------- */
 .zap{
@@ -401,7 +392,7 @@ strong{font-weight:600;color:var(--tinta)}
   .grade--3,.condicoes{grid-template-columns:repeat(2,1fr)}
   .grade--3{gap:40px 0}
   .cartao:nth-child(3){border-left:0;padding-left:0}
-  .rodape__grade{grid-template-columns:1fr 1fr;gap:40px}
+  .rodape__grade{grid-template-columns:1fr 1fr;gap:44px}
 }
 @media (max-width:760px){
   body{font-size:16px}
@@ -427,7 +418,8 @@ strong{font-weight:600;color:var(--tinta)}
   .levar__lista{columns:1}
   .levar{padding:34px 26px}
   .heroi__monograma{display:none}
-  .grade--2,.grade--3,.grade--4,.condicoes,.rodape__grade{grid-template-columns:1fr}
+  .grade--2,.grade--3,.grade--4,.condicoes,.rodape__grade,.rodape__base{grid-template-columns:1fr}
+  .rodape__aviso{text-align:left}
   .heroi__acoes .btn{width:100%}
   .selos li{border-right:0;padding-right:0;margin-right:0;width:100%}
 }
