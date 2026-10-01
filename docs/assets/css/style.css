@@ -71,7 +71,7 @@ strong{font-weight:600;color:var(--tinta)}
 .secao__intro{max-width:660px;margin-bottom:60px}
 .secao__intro--rotulo{margin-bottom:44px}
 .secao__intro--rotulo .rotulo{margin-bottom:0}
-.secao__intro--endereco{max-width:none;margin-bottom:48px}
+.secao__intro--endereco{max-width:none;margin-bottom:30px}
 .endereco{
   font-family:var(--serif);font-size:clamp(1.3rem,2.4vw,1.75rem);font-weight:500;
   color:var(--tinta);line-height:1.35;margin:0 0 12px;
@@ -273,7 +273,7 @@ strong{font-weight:600;color:var(--tinta)}
 
 /* ---------- Contato ---------- */
 .contato{display:grid;grid-template-columns:.88fr 1.12fr;gap:64px;align-items:start}
-.contato-lista{list-style:none;padding:0;margin:0;border-top:1px solid var(--linha);align-self:center}
+.contato-lista{list-style:none;padding:0;margin:0;border-top:1px solid var(--linha)}
 .contato-lista li{display:flex;gap:20px;padding:26px 0;border-bottom:1px solid var(--linha)}
 .contato-lista svg{width:20px;height:20px;color:var(--ouro);flex-shrink:0;margin-top:5px}
 .contato-lista strong{display:block;font-family:var(--sans);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--tinta-suave);margin-bottom:7px;font-weight:400}
@@ -411,7 +411,6 @@ strong{font-weight:600;color:var(--tinta)}
   .marca__marca{width:36px;height:43px}
   .marca__marca span{font-size:1.3rem}
   .cabecalho .marca__nome{font-size:1.2rem}
-  .contato-lista{align-self:start}
   .mapa{min-height:400px}
   .mapa iframe{min-height:380px}
   .contato-lista__destaque{margin:0 -20px;padding-left:20px;padding-right:20px}
