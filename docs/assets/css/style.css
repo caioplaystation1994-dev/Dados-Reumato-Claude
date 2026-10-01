@@ -204,7 +204,15 @@ strong{font-weight:600;color:var(--tinta)}
 .sobre{display:grid;grid-template-columns:.8fr 1.2fr;gap:76px;align-items:start}
 .sobre__texto p{color:var(--tinta-suave)}
 .sobre__texto p:first-child{font-size:1.16rem;color:var(--tinta-media);font-family:var(--serif);line-height:1.6}
-.trajetoria{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:72px;padding-top:52px;border-top:1px solid var(--linha)}
+.credenciais{margin-top:66px;padding-top:46px;border-top:1px solid var(--linha)}
+.credenciais .rotulo{margin-bottom:28px}
+.credenciais__grade{display:grid;grid-template-columns:repeat(2,1fr);gap:0}
+.credenciais__item{padding:0 48px;border-left:1px solid var(--linha)}
+.credenciais__item:first-child{border-left:0;padding-left:0}
+.credenciais__item:last-child{padding-right:0}
+.credenciais__item h3{font-size:1.14rem;margin-bottom:7px}
+.credenciais__item p{font-size:.92rem;color:var(--tinta-suave);margin-bottom:0;line-height:1.6}
+.trajetoria{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
 .trajetoria__passo{position:relative;padding:0 34px;border-left:1px solid var(--linha)}
 .trajetoria__passo:first-child{border-left:0;padding-left:0}
 .trajetoria__passo:last-child{padding-right:0}
@@ -354,6 +362,7 @@ strong{font-weight:600;color:var(--tinta)}
   .heroi__retrato{max-width:420px}
   .cartao-flutuante{left:auto;right:-16px}
   .grade--4,.trajetoria{grid-template-columns:repeat(2,1fr);gap:44px 0}
+  .credenciais__item{padding:0 32px}
   .trajetoria__passo:nth-child(3){border-left:0;padding-left:0}
   .grade--3,.condicoes{grid-template-columns:repeat(2,1fr)}
   .grade--3{gap:40px 0}
@@ -371,8 +380,8 @@ strong{font-weight:600;color:var(--tinta)}
   .chamada{padding:56px 28px}
   .chamada::before{inset:10px}
   .cartao-flutuante{position:static;margin-top:20px;max-width:none}
-  .cartao,.trajetoria__passo{padding:0;border-left:0}
-  .grade,.trajetoria{gap:44px}
+  .cartao,.trajetoria__passo,.credenciais__item{padding:0;border-left:0}
+  .grade,.trajetoria,.credenciais__grade{gap:40px}
   .faq summary{font-size:1.18rem;padding:22px 46px 22px 0}
   .faq .faq__corpo{padding-right:0}
 }
@@ -380,7 +389,7 @@ strong{font-weight:600;color:var(--tinta)}
   .levar__lista{columns:1}
   .levar{padding:34px 26px}
   .heroi__monograma{display:none}
-  .grade--2,.grade--3,.grade--4,.trajetoria,.condicoes,.rodape__grade{grid-template-columns:1fr}
+  .grade--2,.grade--3,.grade--4,.trajetoria,.credenciais__grade,.condicoes,.rodape__grade{grid-template-columns:1fr}
   .heroi__acoes .btn{width:100%}
   .selos li{border-right:0;padding-right:0;margin-right:0;width:100%}
 }
