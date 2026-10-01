@@ -336,17 +336,6 @@ strong{font-weight:600;color:var(--tinta)}
 }
 .heroi .container{position:relative;z-index:1}
 
-/* ---------- Sinais de alerta ---------- */
-.sinais{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:52px 46px;counter-reset:sinal}
-.sinais li{position:relative;padding-top:26px;border-top:1px solid var(--ouro-claro)}
-.sinais li::before{
-  counter-increment:sinal;content:counter(sinal,decimal-leading-zero);
-  position:absolute;top:-11px;left:0;background:var(--branco);padding-right:14px;
-  font-family:var(--sans);font-size:.7rem;letter-spacing:.2em;color:var(--ouro);
-}
-.sinais h3{font-size:1.24rem;margin-bottom:10px}
-.sinais p{font-size:.94rem;color:var(--tinta-suave);margin-bottom:0;line-height:1.65}
-
 /* ---------- O que levar ---------- */
 .levar{
   margin-top:80px;display:grid;grid-template-columns:.85fr 1.15fr;gap:60px;
@@ -404,7 +393,6 @@ strong{font-weight:600;color:var(--tinta)}
 }
 
 @media (max-width:1000px){
-  .sinais{grid-template-columns:repeat(2,1fr);gap:44px 38px}
   .levar{grid-template-columns:1fr;gap:34px;padding:42px 40px}
   .heroi__monograma,.manifesto::before{font-size:20rem}
   .heroi__grade,.sobre,.contato{grid-template-columns:1fr;gap:52px}
@@ -434,7 +422,6 @@ strong{font-weight:600;color:var(--tinta)}
   .faq .faq__corpo{padding-right:0}
 }
 @media (max-width:560px){
-  .sinais{grid-template-columns:1fr;gap:36px}
   .levar__lista{columns:1}
   .levar{padding:34px 26px}
   .heroi__monograma,.manifesto::before{display:none}
