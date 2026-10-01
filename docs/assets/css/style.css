@@ -259,26 +259,34 @@ strong{font-weight:600;color:var(--tinta)}
 .faq .faq__corpo p:last-child{margin-bottom:0}
 
 /* ---------- Contato ---------- */
-.contato{display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:start}
+.contato{display:grid;grid-template-columns:.88fr 1.12fr;gap:64px;align-items:start}
 .contato-lista{list-style:none;padding:0;margin:0;border-top:1px solid var(--linha)}
 .contato-lista li{display:flex;gap:20px;padding:26px 0;border-bottom:1px solid var(--linha)}
 .contato-lista svg{width:20px;height:20px;color:var(--ouro);flex-shrink:0;margin-top:5px}
 .contato-lista strong{display:block;font-family:var(--sans);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--tinta-suave);margin-bottom:7px;font-weight:400}
 .contato-lista a,.contato-lista span{color:var(--tinta);text-decoration:none;font-size:1.04rem;font-family:var(--serif)}
-.contato-lista .nota{
-  display:block;margin-top:8px;font-family:var(--sans);font-size:.82rem;
-  color:var(--tinta-suave);line-height:1.5;position:relative;padding-left:16px;
+.contato-lista__destaque{background:var(--areia);margin:0 -24px;padding-left:24px;padding-right:24px;border-left:2px solid var(--ouro)}
+.contato-lista__destaque strong{color:var(--ouro)}
+.contato-lista__destaque span strong{
+  display:inline;color:var(--tinta);font-family:var(--serif);font-weight:600;
+  font-size:inherit;letter-spacing:normal;text-transform:none;margin:0;
 }
-.contato-lista .nota::before{
-  content:"";position:absolute;left:0;top:7px;width:6px;height:6px;
-  border:1px solid var(--ouro);transform:rotate(45deg);
+.contato-lista__numero{
+  display:inline-flex;align-items:center;gap:9px;font-family:var(--serif);
+  font-size:1.32rem;font-weight:600;color:var(--tinta);margin-right:26px;line-height:1.5;
+}
+.contato-lista__numero svg{width:17px;height:17px;color:var(--ouro);flex-shrink:0;margin:0}
+.contato-lista__numero:hover{color:var(--ouro)}
+.contato-lista__obs{
+  display:block;margin-top:9px;font-family:var(--sans)!important;
+  font-size:.82rem!important;color:var(--tinta-suave);line-height:1.5;
 }
 .contato-lista a:hover{color:var(--ouro)}
 
-.mapa{overflow:hidden;border:1px solid var(--ouro);padding:10px;background:var(--branco);min-height:420px;position:relative}
+.mapa{overflow:hidden;border:1px solid var(--ouro);padding:10px;background:var(--branco);min-height:620px;position:relative}
 .mapa::before{content:"";position:absolute;inset:10px;border:1px solid var(--ouro-claro);pointer-events:none;z-index:2}
-.mapa iframe{width:100%;height:100%;min-height:400px;border:0;display:block;filter:grayscale(30%)}
-.mapa__vazio{display:grid;place-items:center;min-height:400px;text-align:center;padding:36px;color:var(--tinta-suave);font-family:var(--sans);font-size:.8rem;letter-spacing:.06em;line-height:1.8}
+.mapa iframe{width:100%;height:100%;min-height:600px;border:0;display:block;filter:grayscale(18%)}
+.mapa__vazio{display:grid;place-items:center;min-height:600px;text-align:center;padding:36px;color:var(--tinta-suave);font-family:var(--sans);font-size:.8rem;letter-spacing:.06em;line-height:1.8}
 
 /* ---------- Chamada final ---------- */
 .chamada{background:var(--tinta);color:var(--areia);padding:96px 64px;text-align:center;position:relative}
@@ -390,6 +398,10 @@ strong{font-weight:600;color:var(--tinta)}
   .marca__marca{width:36px;height:43px}
   .marca__marca span{font-size:1.3rem}
   .cabecalho .marca__nome{font-size:1.2rem}
+  .mapa{min-height:400px}
+  .mapa iframe{min-height:380px}
+  .contato-lista__destaque{margin:0 -20px;padding-left:20px;padding-right:20px}
+  .contato-lista__numero{font-size:1.2rem;margin-right:18px}
   .chamada{padding:56px 28px}
   .chamada::before{inset:10px}
   .cartao-flutuante{position:static;margin-top:20px;max-width:none}
