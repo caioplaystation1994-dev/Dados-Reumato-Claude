@@ -331,6 +331,7 @@ strong{font-weight:600;color:var(--tinta)}
   color:var(--tinta-suave);margin:0;
 }
 .rodape__obs{font-size:.84rem;color:var(--tinta-suave);opacity:.85;margin-top:14px!important;line-height:1.55}
+.rodape__horario{margin-top:14px!important}
 .rodape__link{
   display:inline-block;margin-top:18px;font-family:var(--sans);font-size:.82rem;
   letter-spacing:.06em;color:var(--ouro)!important;text-decoration:none;
