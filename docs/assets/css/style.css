@@ -265,6 +265,14 @@ strong{font-weight:600;color:var(--tinta)}
 .contato-lista svg{width:20px;height:20px;color:var(--ouro);flex-shrink:0;margin-top:5px}
 .contato-lista strong{display:block;font-family:var(--sans);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--tinta-suave);margin-bottom:7px;font-weight:400}
 .contato-lista a,.contato-lista span{color:var(--tinta);text-decoration:none;font-size:1.04rem;font-family:var(--serif)}
+.contato-lista .nota{
+  display:block;margin-top:8px;font-family:var(--sans);font-size:.82rem;
+  color:var(--tinta-suave);line-height:1.5;position:relative;padding-left:16px;
+}
+.contato-lista .nota::before{
+  content:"";position:absolute;left:0;top:7px;width:6px;height:6px;
+  border:1px solid var(--ouro);transform:rotate(45deg);
+}
 .contato-lista a:hover{color:var(--ouro)}
 
 .mapa{overflow:hidden;border:1px solid var(--ouro);padding:10px;background:var(--branco);min-height:420px;position:relative}
