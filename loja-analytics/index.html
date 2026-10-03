@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Análise da Loja Online</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#1c2230; --muted:#667085; --line:#e4e7ec;
+  --accent:#2f5bea; --accent2:#12a594; --warn:#d92d20; --good:#16803c; --amber:#b54708;
+  --c1:#2f5bea; --c2:#12a594; --c3:#e5963a; --c4:#8b5cf6; --c5:#d6409f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10131a; --card:#181d27; --ink:#e8ebf2; --muted:#98a2b3; --line:#2a3140;
+    --accent:#6c8cff; --accent2:#3cc9b6; --warn:#f97066; --good:#4ade80; --amber:#f5a524;
+    --c1:#6c8cff; --c2:#3cc9b6; --c3:#f0a84e; --c4:#a78bfa; --c5:#ee7bc0;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:16px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0 0 10px}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button{border:1px solid var(--line);background:transparent;color:var(--ink);padding:7px 14px;border-radius:999px;cursor:pointer;font:inherit}
+nav button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{display:none}
+section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 4px}
+.card p.sub{margin:0 0 12px;color:var(--muted);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font-size:24px;font-weight:650;margin:4px 0 2px}
+.kpi .d{font-size:13px;color:var(--muted)}
+.up{color:var(--good)} .down{color:var(--warn)}
+.chart{position:relative;height:320px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:130px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.form .wide{grid-column:1/-1}
+.btn{border:0;background:var(--accent);color:#fff;padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.danger{background:transparent;border:1px solid var(--line);color:var(--warn)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;font-size:12px}
+td.act{text-align:right}
+td.act button{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit}
+td.txt{text-align:left;white-space:normal}
+.note{background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;color:var(--muted);font-size:13px;margin-top:10px}
+.empty{color:var(--muted);text-align:center;padding:30px 10px}
+.periods{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.bar{height:8px;border-radius:4px;background:var(--line);position:relative;min-width:120px}
+.bar i{position:absolute;top:0;height:8px;border-radius:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Análise da Loja Online</h1>
+  <nav id="nav">
+    <button data-tab="painel" class="on">Painel</button>
+    <button data-tab="dados">Dados mensais</button>
+    <button data-tab="eventos">Eventos</button>
+    <button data-tab="backup">Backup / Importar</button>
+  </nav>
+</header>
+<main>
+
+<section id="painel" class="on">
+  <div id="kpis" class="kpis"></div>
+
+  <div class="card">
+    <h2>Faturamento mensal</h2>
+    <p class="sub">Site + WhatsApp, com média móvel de 3 meses. Linhas tracejadas verticais = eventos que você anotou.</p>
+    <div class="chart"><canvas id="chRev"></canvas></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Ano contra ano</h2>
+      <p class="sub">Faturamento total de cada mês, uma linha por ano.</p>
+      <div class="chart"><canvas id="chYoY"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Mídia paga × faturamento</h2>
+      <p class="sub">Barras = gasto em mídia. Linha = ROAS (faturamento total ÷ gasto).</p>
+      <div class="chart"><canvas id="chAds"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Ticket médio e conversão</h2>
+      <p class="sub">Ticket médio do site (R$) e taxa de conversão (pedidos ÷ visitas), quando você tiver preenchido.</p>
+      <div class="chart"><canvas id="chTicket"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Participação do WhatsApp</h2>
+      <p class="sub">% do faturamento total que veio pelo WhatsApp.</p>
+      <div class="chart"><canvas id="chWpp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>O que mudou entre dois períodos?</h2>
+    <p class="sub">Compare dois períodos e veja quanto da variação do faturamento do site vem de <b>visitas</b>, <b>conversão</b> e <b>ticket médio</b>.</p>
+    <div class="periods">
+      <div><label>Período A (referência) - de</label><input type="month" id="aFrom"></div>
+      <div><label>até</label><input type="month" id="aTo"></div>
+      <div><label>Período B (atual) - de</label><input type="month" id="bFrom"></div>
+      <div><label>até</label><input type="month" id="bTo"></div>
+    </div>
+    <div id="compare"></div>
+  </div>
+</section>
+
+<section id="dados">
+  <div class="card">
+    <h2>Lançar / editar um mês</h2>
+    <p class="sub">Só o mês e o faturamento são importantes. Os demais campos são opcionais, mas liberam mais análises (ticket, conversão, ROAS). Se o mês já existir, ele é atualizado.</p>
+    <form id="fMes" class="form">
+      <div><label>Mês</label><input type="month" id="m" required></div>
+      <div><label>Faturamento Site (R$)</label><input id="rs" inputmode="decimal"></div>
+      <div><label>Faturamento WhatsApp (R$)</label><input id="rw" inputmode="decimal"></div>
+      <div><label>Pedidos Site</label><input id="os" inputmode="numeric"></div>
+      <div><label>Pedidos WhatsApp</label><input id="ow" inputmode="numeric"></div>
+      <div><label>Gasto em mídia (R$)</label><input id="ad" inputmode="decimal"></div>
+      <div><label>Visitas no site</label><input id="vis" inputmode="numeric"></div>
+      <div class="wide"><label>Observação do mês (opcional)</label><input id="note" placeholder="ex: Black Friday, estoque baixo, site fora do ar..."></div>
+      <div class="wide row" style="margin-top:0">
+        <button class="btn" type="submit">Salvar mês</button>
+        <button class="btn ghost" type="button" id="limpaForm">Limpar</button>
+      </div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Meses lançados</h2>
+    <div class="tablewrap" id="tabela"></div>
+  </div>
+</section>
+
+<section id="eventos">
+  <div class="card">
+    <h2>Novo evento</h2>
+    <p class="sub">Registre tudo que pode ter afetado as vendas: troca de plataforma, mudança de frete, aumento de preço, campanha, concorrente novo, problemas de estoque. Eles aparecem como marcadores no gráfico de faturamento.</p>
+    <form id="fEv" class="form">
+      <div><label>Data</label><input type="date" id="evData" required></div>
+      <div><label>Categoria</label>
+        <select id="evCat">
+          <option>Plataforma / Site</option><option>Marketing / Mídia</option><option>Preço / Promoção</option>
+          <option>Frete / Prazo</option><option>Concorrência</option><option>Produto / Estoque</option>
+          <option>Operação / Atendimento</option><option>Mercado / Externo</option><option>Outro</option>
+        </select></div>
+      <div class="wide"><label>O que aconteceu</label><input id="evTit" required placeholder="ex: Migração Bagy → Tray"></div>
+      <div class="wide row" style="margin-top:0"><button class="btn" type="submit">Adicionar evento</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Linha do tempo</h2>
+    <div class="tablewrap" id="tabEv"></div>
+  </div>
+</section>
+
+<section id="backup">
+  <div class="card">
+    <h2>Colar dados do Excel</h2>
+    <p class="sub">Copie as linhas da planilha e cole abaixo, <b>uma linha por mês</b>, nesta ordem de colunas:</p>
+    <div class="note"><b>Mês | Faturamento Site | Faturamento WhatsApp | Pedidos Site | Pedidos WhatsApp | Gasto em mídia | Visitas</b><br>
+    Colunas que você não tem podem ficar em branco. O mês pode ser <i>03/2024</i>, <i>2024-03</i>, <i>mar/24</i> ou <i>01/03/2024</i>. Valores como <i>R$ 12.345,67</i> são entendidos. Se o mês já existir, ele é substituído.</div>
+    <textarea id="paste" placeholder="01/2024&#9;45000,00&#9;12000,00&#9;180&#9;60&#9;8000&#9;22000"></textarea>
+    <div class="row"><button class="btn" id="btnPaste">Importar</button><span id="pasteMsg" class="sub" style="margin:0"></span></div>
+  </div>
+  <div class="card">
+    <h2>Backup</h2>
+    <p class="sub">Os dados ficam salvos <b>neste navegador</b>. Se limpar o histórico/dados do site ou trocar de computador, eles somem, então baixe um backup de vez em quando.</p>
+    <div class="row">
+      <button class="btn" id="expJson">Baixar backup (.json)</button>
+      <button class="btn ghost" id="expCsv">Baixar meses (.csv)</button>
+      <label class="btn ghost" style="margin:0;cursor:pointer">Restaurar backup<input type="file" id="impJson" accept=".json" hidden></label>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="exemplo">Carregar dados de exemplo</button>
+      <button class="btn danger" id="apagar">Apagar tudo</button>
+    </div>
+    <p class="sub" id="bkMsg" style="margin-top:10px"></p>
+  </div>
+</section>
+
+</main>
+<script>
+(function(){
+'use strict';
+const KEY='loja_analytics_v1';
+let db={months:{},events:[]};
+try{ const s=localStorage.getItem(KEY); if(s) db=JSON.parse(s); }catch(e){}
+db.months=db.months||{}; db.events=db.events||[];
+const save=()=>{ try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){alert('Não consegui salvar no navegador. Baixe um backup.');} };
+
+const $=id=>document.getElementById(id);
+const MN=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const brl=n=>n==null||isNaN(n)?'-':n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const num=n=>n==null||isNaN(n)?'-':n.toLocaleString('pt-BR',{maximumFractionDigits:0});
+const pct=(n,d=1)=>n==null||!isFinite(n)?'-':(n*100).toLocaleString('pt-BR',{maximumFractionDigits:d})+'%';
+const lab=m=>MN[+m.slice(5,7)-1]+'/'+m.slice(2,4);
+const sorted=()=>Object.keys(db.months).sort();
+const tot=r=>(r.rs==null&&r.rw==null)?null:(r.rs||0)+(r.rw||0);
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- parsing ---------- */
+function parseNum(s){
+  if(s==null) return null; s=String(s).replace(/R\$|\s/g,''); if(s==='') return null;
+  if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.');
+  else if(/^\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,'');
+  const n=parseFloat(s); return isNaN(n)?null:n;
+}
+function parseMonth(s){
+  s=String(s||'').trim().toLowerCase(); let m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})/))) return m[1]+'-'+m[2].padStart(2,'0');
+  if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) return m[3]+'-'+m[2].padStart(2,'0');
+  if((m=s.match(/^(\d{1,2})[\/\-](\d{4})$/))) return m[2]+'-'+m[1].padStart(2,'0');
+  if((m=s.match(/^([a-zç]{3})[a-zç]*[\/\-. ]+(\d{2,4})$/))){
+    const i=MN.indexOf(m[1].replace('ç','c')); if(i<0) return null;
+    const y=m[2].length===2?'20'+m[2]:m[2]; return y+'-'+String(i+1).padStart(2,'0');
+  }
+  return null;
+}
+const mm=v=>(+v>=1&&+v<=12);
+
+/* ---------- tabs ---------- */
+$('nav').addEventListener('click',e=>{
+  const t=e.target.dataset.tab; if(!t) return;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b===e.target));
+  document.querySelectorAll('main section').forEach(s=>s.classList.toggle('on',s.id===t));
+  if(t==='painel') renderDash();
+});
+
+/* ---------- dados mensais ---------- */
+const F=['rs','rw','os','ow','ad','vis'];
+$('fMes').addEventListener('submit',e=>{
+  e.preventDefault();
+  const m=$('m').value; if(!m) return;
+  const r={}; F.forEach(k=>r[k]=parseNum($(k).value)); r.note=$('note').value.trim();
+  db.months[m]=r; save(); clearForm(); renderAll();
+});
+function clearForm(){ $('fMes').reset(); }
+$('limpaForm').onclick=clearForm;
+function renderTable(){
+  const ks=sorted().reverse();
+  if(!ks.length){ $('tabela').innerHTML='<div class="empty">Nenhum mês lançado ainda. Use o formulário acima ou a aba "Backup / Importar" para colar do Excel.</div>'; return; }
+  let h='<table><tr><th>Mês</th><th>Site</th><th>WhatsApp</th><th>Total</th><th>Pedidos site</th><th>Pedidos wpp</th><th>Mídia</th><th>Visitas</th><th>Obs.</th><th></th></tr>';
+  for(const k of ks){ const r=db.months[k];
+    h+=`<tr><td>${lab(k)}</td><td>${brl(r.rs)}</td><td>${brl(r.rw)}</td><td><b>${brl(tot(r))}</b></td><td>${num(r.os)}</td><td>${num(r.ow)}</td><td>${brl(r.ad)}</td><td>${num(r.vis)}</td><td class="txt">${esc(r.note||'')}</td><td class="act"><button data-ed="${k}">editar</button> <button data-del="${k}">excluir</button></td></tr>`; }
+  $('tabela').innerHTML=h+'</table>';
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('tabela').addEventListener('click',e=>{
+  const ed=e.target.dataset.ed, del=e.target.dataset.del;
+  if(ed){ const r=db.months[ed]; $('m').value=ed; F.forEach(k=>$(k).value=r[k]==null?'':String(r[k]).replace('.',',')); $('note').value=r.note||''; $('m').scrollIntoView({behavior:'smooth',block:'center'}); }
+  if(del&&confirm('Excluir '+lab(del)+'?')){ delete db.months[del]; save(); renderAll(); }
+});
+
+/* ---------- eventos ---------- */
+$('fEv').addEventListener('submit',e=>{
+  e.preventDefault();
+  db.events.push({id:Date.now(),date:$('evData').value,cat:$('evCat').value,title:$('evTit').value.trim()});
+  db.events.sort((a,b)=>a.date.localeCompare(b.date)); save(); $('fEv').reset(); renderAll();
+});
+function renderEvents(){
+  if(!db.events.length){ $('tabEv').innerHTML='<div class="empty">Nenhum evento ainda.</div>'; return; }
+  let h='<table><tr><th>Data</th><th>Categoria</th><th style="text-align:left">Evento</th><th></th></tr>';
+  for(const ev of db.events.slice().reverse()){
+    const [y,m,d]=ev.date.split('-');
+    h+=`<tr><td>${d}/${m}/${y}</td><td style="text-align:left">${esc(ev.cat)}</td><td class="txt">${esc(ev.title)}</td><td class="act"><button data-evdel="${ev.id}">excluir</button></td></tr>`; }
+  $('tabEv').innerHTML=h+'</table>';
+}
+$('tabEv').addEventListener('click',e=>{
+  const id=e.target.dataset.evdel; if(!id||!confirm('Excluir este evento?')) return;
+  db.events=db.events.filter(x=>String(x.id)!==id); save(); renderAll();
+});
+
+/* ---------- import / backup ---------- */
+$('btnPaste').onclick=()=>{
+  const lines=$('paste').value.split(/\r?\n/).filter(l=>l.trim());
+  let ok=0,bad=[];
+  lines.forEach((l,i)=>{
+    const c=l.includes('\t')?l.split('\t'):l.split(';');
+    const m=parseMonth(c[0]);
+    if(!m||!mm(m.slice(5))){ if(i>0) bad.push(c[0]); return; }
+    db.months[m]={rs:parseNum(c[1]),rw:parseNum(c[2]),os:parseNum(c[3]),ow:parseNum(c[4]),ad:parseNum(c[5]),vis:parseNum(c[6]),note:(db.months[m]||{}).note||''};
+    ok++;
+  });
+  save(); renderAll();
+  $('pasteMsg').textContent=ok+' mês(es) importado(s)'+(bad.length?'. Linhas ignoradas (mês não reconhecido): '+bad.slice(0,5).join(', '):'.');
+  if(ok) $('paste').value='';
+};
+function download(name,text,type){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+$('expJson').onclick=()=>download('loja-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(db,null,1),'application/json');
+$('expCsv').onclick=()=>{
+  let t='mes;fat_site;fat_whatsapp;pedidos_site;pedidos_whatsapp;gasto_midia;visitas;obs\n';
+  for(const k of sorted()){ const r=db.months[k]; t+=[k,...F.map(f=>r[f]==null?'':String(r[f]).replace('.',',')),(r.note||'').replace(/;/g,',')].join(';')+'\n'; }
+  download('loja-meses.csv','﻿'+t,'text/csv');
+};
+$('impJson').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  f.text().then(t=>{ try{ const d=JSON.parse(t); if(!d.months) throw 0;
+    if(!confirm('Isso substitui os dados atuais pelos do backup. Continuar?')) return;
+    db={months:d.months,events:d.events||[]}; save(); renderAll(); $('bkMsg').textContent='Backup restaurado.';
+  }catch(_){ $('bkMsg').textContent='Arquivo inválido.'; } e.target.value=''; });
+};
+$('apagar').onclick=()=>{ if(confirm('Apagar TODOS os dados deste navegador? (baixe um backup antes)')){ db={months:{},events:[]}; save(); renderAll(); } };
+$('exemplo').onclick=()=>{
+  if(sorted().length&&!confirm('Já existem dados. O exemplo vai sobrescrever meses coincidentes. Continuar?')) return;
+  const seas=[.8,.75,.85,.9,1.05,.95,.9,.9,1,1.05,1.5,1.35];
+  for(let y=2023;y<=2026;y++) for(let i=0;i<12;i++){
+    if(y===2026&&i>8) break;
+    const t=y===2023?.7:y===2024?1:y===2025?.9:.82;
+    const rs=Math.round(60000*t*seas[i]*(1+Math.sin(i+y)*.05)), rw=Math.round(rs*(.25-(y-2023)*.02));
+    const os=Math.round(rs/310), vis=Math.round(os/(0.017-(y-2023)*.001));
+    db.months[`${y}-${String(i+1).padStart(2,'0')}`]={rs,rw,os,ow:Math.round(rw/330),ad:Math.round(rs*.2*(y>=2024?1.1:.9)),vis,note:''};
+  }
+  if(!db.events.length) db.events.push({id:1,date:'2025-09-01',cat:'Plataforma / Site',title:'Exemplo: migração de plataforma'});
+  save(); renderAll();
+};
+
+/* ---------- dashboard ---------- */
+let charts={};
+function mk(id,cfg){
+  if(charts[id]) charts[id].destroy();
+  Chart.defaults.color=css('--muted'); Chart.defaults.borderColor=css('--line');
+  charts[id]=new Chart($(id),cfg);
+}
+const eventPlugin={ id:'events', afterDatasetsDraw(ch){
+  const keys=ch.options.eventKeys; if(!keys) return;
+  const {ctx,chartArea:a,scales:{x}}=ch; ctx.save();
+  db.events.forEach((ev,i)=>{
+    const k=ev.date.slice(0,7), idx=keys.indexOf(k); if(idx<0) return;
+    const px=x.getPixelForValue(idx); ctx.strokeStyle=css('--amber'); ctx.setLineDash([4,3]); ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(px,a.top); ctx.lineTo(px,a.bottom); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=css('--amber'); ctx.font='11px system-ui'; ctx.save(); ctx.translate(px+3,a.top+4+(i%3)*0); ctx.rotate(Math.PI/2);
+    ctx.fillText(ev.title.length>28?ev.title.slice(0,27)+'…':ev.title,0,0); ctx.restore();
+  }); ctx.restore();
+}};
+
+function span(from,to,f){ // soma de um campo (ou função) num intervalo de meses; devolve {v, n, total}
+  let v=0,n=0,t=0;
+  for(const k of sorted()){ if(k<from||k>to) continue; t++;
+    const x=typeof f==='function'?f(db.months[k]):db.months[k][f];
+    if(x!=null){ v+=x; n++; } }
+  return {v,n,t};
+}
+function addM(m,d){ let y=+m.slice(0,4),mo=+m.slice(5)-1+d; y+=Math.floor(mo/12); mo=((mo%12)+12)%12; return y+'-'+String(mo+1).padStart(2,'0'); }
+function delta(a,b){ if(!a) return null; return b/a-1; }
+function dtxt(d,label){ if(d==null||!isFinite(d)) return ''; return `<span class="${d>=0?'up':'down'}">${d>=0?'▲':'▼'} ${pct(Math.abs(d))}</span> ${label}`; }
+
+function renderDash(){
+  const ks=sorted();
+  if(!ks.length){
+    $('kpis').innerHTML='<div class="card" style="grid-column:1/-1"><div class="empty">Sem dados ainda.<br>Vá em <b>Backup / Importar</b> para colar sua planilha do Excel, ou em <b>Dados mensais</b> para digitar mês a mês.</div></div>';
+    Object.values(charts).forEach(c=>c.destroy()); charts={}; $('compare').innerHTML=''; return;
+  }
+  const last=ks[ks.length-1], b0=addM(last,-11), a1=addM(last,-12), a0=addM(last,-23);
+  const T=r=>tot(r);
+  const cur=span(b0,last,T), prev=span(a0,a1,T);
+  // melhor ano e melhor mês
+  const years={}; ks.forEach(k=>{ const t=tot(db.months[k]); if(t!=null) years[k.slice(0,4)]=(years[k.slice(0,4)]||0)+t; });
+  const yrFull=Object.entries(years).filter(([y])=>sorted().filter(k=>k.startsWith(y)&&tot(db.months[k])!=null).length===12);
+  const bestY=yrFull.sort((a,b)=>b[1]-a[1])[0];
+  let bestM=null; ks.forEach(k=>{ const t=tot(db.months[k]); if(t!=null&&(!bestM||t>bestM.t)) bestM={k,t}; });
+  const ad=span(b0,last,'ad'), adP=span(a0,a1,'ad');
+  const roas=ad.v?cur.v/ad.v:null, roasP=adP.v?prev.v/adP.v:null;
+  const wpp=span(b0,last,'rw').v, wppP=span(a0,a1,'rw').v;
+  const kp=[];
+  kp.push(['Últimos 12 meses ('+lab(b0)+' a '+lab(last)+')',brl(cur.v),prev.n?dtxt(delta(prev.v,cur.v),'vs 12 meses anteriores'):'sem 12 meses anteriores'+(cur.n<12?` · ${cur.n}/12 meses preenchidos`:'')]);
+  if(bestY) kp.push(['Melhor ano completo: '+bestY[0],brl(bestY[1]),dtxt(delta(bestY[1],cur.v),'últimos 12m vs esse ano')]);
+  if(bestM) kp.push(['Melhor mês',brl(bestM.t),lab(bestM.k)+' · último mês: '+brl(tot(db.months[last]))]);
+  if(ad.v) kp.push(['ROAS (12 meses)',roas.toLocaleString('pt-BR',{maximumFractionDigits:1})+'x',(roasP?dtxt(delta(roasP,roas),'vs 12m anteriores'):'')+` · mídia ${brl(ad.v)}`]);
+  if(cur.v) kp.push(['WhatsApp no faturamento',pct(wpp/cur.v),wppP&&prev.v?'antes: '+pct(wppP/prev.v):'']);
+  $('kpis').innerHTML=kp.map(([l,v,d])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
+
+  const labels=ks.map(lab);
+  const xc={ticks:{maxRotation:60,autoSkip:true,maxTicksLimit:18}};
+  const tt=ks.map(k=>tot(db.months[k]));
+  const ma=tt.map((_,i)=>{ if(i<2) return null; const w=tt.slice(i-2,i+1); return w.some(x=>x==null)?null:w.reduce((a,b)=>a+b,0)/3; });
+  mk('chRev',{type:'bar',plugins:[eventPlugin],data:{labels,datasets:[
+    {label:'Site',data:ks.map(k=>db.months[k].rs),backgroundColor:css('--c1'),stack:'a'},
+    {label:'WhatsApp',data:ks.map(k=>db.months[k].rw),backgroundColor:css('--c2'),stack:'a'},
+    {type:'line',label:'Média móvel 3m',data:ma,borderColor:css('--c3'),borderWidth:2,pointRadius:0,tension:.3}]},
+    options:{eventKeys:ks,responsive:true,maintainAspectRatio:false,scales:{x:{...xc,stacked:true},y:{stacked:true,ticks:{callback:v=>brl(v)}}},
+      plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+brl(c.parsed.y)}}}}});
+
+  // YoY
+  const yrs=[...new Set(ks.map(k=>k.slice(0,4)))]; const cols=['--c1','--c2','--c3','--c4','--c5'];
+  mk('chYoY',{type:'line',data:{labels:MN,datasets:yrs.map((y,i)=>({label:y,data:MN.map((_,j)=>{const r=db.months[y+'-'+String(j+1).padStart(2,'0')]; return r?tot(r):null;}),borderColor:css(cols[i%5]),backgroundColor:css(cols[i%5]),tension:.25,pointRadius:2,borderWidth:i===yrs.length-1?3:1.8}))},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>brl(v)}}},plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+brl(c.parsed.y)}}}}});
+
+  // Ads
+  mk('chAds',{type:'bar',data:{labels,datasets:[
+    {label:'Gasto em mídia',data:ks.map(k=>db.months[k].ad),backgroundColor:css('--c3'),yAxisID:'y'},
+    {type:'line',label:'ROAS',data:ks.map(k=>{const r=db.months[k],t=tot(r);return r.ad&&t!=null?t/r.ad:null;}),borderColor:css('--c1'),pointRadius:2,tension:.25,yAxisID:'y2'}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:xc,y:{ticks:{callback:v=>brl(v)}},y2:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'x'}}}}});
+
+  // Ticket e conversão
+  mk('chTicket',{type:'line',data:{labels,datasets:[
+    {label:'Ticket médio site (R$)',data:ks.map(k=>{const r=db.months[k];return r.rs!=null&&r.os?r.rs/r.os:null;}),borderColor:css('--c1'),pointRadius:2,tension:.25,yAxisID:'y',spanGaps:true},
+    {label:'Conversão (%)',data:ks.map(k=>{const r=db.months[k];return r.os!=null&&r.vis?r.os/r.vis*100:null;}),borderColor:css('--c2'),pointRadius:2,tension:.25,yAxisID:'y2',spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:xc,y:{ticks:{callback:v=>brl(v)}},y2:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v.toFixed(1)+'%'}}}}});
+
+  // WhatsApp
+  mk('chWpp',{type:'line',data:{labels,datasets:[{label:'% WhatsApp',data:ks.map(k=>{const r=db.months[k],t=tot(r);return t&&r.rw!=null?r.rw/t*100:null;}),borderColor:css('--c2'),backgroundColor:css('--c2'),pointRadius:2,tension:.25,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:xc,y:{ticks:{callback:v=>v+'%'}}},plugins:{legend:{display:false}}}});
+
+  // defaults do comparador (só se vazio)
+  if(!$('bFrom').value){
+    $('bFrom').value=b0; $('bTo').value=last;
+    const y24=ks.filter(k=>k.startsWith('2024')&&tot(db.months[k])!=null);
+    if(y24.length>=6&&last>'2024-12'){ $('aFrom').value=y24[0]; $('aTo').value=y24[y24.length-1]; }
+    else { $('aFrom').value=a0; $('aTo').value=a1; }
+  }
+  renderCompare();
+}
+
+function renderCompare(){
+  const A=[$('aFrom').value,$('aTo').value], B=[$('bFrom').value,$('bTo').value];
+  if(A.some(x=>!x)||B.some(x=>!x)||A[0]>A[1]||B[0]>B[1]){ $('compare').innerHTML='<div class="empty">Escolha os quatro meses.</div>'; return; }
+  const g=(p,f)=>span(p[0],p[1],f);
+  const rows=[], notes=[];
+  const mk3=(label,f,fmt)=>{ const a=g(A,f),b=g(B,f); rows.push([label,a,b,fmt]); return [a,b]; };
+  const [rsA,rsB]=mk3('Faturamento Site','rs',brl);
+  const [rwA,rwB]=mk3('Faturamento WhatsApp','rw',brl);
+  const [tA,tB]=mk3('Faturamento Total',tot,brl);
+  const [adA,adB]=mk3('Gasto em mídia','ad',brl);
+  const [osA,osB]=mk3('Pedidos Site','os',num);
+  const [vA,vB]=mk3('Visitas','vis',num);
+  let h='<div class="tablewrap"><table><tr><th>Métrica</th><th>A</th><th>B</th><th>Variação</th></tr>';
+  for(const [l,a,b,fmt] of rows){ const d=a.n&&b.n?delta(a.v,b.v):null;
+    h+=`<tr><td>${l}</td><td>${a.n?fmt(a.v):'-'}</td><td>${b.n?fmt(b.v):'-'}</td><td class="${d==null?'':d>=0?'up':'down'}">${d==null?'-':(d>=0?'+':'')+pct(d)}</td></tr>`; }
+  const ext=(l,a,b,fmt,inv)=>{ if(a==null||b==null||!isFinite(a)||!isFinite(b)) return; const d=delta(a,b); h+=`<tr><td>${l}</td><td>${fmt(a)}</td><td>${fmt(b)}</td><td class="${d>=0!==!!inv?'up':'down'}">${(d>=0?'+':'')+pct(d)}</td></tr>`; };
+  ext('Ticket médio site',osA.v&&rsA.n?rsA.v/osA.v:null,osB.v&&rsB.n?rsB.v/osB.v:null,brl);
+  ext('Conversão do site',vA.v&&osA.n?osA.v/vA.v:null,vB.v&&osB.n?osB.v/vB.v:null,v=>pct(v,2));
+  ext('ROAS (total ÷ mídia)',adA.v?tA.v/adA.v:null,adB.v?tB.v/adB.v:null,v=>v.toLocaleString('pt-BR',{maximumFractionDigits:1})+'x');
+  ext('Custo por visita',vA.v&&adA.n?adA.v/vA.v:null,vB.v&&adB.n?adB.v/vB.v:null,v=>'R$ '+v.toLocaleString('pt-BR',{maximumFractionDigits:2}),true);
+  h+='</table></div>';
+
+  // decomposição LMDI do faturamento do site
+  const L=(a,b)=>a===b?a:(a-b)/(Math.log(a)-Math.log(b));
+  const full=(a,t)=>a.n===a.t&&a.t>0;
+  let dec='';
+  if(rsA.v>0&&rsB.v>0&&osA.v>0&&osB.v>0&&full(osA)&&full(osB)&&full(rsA)&&full(rsB)){
+    const l=L(rsB.v,rsA.v), T0=rsA.v/osA.v, T1=rsB.v/osB.v, parts=[];
+    if(vA.v>0&&vB.v>0&&full(vA)&&full(vB)){
+      parts.push(['Visitas (tráfego)',l*Math.log(vB.v/vA.v)],['Conversão (visita → pedido)',l*Math.log((osB.v/vB.v)/(osA.v/vA.v))],['Ticket médio',l*Math.log(T1/T0)]);
+    } else {
+      parts.push(['Nº de pedidos',l*Math.log(osB.v/osA.v)],['Ticket médio',l*Math.log(T1/T0)]);
+      notes.push('Visitas não preenchidas em todos os meses dos dois períodos: separei só pedidos × ticket. Preencha as visitas (Google Analytics / Tray) para separar tráfego de conversão.');
+    }
+    const total=rsB.v-rsA.v, mx=Math.max(...parts.map(p=>Math.abs(p[1])),1);
+    dec=`<h2 style="margin-top:18px">De onde veio a variação do faturamento do site? (${total>=0?'+':''}${brl(total)})</h2><div class="tablewrap"><table><tr><th>Fator</th><th>Impacto em R$</th><th>% da variação</th><th style="width:30%"></th></tr>`;
+    for(const [n,v] of parts){ const w=Math.abs(v)/mx*50, col=v>=0?'--good':'--warn';
+      dec+=`<tr><td>${n}</td><td class="${v>=0?'up':'down'}">${v>=0?'+':''}${brl(v)}</td><td>${total?pct(v/total,0):'-'}</td><td><div class="bar"><i style="background:var(${col});width:${w}%;${v>=0?'left:50%':'right:50%'}"></i></div></td></tr>`; }
+    dec+='</table></div>';
+  } else notes.push('Para a decomposição (visitas × conversão × ticket) preciso de faturamento e pedidos do site preenchidos em todos os meses dos dois períodos.');
+  const la=span(A[0],A[1],()=>0).t, lb=span(B[0],B[1],()=>0).t;
+  if(la!==lb) notes.push(`Os períodos têm tamanhos diferentes (${la} × ${lb} meses lançados), então os totais não são diretamente comparáveis.`);
+  $('compare').innerHTML=h+dec+notes.map(n=>`<div class="note">${n}</div>`).join('');
+}
+['aFrom','aTo','bFrom','bTo'].forEach(id=>$(id).addEventListener('change',renderCompare));
+
+function renderAll(){ renderTable(); renderEvents(); if($('painel').classList.contains('on')) renderDash(); }
+renderAll();
+})();
+</script>
+</body>
+</html>
