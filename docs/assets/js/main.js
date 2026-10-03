@@ -57,6 +57,20 @@
     }
   }
 
+  // Voltar ao topo: aparece depois que a abertura sai da tela
+  var aoTopo = document.querySelector('.ao-topo');
+  if (aoTopo) {
+    var alternar = function () { aoTopo.hidden = window.scrollY < 700; };
+    alternar();
+    window.addEventListener('scroll', alternar, { passive: true });
+    aoTopo.addEventListener('click', function () {
+      var suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: suave ? 'smooth' : 'auto' });
+      var primeiro = document.querySelector('.pular');
+      if (primeiro) primeiro.focus({ preventScroll: true });
+    });
+  }
+
   // Ano corrente no rodapé
   var ano = document.querySelector('[data-ano]');
   if (ano) { ano.textContent = String(new Date().getFullYear()); }

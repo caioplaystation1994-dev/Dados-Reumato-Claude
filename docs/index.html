@@ -57,6 +57,7 @@
   "image": "https://caiowandenkolk.com.br/assets/img/retrato.jpg",
   "telephone": "+55-11-3382-1525",
   "email": "contato@caiowandenkolk.com.br",
+  "sameAs": ["https://www.instagram.com/drcaiowandenkolk/"],
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Av. Paulista, 1048 — 18º andar — Bela Vista",
@@ -134,8 +135,11 @@
 
       <div class="heroi__retrato">
         <div class="retrato">
-          <img src="assets/img/retrato.jpg" width="1000" height="1250"
-               alt="Dr. Caio Wandenkolk, reumatologista, em seu consultório na Avenida Paulista">
+          <picture>
+            <source srcset="assets/img/retrato.webp" type="image/webp">
+            <img src="assets/img/retrato.jpg" width="1000" height="1250"
+                 alt="Dr. Caio Wandenkolk, reumatologista, em seu consultório na Avenida Paulista">
+          </picture>
         </div>
       </div>
     </div>
@@ -195,7 +199,7 @@
   <section class="secao secao--clara" id="consulta">
     <div class="container">
       <div class="secao__intro secao__intro--rotulo revelar">
-        <span class="rotulo">Como é a consulta</span>
+        <h2 class="rotulo">Como é a consulta</h2>
       </div>
 
       <div class="grade grade--3 revelar">
@@ -342,7 +346,7 @@
   <section class="secao secao--faixa" id="contato">
     <div class="container">
       <div class="secao__intro secao__intro--endereco revelar">
-        <span class="rotulo">Localização</span>
+        <h2 class="rotulo">Localização</h2>
         <p class="endereco">Av. Paulista, 1048 — 18º andar · Bela Vista · São Paulo/SP · 01310-100</p>
         <p class="endereco__nota">Estacionamento terceirizado no prédio, com entrada pela Alameda Campinas, 300</p>
       </div>
@@ -440,6 +444,7 @@
           <li><a href="https://wa.me/551133821525" target="_blank" rel="noopener">(11) 3382-1525</a></li>
           <li class="rodape__obs">Telefone e WhatsApp nos dois números</li>
           <li><a href="mailto:contato@caiowandenkolk.com.br">contato@caiowandenkolk.com.br</a></li>
+          <li><a class="rodape__social" href="https://www.instagram.com/drcaiowandenkolk/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/></svg>@drcaiowandenkolk</a></li>
           <li class="rodape__horario">Terças e quintas: 14h às 19h</li>
         </ul>
       </div>
@@ -451,6 +456,10 @@
     </div>
   </div>
 </footer>
+
+<button class="ao-topo" type="button" aria-label="Voltar ao topo" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 19V6M6 12l6-6 6 6"/></svg>
+</button>
 
 <a class="zap" href="https://wa.me/5511994558543" target="_blank" rel="noopener" aria-label="Conversar pelo WhatsApp">
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.8-5.9c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.2-.7.1l-.7 1c-.1.2-.3.2-.5.1-1.1-.5-2-1.1-2.8-2.2-.2-.3 0-.5.1-.6l.5-.6c.1-.2.1-.4 0-.6l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.4-.3.3-.9.9-.9 2.3s1 2.7 1.1 2.9c.1.2 2 3.1 4.9 4.3 1.7.7 2.4.8 3.2.7.5-.1 1.6-.7 1.9-1.3.2-.7.2-1.2.2-1.3-.1-.2-.3-.2-.6-.4Z"/></svg>
