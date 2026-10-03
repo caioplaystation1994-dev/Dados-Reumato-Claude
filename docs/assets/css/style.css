@@ -252,6 +252,14 @@ h2.rotulo{margin-top:0}
   color:var(--tinta);margin-bottom:1.5rem;
 }
 .sobre__nome{margin-bottom:38px}
+.sobre__foto{margin:40px 0 0;max-width:320px}
+.sobre__foto picture{display:block;border:1px solid var(--ouro);padding:9px;background:var(--branco);position:relative}
+.sobre__foto picture::after{content:"";position:absolute;inset:9px;border:1px solid var(--ouro-claro);pointer-events:none}
+.sobre__foto img{display:block;width:100%;height:auto}
+.sobre__foto figcaption{
+  margin-top:12px;font-family:var(--sans);font-size:var(--t-auxiliar);
+  color:var(--tinta-suave);line-height:1.5;
+}
 .sobre__ficha .rotulo{display:block;margin:0 0 20px}
 
 .credenciais{list-style:none;padding:0;margin:0 0 42px;border-left:1px solid var(--ouro-claro)}
