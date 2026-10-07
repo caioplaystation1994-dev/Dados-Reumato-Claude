@@ -1,21 +1,20 @@
 name: Deploy GitHub Pages
 
-# O site publicado é sempre a pasta docs/ da branch do site
-# (claude/happy-ride-mp97bp): na raiz do domínio fica o site pessoal e em
-# /app/ ficam as ferramentas, protegidas por senha (docs/app/gate.js) — as
-# clínicas e a carteira de investimentos, que não é linkada no portal e só se
-# alcança pelo endereço direto.
+# Tudo vive nesta branch:
 #
-# As ferramentas são desenvolvidas na branch main, na raiz do repositório —
-# por isso o job também busca main e roda scripts/publicar-apps.js, que copia
-# os arquivos de lá para docs/app/ injetando noindex + gate. Assim um push em
-# main atualiza as ferramentas sem republicar a raiz do repositório (o que já
-# aconteceu uma vez e derrubou o site pessoal, colocando o portal de
-# documentos, sem senha, no endereço principal).
+#   raiz/            as ferramentas clínicas (fonte, sem senha)
+#   docs/            o site publicado — raiz do domínio = site pessoal
+#   docs/app/        as ferramentas servidas, geradas da raiz por
+#                    scripts/publicar-apps.js com noindex + tela de senha
+#
+# O que vai ao ar é sempre gerado aqui, na hora. Antes o site morava em outra
+# branch e qualquer push nesta republicava a raiz do repositório, o que já
+# derrubou o site pessoal uma vez, colocando o portal de documentos — sem
+# senha — no endereço principal. Daí a verificação antes do deploy.
 
 on:
   push:
-    branches: [main, claude/happy-ride-mp97bp]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -34,23 +33,16 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout da branch do site
-        uses: actions/checkout@v4
-        with:
-          ref: claude/happy-ride-mp97bp
-          fetch-depth: 0
-
-      - name: Buscar as ferramentas em main
-        run: git fetch --force origin main:main
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Gerar docs/app/ a partir de main
+      - name: Gerar docs/app/ a partir da raiz
         run: node scripts/publicar-apps.js
 
-      - name: Conferir que o gate foi aplicado em todas as ferramentas
+      - name: Conferir o site antes de publicar
         run: |
           for f in docs/app/documentos_ambulatorio.html \
                    docs/app/laudo_imunobiologicos.html \
@@ -61,7 +53,8 @@ jobs:
           if grep -q 'Sistema de Documentos' docs/index.html; then
             echo "::error::a raiz do site não é o site pessoal"; exit 1
           fi
-          echo "ok: raiz = site pessoal, /app/ protegido por senha"
+          test -f docs/CNAME || { echo "::error::docs/CNAME sumiu — o domínio deixaria de apontar para cá"; exit 1; }
+          echo "ok: raiz = site pessoal, /app/ protegido por senha, domínio preservado"
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
