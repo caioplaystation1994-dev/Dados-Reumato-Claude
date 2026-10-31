@@ -532,10 +532,6 @@ body{padding-bottom:64px}
 .comor-tag.ativo{background:#f6ad55;border-color:#e09416;color:#7b341e;font-weight:700}
 
 /* ── Lateralidade (imagem) ── */
-.lat-btns{display:none;gap:4px;margin-left:auto;flex-shrink:0}
-.exam-item.checked .lat-btns{display:flex}
-.lat-btn{background:#e2e8f0;border:1px solid #cbd5e0;color:#4a5568;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;transition:.15s;line-height:1.4}
-.lat-btn.ativo{background:#1a56a0;border-color:#1a56a0;color:#fff}
 
 /* ── Vacinas ── */
 .vacina-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid #f0f4f8;font-size:12px}
@@ -1943,7 +1939,8 @@ const PACOTES_IMG = [
   },
   {
     id: 'ipkg-usg', titulo: 'Ultrassonografia (USG)',
-    exames: ['USG de articulações de mãos e punhos','USG de ombros bilaterais','USG de quadril bilateral','USG de joelhos bilaterais','USG de tornozelos bilaterais','USG de partes moles','USG abdominal total','USG de glândulas salivares','USG Doppler de vasos periféricos','USG de tireoide','Ecocardiograma']
+    // Mesma regra dos RX: cada lado é um exame, com o lado no nome.
+    exames: ['USG de mão e punho direitos','USG de mão e punho esquerdos','USG de ombro direito','USG de ombro esquerdo','USG de quadril direito','USG de quadril esquerdo','USG de joelho direito','USG de joelho esquerdo','USG de tornozelo direito','USG de tornozelo esquerdo','USG de partes moles','USG abdominal total','USG de glândulas salivares','USG Doppler de vasos periféricos','USG de tireoide','Ecocardiograma']
   },
   {
     id: 'ipkg-tc', titulo: 'Tomografia Computadorizada (TC)',
@@ -2053,11 +2050,6 @@ function renderItemsPacoteCustomImg() {
     <div class="exam-item" id="${PKG_CUSTOM_IMG.id}-exam-${i}" onclick="toggleExamItem('${PKG_CUSTOM_IMG.id}',${i})">
       <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${PKG_CUSTOM_IMG.id}',${i})">
       <label>${e}</label>
-      <span class="lat-btns" id="${PKG_CUSTOM_IMG.id}-lat-${i}">
-        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="D" onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'D',this)">D</button>
-        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="E" onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'E',this)">E</button>
-        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="Bil." onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'Bil.',this)">Bil.</button>
-      </span>
       <button type="button" class="btn-remove-exame-custom" title="Excluir dos meus exames" onclick="event.stopPropagation();excluirExameCustomImg(${i})">×</button>
     </div>`).join('');
   container.innerHTML = itemsHtml + `
@@ -2199,7 +2191,6 @@ function expandPacote(pkgId) {
 }
 
 // ─── Renderizar pacotes de imagem ─────────────────────────────────────────────
-const _lateralidade = {};
 
 function renderPacotesImg() {
   const container = document.getElementById('pacotes-img');
@@ -2217,11 +2208,6 @@ function renderPacotesImg() {
           <div class="exam-item" id="${pkg.id}-exam-${i}" onclick="toggleExamItem('${pkg.id}',${i})">
             <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${pkg.id}',${i})">
             <label>${e}</label>
-            ${lateralidadeNoNome(e) ? '' : `<span class="lat-btns" id="${pkg.id}-lat-${i}">
-              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="D" onclick="event.stopPropagation();setLat('${pkg.id}',${i},'D',this)">D</button>
-              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="E" onclick="event.stopPropagation();setLat('${pkg.id}',${i},'E',this)">E</button>
-              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="Bil." onclick="event.stopPropagation();setLat('${pkg.id}',${i},'Bil.',this)">Bil.</button>
-            </span>`}
           </div>`).join('')}
       </div>
     </div>`).join('');
@@ -2248,23 +2234,6 @@ function renderPacotesVac() {
     </div>`).join('');
 }
 
-function setLat(pkgId, idx, lat, btn) {
-  const key = pkgId + '-' + idx;
-  _lateralidade[key] = _lateralidade[key] === lat ? null : lat;
-  const btns = document.querySelectorAll(`#${pkgId}-lat-${idx} .lat-btn`);
-  btns.forEach(b => b.classList.toggle('ativo', b.dataset.lat === _lateralidade[key]));
-}
-
-// Exames cujo nome já diz o lado ("RX mão direita") não ganham os botões
-// D/E/Bil. — seria possível marcar "RX mão direita (E)".
-function lateralidadeNoNome(nome) {
-  return /\b(direit[oa]|esquerd[oa])\b/i.test(nome);
-}
-
-function getLatText(pkgId, idx, exameName) {
-  const lat = _lateralidade[pkgId + '-' + idx];
-  return lat ? exameName + ' (' + lat + ')' : exameName;
-}
 
 function selectedImgFromPacotes() {
   const result = [];
@@ -2996,7 +2965,7 @@ function prepararImpressao(ids) {
     PACOTES_IMG.forEach(pkg => {
       pkg.exames.forEach((nome, i) => {
         const el = document.getElementById(pkg.id + '-exam-' + i);
-        if (el && el.classList.contains('checked')) exames.push(getLatText(pkg.id, i, nome));
+        if (el && el.classList.contains('checked')) exames.push(nome);
       });
     });
     const adicImg = (document.getElementById('img-adicional')?.value || '').trim();
@@ -3738,7 +3707,7 @@ async function gerarWordImg() {
   PACOTES_IMG.forEach(pkg => {
     pkg.exames.forEach((nome, i) => {
       const el = document.getElementById(pkg.id + '-exam-' + i);
-      if (el && el.classList.contains('checked')) todosExames.push(getLatText(pkg.id, i, nome));
+      if (el && el.classList.contains('checked')) todosExames.push(nome);
     });
   });
   const adicImg = v('img-adicional');
@@ -3869,7 +3838,7 @@ function coletarExamesImgMarcados() {
   PACOTES_IMG.forEach(pkg => {
     pkg.exames.forEach((nome, i) => {
       const el = document.getElementById(pkg.id + '-exam-' + i);
-      if (el && el.classList.contains('checked')) todosExames.push(getLatText(pkg.id, i, nome));
+      if (el && el.classList.contains('checked')) todosExames.push(nome);
     });
   });
   const adicImg = v('img-adicional');
@@ -4176,8 +4145,6 @@ function novoPaciente() {
   document.getElementById('nef-alert')?.classList.remove('visivel');
   // Zerar comorbidades
   setComorbidades([]);
-  // Zerar lateralidade
-  Object.keys(_lateralidade).forEach(k => delete _lateralidade[k]);
   // Redimensionar textareas
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
