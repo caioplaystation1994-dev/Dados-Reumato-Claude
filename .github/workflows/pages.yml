@@ -46,7 +46,6 @@ jobs:
         run: |
           for f in docs/app/documentos_ambulatorio.html \
                    docs/app/laudo_imunobiologicos.html \
-                   docs/app/laudo_convenio_imunobio.html \
                    docs/app/investimentos.html; do
             grep -q 'src="gate.js"' "$f" || { echo "::error::$f sem a tela de senha"; exit 1; }
           done

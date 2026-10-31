@@ -193,7 +193,6 @@ Uso interno, publicadas junto ao site em `caiowandenkolk.com.br/app/`:
 | `/app/` | Portal com o menu das três ferramentas |
 | `/app/documentos_ambulatorio.html` | Relatório, receitas, exames, vacinas, atestado |
 | `/app/laudo_imunobiologicos.html` | Laudo de imunobiológicos (DUT 65/ANS) |
-| `/app/laudo_convenio_imunobio.html` | Laudo para convênio |
 
 Não são indexadas: cada arquivo tem `noindex` e o `robots.txt` bloqueia `/app/`.
 

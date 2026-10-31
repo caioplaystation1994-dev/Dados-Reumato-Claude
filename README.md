@@ -11,7 +11,6 @@ instalação, sem servidor e sem build. Os dados ficam apenas no navegador de qu
 | `index.html` | Portal das ferramentas clínicas |
 | `documentos_ambulatorio.html` | Relatório, receita e solicitação de exames |
 | `laudo_imunobiologicos.html` | Laudos de autorização de imunobiológicos (DUT 65/ANS) |
-| `laudo_convenio_imunobio.html` | Laudos de imunobiológicos para convênio |
 | `coleta_dados_reumatologia.html` | Formulário de coleta de dados de pesquisa em reumatologia (adesão ao tratamento) |
 | `testes/` | Testes de ponta a ponta do app de investimentos, com as APIs simuladas ([detalhes](testes/README.md)) |
 
