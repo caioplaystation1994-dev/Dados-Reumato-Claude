@@ -1933,7 +1933,11 @@ function agruparExamesPorCategoria(exames) {
 const PACOTES_IMG = [
   {
     id: 'ipkg-rx', titulo: 'Radiografia (RX)',
-    exames: ['RX de tórax PA e perfil','RX de coluna cervical (PA, perfil, oblíquas)','RX de coluna lombar (PA, perfil)','RX de coluna total (PA e perfil)','RX de sacroilíacas','RX de mãos e punhos bilaterais','RX de pés bilaterais','RX de quadril (AP da bacia)','RX de joelhos (AP e perfil)','RX de ombros bilaterais','RX de tornozelos bilaterais']
+    // Os RX de articulações periféricas vão separados por lado: a solicitação
+    // precisa dizer o lado para a clínica saber o que realizar e para a
+    // operadora autorizar — "bilaterais" num item só costuma voltar como um
+    // exame só. Itens que já nomeiam o lado não mostram os botões D/E/Bil.
+    exames: ['RX de tórax PA e perfil','RX de coluna cervical (PA, perfil, oblíquas)','RX de coluna lombar (PA, perfil)','RX de coluna total (PA e perfil)','RX de sacroilíacas','RX mão direita (PA e perfil)','RX mão esquerda (PA e perfil)','RX de punho direito','RX de punho esquerdo','RX de pé direito (PA e perfil)','RX de pé esquerdo (PA e perfil)','RX de quadril (AP da bacia)','RX de joelho direito (AP e perfil)','RX de joelho esquerdo (AP e perfil)','RX de ombro direito','RX de ombro esquerdo','RX de tornozelo direito (AP e perfil)','RX de tornozelo esquerdo (AP e perfil)']
   },
   {
     id: 'ipkg-usg', titulo: 'Ultrassonografia (USG)',
@@ -2211,11 +2215,11 @@ function renderPacotesImg() {
           <div class="exam-item" id="${pkg.id}-exam-${i}" onclick="toggleExamItem('${pkg.id}',${i})">
             <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${pkg.id}',${i})">
             <label>${e}</label>
-            <span class="lat-btns" id="${pkg.id}-lat-${i}">
+            ${lateralidadeNoNome(e) ? '' : `<span class="lat-btns" id="${pkg.id}-lat-${i}">
               <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="D" onclick="event.stopPropagation();setLat('${pkg.id}',${i},'D',this)">D</button>
               <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="E" onclick="event.stopPropagation();setLat('${pkg.id}',${i},'E',this)">E</button>
               <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="Bil." onclick="event.stopPropagation();setLat('${pkg.id}',${i},'Bil.',this)">Bil.</button>
-            </span>
+            </span>`}
           </div>`).join('')}
       </div>
     </div>`).join('');
@@ -2247,6 +2251,12 @@ function setLat(pkgId, idx, lat, btn) {
   _lateralidade[key] = _lateralidade[key] === lat ? null : lat;
   const btns = document.querySelectorAll(`#${pkgId}-lat-${idx} .lat-btn`);
   btns.forEach(b => b.classList.toggle('ativo', b.dataset.lat === _lateralidade[key]));
+}
+
+// Exames cujo nome já diz o lado ("RX mão direita") não ganham os botões
+// D/E/Bil. — seria possível marcar "RX mão direita (E)".
+function lateralidadeNoNome(nome) {
+  return /\b(direit[oa]|esquerd[oa])\b/i.test(nome);
 }
 
 function getLatText(pkgId, idx, exameName) {
@@ -4604,6 +4614,41 @@ const CID_RHEUM = [
   ['M54.9','Dorsalgia, não especificada'],
   ['M51.1','Transtorno de disco lombar com radiculopatia'],
   ['M51.2','Outros deslocamentos especificados de disco intervertebral (hérnia de disco)'],
+  ['M53.1','Síndrome cervicobraquial'],
+  ['M54.3','Ciática'],
+  ['M47.8','Outras espondiloses (espondiloartrose)'],
+  ['M48.0','Estenose do canal vertebral'],
+  // ── Sintomas e sinais articulares (úteis quando ainda não há diagnóstico
+  //    fechado, que é a situação da maior parte das solicitações de exame) ──
+  ['M25.5','Dor articular (artralgia)'],
+  ['M25.4','Derrame articular'],
+  ['M25.6','Rigidez articular não classificada em outra parte'],
+  ['M25.0','Hemartrose'],
+  ['M25.3','Outras instabilidades articulares'],
+  ['M25.9','Transtorno articular, não especificado'],
+  ['M79.6','Dor em membro'],
+  ['M79.2','Nevralgia e neurite, não especificadas'],
+  ['M77.9','Entesopatia, não especificada'],
+  ['R53','Mal-estar e fadiga'],
+  ['R50.9','Febre, não especificada'],
+  // ── Achados isolados que motivam investigação ──
+  ['R76.8','Outros achados imunológicos anormais no soro (ex.: FAN positivo isolado)'],
+  ['E79.0','Hiperuricemia sem sinais de artrite inflamatória'],
+  ['E55.9','Deficiência de vitamina D, não especificada'],
+  ['M85.8','Outros transtornos da densidade e estrutura ósseas (osteopenia)'],
+  ['M83.9','Osteomalácia do adulto, não especificada'],
+  // ── Manifestações associadas às doenças reumatológicas ──
+  ['I73.0','Síndrome de Raynaud'],
+  ['H20.0','Iridociclite aguda (uveíte anterior)'],
+  ['L40.0','Psoríase vulgar'],
+  ['K50.9','Doença de Crohn, não especificada'],
+  ['K51.9','Retocolite ulcerativa, não especificada'],
+  // ── Acompanhamento de terapia (justificam os exames de controle) ──
+  ['Z79.8','Uso prolongado de outros medicamentos (DMARD / imunobiológico)'],
+  ['Z79.5','Uso prolongado de corticosteroides'],
+  ['Z79.1','Uso prolongado de antiinflamatórios não esteroides (AINE)'],
+  ['Z11.1','Rastreamento de tuberculose respiratória (triagem pré-imunobiológico)'],
+  ['Z00.0','Exame médico geral'],
 ];
 
 function cidSuggest(input, sugId) {
