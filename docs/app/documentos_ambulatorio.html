@@ -2958,20 +2958,34 @@ function prepararImpressao(ids) {
     }
   }
 
-  // ── Lista plana de exames de imagem ──
+  // ── Lista de exames de imagem, agrupada por modalidade ──
+  // Agrupado como já era feito em laboratoriais e vacinas: a clínica de
+  // imagem agenda e autoriza por modalidade, e numa lista única um RX perdido
+  // no meio de ressonâncias passa despercebido.
   const imgFlat = document.getElementById('img-print-flat');
   if (imgFlat) {
-    const exames = [];
+    const entradasImg = [];
     PACOTES_IMG.forEach(pkg => {
+      const itens = [];
       pkg.exames.forEach((nome, i) => {
         const el = document.getElementById(pkg.id + '-exam-' + i);
-        if (el && el.classList.contains('checked')) exames.push(nome);
+        if (el && el.classList.contains('checked')) itens.push(nome);
       });
+      if (itens.length) {
+        itens.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        entradasImg.push({ categoria: pkg.titulo });
+        itens.forEach(i => entradasImg.push(i));
+      }
     });
     const adicImg = (document.getElementById('img-adicional')?.value || '').trim();
-    if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
-    exames.sort((a, b) => a.localeCompare(b, 'pt-BR'));
-    paginarListaExames('exames-img', 'img-print-flat', exames);
+    if (adicImg) {
+      const extras = adicImg.split('\n').map(l => l.trim()).filter(Boolean);
+      if (extras.length) {
+        entradasImg.push({ categoria: 'Outros exames' });
+        extras.forEach(l => entradasImg.push(l));
+      }
+    }
+    paginarListaExames('exames-img', 'img-print-flat', entradasImg);
   }
 
   // ── Lista de vacinas ──
@@ -3459,6 +3473,12 @@ function makeDoc(paragraphs, rodape) {
       alignment: AlignmentType.CENTER, spacing: { after: 200 },
       children: [new TextRun({ text: p.text, size: 20, color: '718096' })]
     });
+    // Subtítulo de grupo dentro de uma seção (ex.: a modalidade na lista de
+    // exames de imagem) — sem borda, para não competir com o 'heading'.
+    if (p.type === 'subheading') return new Paragraph({
+      spacing: { before: 120, after: 40 },
+      children: [new TextRun({ text: p.text, bold: true, size: 22, color: '2d3748' })]
+    });
     if (p.type === 'label-value') return new Paragraph({
       spacing: { after: 60 },
       children: [new TextRun({ text: p.label + ': ', bold: true, size: 22 }), new TextRun({ text: p.value || '—', size: 22 })]
@@ -3702,16 +3722,25 @@ async function gerarWordLab() {
 }
 
 async function gerarWordImg() {
-  // Coletar todos os exames de imagem marcados (com lateralidade)
-  const todosExames = [];
+  // Agrupados por modalidade, como na impressão.
+  const gruposImg = [];
   PACOTES_IMG.forEach(pkg => {
+    const itens = [];
     pkg.exames.forEach((nome, i) => {
       const el = document.getElementById(pkg.id + '-exam-' + i);
-      if (el && el.classList.contains('checked')) todosExames.push(nome);
+      if (el && el.classList.contains('checked')) itens.push(nome);
     });
+    if (itens.length) {
+      itens.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      gruposImg.push({ titulo: pkg.titulo, itens });
+    }
   });
   const adicImg = v('img-adicional');
-  if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => todosExames.push(l.trim()));
+  if (adicImg) {
+    const extras = adicImg.split('\n').map(l => l.trim()).filter(Boolean);
+    if (extras.length) gruposImg.push({ titulo: 'Outros exames', itens: extras });
+  }
+  const todosExames = gruposImg.flatMap(g => g.itens);
 
   const paras = [
     ...logoDocPara(),
@@ -3725,7 +3754,10 @@ async function gerarWordImg() {
   ];
   if (todosExames.length) {
     paras.push({ type: 'heading', text: 'Exames Solicitados' });
-    todosExames.forEach(e => paras.push({ type: 'bullet', text: e }));
+    gruposImg.forEach(g => {
+      paras.push({ type: 'subheading', text: g.titulo });
+      g.itens.forEach(e => paras.push({ type: 'bullet', text: e }));
+    });
   }
   if (v('img-indicacao')) {
     paras.push({ type: 'heading', text: 'Justificativa' });
@@ -4618,6 +4650,67 @@ const CID_RHEUM = [
   ['Z79.1','Uso prolongado de antiinflamatórios não esteroides (AINE)'],
   ['Z11.1','Rastreamento de tuberculose respiratória (triagem pré-imunobiológico)'],
   ['Z00.0','Exame médico geral'],
+  // ══ Clínica geral ══════════════════════════════════════════════════════════
+  // Comorbidades e queixas que aparecem na mesma consulta reumatológica, e o
+  // que é pedido no atendimento clínico. A busca filtra por texto, então a
+  // lista maior não atrapalha quem procura um CID reumatológico.
+  // Cardiometabólico
+  ['I10','Hipertensão arterial essencial (primária)'],
+  ['I25.9','Doença isquêmica crônica do coração, não especificada'],
+  ['I83.9','Varizes dos membros inferiores sem úlcera ou inflamação'],
+  ['E11.9','Diabetes mellitus tipo 2 sem complicações'],
+  ['E10.9','Diabetes mellitus tipo 1 sem complicações'],
+  ['R73.9','Hiperglicemia, não especificada (pré-diabetes)'],
+  ['E78.0','Hipercolesterolemia pura'],
+  ['E78.5','Hiperlipidemia, não especificada'],
+  ['E66.9','Obesidade, não especificada'],
+  // Tireoide
+  ['E03.9','Hipotireoidismo, não especificado'],
+  ['E05.9','Tireotoxicose (hipertireoidismo), não especificada'],
+  ['E06.3','Tireoidite autoimune (Hashimoto)'],
+  // Renal e urinário
+  ['N18.9','Doença renal crônica, não especificada'],
+  ['N39.0','Infecção do trato urinário de localização não especificada'],
+  ['N20.0','Calculose renal (nefrolitíase)'],
+  // Hematológico
+  ['D50.9','Anemia por deficiência de ferro, não especificada'],
+  ['D51.9','Anemia por deficiência de vitamina B12, não especificada'],
+  ['D64.9','Anemia, não especificada'],
+  // Digestivo
+  ['K21.0','Doença do refluxo gastroesofágico com esofagite'],
+  ['K21.9','Doença do refluxo gastroesofágico sem esofagite'],
+  ['K29.7','Gastrite, não especificada'],
+  ['K58.9','Síndrome do intestino irritável sem diarreia'],
+  ['K76.0','Esteatose hepática (degeneração gordurosa do fígado)'],
+  ['B19.9','Hepatite viral, não especificada'],
+  // Respiratório
+  ['J45.9','Asma, não especificada'],
+  ['J44.9','Doença pulmonar obstrutiva crônica (DPOC)'],
+  ['J30.4','Rinite alérgica, não especificada'],
+  ['J06.9','Infecção aguda das vias aéreas superiores'],
+  // Neurológico e saúde mental
+  ['G43.9','Enxaqueca, não especificada'],
+  ['R51','Cefaleia'],
+  ['G47.0','Insônia (distúrbio do início e da manutenção do sono)'],
+  ['F51.0','Insônia não orgânica'],
+  ['F41.1','Transtorno de ansiedade generalizada'],
+  ['F41.9','Transtorno de ansiedade, não especificado'],
+  ['F32.9','Episódio depressivo, não especificado'],
+  ['G63.2','Polineuropatia diabética'],
+  // Arboviroses e pós-infecciosas — causa frequente de artrite e artralgia
+  ['A92.0','Febre de Chikungunya'],
+  ['A90','Dengue clássica'],
+  ['A91','Dengue hemorrágica'],
+  ['A92.8','Outras febres virais transmitidas por mosquitos (Zika)'],
+  ['B27.9','Mononucleose infecciosa, não especificada'],
+  ['U07.1','COVID-19, vírus identificado'],
+  ['U09.9','Condição pós-COVID-19'],
+  // Outros do dia a dia
+  ['N95.1','Estados da menopausa e do climatério'],
+  ['Z72.0','Uso de tabaco'],
+  ['R60.0','Edema localizado'],
+  ['R63.4','Perda de peso anormal'],
+  ['Z76.0','Emissão de receita de repetição'],
 ];
 
 function cidSuggest(input, sugId) {
