@@ -308,6 +308,15 @@ header > div:last-child{flex-wrap:wrap;row-gap:8px;justify-content:flex-end;flex
 
   /* Textareas vazias não imprimem */
   .field-group textarea:placeholder-shown{display:none!important}
+  /* Campo de data vazio: o navegador desenha a máscara (dd/mm/aaaa) dentro
+     do campo, que saía impressa no documento. Esconde só o texto da máscara,
+     mantendo a linha para preenchimento à mão. */
+  input[type=date].data-vazia::-webkit-datetime-edit{visibility:hidden}
+  /* O ícone do seletor de data é controle de tela, não conteúdo. */
+  input[type=date]::-webkit-calendar-picker-indicator{display:none!important}
+  /* Placeholders orientam o preenchimento na tela; no papel sairiam como se
+     fossem o conteúdo do campo (ex.: "Ex: Artrite Reumatoide – M05.8"). */
+  input::placeholder,textarea::placeholder{color:transparent!important;opacity:0!important}
   /* Textareas com texto longo: um <textarea> é um widget com scroll
      nativo — mesmo com overflow:visible no CSS, o navegador nunca mostra
      o que passa da altura da caixa (ela só rola, não "vaza" como uma div
@@ -2782,21 +2791,48 @@ function paginarBlocosLivres(pageId, corpoId) {
   // ("1. ...\n2. ...\n3. ..."), ou seja, é UM parágrafo só — sem ele, uma
   // receita longa virava um bloco indivisível que estourava a folha e
   // vazava para as páginas seguintes sem repetir cabeçalho/rodapé.
+  //
+  // Cada pedaço carrega o separador que o liga ao pedaço anterior: '\n\n'
+  // quando começa um novo parágrafo, '\n' quando é a continuação de um
+  // parágrafo que foi quebrado linha a linha. Sem isso os pedaços que caem
+  // na mesma página eram remontados sem a linha em branco e o texto saía
+  // impresso todo colado — e, pior, a altura da linha em branco não entrava
+  // na conta, fazendo um texto que não cabia parecer que cabia (daí o
+  // rodapé ser empurrado para fora da folha).
   const cabeNaPagina = t => medirTexto(t) <= alturaDisponivel;
   const fatiarTexto = (texto) => {
     const pedacos = [];
     (texto || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).forEach(paragrafo => {
-      if (cabeNaPagina(paragrafo)) { pedacos.push(paragrafo); return; }
+      if (cabeNaPagina(paragrafo)) { pedacos.push({ texto: paragrafo, sep: '\n\n' }); return; }
       let atual = '';
+      let primeiro = true;
+      const despejar = (texto, sep) => { pedacos.push({ texto, sep: primeiro ? '\n\n' : sep }); primeiro = false; };
       paragrafo.split('\n').forEach(linha => {
         const tentativa = atual ? atual + '\n' + linha : linha;
-        if (atual && !cabeNaPagina(tentativa)) { pedacos.push(atual); atual = linha; }
+        if (atual && !cabeNaPagina(tentativa)) { despejar(atual, '\n'); atual = linha; }
         else atual = tentativa;
+        // Último recurso: uma única linha maior que a página — texto colado
+        // sem nenhuma quebra, como acontece quando se cola um parágrafo
+        // longo. Sem isto ela viraria um pedaço indivisível, maior que a
+        // folha, e levaria o rodapé para fora da página.
+        if (!cabeNaPagina(atual)) {
+          let parcial = '';
+          atual.split(' ').forEach(palavra => {
+            const t2 = parcial ? parcial + ' ' + palavra : palavra;
+            if (parcial && !cabeNaPagina(t2)) { despejar(parcial, ' '); parcial = palavra; }
+            else parcial = t2;
+          });
+          atual = parcial;
+        }
       });
-      if (atual) pedacos.push(atual);
+      if (atual) despejar(atual, '\n');
     });
     return pedacos;
   };
+
+  // Altura de uma linha em branco, para contabilizar a separação entre
+  // parágrafos remontados na mesma página.
+  const alturaLinhaBranca = Math.max(0, medirTexto('a\na') - medirTexto('a'));
 
   const unidades = [];
   blocos.forEach(b => {
@@ -2804,7 +2840,10 @@ function paginarBlocosLivres(pageId, corpoId) {
     const valorEl = alturaTotal > alturaDisponivel ? b.querySelector('.print-textarea-valor') : null;
     const pedacos = valorEl ? fatiarTexto(valorEl.textContent) : [];
     if (pedacos.length > 1) {
-      pedacos.forEach(t => unidades.push({ altura: medirTexto(t), render: () => criarFragmentoBloco(b, t) }));
+      pedacos.forEach((pedaco, i) => unidades.push({
+        altura: medirTexto(pedaco.texto) + (i > 0 && pedaco.sep === '\n\n' ? alturaLinhaBranca : 0),
+        bloco: b, texto: pedaco.texto, sep: pedaco.sep,
+      }));
     } else {
       unidades.push({ altura: alturaTotal, render: () => { const c = b.cloneNode(true); copiarValoresClone(b, c); return c; } });
     }
@@ -2829,7 +2868,10 @@ function paginarBlocosLivres(pageId, corpoId) {
   });
   if (atual.length > 0) paginas.push({ unidades: atual, forcado: atualForcado });
 
-  if (paginas.length <= 1) return; // cabe tudo numa página só: nada a fazer
+  // Clona quando há mais de uma página ou quando alguma unidade é maior que
+  // a folha (aí o rodapé precisa fluir logo após o texto, em vez de ser
+  // empurrado para o fim de uma caixa mais alta que a página).
+  if (paginas.length === 1 && !paginas[0].forcado) return; // cabe tudo numa página só
 
   const headBlock = origWrapper.querySelector('.doc-head-block');
   const tailBlock = origWrapper.querySelector('.doc-tail-block');
@@ -2847,7 +2889,22 @@ function paginarBlocosLivres(pageId, corpoId) {
       clone.appendChild(headClone);
     }
     const corpoClone = document.createElement('div');
-    pagina.unidades.forEach(u => corpoClone.appendChild(u.render()));
+    // Pedaços seguidos do mesmo bloco voltam a ser um texto só, com a linha
+    // em branco entre parágrafos — em vez de virarem elementos separados,
+    // que saíam impressos sem espaço nenhum entre si.
+    let grupo = null;
+    const despejarGrupo = () => {
+      if (!grupo) return;
+      corpoClone.appendChild(criarFragmentoBloco(grupo.bloco, grupo.partes.join('')));
+      grupo = null;
+    };
+    pagina.unidades.forEach(u => {
+      if (!u.bloco) { despejarGrupo(); corpoClone.appendChild(u.render()); return; }
+      if (grupo && grupo.bloco === u.bloco) { grupo.partes.push(u.sep + u.texto); return; }
+      despejarGrupo();
+      grupo = { bloco: u.bloco, partes: [u.texto] };
+    });
+    despejarGrupo();
     clone.appendChild(corpoClone);
     if (isUltima && tailBlock) {
       const tailClone = tailBlock.cloneNode(true);
@@ -2893,6 +2950,7 @@ function prepararImpressao(ids) {
   // estado de colapso — o colapso é só uma conveniência de visualização.
   document.body.classList.remove('secoes-colapsam');
   converterTextareasParaPrintText();
+  document.querySelectorAll('input[type=date]').forEach(el => el.classList.toggle('data-vazia', !el.value));
 
   document.querySelectorAll('.page').forEach(el => el.classList.remove('print-selected'));
   ids.forEach(id => document.getElementById(id)?.classList.add('print-selected'));
@@ -3093,6 +3151,7 @@ function limparImpressao() {
   document.querySelectorAll('#exames-lab .doc-wrapper, #exames-img .doc-wrapper, #relatorio .doc-wrapper, #receita .doc-wrapper').forEach(el => { el.style.display = ''; });
   document.querySelectorAll('.ultimo-doc-wrapper').forEach(el => el.classList.remove('ultimo-doc-wrapper'));
   desfazerConversaoTextareasPrint();
+  document.querySelectorAll('input[type=date].data-vazia').forEach(el => el.classList.remove('data-vazia'));
   document.body.classList.add('secoes-colapsam');
   if (document._tituloOriginal !== undefined) {
     document.title = document._tituloOriginal;
