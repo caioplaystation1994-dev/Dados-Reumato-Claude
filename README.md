@@ -7,10 +7,15 @@ Este arquivo é a memória do projeto: como o site é publicado, por que algumas
 decisões foram tomadas e o que ainda está pendente. Quem precisar mexer aqui
 daqui a um ano deve conseguir se orientar só por ele.
 
-Ele fica na **raiz da branch**, de propósito: tudo que está dentro de `docs/` é
-publicado no domínio, e este arquivo descreve a tela de senha das ferramentas
-internas e o endereço direto da carteira. Não deve ficar acessível em
-`caiowandenkolk.com.br/README.md`.
+> **Esta é uma cópia.** O original é o `SITE.md` na raiz da `main`, que é onde
+> o site deve ser alterado. Esta branch só existe enquanto a origem do Pages
+> puder voltar a apontar para ela (seção 1); mantenha as duas iguais.
+
+Ele fica na **raiz do repositório**, fora de `docs/`, de propósito: tudo que
+está dentro de `docs/` é publicado no domínio, e este arquivo descreve a tela de
+senha das ferramentas internas e o endereço direto da carteira. Não deve ficar
+acessível em `caiowandenkolk.com.br/README.md` — era o que acontecia até
+novembro de 2026, quando ele ainda morava em `docs/`.
 
 ```
 docs/
@@ -34,24 +39,39 @@ docs/
 
 ## 1. Como o site é publicado — leia antes de mexer
 
-**Todo push na branch do site publica no domínio, em poucos minutos.** Não há
-ambiente de teste nem etapa de aprovação. O que for enviado vai ao ar.
+**Todo push na `main` publica no domínio, em poucos minutos.** Não há ambiente
+de teste nem etapa de aprovação. O que for enviado vai ao ar.
 
-A publicação é feita pelo GitHub Actions (`.github/workflows/pages.yml`), não
-pelo modo "Deploy from a branch". Não há, portanto, configuração de branch em
-**Settings → Pages** para ajustar — está tudo no workflow.
+Tudo vive na `main`:
 
-### As duas branches
-
-| Branch | O que vive nela |
+| Caminho | O que é |
 |---|---|
-| `claude/happy-ride-mp97bp` | O site pessoal (esta pasta `docs/`) |
-| `main` | As ferramentas clínicas e a carteira, na raiz do repositório |
+| `docs/` | O site publicado — a raiz do domínio |
+| `docs/app/` | As ferramentas servidas, geradas no deploy |
+| Raiz do repositório | As ferramentas em desenvolvimento, sem a tela de senha |
+| `scripts/publicar-apps.js` | Copia as ferramentas da raiz para `docs/app/` |
+| `.github/workflows/pages.yml` | O workflow que monta e publica |
 
-São duas linhas de trabalho separadas, que **não se misturam**. O workflow junta
-as duas na hora de publicar: faz checkout da branch do site, busca `main` e roda
-`scripts/publicar-apps.js`, que copia as ferramentas para `docs/app/` injetando
-`noindex` e a tela de senha.
+O workflow roda o script, confere o resultado e publica `docs/`. O que vai ao ar
+é sempre gerado na hora, a partir da raiz — `docs/app/` no repositório é só uma
+cópia de conferência.
+
+### A origem em Settings → Pages precisa ser "GitHub Actions"
+
+Essa configuração não está no código e é o ponto mais frágil de tudo isto.
+Se ela voltar para **Deploy from a branch**, o GitHub passa a servir o `docs/`
+de uma branch, *ignorando* o workflow — e o site congela no conteúdo daquela
+branch sem nenhum erro visível.
+
+Foi o que aconteceu entre 16 e 24 de novembro de 2026: a origem voltou a apontar
+para `claude/happy-ride-mp97bp`, uma branch antiga onde o site morava antes da
+consolidação de outubro. O domínio passou a servir as ferramentas de setembro —
+o portal oferecia um laudo já aposentado e o app de documentos imprimia a data
+no rodapé — enquanto a `main` seguia correta. Ninguém reverteu nada; só mudou de
+onde o site saía.
+
+**Se o site parecer ter voltado no tempo, confira essa configuração antes de
+procurar o erro no código.**
 
 ### Três regras que existem por causa de acidentes reais
 
@@ -60,7 +80,8 @@ as duas na hora de publicar: faz checkout da branch do site, busca `main` e roda
    workflow hoje barra o deploy se `docs/index.html` não for o site pessoal.
 
 2. **Toda ferramenta em `/app/` tem que carregar `gate.js`.** O workflow confere
-   arquivo por arquivo e barra o deploy se faltar em algum.
+   arquivo por arquivo e barra o deploy se faltar em algum. Confere também o
+   `docs/CNAME`, sem o qual o domínio deixaria de apontar para cá.
 
 3. **Cuidado ao apagar blocos de CSS.** Uma reestruturação do rodapé apagou
    junto os blocos `.levar` e `.heroi__monograma`, e a regressão ficou no ar por
@@ -68,20 +89,14 @@ as duas na hora de publicar: faz checkout da branch do site, busca `main` e roda
    trava pegou. Não existe verificação automática para isso. Ao mexer em
    `style.css`, confira o diff inteiro, não só o trecho que você queria mudar.
 
-### O nome da branch está escrito no código — em dois lugares
+### A branch antiga do site
 
-`claude/happy-ride-mp97bp` aparece em `.github/workflows/pages.yml` **nas duas
-branches** (a do site e a `main`), além de um comentário em
-`scripts/publicar-apps.js`.
-
-A cópia em `main` é a pegadinha: um push em `main` roda a versão do workflow que
-está em `main`, e essa versão busca a branch do site pelo nome. **Renomear a
-branch sem corrigir as duas cópias quebra a atualização das ferramentas** — o
-site continua no ar, mas `/app/` para de receber versões novas, em silêncio.
-
-Se um dia for renomear, a ordem segura é: criar a branch nova a partir da atual
-→ corrigir as referências nela e dar push → corrigir a cópia em `main` → conferir
-a Action verde e o site no ar → só então apagar a antiga.
+`claude/happy-ride-mp97bp` ainda existe e carrega uma cópia de `docs/`. Ela é
+mantida igual à `main` por segurança, para o caso de a origem do Pages voltar a
+apontar para lá. Enquanto as duas existirem, **uma alteração feita só numa delas
+pode sumir do ar** dependendo de qual estiver servindo. O certo é mexer sempre
+na `main`; quando a origem estiver confirmada em "GitHub Actions", a branch pode
+ser apagada.
 
 ---
 
@@ -280,7 +295,6 @@ Uso interno, publicadas junto ao site:
 | `/app/` | Portal com o menu das ferramentas |
 | `/app/documentos_ambulatorio.html` | Relatório, receitas, exames, vacinas, atestado |
 | `/app/laudo_imunobiologicos.html` | Laudo de imunobiológicos (DUT 65/ANS) |
-| `/app/laudo_convenio_imunobio.html` | Laudo para convênio |
 | `/app/investimentos.html` | Carteira — não linkada no portal, só pelo endereço direto |
 
 Não são indexadas: cada arquivo tem `noindex` e o `robots.txt` bloqueia `/app/`.
@@ -302,8 +316,14 @@ enviado ao servidor. Para proteção real seria preciso trocar de hospedagem
 
 ### Atualizar as ferramentas
 
-Desenvolvidas na branch `main`, na raiz do repositório. Um push em `main`
-dispara o workflow, que as republica em `/app/` sem tocar na raiz do site.
+Desenvolvidas na raiz do repositório, sem a tela de senha. Um push em `main`
+dispara o workflow, que as republica em `/app/` com `noindex` e o gate
+injetados, sem tocar na raiz do site.
+
+O laudo para convênio foi aposentado em outubro de 2026: era uma cópia de junho
+do mesmo gerador, parada desde então. O que ela tinha de próprio — o cálculo do
+ASDAS, a função pulmonar nas demais doenças e a duração do tratamento — foi
+levado para o laudo principal antes de a cópia sair do ar.
 
 ---
 
@@ -324,9 +344,6 @@ Ficam registradas para não serem rediscutidas do zero:
   deploy: toda classe usada no HTML tem regra no CSS, e todo `href`/`src` local
   aponta para arquivo existente. Teria pegado a regressão do rodapé no commit
   que a causou. Proposto e adiado.
-- **Tirar o nome da branch do código**, movendo-o para uma variável do
-  repositório lida pelas duas cópias do workflow. Resolve o problema descrito na
-  seção 1. Proposto e adiado.
 - **Carregar o mapa do Google só ao clicar** — hoje o `iframe` contata o Google
   em toda visita, o que é incoerente com ter hospedado as fontes localmente por
   privacidade. Não aplicado.
