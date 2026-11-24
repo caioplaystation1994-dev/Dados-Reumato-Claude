@@ -183,8 +183,37 @@ body{padding-bottom:64px}
 .medico-panel{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:10px}
 .medico-panel label{font-size:10px;color:rgba(255,255,255,.7);white-space:nowrap;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
 .medico-panel input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 8px;border-radius:5px;font-size:12px;width:160px}
+.medico-panel input.campo-rqe{width:90px}
 .medico-panel input::placeholder{color:rgba(255,255,255,.5)}
 .medico-panel input:focus{outline:none;background:rgba(255,255,255,.25)}
+/* ── Cabeçalho em telas menores (notebook) ──────────────────────────────────
+   O cabeçalho foi desenhado como uma linha só, para monitor largo. Abaixo de
+   ~1800px a navegação não cabia ao lado do painel do médico e quebrava em
+   várias linhas: o cabeçalho passava de 250px de altura, com uma faixa azul
+   vazia à esquerda e os botões empilhados à direita. Agora ele pode quebrar,
+   e a navegação desce inteira para uma linha própria. */
+/* O grupo da direita quebra internamente: quando a navegação não cabe ao lado
+   do painel do médico, ela desce inteira para a linha de baixo em vez de os
+   botões se empilharem. O cabeçalho em si não quebra, para o logo e o título
+   ficarem sempre na altura do seletor de local e do painel do médico. */
+nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+header{flex-wrap:nowrap}
+header > div:last-child{flex-wrap:wrap;row-gap:8px;justify-content:flex-end;flex:1 1 auto;min-width:0}
+@media (max-width:1800px){
+  /* Compacta o suficiente para a navegação caber em uma linha só. */
+  nav button{font-size:11px;padding:6px 10px 3px;margin-left:4px}
+  .medico-panel{gap:7px;padding:5px 10px}
+  .medico-panel input{width:128px}
+  .medico-panel input.campo-rqe{width:66px}
+  header{padding:10px 16px}
+}
+@media (max-width:1320px){
+  header h1{font-size:15px}
+  #logo-hospital{height:34px;max-width:110px}
+  .medico-panel input{width:104px}
+  .medico-panel input.campo-rqe{width:60px}
+  nav button{font-size:10.5px;padding:5px 7px 3px;margin-left:3px}
+}
 
 /* Painel rodapé assinatura impressão */
 .print-rodape{display:none}
@@ -279,6 +308,15 @@ body{padding-bottom:64px}
 
   /* Textareas vazias não imprimem */
   .field-group textarea:placeholder-shown{display:none!important}
+  /* Campo de data vazio: o navegador desenha a máscara (dd/mm/aaaa) dentro
+     do campo, que saía impressa no documento. Esconde só o texto da máscara,
+     mantendo a linha para preenchimento à mão. */
+  input[type=date].data-vazia::-webkit-datetime-edit{visibility:hidden}
+  /* O ícone do seletor de data é controle de tela, não conteúdo. */
+  input[type=date]::-webkit-calendar-picker-indicator{display:none!important}
+  /* Placeholders orientam o preenchimento na tela; no papel sairiam como se
+     fossem o conteúdo do campo (ex.: "Ex: Artrite Reumatoide – M05.8"). */
+  input::placeholder,textarea::placeholder{color:transparent!important;opacity:0!important}
   /* Textareas com texto longo: um <textarea> é um widget com scroll
      nativo — mesmo com overflow:visible no CSS, o navegador nunca mostra
      o que passa da altura da caixa (ela só rola, não "vaza" como uma div
@@ -532,10 +570,6 @@ body{padding-bottom:64px}
 .comor-tag.ativo{background:#f6ad55;border-color:#e09416;color:#7b341e;font-weight:700}
 
 /* ── Lateralidade (imagem) ── */
-.lat-btns{display:none;gap:4px;margin-left:auto;flex-shrink:0}
-.exam-item.checked .lat-btns{display:flex}
-.lat-btn{background:#e2e8f0;border:1px solid #cbd5e0;color:#4a5568;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;transition:.15s;line-height:1.4}
-.lat-btn.ativo{background:#1a56a0;border-color:#1a56a0;color:#fff}
 
 /* ── Vacinas ── */
 .vacina-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid #f0f4f8;font-size:12px}
@@ -595,7 +629,7 @@ body{padding-bottom:64px}
       <label>CRM</label>
       <input type="text" id="g-crm" placeholder="CRM/SP 000" value="CRM/SP 197.983" oninput="sincMedico()">
       <label>RQE</label>
-      <input type="text" id="g-rqe" placeholder="RQE 00000" value="139762" oninput="sincMedico()" style="width:90px">
+      <input type="text" id="g-rqe" placeholder="RQE 00000" value="139762" oninput="sincMedico()" class="campo-rqe">
     </div>
     <nav>
       <button class="active" onclick="showPage('relatorio',this)">Relatório Médico</button>
@@ -1935,11 +1969,16 @@ function agruparExamesPorCategoria(exames) {
 const PACOTES_IMG = [
   {
     id: 'ipkg-rx', titulo: 'Radiografia (RX)',
-    exames: ['RX de tórax PA e perfil','RX de coluna cervical (PA, perfil, oblíquas)','RX de coluna lombar (PA, perfil)','RX de coluna total (PA e perfil)','RX de sacroilíacas','RX de mãos e punhos bilaterais','RX de pés bilaterais','RX de quadril (AP da bacia)','RX de joelhos (AP e perfil)','RX de ombros bilaterais','RX de tornozelos bilaterais']
+    // Os RX de articulações periféricas vão separados por lado: a solicitação
+    // precisa dizer o lado para a clínica saber o que realizar e para a
+    // operadora autorizar — "bilaterais" num item só costuma voltar como um
+    // exame só. Itens que já nomeiam o lado não mostram os botões D/E/Bil.
+    exames: ['RX de tórax PA e perfil','RX de coluna cervical (PA, perfil, oblíquas)','RX de coluna lombar (PA, perfil)','RX de coluna total (PA e perfil)','RX de sacroilíacas','RX mão direita (PA e perfil)','RX mão esquerda (PA e perfil)','RX de punho direito','RX de punho esquerdo','RX de pé direito (PA e perfil)','RX de pé esquerdo (PA e perfil)','RX de quadril (AP da bacia)','RX de joelho direito (AP e perfil)','RX de joelho esquerdo (AP e perfil)','RX de ombro direito','RX de ombro esquerdo','RX de tornozelo direito (AP e perfil)','RX de tornozelo esquerdo (AP e perfil)']
   },
   {
     id: 'ipkg-usg', titulo: 'Ultrassonografia (USG)',
-    exames: ['USG de articulações de mãos e punhos','USG de ombros bilaterais','USG de quadril bilateral','USG de joelhos bilaterais','USG de tornozelos bilaterais','USG de partes moles','USG abdominal total','USG de glândulas salivares','USG Doppler de vasos periféricos','USG de tireoide','Ecocardiograma']
+    // Mesma regra dos RX: cada lado é um exame, com o lado no nome.
+    exames: ['USG de mão e punho direitos','USG de mão e punho esquerdos','USG de ombro direito','USG de ombro esquerdo','USG de quadril direito','USG de quadril esquerdo','USG de joelho direito','USG de joelho esquerdo','USG de tornozelo direito','USG de tornozelo esquerdo','USG de partes moles','USG abdominal total','USG de glândulas salivares','USG Doppler de vasos periféricos','USG de tireoide','Ecocardiograma']
   },
   {
     id: 'ipkg-tc', titulo: 'Tomografia Computadorizada (TC)',
@@ -2049,11 +2088,6 @@ function renderItemsPacoteCustomImg() {
     <div class="exam-item" id="${PKG_CUSTOM_IMG.id}-exam-${i}" onclick="toggleExamItem('${PKG_CUSTOM_IMG.id}',${i})">
       <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${PKG_CUSTOM_IMG.id}',${i})">
       <label>${e}</label>
-      <span class="lat-btns" id="${PKG_CUSTOM_IMG.id}-lat-${i}">
-        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="D" onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'D',this)">D</button>
-        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="E" onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'E',this)">E</button>
-        <button class="lat-btn" data-pkg="${PKG_CUSTOM_IMG.id}" data-idx="${i}" data-lat="Bil." onclick="event.stopPropagation();setLat('${PKG_CUSTOM_IMG.id}',${i},'Bil.',this)">Bil.</button>
-      </span>
       <button type="button" class="btn-remove-exame-custom" title="Excluir dos meus exames" onclick="event.stopPropagation();excluirExameCustomImg(${i})">×</button>
     </div>`).join('');
   container.innerHTML = itemsHtml + `
@@ -2195,7 +2229,6 @@ function expandPacote(pkgId) {
 }
 
 // ─── Renderizar pacotes de imagem ─────────────────────────────────────────────
-const _lateralidade = {};
 
 function renderPacotesImg() {
   const container = document.getElementById('pacotes-img');
@@ -2213,11 +2246,6 @@ function renderPacotesImg() {
           <div class="exam-item" id="${pkg.id}-exam-${i}" onclick="toggleExamItem('${pkg.id}',${i})">
             <input type="checkbox" onclick="event.stopPropagation(); toggleExamItem('${pkg.id}',${i})">
             <label>${e}</label>
-            <span class="lat-btns" id="${pkg.id}-lat-${i}">
-              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="D" onclick="event.stopPropagation();setLat('${pkg.id}',${i},'D',this)">D</button>
-              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="E" onclick="event.stopPropagation();setLat('${pkg.id}',${i},'E',this)">E</button>
-              <button class="lat-btn" data-pkg="${pkg.id}" data-idx="${i}" data-lat="Bil." onclick="event.stopPropagation();setLat('${pkg.id}',${i},'Bil.',this)">Bil.</button>
-            </span>
           </div>`).join('')}
       </div>
     </div>`).join('');
@@ -2244,17 +2272,6 @@ function renderPacotesVac() {
     </div>`).join('');
 }
 
-function setLat(pkgId, idx, lat, btn) {
-  const key = pkgId + '-' + idx;
-  _lateralidade[key] = _lateralidade[key] === lat ? null : lat;
-  const btns = document.querySelectorAll(`#${pkgId}-lat-${idx} .lat-btn`);
-  btns.forEach(b => b.classList.toggle('ativo', b.dataset.lat === _lateralidade[key]));
-}
-
-function getLatText(pkgId, idx, exameName) {
-  const lat = _lateralidade[pkgId + '-' + idx];
-  return lat ? exameName + ' (' + lat + ')' : exameName;
-}
 
 function selectedImgFromPacotes() {
   const result = [];
@@ -2774,21 +2791,48 @@ function paginarBlocosLivres(pageId, corpoId) {
   // ("1. ...\n2. ...\n3. ..."), ou seja, é UM parágrafo só — sem ele, uma
   // receita longa virava um bloco indivisível que estourava a folha e
   // vazava para as páginas seguintes sem repetir cabeçalho/rodapé.
+  //
+  // Cada pedaço carrega o separador que o liga ao pedaço anterior: '\n\n'
+  // quando começa um novo parágrafo, '\n' quando é a continuação de um
+  // parágrafo que foi quebrado linha a linha. Sem isso os pedaços que caem
+  // na mesma página eram remontados sem a linha em branco e o texto saía
+  // impresso todo colado — e, pior, a altura da linha em branco não entrava
+  // na conta, fazendo um texto que não cabia parecer que cabia (daí o
+  // rodapé ser empurrado para fora da folha).
   const cabeNaPagina = t => medirTexto(t) <= alturaDisponivel;
   const fatiarTexto = (texto) => {
     const pedacos = [];
     (texto || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).forEach(paragrafo => {
-      if (cabeNaPagina(paragrafo)) { pedacos.push(paragrafo); return; }
+      if (cabeNaPagina(paragrafo)) { pedacos.push({ texto: paragrafo, sep: '\n\n' }); return; }
       let atual = '';
+      let primeiro = true;
+      const despejar = (texto, sep) => { pedacos.push({ texto, sep: primeiro ? '\n\n' : sep }); primeiro = false; };
       paragrafo.split('\n').forEach(linha => {
         const tentativa = atual ? atual + '\n' + linha : linha;
-        if (atual && !cabeNaPagina(tentativa)) { pedacos.push(atual); atual = linha; }
+        if (atual && !cabeNaPagina(tentativa)) { despejar(atual, '\n'); atual = linha; }
         else atual = tentativa;
+        // Último recurso: uma única linha maior que a página — texto colado
+        // sem nenhuma quebra, como acontece quando se cola um parágrafo
+        // longo. Sem isto ela viraria um pedaço indivisível, maior que a
+        // folha, e levaria o rodapé para fora da página.
+        if (!cabeNaPagina(atual)) {
+          let parcial = '';
+          atual.split(' ').forEach(palavra => {
+            const t2 = parcial ? parcial + ' ' + palavra : palavra;
+            if (parcial && !cabeNaPagina(t2)) { despejar(parcial, ' '); parcial = palavra; }
+            else parcial = t2;
+          });
+          atual = parcial;
+        }
       });
-      if (atual) pedacos.push(atual);
+      if (atual) despejar(atual, '\n');
     });
     return pedacos;
   };
+
+  // Altura de uma linha em branco, para contabilizar a separação entre
+  // parágrafos remontados na mesma página.
+  const alturaLinhaBranca = Math.max(0, medirTexto('a\na') - medirTexto('a'));
 
   const unidades = [];
   blocos.forEach(b => {
@@ -2796,7 +2840,10 @@ function paginarBlocosLivres(pageId, corpoId) {
     const valorEl = alturaTotal > alturaDisponivel ? b.querySelector('.print-textarea-valor') : null;
     const pedacos = valorEl ? fatiarTexto(valorEl.textContent) : [];
     if (pedacos.length > 1) {
-      pedacos.forEach(t => unidades.push({ altura: medirTexto(t), render: () => criarFragmentoBloco(b, t) }));
+      pedacos.forEach((pedaco, i) => unidades.push({
+        altura: medirTexto(pedaco.texto) + (i > 0 && pedaco.sep === '\n\n' ? alturaLinhaBranca : 0),
+        bloco: b, texto: pedaco.texto, sep: pedaco.sep,
+      }));
     } else {
       unidades.push({ altura: alturaTotal, render: () => { const c = b.cloneNode(true); copiarValoresClone(b, c); return c; } });
     }
@@ -2821,7 +2868,10 @@ function paginarBlocosLivres(pageId, corpoId) {
   });
   if (atual.length > 0) paginas.push({ unidades: atual, forcado: atualForcado });
 
-  if (paginas.length <= 1) return; // cabe tudo numa página só: nada a fazer
+  // Clona quando há mais de uma página ou quando alguma unidade é maior que
+  // a folha (aí o rodapé precisa fluir logo após o texto, em vez de ser
+  // empurrado para o fim de uma caixa mais alta que a página).
+  if (paginas.length === 1 && !paginas[0].forcado) return; // cabe tudo numa página só
 
   const headBlock = origWrapper.querySelector('.doc-head-block');
   const tailBlock = origWrapper.querySelector('.doc-tail-block');
@@ -2839,7 +2889,22 @@ function paginarBlocosLivres(pageId, corpoId) {
       clone.appendChild(headClone);
     }
     const corpoClone = document.createElement('div');
-    pagina.unidades.forEach(u => corpoClone.appendChild(u.render()));
+    // Pedaços seguidos do mesmo bloco voltam a ser um texto só, com a linha
+    // em branco entre parágrafos — em vez de virarem elementos separados,
+    // que saíam impressos sem espaço nenhum entre si.
+    let grupo = null;
+    const despejarGrupo = () => {
+      if (!grupo) return;
+      corpoClone.appendChild(criarFragmentoBloco(grupo.bloco, grupo.partes.join('')));
+      grupo = null;
+    };
+    pagina.unidades.forEach(u => {
+      if (!u.bloco) { despejarGrupo(); corpoClone.appendChild(u.render()); return; }
+      if (grupo && grupo.bloco === u.bloco) { grupo.partes.push(u.sep + u.texto); return; }
+      despejarGrupo();
+      grupo = { bloco: u.bloco, partes: [u.texto] };
+    });
+    despejarGrupo();
     clone.appendChild(corpoClone);
     if (isUltima && tailBlock) {
       const tailClone = tailBlock.cloneNode(true);
@@ -2885,6 +2950,7 @@ function prepararImpressao(ids) {
   // estado de colapso — o colapso é só uma conveniência de visualização.
   document.body.classList.remove('secoes-colapsam');
   converterTextareasParaPrintText();
+  document.querySelectorAll('input[type=date]').forEach(el => el.classList.toggle('data-vazia', !el.value));
 
   document.querySelectorAll('.page').forEach(el => el.classList.remove('print-selected'));
   ids.forEach(id => document.getElementById(id)?.classList.add('print-selected'));
@@ -2979,20 +3045,34 @@ function prepararImpressao(ids) {
     }
   }
 
-  // ── Lista plana de exames de imagem ──
+  // ── Lista de exames de imagem, agrupada por modalidade ──
+  // Agrupado como já era feito em laboratoriais e vacinas: a clínica de
+  // imagem agenda e autoriza por modalidade, e numa lista única um RX perdido
+  // no meio de ressonâncias passa despercebido.
   const imgFlat = document.getElementById('img-print-flat');
   if (imgFlat) {
-    const exames = [];
+    const entradasImg = [];
     PACOTES_IMG.forEach(pkg => {
+      const itens = [];
       pkg.exames.forEach((nome, i) => {
         const el = document.getElementById(pkg.id + '-exam-' + i);
-        if (el && el.classList.contains('checked')) exames.push(getLatText(pkg.id, i, nome));
+        if (el && el.classList.contains('checked')) itens.push(nome);
       });
+      if (itens.length) {
+        itens.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        entradasImg.push({ categoria: pkg.titulo });
+        itens.forEach(i => entradasImg.push(i));
+      }
     });
     const adicImg = (document.getElementById('img-adicional')?.value || '').trim();
-    if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => exames.push(l.trim()));
-    exames.sort((a, b) => a.localeCompare(b, 'pt-BR'));
-    paginarListaExames('exames-img', 'img-print-flat', exames);
+    if (adicImg) {
+      const extras = adicImg.split('\n').map(l => l.trim()).filter(Boolean);
+      if (extras.length) {
+        entradasImg.push({ categoria: 'Outros exames' });
+        extras.forEach(l => entradasImg.push(l));
+      }
+    }
+    paginarListaExames('exames-img', 'img-print-flat', entradasImg);
   }
 
   // ── Lista de vacinas ──
@@ -3024,7 +3104,6 @@ function prepararImpressao(ids) {
   const crmGlobal = document.getElementById('g-crm')?.value.trim() || '';
   const rqe = rqeAtual();
   const local = localAtual();
-  const dataHoje = new Date().toLocaleDateString('pt-BR');
   const CAMPOS_MEDICO_POR_PAGINA = {
     relatorio: ['rel-medico', 'rel-crm'],
     receita: ['rx-medico', 'rx-crm'],
@@ -3039,7 +3118,7 @@ function prepararImpressao(ids) {
     const campos = CAMPOS_MEDICO_POR_PAGINA[el.closest('.page')?.id];
     const medico = (campos && document.getElementById(campos[0])?.value.trim()) || medicoGlobal;
     const crm = (campos && document.getElementById(campos[1])?.value.trim()) || crmGlobal;
-    el.innerHTML = `<strong>${medico}</strong>${crm ? ' | ' + crm : ''}${rqe ? ' | RQE ' + rqe : ''} | Especialidade: Reumatologia<br>${local} | ${dataHoje}`;
+    el.innerHTML = `<strong>${medico}</strong>${crm ? ' | ' + crm : ''}${rqe ? ' | RQE ' + rqe : ''} | Especialidade: Reumatologia<br>${local}`;
   });
 
   marcarUltimoDocWrapper();
@@ -3072,6 +3151,7 @@ function limparImpressao() {
   document.querySelectorAll('#exames-lab .doc-wrapper, #exames-img .doc-wrapper, #relatorio .doc-wrapper, #receita .doc-wrapper').forEach(el => { el.style.display = ''; });
   document.querySelectorAll('.ultimo-doc-wrapper').forEach(el => el.classList.remove('ultimo-doc-wrapper'));
   desfazerConversaoTextareasPrint();
+  document.querySelectorAll('input[type=date].data-vazia').forEach(el => el.classList.remove('data-vazia'));
   document.body.classList.add('secoes-colapsam');
   if (document._tituloOriginal !== undefined) {
     document.title = document._tituloOriginal;
@@ -3480,6 +3560,12 @@ function makeDoc(paragraphs, rodape) {
       alignment: AlignmentType.CENTER, spacing: { after: 200 },
       children: [new TextRun({ text: p.text, size: 20, color: '718096' })]
     });
+    // Subtítulo de grupo dentro de uma seção (ex.: a modalidade na lista de
+    // exames de imagem) — sem borda, para não competir com o 'heading'.
+    if (p.type === 'subheading') return new Paragraph({
+      spacing: { before: 120, after: 40 },
+      children: [new TextRun({ text: p.text, bold: true, size: 22, color: '2d3748' })]
+    });
     if (p.type === 'label-value') return new Paragraph({
       spacing: { after: 60 },
       children: [new TextRun({ text: p.label + ': ', bold: true, size: 22 }), new TextRun({ text: p.value || '—', size: 22 })]
@@ -3723,16 +3809,25 @@ async function gerarWordLab() {
 }
 
 async function gerarWordImg() {
-  // Coletar todos os exames de imagem marcados (com lateralidade)
-  const todosExames = [];
+  // Agrupados por modalidade, como na impressão.
+  const gruposImg = [];
   PACOTES_IMG.forEach(pkg => {
+    const itens = [];
     pkg.exames.forEach((nome, i) => {
       const el = document.getElementById(pkg.id + '-exam-' + i);
-      if (el && el.classList.contains('checked')) todosExames.push(getLatText(pkg.id, i, nome));
+      if (el && el.classList.contains('checked')) itens.push(nome);
     });
+    if (itens.length) {
+      itens.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      gruposImg.push({ titulo: pkg.titulo, itens });
+    }
   });
   const adicImg = v('img-adicional');
-  if (adicImg) adicImg.split('\n').filter(l => l.trim()).forEach(l => todosExames.push(l.trim()));
+  if (adicImg) {
+    const extras = adicImg.split('\n').map(l => l.trim()).filter(Boolean);
+    if (extras.length) gruposImg.push({ titulo: 'Outros exames', itens: extras });
+  }
+  const todosExames = gruposImg.flatMap(g => g.itens);
 
   const paras = [
     ...logoDocPara(),
@@ -3746,7 +3841,10 @@ async function gerarWordImg() {
   ];
   if (todosExames.length) {
     paras.push({ type: 'heading', text: 'Exames Solicitados' });
-    todosExames.forEach(e => paras.push({ type: 'bullet', text: e }));
+    gruposImg.forEach(g => {
+      paras.push({ type: 'subheading', text: g.titulo });
+      g.itens.forEach(e => paras.push({ type: 'bullet', text: e }));
+    });
   }
   if (v('img-indicacao')) {
     paras.push({ type: 'heading', text: 'Justificativa' });
@@ -3859,7 +3957,7 @@ function coletarExamesImgMarcados() {
   PACOTES_IMG.forEach(pkg => {
     pkg.exames.forEach((nome, i) => {
       const el = document.getElementById(pkg.id + '-exam-' + i);
-      if (el && el.classList.contains('checked')) todosExames.push(getLatText(pkg.id, i, nome));
+      if (el && el.classList.contains('checked')) todosExames.push(nome);
     });
   });
   const adicImg = v('img-adicional');
@@ -4166,8 +4264,6 @@ function novoPaciente() {
   document.getElementById('nef-alert')?.classList.remove('visivel');
   // Zerar comorbidades
   setComorbidades([]);
-  // Zerar lateralidade
-  Object.keys(_lateralidade).forEach(k => delete _lateralidade[k]);
   // Redimensionar textareas
   document.querySelectorAll('textarea').forEach(ta => autoResizeTA(ta));
 }
@@ -4606,6 +4702,102 @@ const CID_RHEUM = [
   ['M54.9','Dorsalgia, não especificada'],
   ['M51.1','Transtorno de disco lombar com radiculopatia'],
   ['M51.2','Outros deslocamentos especificados de disco intervertebral (hérnia de disco)'],
+  ['M53.1','Síndrome cervicobraquial'],
+  ['M54.3','Ciática'],
+  ['M47.8','Outras espondiloses (espondiloartrose)'],
+  ['M48.0','Estenose do canal vertebral'],
+  // ── Sintomas e sinais articulares (úteis quando ainda não há diagnóstico
+  //    fechado, que é a situação da maior parte das solicitações de exame) ──
+  ['M25.5','Dor articular (artralgia)'],
+  ['M25.4','Derrame articular'],
+  ['M25.6','Rigidez articular não classificada em outra parte'],
+  ['M25.0','Hemartrose'],
+  ['M25.3','Outras instabilidades articulares'],
+  ['M25.9','Transtorno articular, não especificado'],
+  ['M79.6','Dor em membro'],
+  ['M79.2','Nevralgia e neurite, não especificadas'],
+  ['M77.9','Entesopatia, não especificada'],
+  ['R53','Mal-estar e fadiga'],
+  ['R50.9','Febre, não especificada'],
+  // ── Achados isolados que motivam investigação ──
+  ['R76.8','Outros achados imunológicos anormais no soro (ex.: FAN positivo isolado)'],
+  ['E79.0','Hiperuricemia sem sinais de artrite inflamatória'],
+  ['E55.9','Deficiência de vitamina D, não especificada'],
+  ['M85.8','Outros transtornos da densidade e estrutura ósseas (osteopenia)'],
+  ['M83.9','Osteomalácia do adulto, não especificada'],
+  // ── Manifestações associadas às doenças reumatológicas ──
+  ['I73.0','Síndrome de Raynaud'],
+  ['H20.0','Iridociclite aguda (uveíte anterior)'],
+  ['L40.0','Psoríase vulgar'],
+  ['K50.9','Doença de Crohn, não especificada'],
+  ['K51.9','Retocolite ulcerativa, não especificada'],
+  // ── Acompanhamento de terapia (justificam os exames de controle) ──
+  ['Z79.8','Uso prolongado de outros medicamentos (DMARD / imunobiológico)'],
+  ['Z79.5','Uso prolongado de corticosteroides'],
+  ['Z79.1','Uso prolongado de antiinflamatórios não esteroides (AINE)'],
+  ['Z11.1','Rastreamento de tuberculose respiratória (triagem pré-imunobiológico)'],
+  ['Z00.0','Exame médico geral'],
+  // ══ Clínica geral ══════════════════════════════════════════════════════════
+  // Comorbidades e queixas que aparecem na mesma consulta reumatológica, e o
+  // que é pedido no atendimento clínico. A busca filtra por texto, então a
+  // lista maior não atrapalha quem procura um CID reumatológico.
+  // Cardiometabólico
+  ['I10','Hipertensão arterial essencial (primária)'],
+  ['I25.9','Doença isquêmica crônica do coração, não especificada'],
+  ['I83.9','Varizes dos membros inferiores sem úlcera ou inflamação'],
+  ['E11.9','Diabetes mellitus tipo 2 sem complicações'],
+  ['E10.9','Diabetes mellitus tipo 1 sem complicações'],
+  ['R73.9','Hiperglicemia, não especificada (pré-diabetes)'],
+  ['E78.0','Hipercolesterolemia pura'],
+  ['E78.5','Hiperlipidemia, não especificada'],
+  ['E66.9','Obesidade, não especificada'],
+  // Tireoide
+  ['E03.9','Hipotireoidismo, não especificado'],
+  ['E05.9','Tireotoxicose (hipertireoidismo), não especificada'],
+  ['E06.3','Tireoidite autoimune (Hashimoto)'],
+  // Renal e urinário
+  ['N18.9','Doença renal crônica, não especificada'],
+  ['N39.0','Infecção do trato urinário de localização não especificada'],
+  ['N20.0','Calculose renal (nefrolitíase)'],
+  // Hematológico
+  ['D50.9','Anemia por deficiência de ferro, não especificada'],
+  ['D51.9','Anemia por deficiência de vitamina B12, não especificada'],
+  ['D64.9','Anemia, não especificada'],
+  // Digestivo
+  ['K21.0','Doença do refluxo gastroesofágico com esofagite'],
+  ['K21.9','Doença do refluxo gastroesofágico sem esofagite'],
+  ['K29.7','Gastrite, não especificada'],
+  ['K58.9','Síndrome do intestino irritável sem diarreia'],
+  ['K76.0','Esteatose hepática (degeneração gordurosa do fígado)'],
+  ['B19.9','Hepatite viral, não especificada'],
+  // Respiratório
+  ['J45.9','Asma, não especificada'],
+  ['J44.9','Doença pulmonar obstrutiva crônica (DPOC)'],
+  ['J30.4','Rinite alérgica, não especificada'],
+  ['J06.9','Infecção aguda das vias aéreas superiores'],
+  // Neurológico e saúde mental
+  ['G43.9','Enxaqueca, não especificada'],
+  ['R51','Cefaleia'],
+  ['G47.0','Insônia (distúrbio do início e da manutenção do sono)'],
+  ['F51.0','Insônia não orgânica'],
+  ['F41.1','Transtorno de ansiedade generalizada'],
+  ['F41.9','Transtorno de ansiedade, não especificado'],
+  ['F32.9','Episódio depressivo, não especificado'],
+  ['G63.2','Polineuropatia diabética'],
+  // Arboviroses e pós-infecciosas — causa frequente de artrite e artralgia
+  ['A92.0','Febre de Chikungunya'],
+  ['A90','Dengue clássica'],
+  ['A91','Dengue hemorrágica'],
+  ['A92.8','Outras febres virais transmitidas por mosquitos (Zika)'],
+  ['B27.9','Mononucleose infecciosa, não especificada'],
+  ['U07.1','COVID-19, vírus identificado'],
+  ['U09.9','Condição pós-COVID-19'],
+  // Outros do dia a dia
+  ['N95.1','Estados da menopausa e do climatério'],
+  ['Z72.0','Uso de tabaco'],
+  ['R60.0','Edema localizado'],
+  ['R63.4','Perda de peso anormal'],
+  ['Z76.0','Emissão de receita de repetição'],
 ];
 
 function cidSuggest(input, sugId) {
