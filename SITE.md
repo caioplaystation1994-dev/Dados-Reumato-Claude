@@ -208,7 +208,7 @@ JSON-LD do `index.html`:
 | Endereço | `Av. Paulista, 1048 — 18º andar, Bela Vista, São Paulo/SP, 01310-100` |
 | Telefone | `(11) 3382-1525` |
 | Site | `https://caiowandenkolk.com.br` |
-| Horário | Terça e quinta, 14h–19h |
+| Horário | Terça 14h–20h; quinta 15h–20h |
 
 **Duas armadilhas:**
 
